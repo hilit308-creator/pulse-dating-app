@@ -1,0 +1,7 @@
+@import url('./global-theme.css');
+
+/* Add any additional global resets or overrides below */
+body {
+  margin: 0;
+  padding: 0;
+}

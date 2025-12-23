@@ -1,0 +1,102 @@
+/* 🚀 Neon Glassy Theme for the Dating App */
+:root {
+  --color-bg: #fff;
+  --color-bg-soft: #fff3e0;
+  --color-text-main: #000;
+  --color-text-subtle: #333;
+  --color-accent: #ffb357;
+  --color-accent-deep: #ff9800;
+  --color-border: #f5f5f5;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text-main);
+  font-family: 'Inter', 'Quicksand', sans-serif;
+  min-height: 100vh;
+}
+
+/* Cards, Paper, List */
+.profile-card, .boost-card, .partner-deal, .MuiPaper-root, .MuiList-root {
+  background: var(--color-bg);
+  border-radius: 16px;
+  box-shadow: none;
+  border: 1px solid var(--color-border);
+}
+
+/* Chips & Status Labels */
+.MuiChip-root, .status-chip {
+  background: var(--color-accent) !important;
+  color: var(--color-text-main) !important;
+  font-weight: 500;
+  border-radius: 12px;
+}
+.MuiChip-root[data-status="expired"], .status-chip.expired {
+  background: var(--color-accent-deep) !important;
+  color: #fff !important;
+}
+
+/* Buttons */
+button, .MuiButton-root {
+  background: var(--color-accent);
+  color: var(--color-text-main) !important;
+  border-radius: 18px;
+  font-weight: 600;
+  box-shadow: none;
+  border: none;
+  transition: background 0.18s;
+}
+button:hover, .MuiButton-root:hover {
+  background: var(--color-accent-deep);
+  color: #fff !important;
+}
+
+/* Tab Bar */
+.tab-bar {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+  box-shadow: none;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000;
+  padding: 8px 0;
+}
+.tab-bar .tab-item {
+  color: var(--color-text-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+}
+.tab-bar .tab-item.active {
+  color: var(--color-accent-deep);
+}
+
+/* Inputs */
+input, .MuiInputBase-root, .MuiOutlinedInput-root {
+  background: var(--color-bg);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-main);
+}
+
+/* List Items */
+.MuiListItem-root {
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Misc */
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}

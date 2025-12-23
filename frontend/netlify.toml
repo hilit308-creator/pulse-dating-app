@@ -1,0 +1,16 @@
+[build]
+  publish = "build"
+  command = "npm run build"
+
+[dev]
+  command = "npm start"
+  port = 3000
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Ensure client-side routing works (React Router)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
