@@ -103,14 +103,6 @@ const hostOf = (u) => {
 /* --------- Demo data (כולל “שוחח עם AI” + “Therapist Bot”) --------- */
 const DEFAULT_DISAPPEARING_SECONDS = 7200; // ← שעתיים ברירת־מחדל
 
-// Pulse spec: Connection source types
-const CONNECTION_SOURCE = {
-  NEARBY: 'nearby',
-  EVENT: 'event',
-  MATCH: 'match',
-  BUSINESS: 'business',
-};
-
 const THERAPIST_ID = "bot-therapy";
 
 const THERAPY_ROW = {
@@ -182,10 +174,6 @@ const demoChats = [
       photoUrl: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=256&q=80",
     },
     user24hPhoto: null,
-    connectionSource: CONNECTION_SOURCE.NEARBY,
-    quickVibe: "You both love traveling",
-    unreadCount: 1,
-    blocked: false,
     messages: [
       {
         id: 41,
@@ -214,11 +202,6 @@ const demoChats = [
       photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80",
     },
     user24hPhoto: null,
-    connectionSource: CONNECTION_SOURCE.EVENT,
-    eventName: "Art Night @ TLV",
-    quickVibe: "Same taste in art",
-    unreadCount: 0,
-    blocked: false,
     messages: [
       {
         id: 51,
@@ -247,10 +230,6 @@ const demoChats = [
       photoUrl: "/liza_1.jpg",
     },
     user24hPhoto: null,
-    connectionSource: CONNECTION_SOURCE.NEARBY,
-    quickVibe: "Both night people",
-    unreadCount: 2,
-    blocked: false,
     messages: [
       {
         id: 61,
@@ -288,10 +267,6 @@ const demoChats = [
       age: 26,
       photoUrl: "/gali_1.jpg",
     },
-    connectionSource: CONNECTION_SOURCE.MATCH,
-    quickVibe: "You both enjoy dancing",
-    unreadCount: 0,
-    blocked: false,
     user24hPhoto: null,
     messages: [
       {
@@ -673,12 +648,14 @@ function ChatBubble({
             {fmtHM(msg.timestamp)}
             {msg.edited && " · edited"}
           </Typography>
-          {/* Pulse spec: No "seen" status - only show sent/delivered */}
-          {isMe && msg.status === "delivered" ? (
-            <CheckCheck size={16} />
-          ) : isMe && msg.status === "sent" ? (
-            <Check size={16} />
-          ) : null}
+          {isMe &&
+            (msg.status === "read" ? (
+              <CheckCheck size={16} color="#53BDEB" />
+            ) : msg.status === "delivered" ? (
+              <CheckCheck size={16} />
+            ) : (
+              <Check size={16} />
+            ))}
         </Box>
 
         {/* Reactions bubble */}
@@ -985,32 +962,13 @@ export default function ChatScreen() {
     [chats, openChat]
   );
 
-  // Pulse spec: Sort tabs state
-  const [chatListSort, setChatListSort] = useState('active');
-
   const sortedChats = useMemo(() => {
-    // Filter out blocked chats
-    let filtered = chats.filter(c => !c.blocked);
-    
-    // Apply sort based on tab
-    if (chatListSort === 'new') {
-      // New connections: chats with 1 or fewer messages, sorted by date
-      return [...filtered].sort((a, b) => {
-        const aNew = a.messages.length <= 1;
-        const bNew = b.messages.length <= 1;
-        if (aNew && !bNew) return -1;
-        if (!aNew && bNew) return 1;
-        return (b.lastSentAt || 0) - (a.lastSentAt || 0);
-      });
-    }
-    
-    // Active: default sort (pinned first, then by date)
-    return [...filtered].sort(
+    return [...chats].sort(
       (a, b) =>
         (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) ||
         (b.lastSentAt || 0) - (a.lastSentAt || 0)
     );
-  }, [chats, chatListSort]);
+  }, [chats]);
 
   useEffect(() => {
     if (typeof document !== "undefined" && document.body) {
@@ -1654,30 +1612,6 @@ export default function ChatScreen() {
           <Typography variant="body2" sx={{ color: "#6B7280" }}>
             Choose who you want to chat with
           </Typography>
-          
-          {/* Pulse spec: Sort tabs */}
-          <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
-            <Chip 
-              label="Active" 
-              onClick={() => setChatListSort('active')}
-              sx={{ 
-                fontWeight: 600,
-                bgcolor: chatListSort === 'active' ? '#222' : '#f5f5f5',
-                color: chatListSort === 'active' ? '#fff' : '#666',
-                '&:hover': { bgcolor: chatListSort === 'active' ? '#333' : '#e5e5e5' },
-              }}
-            />
-            <Chip 
-              label="New connections" 
-              onClick={() => setChatListSort('new')}
-              sx={{ 
-                fontWeight: 600,
-                bgcolor: chatListSort === 'new' ? '#222' : '#f5f5f5',
-                color: chatListSort === 'new' ? '#fff' : '#666',
-                '&:hover': { bgcolor: chatListSort === 'new' ? '#333' : '#e5e5e5' },
-              }}
-            />
-          </Box>
         </Box>
 
         {/* Chat List (כולל כפתורי “בקש AI” ו“תמיכה”) */}
@@ -1861,29 +1795,9 @@ export default function ChatScreen() {
                   }}
                 />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                    <Typography noWrap sx={{ fontWeight: 700 }}>
-                      {c.user.name}{c.user.age ? `, ${c.user.age}` : ""}
-                    </Typography>
-                    {c.pinned && <span style={{ fontSize: 12 }}>📌</span>}
-                    {c.muted && <span style={{ fontSize: 12 }}>🔕</span>}
-                    {/* Pulse spec: Connection source badge */}
-                    {c.connectionSource && (
-                      <Chip
-                        size="small"
-                        label={c.connectionSource === CONNECTION_SOURCE.EVENT ? (c.eventName || 'Event') : c.connectionSource}
-                        sx={{
-                          height: 18,
-                          fontSize: '0.65rem',
-                          fontWeight: 600,
-                          bgcolor: c.connectionSource === CONNECTION_SOURCE.EVENT ? '#dcfce7' : 
-                                   c.connectionSource === CONNECTION_SOURCE.NEARBY ? '#fef3c7' : '#e0f2fe',
-                          color: c.connectionSource === CONNECTION_SOURCE.EVENT ? '#166534' :
-                                 c.connectionSource === CONNECTION_SOURCE.NEARBY ? '#92400e' : '#075985',
-                        }}
-                      />
-                    )}
-                  </Box>
+                  <Typography noWrap sx={{ fontWeight: 700 }}>
+                    {c.user.name}{c.user.age ? `, ${c.user.age}` : ""} {c.pinned && "📌"} {c.muted && "🔕"}
+                  </Typography>
                   <Typography noWrap variant="body2" sx={{ color: "#6B7280" }}>
                     {c.messages.length
                       ? c.messages[c.messages.length - 1].text || "[media]"
@@ -1894,28 +1808,9 @@ export default function ChatScreen() {
                       : "No messages yet"}
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
-                  <Typography variant="caption" sx={{ color: "#9CA3AF" }}>
-                    {c.lastSentAt ? fmtHM(c.lastSentAt) : ""}
-                  </Typography>
-                  {/* Pulse spec: Unread indicator */}
-                  {c.unreadCount > 0 && (
-                    <Box sx={{
-                      bgcolor: '#6C5CE7',
-                      color: '#fff',
-                      borderRadius: '50%',
-                      minWidth: 20,
-                      height: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                    }}>
-                      {c.unreadCount}
-                    </Box>
-                  )}
-                </Box>
+                <Typography variant="caption" sx={{ color: "#9CA3AF" }}>
+                  {c.lastSentAt ? fmtHM(c.lastSentAt) : ""}
+                </Typography>
               </Box>
             </Box>
           ))}
@@ -2010,21 +1905,14 @@ export default function ChatScreen() {
           <Typography noWrap sx={{ fontWeight: 700, lineHeight: 1.1 }}>
             {chat.user.name}{chat.user.age ? `, ${chat.user.age}` : ""}
           </Typography>
-          {/* Pulse spec: Quick vibe line or softer presence */}
-          {chat.quickVibe ? (
-            <Typography variant="caption" sx={{ color: "#6C5CE7", fontWeight: 500 }}>
-              {chat.quickVibe}
-            </Typography>
-          ) : (
-            <Typography variant="caption" sx={{ color: "#6B7280" }}>
-              {chat.matchId === AI_ADVISOR_ROW.matchId
-                ? "coach online"
-                : chat.matchId === THERAPIST_ID
-                ? "support online"
-                : "Recently active"} {/* Pulse spec: softer presence without exact time */}
-              {typing && chat.matchId !== AI_ADVISOR_ROW.matchId && chat.matchId !== THERAPIST_ID && " · typing…"}
-            </Typography>
-          )}
+          <Typography variant="caption" sx={{ color: "#6B7280" }}>
+            {chat.matchId === AI_ADVISOR_ROW.matchId
+              ? "coach online"
+              : chat.matchId === THERAPIST_ID
+              ? "support online"
+              : presenceLabel}
+            {typing && chat.matchId !== AI_ADVISOR_ROW.matchId && chat.matchId !== THERAPIST_ID && " · typing…"}
+          </Typography>
         </Box>
         {chat.matchId !== AI_ADVISOR_ROW.matchId && chat.matchId !== THERAPIST_ID && (
           <>
@@ -2120,45 +2008,6 @@ export default function ChatScreen() {
         )}
         <MenuItem onClick={() => setMenuEl(null)}>Clear chat</MenuItem>
         <MenuItem onClick={() => setMenuEl(null)}>Delete chat</MenuItem>
-        {/* Pulse spec: Mute/Block/Report options */}
-        {chat.matchId !== AI_ADVISOR_ROW.matchId && chat.matchId !== THERAPIST_ID && (
-          <>
-            <Divider />
-            <MenuItem 
-              onClick={() => {
-                setChats(prev => prev.map(c => 
-                  c.matchId === openChat ? { ...c, muted: !c.muted } : c
-                ));
-                setMenuEl(null);
-              }}
-            >
-              {chat.muted ? 'Unmute chat' : 'Mute chat'}
-            </MenuItem>
-            <MenuItem 
-              onClick={() => {
-                if (window.confirm('Are you sure you want to block this user?')) {
-                  setChats(prev => prev.map(c => 
-                    c.matchId === openChat ? { ...c, blocked: true } : c
-                  ));
-                  setOpenChat(null);
-                }
-                setMenuEl(null);
-              }}
-              sx={{ color: '#dc2626' }}
-            >
-              Block user
-            </MenuItem>
-            <MenuItem 
-              onClick={() => {
-                alert('Report submitted. Thank you for helping keep Pulse safe.');
-                setMenuEl(null);
-              }}
-              sx={{ color: '#dc2626' }}
-            >
-              Report user
-            </MenuItem>
-          </>
-        )}
       </Menu>
 
       {/* Crisis banner */}

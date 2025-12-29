@@ -73,112 +73,73 @@ const baseUsers = [
     name: "Maya",
     age: 27,
     gender: "female",
+    city: "Tel Aviv",
     distance: 0.6,
     profession: "Product Designer",
     tagline: "Coffee, cats, and cozy playlists ☕️🐱",
-    interests: ["Design", "Yoga", "Music"],
+    interests: ["Design", "Yoga", "Music", "Coffee"],
     matchDistance: 0.18,
     likesYou: true,
+    verified: true,
     base: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1",
     aboutMe: ["170 cm", "Sometimes drinks", "Likes pets"],
     lookingFor: ["A life partner", "Confidence", "Openness", "Optimism"],
+  },
+  {
+    id: 2,
+    name: "Noa",
+    age: 29,
+    gender: "female",
+    city: "Givatayim",
+    distance: 0.9,
+    profession: "Data Scientist",
+    tagline: "Trader Joe's snacks connoisseur",
+    interests: ["Hiking", "Books", "Cooking", "Wine"],
+    matchDistance: 0.22,
+    likesYou: false,
+    verified: true,
+    base: "https://images.unsplash.com/photo-1544005313-94ddf0286df2",
+    aboutMe: ["165 cm", "Rarely drinks", "Wants kids"],
+    lookingFor: ["Kindness", "Curiosity", "Humor"],
   },
   {
     id: 3,
     name: "Lior",
     age: 26,
     gender: "female",
+    city: "Tel Aviv",
     distance: 1.2,
     profession: "UX Researcher",
     tagline: "Designing with empathy",
-    interests: ["Photography", "Art", "Pilates"],
+    interests: ["Photography", "Art", "Pilates", "Music"],
     matchDistance: 0.28,
     likesYou: true,
+    verified: false,
     base: "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
     aboutMe: ["168 cm", "Doesn't smoke", "Likes pets"],
     lookingFor: ["Openness", "Humor", "Stability"],
   },
   {
     id: 4,
-    name: "Liza",
-    age: 28,
+    name: "Dana",
+    age: 30,
     gender: "female",
-    distance: 0.8,
-    profession: "Marketing Director",
-    tagline: "Living life one adventure at a time 🌍",
-    interests: ["Travel", "Photography", "Wine"],
-    matchDistance: 0.15,
-    likesYou: true,
-    photos: [
-      "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=1400&h=1700&q=80",
-      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=1600&h=1000&q=80",
-      "https://images.unsplash.com/photo-1496440737103-cd596325d314?auto=format&fit=crop&w=1400&h=1400&q=80",
-    ],
-    aboutMe: ["166 cm", "Loves wine", "Dog person"],
-    lookingFor: ["Adventure partner", "Humor", "Authenticity"],
-  },
-  {
-    id: 5,
-    name: "Gali",
-    age: 25,
-    gender: "female",
-    distance: 1.5,
-    profession: "Graphic Designer",
-    tagline: "Art, coffee, and good vibes ✨",
-    interests: ["Art", "Coffee", "Festivals"],
-    matchDistance: 0.20,
+    city: "Ramat Gan",
+    distance: 0.4,
+    profession: "Product Manager",
+    tagline: "Roadmaps, ramen, and running",
+    interests: ["Running", "Tech", "Travel", "Yoga"],
+    matchDistance: 0.12,
     likesYou: false,
-    photos: [
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1400&h=1700&q=80",
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1600&h=1000&q=80",
-      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=1400&h=1400&q=80",
-    ],
-    aboutMe: ["163 cm", "Creative soul", "Loves festivals"],
-    lookingFor: ["Creativity", "Openness", "Good vibes"],
-  },
-  {
-    id: 6,
-    name: "Shani",
-    age: 24,
-    gender: "female",
-    distance: 0.7,
-    profession: "Fashion Blogger",
-    tagline: "Living my best life, one outfit at a time 💫",
-    interests: ["Fashion", "Photography", "Brunch"],
-    matchDistance: 0.17,
-    likesYou: true,
-    photos: [
-      "/liza_1.jpg",
-      "/liza_2.jpg",
-      "/liza_3.jpg",
-    ],
-    aboutMe: ["168 cm", "Fashion lover", "Always smiling"],
-    lookingFor: ["Style", "Confidence", "Fun vibes"],
-  },
-  {
-    id: 7,
-    name: "Yael",
-    age: 26,
-    gender: "female",
-    distance: 1.1,
-    profession: "Interior Designer",
-    tagline: "Aesthetic vibes and good energy 🌟",
-    interests: ["Design", "Travel", "Fashion"],
-    matchDistance: 0.19,
-    likesYou: false,
-    photos: [
-      "/gali_1.jpg",
-      "/gali_2.jpg",
-      "/gali_3.jpg",
-    ],
-    aboutMe: ["170 cm", "Design enthusiast", "Loves sunglasses"],
-    lookingFor: ["Sophistication", "Ambition", "Good taste"],
+    verified: true,
+    base: "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c",
+    aboutMe: ["172 cm", "Sometimes drinks", "No kids"],
+    lookingFor: ["Ambition", "Loyalty", "Positivity"],
   },
 ];
 
 const demoUsers = baseUsers.map((u) => {
-  // If user already has photos array, use it; otherwise generate from base
-  const photos = u.photos || personPhotos(u.base);
+  const photos = personPhotos(u.base);
   return { ...u, photos, photoUrl: photos[0] };
 });
 
@@ -559,7 +520,7 @@ function PicksCoverflow({ users = [], brand }) {
 /* ---------------------------------------
    MAIN SCREEN (Home)
 --------------------------------------- */
-export default function Home() {
+export default function Home({ onOpenTutorial }) {
   const navigate = useNavigate();
 
   // data
@@ -575,6 +536,35 @@ export default function Home() {
   const [passedUsers, setPassedUsers] = useState([]); // left swipes
   const [photoIdx, setPhotoIdx] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
+  
+  // tutorial state
+  const [showTutorial, setShowTutorial] = useState(false);
+  
+  // Soft onboarding state
+  const [showOnboardingCard, setShowOnboardingCard] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(() => {
+    return localStorage.getItem('pulse_onboarding_dismissed') === 'true';
+  });
+
+  // Show onboarding card 5 seconds after mount (simulating 5 minutes for demo)
+  useEffect(() => {
+    if (onboardingDismissed) return;
+    
+    const hasSetAvailability = localStorage.getItem('pulse_availability_set') === 'true';
+    if (hasSetAvailability) return;
+    
+    const timer = setTimeout(() => {
+      setShowOnboardingCard(true);
+    }, 5000); // 5 seconds for demo (would be 5 minutes = 300000 in production)
+    
+    return () => clearTimeout(timer);
+  }, [onboardingDismissed]);
+
+  const handleDismissOnboarding = () => {
+    setShowOnboardingCard(false);
+    setOnboardingDismissed(true);
+    localStorage.setItem('pulse_onboarding_dismissed', 'true');
+  };
 
   // theme / brand
   const [{ brand, tagStyle, radius }, setAppSettings] =
@@ -622,38 +612,28 @@ export default function Home() {
     setImageLoaded(false);
   }, [deckIndex]);
 
-  /* ---------- SWIPE ALGORITHM (per spec) ---------- */
-  
-  // 1. Input: horizontal position of the card
-  const x = useMotionValue(0); // x = 0 → centered, x > 0 → right, x < 0 → left
+  /* ---------- swipe physics / visuals ---------- */
+  const x = useMotionValue(0);
   const controls = useAnimation();
   const RIGHT_FULL = 320;
   const LEFT_FULL = -320;
 
-  // 2. Like / Nope intensity (thresholds per spec)
-  const LIKE_TRIGGER = 120;  // pixels to the right
-  const NOPE_TRIGGER = -120; // pixels to the left
-  
-  // Normalized progress [0, 1] using clamp logic
+  // how far you're dragging → "like" / "nope" intensity
   const likeProgress = useTransform(x, (v) =>
-    Math.max(0, Math.min(1, v / LIKE_TRIGGER)) // clamp(x / 120, 0, 1)
+    Math.max(0, Math.min(1, v / 120))
   );
   const nopeProgress = useTransform(x, (v) =>
-    Math.max(0, Math.min(1, -v / -NOPE_TRIGGER)) // clamp(-x / 120, 0, 1)
+    Math.max(0, Math.min(1, -v / 120))
   );
 
-  // 3. Icon size and opacity (Heart / X)
-  // Heart (right swipe): scale 0.9 → 2.6, opacity 0 → 1
+  // badge opacity/scale
   const likeOpacity = likeProgress;
   const likeScale = useTransform(likeProgress, [0, 1], [0.9, 2.6]);
-  
-  // X (left swipe): scale 0.9 → 2.6, opacity 0 → 1
   const nopeOpacity = nopeProgress;
   const nopeScale = useTransform(nopeProgress, [0, 1], [0.9, 2.6]);
 
-  // 4. Card rotation (-12° to +12°)
-  const MAX_ROTATE = 12; // degrees
-  const rotate = useTransform(x, [LEFT_FULL, 0, RIGHT_FULL], [-MAX_ROTATE, 0, MAX_ROTATE]);
+  // card rotation
+  const rotate = useTransform(x, [LEFT_FULL, 0, RIGHT_FULL], [-12, 0, 12]);
 
   // side glows
   const rightGlow = useTransform(
@@ -708,21 +688,16 @@ export default function Home() {
     controls.set({ x: 0, y: 0, rotate: 0, opacity: 1 });
   };
 
-  // 5. Decision on release (per spec)
+  // handle letting go of the drag
   const onDragEnd = (_, info) => {
     const { offset, velocity } = info;
-    
-    // Thresholds per spec
-    const SWIPE_THRESHOLD = 140;  // pixels
-    const SPEED_THRESHOLD = 600;  // pixels/second
-    
-    const passRight = offset.x > SWIPE_THRESHOLD || velocity.x > SPEED_THRESHOLD;
-    const passLeft = offset.x < -SWIPE_THRESHOLD || velocity.x < -SPEED_THRESHOLD;
+    const passRight = offset.x > 140 || velocity.x > 600;
+    const passLeft = offset.x < -140 || velocity.x < -600;
 
-    if (passRight) return throwAndNext(+1, topUser); // LIKE: throw right
-    if (passLeft) return throwAndNext(-1, topUser);  // NOPE: throw left
+    if (passRight) return throwAndNext(+1, topUser); // like
+    if (passLeft) return throwAndNext(-1, topUser); // pass
 
-    // Not far/fast enough -> snap back to center
+    // not far enough -> snap back
     controls.start({
       x: 0,
       rotate: 0,
@@ -751,8 +726,39 @@ export default function Home() {
 
   return (
     <>
-      {/* avatar / self-profile button */}
-      <UserAvatarButton photoUrl={null} />
+      {/* Top bar with avatar and help */}
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          p: 1.5,
+          pt: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+        }}
+      >
+        {/* Help/Tutorial button */}
+        <IconButton
+          onClick={() => setShowTutorial(true)}
+          sx={{
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            color: '#6C5CE7',
+            '&:hover': {
+              backgroundColor: '#fff',
+            },
+          }}
+          size="small"
+        >
+          <HelpCircle size={18} />
+        </IconButton>
+        {/* avatar / self-profile button */}
+        <UserAvatarButton photoUrl={null} />
+      </Box>
 
       <Box
         sx={{
@@ -798,7 +804,7 @@ export default function Home() {
           />
           <QuickAction
             brand={brand}
-            onClick={() => navigate("/events?view=my")}
+            onClick={() => navigate("/my-events")}
             icon={<Calendar size={18} />}
             label="My Events"
           />
@@ -810,6 +816,103 @@ export default function Home() {
           />
         </Stack>
 
+        {/* Soft Onboarding Card */}
+        <AnimatePresence>
+          {showOnboardingCard && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Box
+                sx={{
+                  mb: 2,
+                  p: 2.5,
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, rgba(108,92,231,0.08) 0%, rgba(168,85,247,0.08) 100%)',
+                  border: '1px solid rgba(108,92,231,0.15)',
+                  position: 'relative',
+                }}
+              >
+                {/* Close button */}
+                <IconButton
+                  size="small"
+                  onClick={handleDismissOnboarding}
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    color: '#94a3b8',
+                    '&:hover': { color: '#64748b' },
+                  }}
+                >
+                  <CloseIcon size={16} />
+                </IconButton>
+                
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: '14px',
+                      background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <MapPin size={22} color="#fff" />
+                  </Box>
+                  <Box sx={{ flex: 1, pr: 3 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>
+                      Want better matches faster?
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#64748b', mb: 2, lineHeight: 1.5 }}>
+                      Tell Pulse where and when you're comfortable being around.
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => {
+                          handleDismissOnboarding();
+                          navigate('/settings/location-visibility');
+                        }}
+                        sx={{
+                          borderRadius: '10px',
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          px: 2,
+                          py: 0.75,
+                          background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                          boxShadow: '0 4px 12px rgba(108,92,231,0.3)',
+                        }}
+                      >
+                        Set my availability
+                      </Button>
+                      <Button
+                        variant="text"
+                        size="small"
+                        onClick={handleDismissOnboarding}
+                        sx={{
+                          borderRadius: '10px',
+                          textTransform: 'none',
+                          color: '#94a3b8',
+                          fontWeight: 500,
+                        }}
+                      >
+                        Maybe later
+                      </Button>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Card stack */}
         <Box
           sx={{
@@ -817,6 +920,8 @@ export default function Home() {
             width: "100%",
             maxWidth: 480,
             mx: "auto",
+            height: "calc(100vh - 320px)",
+            minHeight: 500,
           }}
         >
           {!topUser ? (
@@ -905,13 +1010,13 @@ export default function Home() {
                       rotate,
                       position: "relative",
                       zIndex: 2,
+                      height: "100%",
                     }}
                     drag="x"
                     dragElastic={0.18}
                     dragConstraints={{ left: 0, right: 0 }}
                     onDragEnd={onDragEnd}
                     initial={{ scale: 0.985, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
                     exit={{
                       opacity: 0,
                       y: 40,
@@ -924,8 +1029,11 @@ export default function Home() {
                         background: "#fff",
                         boxShadow:
                           "0 16px 40px rgba(0,0,0,0.10)",
-                        overflow: "visible",
+                        overflow: "hidden",
                         position: "relative",
+                        display: "flex",
+                        flexDirection: "column",
+                        height: "100%",
                       }}
                     >
                       {/* dynamic side glows */}
@@ -951,11 +1059,29 @@ export default function Home() {
                         sx={{
                           position: "relative",
                           width: "100%",
-                          aspectRatio: "4 / 5",
+                          height: 320,
+                          minHeight: 320,
+                          maxHeight: 320,
                           userSelect: "none",
                           bgcolor: "#eee",
+                          cursor: topUser?.photos?.length > 1 ? "pointer" : "default",
+                          flexShrink: 0,
                         }}
                         aria-label={`${topUser.name}, ${topUser.age}`}
+                        onClick={(e) => {
+                          if (!topUser?.photos?.length || topUser.photos.length <= 1) return;
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const tapX = e.clientX - rect.left;
+                          const width = rect.width;
+                          // Tap left third = previous, tap right two-thirds = next
+                          if (tapX < width * 0.33) {
+                            setImageLoaded(false);
+                            advancePhoto(-1);
+                          } else {
+                            setImageLoaded(false);
+                            advancePhoto(+1);
+                          }
+                        }}
                       >
                         {!imageLoaded && (
                           <Box
@@ -1161,8 +1287,8 @@ export default function Home() {
                           .like-ind,
                           .nope-ind {
                             position: absolute;
-                            width: 42px;
-                            height: 42px;
+                            width: 38px;
+                            height: 38px;
                             border-radius: 999px;
                             display: flex;
                             align-items: center;
@@ -1172,14 +1298,12 @@ export default function Home() {
                             box-shadow: 0 6px 16px rgba(0,0,0,0.15);
                           }
                           .like-ind {
-                            right: -6px;
-                            top: 50%;
-                            transform: translateY(-50%);
+                            right: 12px;
+                            top: 12px;
                           }
                           .nope-ind {
-                            left: -6px;
-                            top: 50%;
-                            transform: translateY(-50%);
+                            left: 12px;
+                            top: 12px;
                           }
                           .like-ind svg {
                             color: #22c55e;
@@ -1195,7 +1319,7 @@ export default function Home() {
                       </Box>
 
                       {/* details under the photo */}
-                      <Box sx={{ p: 1.5 }}>
+                      <Box sx={{ p: 2, flex: 1, overflowY: 'auto' }}>
                         <Typography
                           variant="h6"
                           sx={{
@@ -1402,40 +1526,15 @@ export default function Home() {
         </Box>
 
         {/* hint under card */}
-        <Box
+        <Typography
           sx={{
             mt: 1.5,
-            maxWidth: 520,
-            mx: "auto",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            px: 1,
+            textAlign: "center",
+            color: "#6B7280",
           }}
         >
-          <Typography
-            variant="body2"
-            sx={{
-              color: "#6B7280",
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
-            }}
-          >
-            ← Swipe left = Pass
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: "#6B7280",
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
-            }}
-          >
-            ❤️ Swipe right = Like
-          </Typography>
-        </Box>
+          ← Pass • → Like
+        </Typography>
 
         {/* Picks carousel */}
         <PicksCoverflow users={filtered} brand={brand} />
@@ -1454,6 +1553,73 @@ export default function Home() {
           }}
         />
       </Box>
+
+      {/* Tutorial Dialog */}
+      <Dialog
+        open={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            p: 1,
+            maxWidth: 360,
+            width: '100%',
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, pb: 1, textAlign: 'center' }}>
+          How to Use
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ textAlign: 'center' }}>
+            <Box sx={{ mb: 3 }}>
+              <Typography sx={{ fontSize: 32, mb: 1 }}>👆</Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                Swipe to Connect
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b' }}>
+                Swipe right to like, left to pass
+              </Typography>
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography sx={{ fontSize: 32, mb: 1 }}>💕</Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                Match & Chat
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b' }}>
+                When you both like each other, it's a match!
+              </Typography>
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography sx={{ fontSize: 32, mb: 1 }}>📷</Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                Tap for More Photos
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b' }}>
+                Tap left/right on the photo to see more
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => setShowTutorial(false)}
+            sx={{
+              py: 1.5,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            }}
+          >
+            Got it!
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

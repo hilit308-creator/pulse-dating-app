@@ -1,4 +1,8 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+// ExploreScreen.jsx — Pulse Explore Page
+// "לאן שווה לצאת עכשיו?"
+// Places worth stepping into - real-time discovery
+
+import React, { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -7,892 +11,866 @@ import {
   CardContent,
   CardActions,
   Button,
-  Avatar,
-  Stack,
+  IconButton,
   Chip,
-  Grid,
-  Fade,
-  Skeleton,
-  TextField,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  MenuItem,
   Snackbar,
   Alert,
   CardMedia,
-  Popper,
+  Skeleton,
 } from "@mui/material";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Coffee,
   MapPin,
+  Clock,
+  Bookmark,
+  BookmarkCheck,
+  QrCode,
   Gift,
-  Send,
-  PlusCircle,
-  Lightbulb,
-  BadgePercent,
-  MessageSquarePlus,
-  Wand2,
+  Sparkles,
+  Music,
+  Coffee,
+  Wine,
+  Users,
+  Zap,
+  Star,
+  ChevronRight,
+  X,
 } from "lucide-react";
-import UserAvatarButton from "../components/UserAvatarButton";
 
 /* =========================
    Constants
    ========================= */
-const QUOTES = [
-  "You are one good conversation away from something beautiful.",
-  "Look up from your phone and smile – love could be next to you.",
-  "Today is a great day to meet someone new.",
-  "Your next adventure could start with a hello.",
-  "Kindness is magnetic. Smile at someone nearby.",
-  "Be bold. Say hi to someone who catches your eye.",
-  "The best stories start with a spark of curiosity.",
-  "Every day is a new chance for connection.",
-  "Trust your vibe. The right people feel it.",
-  "A compliment is a great icebreaker.",
+const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
+
+// Filter categories
+const FILTER_CATEGORIES = [
+  { id: 'all', label: 'All', icon: Sparkles },
+  { id: 'bar', label: 'Bar', icon: Wine },
+  { id: 'cafe', label: 'Cafe', icon: Coffee },
+  { id: 'live-music', label: 'Live Music', icon: Music },
+  { id: 'chill', label: 'Chill', icon: Star },
+  { id: 'dance', label: 'Dance', icon: Zap },
+  { id: 'social', label: 'Social', icon: Users },
+  { id: 'near-me', label: 'Near me', icon: MapPin },
 ];
 
-const PARTNERS = [
+// Vibe icons mapping
+const VIBE_ICONS = {
+  chill: { icon: '🌙', label: 'Chill vibes' },
+  social: { icon: '👥', label: 'Social' },
+  dance: { icon: '💃', label: 'Dance' },
+  live: { icon: '🎵', label: 'Live music' },
+  romantic: { icon: '🕯️', label: 'Romantic' },
+  energetic: { icon: '⚡', label: 'Energetic' },
+};
+
+// Mock places data (10-20 places only)
+const MOCK_PLACES = [
   {
     id: 1,
-    name: "Cafe Aroma",
-    logo: "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=facearea&w=640&h=320&q=80",
-    type: "cafe",
-    offer: "1+1 on coffee",
-    distance: 0.5,
-    location: "123 Main St",
-    open: true,
+    name: "Kuli Alma",
+    image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80",
+    category: "bar",
+    vibes: ['social', 'dance', 'live'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "03:00",
+    hasActiveBenefit: true,
+    benefit: {
+      title: "Happy Hour Extended",
+      description: "1+1 on all cocktails until midnight",
+      expiresAt: "23:59",
+    },
+    isNew: false,
   },
   {
     id: 2,
-    name: "Bar Luna",
-    logo: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=facearea&w=640&h=320&q=80",
-    type: "bar",
-    offer: "Free drink for app users",
-    distance: 2.1,
-    location: "456 City Ave",
-    open: true,
-  },
-];
-
-// ⬇️ Cozy Corner עם תמונה חדשה מ-Unsplash (כמו שאר התמונות)
-const DATE_SPOTS = [
-  {
-    id: 1,
-    name: "Sunset Park",
-    image:
-      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
-    type: "outdoor",
-    distance: 1.2,
-    special: false,
-    maps: "https://goo.gl/maps/park",
+    name: "Cafe Nordoy",
+    image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80",
+    category: "cafe",
+    vibes: ['chill', 'romantic'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "01:00",
+    hasActiveBenefit: false,
+    benefit: null,
+    isNew: true,
   },
   {
-    id: 2,
-    name: "Cozy Corner Cafe",
-    image:
-      "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80",
-    type: "cafe",
-    distance: 0.7,
-    special: true,
-    maps: "https://goo.gl/maps/cafe",
+    id: 3,
+    name: "The Block",
+    image: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=800&q=80",
+    category: "bar",
+    vibes: ['dance', 'energetic', 'live'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "05:00",
+    hasActiveBenefit: true,
+    benefit: {
+      title: "Free Entry",
+      description: "Show your Pulse app for free entry before 23:00",
+      expiresAt: "23:00",
+    },
+    isNew: false,
+  },
+  {
+    id: 4,
+    name: "Cafelix",
+    image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80",
+    category: "cafe",
+    vibes: ['chill', 'social'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "00:00",
+    hasActiveBenefit: true,
+    benefit: {
+      title: "Drink on the house",
+      description: "Free espresso with any pastry",
+      expiresAt: "18:00",
+    },
+    isNew: false,
+  },
+  {
+    id: 5,
+    name: "Sputnik",
+    image: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=800&q=80",
+    category: "bar",
+    vibes: ['social', 'chill'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "02:00",
+    hasActiveBenefit: false,
+    benefit: null,
+    isNew: false,
+  },
+  {
+    id: 6,
+    name: "Pastel",
+    image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+    category: "live-music",
+    vibes: ['live', 'romantic', 'chill'],
+    location: "Tel Aviv",
+    openNow: false,
+    opensAt: "20:00",
+    closingTime: "02:00",
+    hasActiveBenefit: false,
+    benefit: null,
+    isNew: true,
+  },
+  {
+    id: 7,
+    name: "Beit Maariv",
+    image: "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?auto=format&fit=crop&w=800&q=80",
+    category: "bar",
+    vibes: ['dance', 'social', 'energetic'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "04:00",
+    hasActiveBenefit: true,
+    benefit: {
+      title: "1+1 Drinks",
+      description: "Buy one get one free on all beers",
+      expiresAt: "22:00",
+    },
+    isNew: false,
+  },
+  {
+    id: 8,
+    name: "Anna Loulou",
+    image: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=800&q=80",
+    category: "live-music",
+    vibes: ['live', 'social', 'chill'],
+    location: "Jaffa",
+    openNow: true,
+    closingTime: "03:00",
+    hasActiveBenefit: false,
+    benefit: null,
+    isNew: false,
+  },
+  {
+    id: 9,
+    name: "Teder.fm",
+    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80",
+    category: "bar",
+    vibes: ['social', 'chill', 'live'],
+    location: "Tel Aviv",
+    openNow: false,
+    opensAt: "19:00",
+    closingTime: "02:00",
+    hasActiveBenefit: true,
+    benefit: {
+      title: "Welcome Drink",
+      description: "Free welcome shot for Pulse users",
+      expiresAt: "21:00",
+    },
+    isNew: false,
+  },
+  {
+    id: 10,
+    name: "Spicehaus",
+    image: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?auto=format&fit=crop&w=800&q=80",
+    category: "cafe",
+    vibes: ['chill', 'romantic'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "23:00",
+    hasActiveBenefit: false,
+    benefit: null,
+    isNew: true,
   },
 ];
 
-const MATCHES_NEARBY = [];
-
-const DRINKS = [
-  { label: "Coffee ☕", value: "coffee" },
-  { label: "Wine 🍷", value: "wine" },
-  { label: "Beer 🍺", value: "beer" },
-];
-
 /* =========================
-   Utility
+   PlaceCard Component
    ========================= */
-const metersOrKm = (km) => (km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`);
-const PINK_MAIN = "#FF6F61";
-const PINK_LIGHT = "#FCA5A5";
+function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSaved }) {
+  const openStatus = place.openNow 
+    ? `Open now · until ${place.closingTime}`
+    : `Opens at ${place.opensAt}`;
+  
+  const isClosingSoon = place.openNow && 
+    parseInt(place.closingTime) <= 2 && 
+    parseInt(place.closingTime) >= 0;
 
-/* =========================
-   PartnerCard
-   ========================= */
-function PartnerCard({ p, onInvite }) {
   return (
-    <Card
-      sx={{
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: 4,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-        bgcolor: "#fff",
-      }}
-      aria-label={`${p.name} partner card`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
     >
-      <Box sx={{ position: "absolute", top: 12, left: 12, zIndex: 1 }}>
-        <Chip
-          icon={<BadgePercent size={14} />}
-          label="Offer"
-          size="small"
-          sx={{ fontWeight: 700, bgcolor: "#FFD166" }}
-        />
-      </Box>
-
-      <CardMedia
-        component="img"
-        image={p.logo}
-        alt={`${p.name} cover`}
-        sx={{ height: 160 }}
-        loading="lazy"
-      />
-
-      <CardContent sx={{ display: "flex", gap: 2, alignItems: "center", pt: 2 }}>
-        <Avatar src={p.logo} alt={p.name} sx={{ width: 48, height: 48 }} />
-        <Box sx={{ flex: 1 }}>
-          <Typography fontWeight={700} sx={{ color: "#1A1A1A" }}>
-            {p.name}
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "#7EC8E3" }}
-          >
-            <Coffee size={16} /> {p.offer}
-          </Typography>
-          <Typography variant="caption" sx={{ color: "#8C8C8C" }}>
-            {p.distance.toFixed(1)} km • {p.location}
-          </Typography>
-        </Box>
-      </CardContent>
-
-      <CardActions sx={{ px: 2, pb: 2, gap: 1 }}>
-        <Button
-          fullWidth
-          sx={{
-            borderRadius: 999,
-            textTransform: "none",
-            fontWeight: 700,
-            color: "#fff",
-            background: `linear-gradient(90deg, ${PINK_MAIN}, ${PINK_LIGHT})`,
-          }}
-        >
-          View Place
-        </Button>
-        <Button
-          onClick={() => onInvite?.({ id: p.id, name: p.name, type: p.type || "place", address: p.location, distance: p.distance, image: p.logo, maps: undefined })}
-          startIcon={<MessageSquarePlus aria-hidden />}
-          sx={{
-            whiteSpace: "nowrap",
-            borderRadius: 999,
-            textTransform: "none",
-            fontWeight: 700,
-            border: "1px solid #E5E7EB",
-            bgcolor: "#fff",
-            color: "#444",
-          }}
-        >
-          Invite
-        </Button>
-      </CardActions>
-    </Card>
-  );
-}
-
-/* =========================
-   DateSpotCard
-   ========================= */
-function DateSpotCard({ spot, onInvite }) {
-  return (
-    <Card
-      sx={{
-        minWidth: 260,
-        mr: 1,
-        borderRadius: 5,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-        overflow: "hidden",
-        bgcolor: "#fff",
-        scrollSnapAlign: "start",
-      }}
-      aria-label={`${spot.name} suggestion`}
-    >
-      <CardMedia
-        component="img"
-        image={spot.image}
-        alt={`${spot.name} photo`}
-        sx={{ height: 160 }}
-        loading="lazy"
-      />
-      <CardContent sx={{ pt: 1.25 }}>
-        <Typography sx={{ fontWeight: 800, color: "#1A1A1A" }}>{spot.name}</Typography>
-        <Typography variant="body2" sx={{ color: "#7EC8E3" }}>
-          {spot.type}
-        </Typography>
-        <Typography variant="caption" sx={{ color: "#8C8C8C" }}>
-          {metersOrKm(spot.distance)} away
-        </Typography>
-        {spot.special && (
-          <Chip
-            label="Special Offer"
-            size="small"
-            sx={{ mt: 1, borderRadius: 999, bgcolor: "#FFE8EF", color: PINK_MAIN, fontWeight: 700 }}
-          />
-        )}
-        <Button
-          variant="text"
-          size="small"
-          startIcon={<MapPin aria-hidden style={{ opacity: 0.6 }} />}
-          href={spot.maps}
-          target="_blank"
-          rel="noopener noreferrer"
-          sx={{ mt: 1, color: "rgba(0,0,0,0.7)", textTransform: "none", fontWeight: 600 }}
-        >
-          View on Map
-        </Button>
-        <Button
-          onClick={() => onInvite?.({ id: spot.id, name: spot.name, type: spot.type, distance: spot.distance, image: spot.image, maps: spot.maps })}
-          startIcon={<MessageSquarePlus aria-hidden />}
-          sx={{ mt: 1, borderRadius: 999, textTransform: "none", fontWeight: 700, border: "1px solid #E5E7EB" }}
-        >
-          Invite
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-/* =========================
-   SendDrinkDialog
-   ========================= */
-function SendDrinkDialog({
-  open,
-  onClose,
-  onSend,
-  matches,
-  drinks,
-  sending,
-  selectedMatch,
-  setSelectedMatch,
-  selectedDrink,
-  setSelectedDrink,
-  message,
-  setMessage,
-}) {
-  const genKnowns = (id) => {
-    try {
-      const mm = JSON.parse(localStorage.getItem("matches_demo") || "[]");
-      const ll = JSON.parse(localStorage.getItem("likes_demo") || "[]");
-      const hit = [...mm, ...ll].find((x) => x.id === id);
-      return hit || {};
-    } catch {
-      return {};
-    }
-  };
-
-  const [aiAnchor, setAiAnchor] = React.useState(null);
-  const [aiTone, setAiTone] = React.useState(() => localStorage.getItem(`ai_tone_${selectedMatch}`) || localStorage.getItem('ai_tone') || 'friendly');
-  const [aiLen, setAiLen] = React.useState('short');
-  const [aiOptions, setAiOptions] = React.useState([]);
-
-  React.useEffect(() => {
-    setAiTone(localStorage.getItem(`ai_tone_${selectedMatch}`) || localStorage.getItem('ai_tone') || 'friendly');
-  }, [selectedMatch]);
-
-  const computeOptions = (tone = aiTone, len = aiLen) => {
-    const p = genKnowns(selectedMatch);
-    const name = p?.name || 'there';
-    const drinkLabel = drinks.find((d) => d.value === selectedDrink)?.label?.toLowerCase() || 'a drink';
-    const path = window.location.pathname;
-    const base = {
-      friendly: [
-        `Hey ${name}, want to grab ${drinkLabel} this week?`,
-        `${name}, I know a nice spot nearby for ${drinkLabel}.`,
-        `Would you like to meet for ${drinkLabel}?`
-      ],
-      playful: [
-        `${name}, plot twist: ${drinkLabel} on me ☕`,
-        `Breaking news: we’re getting ${drinkLabel} and sharing stories 😄`,
-        `Quick poll: ${drinkLabel} today or tomorrow?`
-      ],
-      formal: [
-        `Hello ${name}, would you like to have ${drinkLabel} sometime this week?`,
-        `If you’re available, we could meet for ${drinkLabel}.`,
-        `I’d be glad to check out ${drinkLabel} with you.`
-      ]
-    }[tone] || [];
-    // Route awareness: nudge Explore context
-    if (path.includes('/explore')) base[0] = base[0].replace('this week', 'nearby');
-    const mapLen = {
-      short: (s) => s,
-      medium: (s) => `${s} I think we’d get along.`,
-      long: (s) => `${s} I enjoyed your profile and would love to spend time getting to know you.`,
-    };
-    return base.map(mapLen[len]);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !sending && selectedMatch && selectedDrink) onSend();
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} onKeyDown={handleKeyDown} aria-labelledby="send-drink-title">
-      <DialogTitle id="send-drink-title">Send a Drink</DialogTitle>
-      <DialogContent>
-        <TextField
-          select
-          fullWidth
-          label="Recipient"
-          value={selectedMatch}
-          onChange={(e) => setSelectedMatch(e.target.value)}
-          sx={{ my: 1.5 }}
-          autoFocus
-        >
-          {matches.map((m) => (
-            <MenuItem value={m.id} key={m.id}>
-              {m.name}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          select
-          fullWidth
-          label="Drink"
-          value={selectedDrink}
-          onChange={(e) => setSelectedDrink(e.target.value)}
-          sx={{ mb: 1.5 }}
-        >
-          {drinks.map((d) => (
-            <MenuItem value={d.value} key={d.value}>
-              {d.label}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          fullWidth
-          label="Message (optional)"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          multiline
-          rows={2}
-          sx={{ mb: 1 }}
-        />
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button size="small" startIcon={<Wand2 />} onClick={(e) => { setAiAnchor(e.currentTarget); setAiOptions(computeOptions()); }} sx={{ borderRadius: 999 }}>AI Suggest</Button>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={sending}>
-          Cancel
-        </Button>
-        <Button
-          onClick={onSend}
-          variant="contained"
-          disabled={sending || !selectedMatch || !selectedDrink}
-          startIcon={!sending ? <Send /> : null}
-          sx={{
-            borderRadius: 999,
-            textTransform: "none",
-            fontWeight: 700,
-            bgcolor: PINK_MAIN,
-            "&:hover": { bgcolor: "#ff5b4c" },
-          }}
-        >
-          {sending ? "Sending…" : "Send"}
-        </Button>
-      </DialogActions>
-
-      {/* AI popover */}
-      <Popper open={Boolean(aiAnchor)} anchorEl={aiAnchor} placement="top-start" modifiers={[{ name: 'offset', options: { offset: [0, 8] } }]}
-        sx={{ zIndex: 22 }}>
-        <Box sx={{ p: 1, bgcolor: '#fff', border: '1px solid #E5E7EB', borderRadius: 2, boxShadow: 3, minWidth: 280 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: .5 }}>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>AI Suggestions</Typography>
-            <Box>
-              <Chip size="small" label="friendly" onClick={() => { setAiTone('friendly'); localStorage.setItem(`ai_tone_${selectedMatch}`,'friendly'); localStorage.setItem('ai_tone','friendly'); setAiOptions(computeOptions('friendly', aiLen)); }} color={aiTone==='friendly'?'primary':'default'} sx={{ mr: .5 }}/>
-              <Chip size="small" label="playful" onClick={() => { setAiTone('playful'); localStorage.setItem(`ai_tone_${selectedMatch}`,'playful'); localStorage.setItem('ai_tone','playful'); setAiOptions(computeOptions('playful', aiLen)); }} color={aiTone==='playful'?'primary':'default'} sx={{ mr: .5 }}/>
-              <Chip size="small" label="formal" onClick={() => { setAiTone('formal'); localStorage.setItem(`ai_tone_${selectedMatch}`,'formal'); localStorage.setItem('ai_tone','formal'); setAiOptions(computeOptions('formal', aiLen)); }} color={aiTone==='formal'?'primary':'default'}/>
-            </Box>
-          </Box>
-          <Box sx={{ mb: .5 }}>
-            <Chip size="small" label="short" onClick={() => { setAiLen('short'); setAiOptions(computeOptions(aiTone,'short')); }} color={aiLen==='short'?'primary':'default'} sx={{ mr: .5 }}/>
-            <Chip size="small" label="medium" onClick={() => { setAiLen('medium'); setAiOptions(computeOptions(aiTone,'medium')); }} color={aiLen==='medium'?'primary':'default'} sx={{ mr: .5 }}/>
-            <Chip size="small" label="long" onClick={() => { setAiLen('long'); setAiOptions(computeOptions(aiTone,'long')); }} color={aiLen==='long'?'primary':'default'} />
-          </Box>
-          <Box sx={{ display: 'grid', gap: .5 }}>
-            {aiOptions.map((s, i) => (
-              <Box key={i} sx={{ p: 1, border: '1px solid #e5e7eb', borderRadius: 1 }}>
-                <Typography variant="body2" sx={{ mb: .5 }}>{s}</Typography>
-                <Button size="small" onClick={() => { setMessage(s); setAiAnchor(null); }} sx={{ borderRadius: 999 }}>Insert</Button>
-              </Box>
-            ))}
-          </Box>
-          <Box sx={{ textAlign: 'right', mt: .5 }}>
-            <Button size="small" onClick={() => setAiAnchor(null)}>Close</Button>
-          </Box>
-        </Box>
-      </Popper>
-    </Dialog>
-  );
-}
-
-/* =========================
-   InviteToPlaceDialog
-   ========================= */
-const PRESETS = [
-  "Want to check this place out together?",
-  "This looks perfect for us. Up for it?",
-  "Free tonight to meet here?",
-  "Coffee on me at this spot ☕",
-];
-
-function InviteToPlaceDialog({ open, onClose, candidates, onSend, place, selectedId, setSelectedId, note, setNote }) {
-  const knownsFor = (id) => {
-    try {
-      const mm = JSON.parse(localStorage.getItem("matches_demo") || "[]");
-      const ll = JSON.parse(localStorage.getItem("likes_demo") || "[]");
-      return [...mm, ...ll].find((x) => x.id === id) || {};
-    } catch { return {}; }
-  };
-
-  const [aiAnchor, setAiAnchor] = React.useState(null);
-  const [aiTone, setAiTone] = React.useState(() => localStorage.getItem(`ai_tone_${selectedId}`) || localStorage.getItem('ai_tone') || 'friendly');
-  const [aiLen, setAiLen] = React.useState('short');
-  const [aiOptions, setAiOptions] = React.useState([]);
-
-  React.useEffect(() => {
-    setAiTone(localStorage.getItem(`ai_tone_${selectedId}`) || localStorage.getItem('ai_tone') || 'friendly');
-  }, [selectedId]);
-
-  const computeOptions = (tone = aiTone, len = aiLen) => {
-    const p = knownsFor(selectedId);
-    const name = p?.name || 'there';
-    const kind = place?.type || 'place';
-    const path = window.location.pathname;
-    const base = {
-      friendly: [
-        `Hey ${name}, this ${kind} looks great — want to check it out together?`,
-        `${name}, free to meet at ${place?.name}?`,
-        `How about ${place?.name} this week?`
-      ],
-      playful: [
-        `${name}, calling it now: ${place?.name} is our new spot 😄`,
-        `Adventure idea: we explore ${place?.name} together?`,
-        `Vote: ${place?.name} today or tomorrow?`
-      ],
-      formal: [
-        `Hello ${name}, would you like to visit ${place?.name} together?`,
-        `If you’re available, we could meet at ${place?.name}.`,
-        `I’d be glad to check out ${place?.name} with you.`
-      ]
-    }[tone] || [];
-    if (path.includes('/events')) base[0] = base[0].replace('looks great', 'seems perfect before the event');
-    const mapLen = {
-      short: (s) => s,
-      medium: (s) => `${s} I think you’ll like it.`,
-      long: (s) => `${s} It fits our vibe, and I’d love to spend time getting to know you.`,
-    };
-    return base.map(mapLen[len]);
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} aria-labelledby="invite-dialog-title">
-      <DialogTitle id="invite-dialog-title">Invite to {place?.name}</DialogTitle>
-      <DialogContent>
-        <Typography variant="body2" sx={{ mb: 1, color: '#666' }}>
-          Pick a match and add a short message.
-        </Typography>
-        <TextField
-          select
-          fullWidth
-          label="Person"
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-          sx={{ my: 1.5 }}
-          autoFocus
-        >
-          {candidates.map((m) => (
-            <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>
-          ))}
-        </TextField>
-        <TextField
-          fullWidth
-          label="Message (optional)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          multiline
-          rows={2}
-          sx={{ mb: 1 }}
-        />
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-          {PRESETS.map((p, i) => (
-            <Button key={i} size="small" variant="outlined" onClick={() => setNote(p)} sx={{ borderRadius: 999 }}>
-              {p}
-            </Button>
-          ))}
-          <Button size="small" startIcon={<Wand2 />} onClick={(e) => { setAiAnchor(e.currentTarget); setAiOptions(computeOptions()); }} sx={{ borderRadius: 999 }}>AI Suggest</Button>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={onSend} disabled={!selectedId} startIcon={<Send />}
-          sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 700, bgcolor: PINK_MAIN, '&:hover': { bgcolor: '#ff5b4c' } }}
-        >
-          Send Invite
-        </Button>
-      </DialogActions>
-
-      {/* AI popover */}
-      <Popper open={Boolean(aiAnchor)} anchorEl={aiAnchor} placement="top-start" modifiers={[{ name: 'offset', options: { offset: [0, 8] } }]} sx={{ zIndex: 22 }}>
-        <Box sx={{ p: 1, bgcolor: '#fff', border: '1px solid #E5E7EB', borderRadius: 2, boxShadow: 3, minWidth: 280 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: .5 }}>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>AI Suggestions</Typography>
-            <Box>
-              <Chip size="small" label="friendly" onClick={() => { setAiTone('friendly'); localStorage.setItem(`ai_tone_${selectedId}`,'friendly'); localStorage.setItem('ai_tone','friendly'); setAiOptions(computeOptions('friendly', aiLen)); }} color={aiTone==='friendly'?'primary':'default'} sx={{ mr: .5 }}/>
-              <Chip size="small" label="playful" onClick={() => { setAiTone('playful'); localStorage.setItem(`ai_tone_${selectedId}`,'playful'); localStorage.setItem('ai_tone','playful'); setAiOptions(computeOptions('playful', aiLen)); }} color={aiTone==='playful'?'primary':'default'} sx={{ mr: .5 }}/>
-              <Chip size="small" label="formal" onClick={() => { setAiTone('formal'); localStorage.setItem(`ai_tone_${selectedId}`,'formal'); localStorage.setItem('ai_tone','formal'); setAiOptions(computeOptions('formal', aiLen)); }} color={aiTone==='formal'?'primary':'default'}/>
-            </Box>
-          </Box>
-          <Box sx={{ mb: .5 }}>
-            <Chip size="small" label="short" onClick={() => { setAiLen('short'); setAiOptions(computeOptions(aiTone,'short')); }} color={aiLen==='short'?'primary':'default'} sx={{ mr: .5 }}/>
-            <Chip size="small" label="medium" onClick={() => { setAiLen('medium'); setAiOptions(computeOptions(aiTone,'medium')); }} color={aiLen==='medium'?'primary':'default'} sx={{ mr: .5 }}/>
-            <Chip size="small" label="long" onClick={() => { setAiLen('long'); setAiOptions(computeOptions(aiTone,'long')); }} color={aiLen==='long'?'primary':'default'} />
-          </Box>
-          <Box sx={{ display: 'grid', gap: .5 }}>
-            {aiOptions.map((s, i) => (
-              <Box key={i} sx={{ p: 1, border: '1px solid #e5e7eb', borderRadius: 1 }}>
-                <Typography variant="body2" sx={{ mb: .5 }}>{s}</Typography>
-                <Button size="small" onClick={() => { setNote(s); setAiAnchor(null); }} sx={{ borderRadius: 999 }}>Insert</Button>
-              </Box>
-            ))}
-          </Box>
-          <Box sx={{ textAlign: 'right', mt: .5 }}>
-            <Button size="small" onClick={() => setAiAnchor(null)}>Close</Button>
-          </Box>
-        </Box>
-      </Popper>
-    </Dialog>
-  );
-}
-
-/* =========================
-   Main Screen
-   ========================= */
-export default function ExploreScreen() {
-  const navigate = useNavigate();
-  const [quote, setQuote] = useState("");
-  // Invite state
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [invitePlace, setInvitePlace] = useState(null);
-  const [inviteToId, setInviteToId] = useState("");
-  const [inviteNote, setInviteNote] = useState("");
-  const [showSendDrink, setShowSendDrink] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState(MATCHES_NEARBY[0]?.id || "");
-  const [selectedDrink, setSelectedDrink] = useState(DRINKS[0].value);
-  const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
-  const [partnersNearby, setPartnersNearby] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState({ open: false, text: "", severity: "success" });
-  const [candidates, setCandidates] = useState(MATCHES_NEARBY);
-  const [nearbyMatches, setNearbyMatches] = useState([]); // computed from geolocation + candidates
-
-  useEffect(() => {
-    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-  }, []);
-
-  useEffect(() => {
-    const id = setTimeout(() => {
-      const filtered = PARTNERS.filter((p) => p.distance <= 3 && p.open);
-      setPartnersNearby(filtered);
-      setLoading(false);
-    }, 700);
-    return () => clearTimeout(id);
-  }, []);
-
-  // Load invite candidates from localStorage (matches_demo + likes_demo) with fallback
-  useEffect(() => {
-    try {
-      const mm = JSON.parse(localStorage.getItem("matches_demo") || "[]");
-      const ll = JSON.parse(localStorage.getItem("likes_demo") || "[]");
-      const all = [...mm, ...ll];
-      if (all.length) {
-        const mapped = all.map((x) => ({ id: x.id, name: x.name, photoUrl: x.photoUrl }));
-        setCandidates(mapped);
-        setInviteToId(mapped[0]?.id || "");
-      }
-    } catch {}
-  }, []);
-
-  // Compute location-based suggestions (simulated distances)
-  useEffect(() => {
-    let watchId = null;
-    const compute = (pos) => {
-      // Simulate distance by shuffling candidates to varying nearby meters when we have a position
-      const base = candidates.length ? candidates : MATCHES_NEARBY;
-      const list = base.slice(0, 5).map((m, i) => ({
-        ...m,
-        // 80–1500 meters randomized, stable-ish per id
-        distanceKm: (((m.id * 9301 + i * 97) % 1400) + 100) / 1000, // 0.1–1.5 km
-      }));
-      setNearbyMatches(list.sort((a, b) => a.distanceKm - b.distanceKm));
-    };
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => compute(pos),
-        () => compute(null),
-        { enableHighAccuracy: true, maximumAge: 15000, timeout: 8000 }
-      );
-    } else {
-      compute(null);
-    }
-    return () => {
-      if (watchId != null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
-    };
-  }, [candidates]);
-
-  const bannerGradient = useMemo(
-    () => `linear-gradient(90deg, ${PINK_MAIN}, ${PINK_LIGHT})`,
-    []
-  );
-
-  const handleSendDrink = useCallback(() => {
-    setSending(true);
-    const id = setTimeout(() => {
-      setSending(false);
-      setShowSendDrink(false);
-      setMessage("");
-      setToast({ open: true, text: "Drink sent! (Simulated)", severity: "success" });
-    }, 1200);
-    return () => clearTimeout(id);
-  }, []);
-
-  const openInvite = useCallback((place) => {
-    setInvitePlace(place);
-    setInviteOpen(true);
-  }, []);
-
-  const sendInvite = useCallback(() => {
-    if (!invitePlace || !inviteToId) return;
-    // Dispatch a global event that ChatScreen listens to
-    window.dispatchEvent(
-      new CustomEvent("invite:place", {
-        detail: {
-          toId: inviteToId,
-          place: invitePlace,
-          message: inviteNote,
-        },
-      })
-    );
-    setInviteOpen(false);
-    setInviteNote("");
-    setToast({ open: true, text: "Invitation sent!", severity: "success" });
-  }, [invitePlace, inviteToId, inviteNote]);
-
-  const openChat = useCallback((id) => {
-    // Let ChatScreen know which chat to open
-    window.dispatchEvent(new CustomEvent("chat:open", { detail: { toId: id } }));
-    navigate("/chat");
-  }, [navigate]);
-
-  return (
-    <>
-      <UserAvatarButton photoUrl={null} />
-      <Box sx={{ minHeight: "100vh", background: "#FAFAFA", pb: 10 }}>
-        {/* Title */}
-        <Box sx={{ pt: 4, pb: 2, textAlign: "center" }}>
-          <Typography sx={{ color: "#1A1A1A", fontWeight: 800, fontSize: 24 }}>
-            Explore & Connect
-          </Typography>
-        </Box>
-
-        {/* Daily Boost */}
-        <Fade in timeout={900}>
-          <Card
-            sx={{
-              mx: 2,
-              mb: 2,
-              p: 0,
-              overflow: "hidden",
-              borderRadius: 4,
-              boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
-              background: bannerGradient,
-            }}
-            aria-label="Daily inspiration"
-          >
-            <CardContent sx={{ color: "#fff" }}>
-              <Typography sx={{ fontWeight: 700, fontSize: 18, mb: 1 }}> {quote}</Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  background: "rgba(255,255,255,0.9)",
-                  color: "#111",
-                  borderRadius: 999,
-                  px: 1.25,
-                  py: 0.75,
-                  width: "fit-content",
-                }}
-                aria-live="polite"
-              >
-                <Lightbulb size={16} color={PINK_MAIN} aria-hidden />
-                <Typography sx={{ fontSize: 13 }}>Start with a smile today.</Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Fade>
-
-        {/* Partner Offers */}
-        <Box sx={{ px: 2, mb: 3 }}>
-          <Typography variant="h6" sx={{ color: PINK_MAIN, mb: 1 }}>
-            Nearby Offers
-          </Typography>
-
-          {loading ? (
-            <Grid container spacing={2}>
-              {[1, 2, 3, 4].map((i) => (
-                <Grid item xs={12} sm={6} md={4} key={i}>
-                  <Skeleton variant="rectangular" height={260} sx={{ borderRadius: 3 }} />
-                </Grid>
-              ))}
-            </Grid>
-          ) : partnersNearby.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 4 }}>
-              <Typography>No partner cafés found nearby yet. We’re working on it!</Typography>
-              <Button
-                variant="outlined"
-                startIcon={<PlusCircle aria-hidden />}
-                sx={{ mt: 2, borderRadius: 999, textTransform: "none", fontWeight: 700 }}
-                aria-label="Suggest a place"
-              >
-                Suggest a Place
-              </Button>
-            </Box>
-          ) : (
-            <Grid container spacing={2}>
-              {partnersNearby.map((p) => (
-                <Grid item xs={12} sm={6} md={4} key={p.id}>
-                  <PartnerCard p={p} onInvite={openInvite} />
-                </Grid>
-              ))}
-            </Grid>
+      <Card
+        sx={{
+          borderRadius: '20px',
+          overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+          mb: 2,
+          position: 'relative',
+        }}
+      >
+        {/* Badges */}
+        <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 2, display: 'flex', gap: 1 }}>
+          {place.hasActiveBenefit && (
+            <Chip
+              icon={<Gift size={14} />}
+              label="Perk"
+              size="small"
+              sx={{
+                bgcolor: 'rgba(16,185,129,0.9)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '0.7rem',
+              }}
+            />
+          )}
+          {place.isNew && (
+            <Chip
+              label="New"
+              size="small"
+              sx={{
+                bgcolor: 'rgba(108,92,231,0.9)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '0.7rem',
+              }}
+            />
           )}
         </Box>
 
-        {/* Send a Drink */}
-        {nearbyMatches.length > 0 && (
-          <Card
-            sx={{
-              mx: 2,
-              mb: 3,
-              borderRadius: 4,
-              boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-              background: "rgba(255,255,255,0.9)",
-              backdropFilter: "blur(4px)",
-            }}
-            aria-label="Send a gesture"
-          >
-            <CardContent>
-              {nearbyMatches.slice(0, 3).map((m) => (
-                <Box key={m.id} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, py: 1 }}>
-                  <Typography sx={{ color: "#1A1A1A", fontSize: 14 }}>
-                    <b>{m.name}</b> is {metersOrKm(m.distanceKm)} away — send a sweet gesture?
-                  </Typography>
-                  <Stack direction="row" spacing={1}>
-                    <Button
-                      onClick={() => {
-                        setSelectedMatch(m.id);
-                        setShowSendDrink(true);
-                      }}
-                      startIcon={<Coffee aria-hidden />}
-                      sx={{ borderRadius: 999, px: 2, textTransform: "none", fontWeight: 700, color: "#fff", background: `linear-gradient(90deg, ${PINK_MAIN}, ${PINK_LIGHT})` }}
-                    >
-                      Send Coffee
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setSelectedMatch(m.id);
-                        setShowSendDrink(true);
-                      }}
-                      startIcon={<Gift aria-hidden />}
-                      sx={{ borderRadius: 999, px: 2, textTransform: "none", fontWeight: 700, border: "1px solid #E5E7EB", bgcolor: "#fff", color: "#666" }}
-                    >
-                      Send a Note
-                    </Button>
-                    <Button variant="text" onClick={() => openChat(m.id)} sx={{ textTransform: "none", fontWeight: 700 }}>
-                      Say hi
-                    </Button>
-                  </Stack>
-                </Box>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        {/* Save Button */}
+        <IconButton
+          onClick={() => onSave(place.id)}
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            zIndex: 2,
+            bgcolor: 'rgba(255,255,255,0.9)',
+            '&:hover': { bgcolor: '#fff' },
+          }}
+        >
+          {isSaved ? (
+            <BookmarkCheck size={20} color="#6C5CE7" />
+          ) : (
+            <Bookmark size={20} color="#64748b" />
+          )}
+        </IconButton>
 
-        {/* Date Spots */}
-        <Box sx={{ px: 2, mt: 4 }}>
-          <Typography variant="h6" sx={{ color: PINK_MAIN, mb: 1 }}>
-            Suggested Spots for Dates
-          </Typography>
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ overflowX: "auto", pb: 2, scrollSnapType: "x mandatory", px: 0.5 }}
-            aria-label="Date spots carousel"
-          >
-            {DATE_SPOTS.map((spot) => (
-              <DateSpotCard key={spot.id} spot={spot} onInvite={openInvite} />
+        {/* Image */}
+        <CardMedia
+          component="img"
+          height="180"
+          image={place.image}
+          alt={place.name}
+          sx={{ objectFit: 'cover' }}
+        />
+
+        {/* Content */}
+        <CardContent sx={{ pb: 1 }}>
+          {/* Name & Category */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e', lineHeight: 1.2 }}>
+                {place.name}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b', textTransform: 'capitalize' }}>
+                {place.category.replace('-', ' ')}
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Vibe Icons */}
+          <Box sx={{ display: 'flex', gap: 0.75, mb: 1.5, flexWrap: 'wrap' }}>
+            {place.vibes.map((vibe) => (
+              <Box
+                key={vibe}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  bgcolor: 'rgba(108,92,231,0.08)',
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: '8px',
+                }}
+              >
+                <Typography sx={{ fontSize: '0.85rem' }}>
+                  {VIBE_ICONS[vibe]?.icon}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#6C5CE7', fontWeight: 600 }}>
+                  {VIBE_ICONS[vibe]?.label}
+                </Typography>
+              </Box>
             ))}
-          </Stack>
+          </Box>
+
+          {/* Location & Hours */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <MapPin size={14} color="#64748b" />
+              <Typography variant="body2" sx={{ color: '#64748b' }}>
+                {place.location}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Clock size={14} color={isClosingSoon ? '#ef4444' : '#22c55e'} />
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: isClosingSoon ? '#ef4444' : '#22c55e',
+                  fontWeight: 600,
+                }}
+              >
+                {isClosingSoon ? 'Closing soon' : openStatus}
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Benefit Preview */}
+          {place.hasActiveBenefit && place.benefit && (
+            <Box
+              sx={{
+                mt: 1.5,
+                p: 1.5,
+                bgcolor: 'rgba(16,185,129,0.08)',
+                borderRadius: '12px',
+                border: '1px solid rgba(16,185,129,0.2)',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <Gift size={16} color="#10b981" />
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#10b981' }}>
+                  {place.benefit.title}
+                </Typography>
+              </Box>
+              <Typography variant="caption" sx={{ color: '#64748b' }}>
+                {place.benefit.description}
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
+
+        {/* CTAs */}
+        <CardActions sx={{ px: 2, pb: 2, pt: 0.5, gap: 1 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => onViewPlace(place)}
+            sx={{
+              py: 1.25,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            }}
+          >
+            View place
+          </Button>
+          {place.hasActiveBenefit && (
+            <Button
+              variant="outlined"
+              onClick={() => onSeeBenefits(place)}
+              startIcon={<Gift size={16} />}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: '#10b981',
+                color: '#10b981',
+                '&:hover': {
+                  borderColor: '#059669',
+                  bgcolor: 'rgba(16,185,129,0.08)',
+                },
+              }}
+            >
+              Perks
+            </Button>
+          )}
+          <IconButton
+            onClick={() => onScanQR(place)}
+            sx={{
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              p: 1.25,
+            }}
+          >
+            <QrCode size={20} color="#64748b" />
+          </IconButton>
+        </CardActions>
+      </Card>
+    </motion.div>
+  );
+}
+
+/* =========================
+   QR Scan Dialog
+   ========================= */
+function QRScanDialog({ open, onClose, place }) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: {
+          borderRadius: '24px',
+          maxWidth: 360,
+          width: '100%',
+          p: 1,
+        },
+      }}
+    >
+      <DialogTitle sx={{ textAlign: 'center', fontWeight: 700, pb: 1 }}>
+        Scan QR at {place?.name}
+      </DialogTitle>
+      <DialogContent>
+        <Box sx={{ textAlign: 'center', py: 3 }}>
+          <Box
+            sx={{
+              width: 200,
+              height: 200,
+              mx: 'auto',
+              bgcolor: '#f1f5f9',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px dashed #cbd5e1',
+              mb: 3,
+            }}
+          >
+            <QrCode size={80} color="#94a3b8" />
+          </Box>
+          <Typography variant="body1" sx={{ color: '#1a1a2e', fontWeight: 600, mb: 1 }}>
+            Point your camera at the QR code
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b' }}>
+            Look for the Pulse QR code displayed at the venue to unlock benefits
+          </Typography>
         </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'center' }}>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={onClose}
+          sx={{
+            py: 1.5,
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+          }}
+        >
+          Open Camera
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+/* =========================
+   Benefits Dialog
+   ========================= */
+function BenefitsDialog({ open, onClose, place }) {
+  if (!place?.benefit) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: {
+          borderRadius: '24px',
+          maxWidth: 400,
+          width: '100%',
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          p: 3,
+          textAlign: 'center',
+          color: '#fff',
+        }}
+      >
+        <Gift size={48} style={{ marginBottom: 8 }} />
+        <Typography variant="h5" sx={{ fontWeight: 800 }}>
+          Pulse Perk
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+          {place?.name}
+        </Typography>
       </Box>
 
-      {/* Invite to place dialog */}
-      <InviteToPlaceDialog
-        open={inviteOpen}
-        onClose={() => setInviteOpen(false)}
-        candidates={candidates}
-        onSend={sendInvite}
-        place={invitePlace}
-        selectedId={inviteToId}
-        setSelectedId={setInviteToId}
-        note={inviteNote}
-        setNote={setInviteNote}
+      <DialogContent sx={{ p: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1 }}>
+          {place?.benefit?.title}
+        </Typography>
+        <Typography variant="body1" sx={{ color: '#64748b', mb: 3 }}>
+          {place?.benefit?.description}
+        </Typography>
+
+        {/* Terms */}
+        <Box
+          sx={{
+            p: 2,
+            bgcolor: '#f8fafc',
+            borderRadius: '12px',
+            mb: 2,
+          }}
+        >
+          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+            Terms:
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+            • Valid only when physically present at the venue
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b' }}>
+            • Must scan QR code to redeem
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b' }}>
+            • Expires at {place?.benefit?.expiresAt}
+          </Typography>
+        </Box>
+
+        {/* Expiry */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#f59e0b' }}>
+          <Clock size={16} />
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            Valid until {place?.benefit?.expiresAt} today
+          </Typography>
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+        <Button
+          variant="outlined"
+          onClick={onClose}
+          sx={{
+            py: 1.25,
+            px: 3,
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontWeight: 600,
+          }}
+        >
+          Close
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<QrCode size={18} />}
+          sx={{
+            py: 1.25,
+            px: 3,
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontWeight: 700,
+            bgcolor: '#10b981',
+            '&:hover': { bgcolor: '#059669' },
+          }}
+        >
+          Scan to Redeem
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+
+/* =========================
+   Main ExploreScreen
+   ========================= */
+export default function ExploreScreen() {
+  const navigate = useNavigate();
+  
+  // State
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [savedPlaces, setSavedPlaces] = useState([]);
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [showBenefitsDialog, setShowBenefitsDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+
+  // Simulate loading
+  React.useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Filter places based on active filter
+  const filteredPlaces = useMemo(() => {
+    if (activeFilter === 'all') return MOCK_PLACES;
+    if (activeFilter === 'near-me') {
+      // Would use geolocation in real app
+      return MOCK_PLACES.slice(0, 5);
+    }
+    return MOCK_PLACES.filter(place => place.category === activeFilter);
+  }, [activeFilter]);
+
+  // Sort: Open now first, then with benefits, then new, then others
+  const sortedPlaces = useMemo(() => {
+    return [...filteredPlaces].sort((a, b) => {
+      // Open now first
+      if (a.openNow && !b.openNow) return -1;
+      if (!a.openNow && b.openNow) return 1;
+      // Then with benefits
+      if (a.hasActiveBenefit && !b.hasActiveBenefit) return -1;
+      if (!a.hasActiveBenefit && b.hasActiveBenefit) return 1;
+      // Then new
+      if (a.isNew && !b.isNew) return -1;
+      if (!a.isNew && b.isNew) return 1;
+      return 0;
+    });
+  }, [filteredPlaces]);
+
+  // Handlers
+  const handleViewPlace = useCallback((place) => {
+    setSelectedPlace(place);
+    // Navigate to place detail page
+    navigate(`/explore/place/${place.id}`, { state: { place } });
+  }, [navigate]);
+
+  const handleSave = useCallback((placeId) => {
+    setSavedPlaces(prev => {
+      if (prev.includes(placeId)) {
+        setToast({ open: true, message: 'Removed from saved', severity: 'info' });
+        return prev.filter(id => id !== placeId);
+      } else {
+        setToast({ open: true, message: 'Saved!', severity: 'success' });
+        return [...prev, placeId];
+      }
+    });
+  }, []);
+
+  const handleScanQR = useCallback((place) => {
+    setSelectedPlace(place);
+    setShowQRDialog(true);
+  }, []);
+
+  const handleSeeBenefits = useCallback((place) => {
+    setSelectedPlace(place);
+    setShowBenefitsDialog(true);
+  }, []);
+
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <Box sx={{ minHeight: '100vh', bgcolor: '#fafbfc', pb: SAFE_BOTTOM }}>
+        <Box sx={{ p: 3 }}>
+          <Skeleton variant="text" width={120} height={40} sx={{ mb: 1 }} />
+          <Skeleton variant="text" width={200} height={24} sx={{ mb: 3 }} />
+          <Box sx={{ display: 'flex', gap: 1, mb: 3, overflowX: 'auto' }}>
+            {[1,2,3,4,5].map(i => (
+              <Skeleton key={i} variant="rounded" width={80} height={36} sx={{ borderRadius: '18px', flexShrink: 0 }} />
+            ))}
+          </Box>
+          {[1,2,3].map(i => (
+            <Skeleton key={i} variant="rounded" height={320} sx={{ borderRadius: '20px', mb: 2 }} />
+          ))}
+        </Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: '#fafbfc',
+        pb: SAFE_BOTTOM,
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          px: 3,
+          pt: 3,
+          pb: 2,
+          backgroundColor: '#fff',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}
+      >
+        <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 0.5 }}>
+          Explore
+        </Typography>
+        <Typography variant="body1" sx={{ color: '#64748b' }}>
+          Places worth stepping into
+        </Typography>
+      </Box>
+
+      {/* Filter Chips - Sticky */}
+      <Box
+        sx={{
+          px: 3,
+          py: 1.5,
+          backgroundColor: '#fff',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          position: 'sticky',
+          top: 76,
+          zIndex: 9,
+          overflowX: 'auto',
+          display: 'flex',
+          gap: 1,
+          '&::-webkit-scrollbar': { display: 'none' },
+          scrollbarWidth: 'none',
+        }}
+      >
+        {FILTER_CATEGORIES.map((cat) => {
+          const Icon = cat.icon;
+          const isActive = activeFilter === cat.id;
+          return (
+            <Chip
+              key={cat.id}
+              icon={<Icon size={16} />}
+              label={cat.label}
+              onClick={() => setActiveFilter(cat.id)}
+              sx={{
+                flexShrink: 0,
+                fontWeight: 600,
+                borderRadius: '18px',
+                bgcolor: isActive ? '#6C5CE7' : '#f1f5f9',
+                color: isActive ? '#fff' : '#64748b',
+                '& .MuiChip-icon': {
+                  color: isActive ? '#fff' : '#64748b',
+                },
+                '&:hover': {
+                  bgcolor: isActive ? '#5b4cdb' : '#e2e8f0',
+                },
+              }}
+            />
+          );
+        })}
+      </Box>
+
+      {/* Places Feed */}
+      <Box sx={{ flex: 1, px: 3, py: 2 }}>
+        {/* Results count */}
+        <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
+          {sortedPlaces.length} places {activeFilter !== 'all' && `in ${activeFilter.replace('-', ' ')}`}
+        </Typography>
+
+        {/* Place Cards - No infinite scroll */}
+        <AnimatePresence mode="popLayout">
+          {sortedPlaces.map((place) => (
+            <PlaceCard
+              key={place.id}
+              place={place}
+              onViewPlace={handleViewPlace}
+              onSave={handleSave}
+              onScanQR={handleScanQR}
+              onSeeBenefits={handleSeeBenefits}
+              isSaved={savedPlaces.includes(place.id)}
+            />
+          ))}
+        </AnimatePresence>
+
+        {/* Empty State */}
+        {sortedPlaces.length === 0 && (
+          <Box sx={{ textAlign: 'center', py: 6 }}>
+            <Typography sx={{ fontSize: 48, mb: 2 }}>🔍</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1 }}>
+              No places found
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b' }}>
+              Try a different filter
+            </Typography>
+          </Box>
+        )}
+
+        {/* End of list message */}
+        {sortedPlaces.length > 0 && (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+              That's all for now ✨
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#cbd5e1' }}>
+              Check back later for more places
+            </Typography>
+          </Box>
+        )}
+      </Box>
+
+      {/* QR Scan Dialog */}
+      <QRScanDialog
+        open={showQRDialog}
+        onClose={() => setShowQRDialog(false)}
+        place={selectedPlace}
       />
 
-      {/* Dialog */}
-      <SendDrinkDialog
-        open={showSendDrink}
-        onClose={() => setShowSendDrink(false)}
-        onSend={handleSendDrink}
-        matches={candidates.length ? candidates : MATCHES_NEARBY}
-        drinks={DRINKS}
-        sending={sending}
-        selectedMatch={selectedMatch}
-        setSelectedMatch={setSelectedMatch}
-        selectedDrink={selectedDrink}
-        setSelectedDrink={setSelectedDrink}
-        message={message}
-        setMessage={setMessage}
+      {/* Benefits Dialog */}
+      <BenefitsDialog
+        open={showBenefitsDialog}
+        onClose={() => setShowBenefitsDialog(false)}
+        place={selectedPlace}
       />
 
-      {/* Snackbar */}
+      {/* Toast */}
       <Snackbar
         open={toast.open}
-        autoHideDuration={3000}
-        onClose={() => setToast((t) => ({ ...t, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        autoHideDuration={2000}
+        onClose={() => setToast(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => setToast((t) => ({ ...t, open: false }))}
           severity={toast.severity}
           variant="filled"
-          sx={{ width: "100%", bgcolor: PINK_MAIN }}
+          sx={{ borderRadius: '12px' }}
         >
-          {toast.text}
+          {toast.message}
         </Alert>
       </Snackbar>
-    </>
+    </Box>
   );
 }

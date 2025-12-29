@@ -794,7 +794,7 @@ export default function MatchesScreen() {
               fontSize: { xs: 18, sm: 20 },
             }}
           >
-            Pulse
+            Matches
           </Typography>
           <Tooltip title="Filters">
             <Button
@@ -830,19 +830,38 @@ export default function MatchesScreen() {
               <Skeleton variant="rounded" height={260} sx={{ mb: 1.25 }} />
             </>
           ) : filteredMatches.length === 0 ? (
-            <Card
+            <Box
               sx={{
-                p: 2,
-                borderRadius: 2,
+                py: 8,
+                px: 3,
                 textAlign: "center",
-                border: "1px solid",
-                borderColor: "divider",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
               }}
             >
-              <Typography sx={{ color: "text.secondary", fontSize: 14 }}>
-                No matches yet. Adjust filters or check back later.
+              <HeartHandshake size={64} color="#cbd5e1" />
+              <Typography variant="h6" sx={{ fontWeight: 700, mt: 2, color: "#1a1a2e" }}>
+                No matches yet
               </Typography>
-            </Card>
+              <Typography variant="body2" sx={{ color: "#64748b", mt: 1, mb: 3 }}>
+                Your next connection might be closer than you think.
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={() => window.location.href = "/nearby"}
+                sx={{
+                  py: 1.25,
+                  px: 3,
+                  borderRadius: "12px",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)",
+                }}
+              >
+                Go to Nearby
+              </Button>
+            </Box>
           ) : (
             <Stack spacing={3}>
               {filteredMatches.map((m) => (
