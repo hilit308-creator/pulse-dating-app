@@ -32,6 +32,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import { useLanguage } from '../context/LanguageContext';
 import {
   MessageCircle,
   ChevronLeft,
@@ -442,6 +443,7 @@ function PhotoCarousel({ photos, name, onPrev, onNext, index }) {
 
 /* Profile Card — white details style */
 function ProfileCard({ profile, onPass, onOpenChat, onBlock, onReport }) {
+  const { t } = useLanguage();
   const photos = profile.photos?.length ? profile.photos : [profile.photoUrl].filter(Boolean);
   const [idx, setIdx] = useState(0);
 
@@ -589,19 +591,33 @@ function ProfileCard({ profile, onPass, onOpenChat, onBlock, onReport }) {
             size="small"
             onClick={() => onOpenChat?.(profile)}
             startIcon={<MessageCircle size={16} />}
-            sx={{ borderRadius: 999 }}
+            sx={{ 
+              borderRadius: 999,
+              background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)",
+              "&:hover": { background: "linear-gradient(135deg, #5a4bd1 0%, #9333ea 100%)" },
+            }}
           >
-            Chat
+            {t('chat')}
           </Button>
-          <Button variant="outlined" size="small" onClick={() => onPass?.(profile)} sx={{ borderRadius: 999 }}>
-            Pass
+          <Button 
+            variant="outlined" 
+            size="small" 
+            onClick={() => onPass?.(profile)} 
+            sx={{ 
+              borderRadius: 999,
+              borderColor: "#6C5CE7",
+              color: "#6C5CE7",
+              "&:hover": { borderColor: "#5a4bd1", bgcolor: "rgba(108,92,231,0.04)" },
+            }}
+          >
+            {t('pass')}
           </Button>
-          <Tooltip title="Block">
+          <Tooltip title={t('block')}>
             <IconButton onClick={() => onBlock?.(profile)} aria-label="Block">
               <ShieldAlert />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Report">
+          <Tooltip title={t('report')}>
             <IconButton onClick={() => onReport?.(profile)} aria-label="Report">
               <Flag />
             </IconButton>
@@ -617,6 +633,7 @@ function ProfileCard({ profile, onPass, onOpenChat, onBlock, onReport }) {
 ============================= */
 export default function MatchesScreen() {
   const theme = useTheme();
+  const { t } = useLanguage();
 
   const [tab, setTab] = useState(0);
   const [matches, setMatches] = useState([]);
@@ -706,7 +723,10 @@ export default function MatchesScreen() {
   }, [matches, blocked, ageRange, maxDistance, onlyActiveChats, sortBy]);
 
   const handlePass = (p) => setMatches((prev) => prev.filter((x) => x.id !== p.id));
-  const handleOpenChat = (p) => (window.location.href = `/chat/${p.id}`);
+  const handleOpenChat = (p) => {
+    // Navigate to chat screen with match data
+    window.location.href = `/chat?matchId=${p.id}`;
+  };
 
   // === BLOCK (per user) ===
   const handleBlock = (p) => {
@@ -764,7 +784,7 @@ export default function MatchesScreen() {
       sx={{
         minHeight: "100vh",
         bgcolor: "background.default",
-        maxWidth: 520, // wider for TikTok-style cards
+        maxWidth: 520,
         mx: "auto",
         pb: "calc(10px + env(safe-area-inset-bottom, 0))",
       }}
@@ -794,17 +814,23 @@ export default function MatchesScreen() {
               fontSize: { xs: 18, sm: 20 },
             }}
           >
-            Matches
+            {t('matches')}
           </Typography>
-          <Tooltip title="Filters">
+          <Tooltip title={t('filters')}>
             <Button
               variant="outlined"
               size="small"
               startIcon={<Filter size={16} />}
               onClick={() => setDrawerOpen(true)}
-              sx={{ borderRadius: 999, minHeight: 34 }}
+              sx={{ 
+                borderRadius: 999, 
+                minHeight: 34,
+                borderColor: "#6C5CE7",
+                color: "#6C5CE7",
+                "&:hover": { borderColor: "#5a4bd1", bgcolor: "rgba(108,92,231,0.04)" },
+              }}
             >
-              Filters
+              {t('filters')}
             </Button>
           </Tooltip>
         </Stack>
@@ -814,10 +840,14 @@ export default function MatchesScreen() {
           centered
           variant="scrollable"
           allowScrollButtonsMobile
-          sx={{ ".MuiTab-root": { minWidth: { xs: 140, sm: 160 } } }}
+          sx={{ 
+            ".MuiTab-root": { minWidth: { xs: 140, sm: 160 } },
+            "& .MuiTabs-indicator": { backgroundColor: "#6C5CE7" },
+            "& .Mui-selected": { color: "#6C5CE7 !important" },
+          }}
         >
-          <Tab label="MUTUAL MATCHES" />
-          <Tab label="INTERESTED IN YOU" />
+          <Tab label={t('mutualMatches')} />
+          <Tab label={t('interestedInYou')} />
         </Tabs>
       </Box>
 
@@ -842,10 +872,10 @@ export default function MatchesScreen() {
             >
               <HeartHandshake size={64} color="#cbd5e1" />
               <Typography variant="h6" sx={{ fontWeight: 700, mt: 2, color: "#1a1a2e" }}>
-                No matches yet
+                {t('noMatchesYet')}
               </Typography>
               <Typography variant="body2" sx={{ color: "#64748b", mt: 1, mb: 3 }}>
-                Your next connection might be closer than you think.
+                {t('yourNextConnection')}
               </Typography>
               <Button
                 variant="contained"
@@ -859,7 +889,7 @@ export default function MatchesScreen() {
                   background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)",
                 }}
               >
-                Go to Nearby
+                {t('goToNearby')}
               </Button>
             </Box>
           ) : (
@@ -869,7 +899,7 @@ export default function MatchesScreen() {
                   key={m.id}
                   profile={m}
                   onPass={(p) => setMatches((prev) => prev.filter((x) => x.id !== p.id))}
-                  onOpenChat={(p) => (window.location.href = `/chat/${p.id}`)}
+                  onOpenChat={(p) => (window.location.href = `/chat?matchId=${p.id}`)}
                   onBlock={handleBlock}
                   onReport={handleReport}
                 />
@@ -885,7 +915,7 @@ export default function MatchesScreen() {
             <Skeleton variant="rounded" height={110} sx={{ mb: 1.25 }} />
           ) : likes.length === 0 ? (
             <Typography sx={{ color: "text.secondary", textAlign: "center", mt: 4 }}>
-              Someone liked you. Keep exploring to unlock matches.
+              {t('keepExploring')}
             </Typography>
           ) : (
             <Stack spacing={1.25}>
@@ -905,14 +935,14 @@ export default function MatchesScreen() {
                       <Avatar src={l.photoUrl} sx={{ width: 44, height: 44, filter: "blur(1.2px)" }} />
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography sx={{ fontWeight: 700, color: "text.primary", fontSize: 15 }}>
-                          Someone liked you
+                          {t('someoneLikedYou')}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "text.secondary" }}>
                           {l.interestHint ? `Hint: likes ${l.interestHint}` : ""}
                         </Typography>
                       </Box>
-                      <Button variant="contained" color="primary" size="small" startIcon={<Lock />} sx={{ minHeight: 34 }}>
-                        Unlock
+                      <Button variant="contained" size="small" startIcon={<Lock />} sx={{ minHeight: 34, background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)" }}>
+                        {t('unlock')}
                       </Button>
                     </CardContent>
                   </Card>
@@ -933,7 +963,7 @@ export default function MatchesScreen() {
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Stack direction="row" spacing={1} alignItems="center">
               <SlidersHorizontal size={18} />
-              <Typography sx={{ fontWeight: 700 }}>Filters</Typography>
+              <Typography sx={{ fontWeight: 700 }}>{t('filters')}</Typography>
             </Stack>
             <IconButton onClick={() => setDrawerOpen(false)} aria-label="Close filters">
               <X />
@@ -943,7 +973,7 @@ export default function MatchesScreen() {
 
           <Box>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
-              Age Range
+              {t('ageRange')}
             </Typography>
             <Slider
               value={ageRange}
@@ -952,12 +982,13 @@ export default function MatchesScreen() {
               min={18}
               max={70}
               disableSwap
+              sx={{ color: "#6C5CE7" }}
             />
           </Box>
 
           <Box>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
-              Max Distance (km)
+              {t('maxDistance')}
             </Typography>
             <Slider
               value={maxDistance}
@@ -965,23 +996,31 @@ export default function MatchesScreen() {
               valueLabelDisplay="auto"
               min={1}
               max={100}
+              sx={{ color: "#6C5CE7" }}
             />
           </Box>
 
           <Box>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
-              Sort By
+              {t('sortBy')}
             </Typography>
             <Select fullWidth size="small" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-              <MenuItem value="recent">Most Recent</MenuItem>
-              <MenuItem value="distance">Distance</MenuItem>
-              <MenuItem value="compat">Compatibility</MenuItem>
+              <MenuItem value="recent">{t('mostRecent')}</MenuItem>
+              <MenuItem value="distance">{t('distance')}</MenuItem>
+              <MenuItem value="compat">{t('compatibility')}</MenuItem>
             </Select>
           </Box>
 
           <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography variant="body2">Active chats only</Typography>
-            <Switch checked={onlyActiveChats} onChange={(e) => setOnlyActiveChats(e.target.checked)} />
+            <Typography variant="body2">{t('activeChatsOnly')}</Typography>
+            <Switch 
+              checked={onlyActiveChats} 
+              onChange={(e) => setOnlyActiveChats(e.target.checked)}
+              sx={{
+                "& .MuiSwitch-switchBase.Mui-checked": { color: "#6C5CE7" },
+                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: "#6C5CE7" },
+              }}
+            />
           </Stack>
 
           <Box sx={{ flexGrow: 1 }} />
@@ -997,10 +1036,10 @@ export default function MatchesScreen() {
                 setOnlyActiveChats(false);
               }}
             >
-              Reset
+              {t('reset')}
             </Button>
-            <Button fullWidth variant="contained" onClick={() => setDrawerOpen(false)}>
-              Apply
+            <Button fullWidth variant="contained" onClick={() => setDrawerOpen(false)} sx={{ background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)" }}>
+              {t('apply')}
             </Button>
           </Stack>
         </Box>
@@ -1008,24 +1047,24 @@ export default function MatchesScreen() {
 
       {/* Report Dialog */}
       <Dialog open={reportOpen} onClose={() => setReportOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Report user</DialogTitle>
+        <DialogTitle>{t('reportUser')}</DialogTitle>
         <DialogContent dividers>
           <Typography variant="body2" sx={{ mb: 1 }}>
-            Tell us what happened (optional). You can submit without a note.
+            {t('tellUsWhatHappened')}
           </Typography>
           <TextField
             autoFocus
             fullWidth
             multiline
             minRows={3}
-            placeholder="Write a note (optional)…"
+            placeholder={t('writeNote')}
             value={reportNote}
             onChange={(e) => setReportNote(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setReportOpen(false)} color="inherit">Cancel</Button>
-          <Button onClick={submitReport} variant="contained">Submit report</Button>
+          <Button onClick={() => setReportOpen(false)} color="inherit">{t('cancel')}</Button>
+          <Button onClick={submitReport} variant="contained" sx={{ background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)" }}>{t('submitReport')}</Button>
         </DialogActions>
       </Dialog>
 

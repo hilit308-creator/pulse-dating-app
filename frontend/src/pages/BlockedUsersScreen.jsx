@@ -30,6 +30,7 @@ import {
   User,
   Calendar,
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 // Mock blocked users data
 const MOCK_BLOCKED_USERS = [
@@ -65,6 +66,7 @@ const SOURCE_CONFIG = {
 
 export default function BlockedUsersScreen() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [blockedUsers, setBlockedUsers] = useState(MOCK_BLOCKED_USERS);
   const [unblockUser, setUnblockUser] = useState(null);
 
@@ -97,7 +99,7 @@ export default function BlockedUsersScreen() {
           <ArrowLeft size={22} color="#1a1a2e" />
         </IconButton>
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-          Blocked Users
+          {t('blockedUsers')}
         </Typography>
       </Box>
 

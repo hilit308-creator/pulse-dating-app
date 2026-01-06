@@ -48,6 +48,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import UserAvatarButton from "./UserAvatarButton";
+import UserCard from "./UserCard";
+import { PointsBannerCompact } from "./PointsBanner";
 
 /* ---------------------------------------
    Photos helper (generate multiple crops)
@@ -76,7 +78,7 @@ const baseUsers = [
     city: "Tel Aviv",
     distance: 0.6,
     profession: "Product Designer",
-    tagline: "Coffee, cats, and cozy playlists ☕️🐱",
+    tagline: "Here for the rooftop event tonight 🌃",
     interests: ["Design", "Yoga", "Music", "Coffee"],
     matchDistance: 0.18,
     likesYou: true,
@@ -93,7 +95,7 @@ const baseUsers = [
     city: "Givatayim",
     distance: 0.9,
     profession: "Data Scientist",
-    tagline: "Trader Joe's snacks connoisseur",
+    tagline: "Just moved to the neighborhood 🏠",
     interests: ["Hiking", "Books", "Cooking", "Wine"],
     matchDistance: 0.22,
     likesYou: false,
@@ -110,7 +112,7 @@ const baseUsers = [
     city: "Tel Aviv",
     distance: 1.2,
     profession: "UX Researcher",
-    tagline: "Designing with empathy",
+    tagline: "Working from the coffee shop nearby ☕",
     interests: ["Photography", "Art", "Pilates", "Music"],
     matchDistance: 0.28,
     likesYou: true,
@@ -127,7 +129,7 @@ const baseUsers = [
     city: "Ramat Gan",
     distance: 0.4,
     profession: "Product Manager",
-    tagline: "Roadmaps, ramen, and running",
+    tagline: "Training for the TLV marathon 🏃‍♀️",
     interests: ["Running", "Tech", "Travel", "Yoga"],
     matchDistance: 0.12,
     likesYou: false,
@@ -141,6 +143,23 @@ const baseUsers = [
 const demoUsers = baseUsers.map((u) => {
   const photos = personPhotos(u.base);
   return { ...u, photos, photoUrl: photos[0] };
+});
+
+// Transform to UserCardModel format (per spec section 7)
+const transformToUserCardModel = (user) => ({
+  userId: String(user.id),
+  firstName: user.name,
+  age: user.age,
+  distanceMeters: user.distance * 1000, // Convert km to meters
+  primaryPhotoUrl: user.photoUrl,
+  contextLine: user.tagline || user.profession || 'Looking for genuine connections',
+  chips: [
+    ...(user.aboutMe || []).slice(0, 2).map(label => ({ label, type: 'factual' })),
+    ...(user.interests || []).slice(0, 1).map(label => ({ label, type: 'hobby' })),
+  ].slice(0, 3),
+  isVerified: user.verified || false,
+  // Keep original data for expanded profile
+  _original: user,
 });
 
 /* ---------------------------------------
@@ -816,6 +835,11 @@ export default function Home({ onOpenTutorial }) {
           />
         </Stack>
 
+        {/* Points Banner */}
+        <Box sx={{ mb: 1.5 }}>
+          <PointsBannerCompact balance={150} />
+        </Box>
+
         {/* Soft Onboarding Card */}
         <AnimatePresence>
           {showOnboardingCard && (
@@ -913,24 +937,29 @@ export default function Home({ onOpenTutorial }) {
           )}
         </AnimatePresence>
 
-        {/* Card stack */}
+        {/* Card stack - UserCard v2 per spec */}
         <Box
           sx={{
             position: "relative",
             width: "100%",
-            maxWidth: 480,
-            mx: "auto",
-            height: "calc(100vh - 320px)",
-            minHeight: 500,
+            display: "flex",
+            justifyContent: "center",
+            mb: 1,
           }}
         >
           {!topUser ? (
             // empty / end-of-deck state
             <Box
               sx={{
-                textAlign: "center",
-                py: 6,
-                color: "#6B7280",
+                width: 'min(420px, 92vw)',
+                height: 'min(640px, 78vh)',
+                borderRadius: '16px',
+                backgroundColor: '#F9FAFB',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
               }}
             >
               <Typography
@@ -943,7 +972,7 @@ export default function Home({ onOpenTutorial }) {
               >
                 You're all caught up
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ color: '#6B7280' }}>
                 Try widening your filters to see more people nearby.
               </Typography>
 
@@ -957,584 +986,34 @@ export default function Home({ onOpenTutorial }) {
               </Button>
             </Box>
           ) : (
-            <>
-              {/* preview of next card (background) */}
-              {nextUser && (
-                <Box
-                  aria-hidden
-                  sx={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    zIndex: 1,
-                    pointerEvents: "none",
-                    transform:
-                      "scale(0.96) translateY(10px)",
-                    opacity: 0.92,
-                    filter: "saturate(0.9)",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      borderRadius: 4,
-                      overflow: "hidden",
-                      boxShadow:
-                        "0 10px 20px rgba(0,0,0,0.06)",
-                      bgcolor: "#f6f7f9",
-                      aspectRatio: "4 / 5",
-                      width: "100%",
-                    }}
-                  >
-                    <img
-                      src={nextUser.photoUrl}
-                      alt=""
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  </Box>
-                </Box>
-              )}
-
-              {/* active card */}
-              <AnimatePresence>
-                {topUser && (
-                  <motion.div
-                    key={topUser.id + "-" + deckIndex}
-                    animate={controls}
-                    style={{
-                      x,
-                      rotate,
-                      position: "relative",
-                      zIndex: 2,
-                      height: "100%",
-                    }}
-                    drag="x"
-                    dragElastic={0.18}
-                    dragConstraints={{ left: 0, right: 0 }}
-                    onDragEnd={onDragEnd}
-                    initial={{ scale: 0.985, opacity: 0 }}
-                    exit={{
-                      opacity: 0,
-                      y: 40,
-                      transition: { duration: 0.25 },
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        borderRadius: 4,
-                        background: "#fff",
-                        boxShadow:
-                          "0 16px 40px rgba(0,0,0,0.10)",
-                        overflow: "hidden",
-                        position: "relative",
-                        display: "flex",
-                        flexDirection: "column",
-                        height: "100%",
-                      }}
-                    >
-                      {/* dynamic side glows */}
-                      <motion.div
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          pointerEvents: "none",
-                          background: rightGlow,
-                        }}
-                      />
-                      <motion.div
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          pointerEvents: "none",
-                          background: leftGlow,
-                        }}
-                      />
-
-                      {/* photo area */}
-                      <Box
-                        sx={{
-                          position: "relative",
-                          width: "100%",
-                          height: 320,
-                          minHeight: 320,
-                          maxHeight: 320,
-                          userSelect: "none",
-                          bgcolor: "#eee",
-                          cursor: topUser?.photos?.length > 1 ? "pointer" : "default",
-                          flexShrink: 0,
-                        }}
-                        aria-label={`${topUser.name}, ${topUser.age}`}
-                        onClick={(e) => {
-                          if (!topUser?.photos?.length || topUser.photos.length <= 1) return;
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const tapX = e.clientX - rect.left;
-                          const width = rect.width;
-                          // Tap left third = previous, tap right two-thirds = next
-                          if (tapX < width * 0.33) {
-                            setImageLoaded(false);
-                            advancePhoto(-1);
-                          } else {
-                            setImageLoaded(false);
-                            advancePhoto(+1);
-                          }
-                        }}
-                      >
-                        {!imageLoaded && (
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              inset: 0,
-                              background:
-                                "linear-gradient(90deg,#eee,#f5f5f5,#eee)",
-                              backgroundSize:
-                                "200% 100%",
-                              animation:
-                                "shimmer 1.2s infinite linear",
-                            }}
-                          />
-                        )}
-
-                        <img
-                          src={currentSrc || topUser.photoUrl}
-                          alt={topUser.name}
-                          onLoad={() => setImageLoaded(true)}
-                          loading="lazy"
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: imageLoaded
-                              ? "block"
-                              : "none",
-                          }}
-                        />
-
-                        {/* top progress bars for multi-photo */}
-                        {topUser?.photos?.length > 1 && (
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              top: 8,
-                              left: 8,
-                              right: 8,
-                              display: "flex",
-                              gap: 0.5,
-                            }}
-                          >
-                            {topUser.photos.map(
-                              (_, i) => (
-                                <Box
-                                  key={i}
-                                  sx={{
-                                    flex: 1,
-                                    height: 4,
-                                    borderRadius: 999,
-                                    bgcolor:
-                                      "rgba(255,255,255,0.35)",
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      width: `${
-                                        i <= photoIdx
-                                          ? 100
-                                          : 0
-                                      }%`,
-                                      height: "100%",
-                                      borderRadius: 999,
-                                      bgcolor: "#fff",
-                                      transition:
-                                        "width .25s",
-                                    }}
-                                  />
-                                </Box>
-                              )
-                            )}
-                          </Box>
-                        )}
-
-                        {/* bottom dots + arrows */}
-                        {topUser?.photos?.length > 1 && (
-                          <>
-                            <Box
-                              sx={{
-                                position:
-                                  "absolute",
-                                bottom: 10,
-                                left: 0,
-                                right: 0,
-                                display: "flex",
-                                justifyContent:
-                                  "center",
-                                gap: 1,
-                              }}
-                            >
-                              {topUser.photos.map(
-                                (_, i) => (
-                                  <Box
-                                    key={i}
-                                    onClick={() => {
-                                      setImageLoaded(
-                                        false
-                                      );
-                                      setPhotoIdx(i);
-                                    }}
-                                    sx={{
-                                      width: 8,
-                                      height: 8,
-                                      borderRadius: 999,
-                                      cursor:
-                                        "pointer",
-                                      bgcolor:
-                                        i ===
-                                        photoIdx
-                                          ? "rgba(255,255,255,0.95)"
-                                          : "rgba(255,255,255,0.5)",
-                                    }}
-                                  />
-                                )
-                              )}
-                            </Box>
-
-                            <IconButton
-                              onClick={() => {
-                                setImageLoaded(
-                                  false
-                                );
-                                advancePhoto(-1);
-                              }}
-                              size="small"
-                              sx={{
-                                position:
-                                  "absolute",
-                                top: "50%",
-                                left: 6,
-                                transform:
-                                  "translateY(-50%)",
-                                bgcolor:
-                                  "rgba(255,255,255,.9)",
-                                "&:hover": {
-                                  bgcolor:
-                                    "#fff",
-                                },
-                              }}
-                            >
-                              <ChevronLeft
-                                size={18}
-                              />
-                            </IconButton>
-
-                            <IconButton
-                              onClick={() => {
-                                setImageLoaded(
-                                  false
-                                );
-                                advancePhoto(+1);
-                              }}
-                              size="small"
-                              sx={{
-                                position:
-                                  "absolute",
-                                top: "50%",
-                                right: 6,
-                                transform:
-                                  "translateY(-50%)",
-                                bgcolor:
-                                  "rgba(255,255,255,.9)",
-                                "&:hover": {
-                                  bgcolor:
-                                    "#fff",
-                                },
-                              }}
-                            >
-                              <ChevronRight
-                                size={18}
-                              />
-                            </IconButton>
-                          </>
-                        )}
-
-                        {/* like / nope floating badges */}
-                        <motion.div
-                          style={{
-                            opacity: likeOpacity,
-                            scale: likeScale,
-                            zIndex: 5,
-                          }}
-                          className="like-ind"
-                          aria-hidden
-                        >
-                          <Heart />
-                        </motion.div>
-
-                        <motion.div
-                          style={{
-                            opacity: nopeOpacity,
-                            scale: nopeScale,
-                            zIndex: 5,
-                          }}
-                          className="nope-ind"
-                          aria-hidden
-                        >
-                          <CloseIcon />
-                        </motion.div>
-
-                        <style>{`
-                          .like-ind,
-                          .nope-ind {
-                            position: absolute;
-                            width: 38px;
-                            height: 38px;
-                            border-radius: 999px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            background: rgba(255,255,255,0.95);
-                            backdrop-filter: blur(6px);
-                            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-                          }
-                          .like-ind {
-                            right: 12px;
-                            top: 12px;
-                          }
-                          .nope-ind {
-                            left: 12px;
-                            top: 12px;
-                          }
-                          .like-ind svg {
-                            color: #22c55e;
-                          }
-                          .nope-ind svg {
-                            color: #ef4444;
-                          }
-                          @keyframes shimmer {
-                            0% { background-position: 0% 0; }
-                            100% { background-position: 200% 0; }
-                          }
-                        `}</style>
-                      </Box>
-
-                      {/* details under the photo */}
-                      <Box sx={{ p: 2, flex: 1, overflowY: 'auto' }}>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 800,
-                            lineHeight: 1.2,
-                            color: "#0f172a",
-                          }}
-                        >
-                          {topUser.name}, {topUser.age}
-                        </Typography>
-
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          sx={{
-                            alignItems: "center",
-                            color: "#475569",
-                            mt: 0.25,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <Stack
-                            direction="row"
-                            spacing={0.75}
-                            sx={{ alignItems: "center" }}
-                          >
-                            <MapPin size={16} />
-                            <Typography variant="body2">
-                              {topUser.city || "Tel Aviv"}
-                            </Typography>
-                          </Stack>
-                          <Typography variant="body2">
-                            ·
-                          </Typography>
-                          <Typography variant="body2">
-                            {formatDistance(
-                              topUser.distance
-                            )}{" "}
-                            away
-                          </Typography>
-                        </Stack>
-
-                        {topUser.profession && (
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: "#64748b",
-                              mt: 0.5,
-                            }}
-                          >
-                            {topUser.profession}
-                          </Typography>
-                        )}
-
-                        {topUser.tagline && (
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: "#0f172a",
-                              mt: 1,
-                            }}
-                          >
-                            {topUser.tagline}
-                          </Typography>
-                        )}
-
-                        {topUser?.aboutMe?.length > 0 && (
-                          <Box sx={{ mt: 1.25 }}>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{
-                                fontWeight: 700,
-                                mb: 0.6,
-                                color: "#0f172a",
-                              }}
-                            >
-                              Details
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 0.6,
-                              }}
-                            >
-                              {topUser.aboutMe.map(
-                                (item, idxChip) => (
-                                  <TagPill
-                                    key={idxChip}
-                                    icon={chipIconFor(
-                                      "about",
-                                      item
-                                    )}
-                                    label={item}
-                                    brand={brand}
-                                    variant={
-                                      DEFAULT_TAG_STYLE
-                                    }
-                                    radius={
-                                      DEFAULT_RADIUS
-                                    }
-                                    size="small"
-                                  />
-                                )
-                              )}
-                            </Box>
-                          </Box>
-                        )}
-
-                        {topUser?.interests?.length >
-                          0 && (
-                          <Box sx={{ mt: 1.25 }}>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{
-                                fontWeight: 700,
-                                mb: 0.6,
-                                color: "#0f172a",
-                              }}
-                            >
-                              Interests
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 0.6,
-                              }}
-                            >
-                              {topUser.interests.map(
-                                (item, idxChip) => (
-                                  <TagPill
-                                    key={idxChip}
-                                    icon={chipIconFor(
-                                      "interests",
-                                      item
-                                    )}
-                                    label={item}
-                                    brand={brand}
-                                    variant={
-                                      DEFAULT_TAG_STYLE
-                                    }
-                                    radius={
-                                      DEFAULT_RADIUS
-                                    }
-                                    size="small"
-                                  />
-                                )
-                              )}
-                            </Box>
-                          </Box>
-                        )}
-
-                        {topUser?.lookingFor
-                          ?.length > 0 && (
-                          <Box sx={{ mt: 1.25 }}>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{
-                                fontWeight: 700,
-                                mb: 0.6,
-                                color: "#0f172a",
-                              }}
-                            >
-                              Looking for
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 0.6,
-                              }}
-                            >
-                              {topUser.lookingFor.map(
-                                (item, idxChip) => (
-                                  <TagPill
-                                    key={idxChip}
-                                    icon={chipIconFor(
-                                      "looking",
-                                      item
-                                    )}
-                                    label={item}
-                                    brand={brand}
-                                    variant={
-                                      DEFAULT_TAG_STYLE
-                                    }
-                                    radius={
-                                      DEFAULT_RADIUS
-                                    }
-                                    size="small"
-                                  />
-                                )
-                              )}
-                            </Box>
-                          </Box>
-                        )}
-                      </Box>
-                    </Box>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </>
+            <UserCard
+              user={transformToUserCardModel(topUser)}
+              onLike={(user) => {
+                // Record like and move to next
+                if (topUser?.id != null) {
+                  setLikedUsers((arr) =>
+                    arr.includes(topUser.id) ? arr : [...arr, topUser.id]
+                  );
+                }
+                setDeckIndex((i) => i + 1);
+              }}
+              onPass={(user) => {
+                // Record pass and move to next
+                if (topUser?.id != null) {
+                  setPassedUsers((arr) =>
+                    arr.includes(topUser.id) ? arr : [...arr, topUser.id]
+                  );
+                }
+                setDeckIndex((i) => i + 1);
+              }}
+              onTap={(user) => {
+                // Navigate to expanded profile
+                navigate(`/profile/${user.userId}`);
+              }}
+              hasLocationPermission={true}
+            />
           )}
         </Box>
-
-        {/* hint under card */}
-        <Typography
-          sx={{
-            mt: 1.5,
-            textAlign: "center",
-            color: "#6B7280",
-          }}
-        >
-          ← Pass • → Like
-        </Typography>
 
         {/* Picks carousel */}
         <PicksCoverflow users={filtered} brand={brand} />

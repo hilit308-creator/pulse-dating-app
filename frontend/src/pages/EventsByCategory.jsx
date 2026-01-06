@@ -137,7 +137,7 @@ const isWithin30Days = (dateStr) => {
 const VIBE_ICONS = {
   'Live Music': { icon: Music, color: '#dc2626' },
   'Drinks': { icon: Wine, color: '#7c3aed' },
-  'Dancing': { icon: PartyPopper, color: '#ec4899' },
+  'Dancing': { icon: PartyPopper, color: '#6C5CE7' },
   'Social': { icon: Users, color: '#0ea5e9' },
   'Outdoor': { icon: TreePine, color: '#16a34a' },
   'DJ': { icon: Mic2, color: '#f59e0b' },
@@ -308,6 +308,7 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
               fullWidth 
               onClick={() => onBuy(ev)}
               disabled={ev.soldOut}
+              sx={{ bgcolor: "#6C5CE7", "&:hover": { bgcolor: "#5b4cdb" } }}
             >
               {ev.soldOut ? "SOLD OUT" : ev.price === 0 ? "JOIN" : "BUY TICKET"}
             </Button>
@@ -319,14 +320,14 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
               variant="outlined" 
               startIcon={<UserPlus size={14} />}
               onClick={(e) => { e.stopPropagation(); onInvitePlus1?.(ev); }}
-              sx={{ flex: 1, fontSize: "0.7rem" }}
+              sx={{ flex: 1, fontSize: "0.7rem", borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}
             >
               +1
             </Button>
-            <Button size="small" variant="outlined" onClick={() => onOpenCalendar?.(ev)} sx={{ minWidth: 'auto', px: 1.5 }}>
+            <Button size="small" variant="outlined" onClick={() => onOpenCalendar?.(ev)} sx={{ minWidth: 'auto', px: 1.5, borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}>
               <Calendar size={14} />
             </Button>
-            <Button size="small" variant="outlined" onClick={() => onOpenMaps?.(ev)} sx={{ minWidth: 'auto', px: 1.5 }}>
+            <Button size="small" variant="outlined" onClick={() => onOpenMaps?.(ev)} sx={{ minWidth: 'auto', px: 1.5, borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}>
               <MapPin size={14} />
             </Button>
           </Stack>
@@ -588,7 +589,7 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
   const vibeColors = {
     Chill: '#0ea5e9',
     Social: '#22c55e', 
-    Flirty: '#ec4899',
+    Flirty: '#6C5CE7',
     Deep: '#8b5cf6',
     Energetic: '#f59e0b',
   };
@@ -750,7 +751,7 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
           size="large"
           onClick={() => { onBuy?.(event); onClose(); }}
           disabled={event.soldOut || isPurchased}
-          sx={{ fontWeight: 700 }}
+          sx={{ fontWeight: 700, bgcolor: "#6C5CE7", "&:hover": { bgcolor: "#5b4cdb" } }}
         >
           {isPurchased ? "You're going! ✓" : event.soldOut ? "SOLD OUT" : event.price === 0 ? "JOIN" : "BUY TICKET"}
         </Button>
@@ -761,7 +762,7 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
             variant="outlined"
             startIcon={<Heart size={16} />}
             onClick={() => onSave?.(event.id)}
-            sx={{ flex: 1 }}
+            sx={{ flex: 1, borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}
           >
             {isSaved ? 'Saved' : 'Save'}
           </Button>
@@ -780,7 +781,7 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
                 alert('Link copied to clipboard!');
               }
             }}
-            sx={{ flex: 1 }}
+            sx={{ flex: 1, borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}
           >
             Share
           </Button>
@@ -788,7 +789,7 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
             variant="outlined"
             startIcon={<UserPlus size={16} />}
             onClick={() => { onInvitePlus1?.(event); onClose(); }}
-            sx={{ flex: 1 }}
+            sx={{ flex: 1, borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}
           >
             +1
           </Button>

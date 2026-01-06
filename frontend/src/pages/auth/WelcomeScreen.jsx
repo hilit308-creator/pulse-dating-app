@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Stack, Link, Divider } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Heart, Building2, Ticket, LogIn, UserPlus } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const WelcomeScreen = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleLogin = () => {
     navigate('/auth/login');
@@ -20,9 +22,7 @@ const WelcomeScreen = () => {
   };
 
   const handleBuyTickets = () => {
-    // Store intended destination and navigate to login
-    sessionStorage.setItem('pulse_redirect_after_login', '/events');
-    navigate('/auth/phone');
+    navigate('/my-events');
   };
 
   return (

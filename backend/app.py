@@ -7,8 +7,23 @@ import jwt
 import bcrypt
 from geopy.distance import geodesic
 
+from agent import agent_bp
+
+# Admin emails - these users get admin role automatically
+ADMIN_EMAILS = [
+    'lironi217@gmail.com',
+]
+
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Allow all origins for development
+
+# Manual CORS headers for all responses
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Configure SQLite database
@@ -17,6 +32,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your-secret-key'  # Change this in production
 
 db = SQLAlchemy(app)
+
+app.register_blueprint(agent_bp)
 
 # User Model
 class User(db.Model):
@@ -27,6 +44,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     phone_number = db.Column(db.String(20))
     gender = db.Column(db.String(20), nullable=True)
+    role = db.Column(db.String(20), default='user')  # user, moderator, admin, super_admin
     residence = db.Column(db.String(100))
     place_of_origin = db.Column(db.String(100))
     looking_for = db.Column(db.String(50))
@@ -66,6 +84,9 @@ def register():
         password = data['password'].encode('utf-8')
         password_hash = bcrypt.hashpw(password, bcrypt.gensalt())
         
+        # Determine user role (auto-admin for specific emails)
+        user_role = 'admin' if data['email'].lower() in [e.lower() for e in ADMIN_EMAILS] else 'user'
+        
         # Create new user
         new_user = User(
             first_name=data['first_name'],
@@ -73,6 +94,7 @@ def register():
             email=data['email'],
             password_hash=password_hash,
             gender=data.get('gender', ''),
+            role=user_role,
             place_of_origin=data.get('place_of_origin', ''),
             hobbies=data.get('hobbies', ''),
             interests=data.get('interests', ''),
@@ -108,7 +130,16 @@ def login():
             app.config['SECRET_KEY'],
             algorithm='HS256'
         )
-        return jsonify({'token': token})
+        return jsonify({
+            'token': token,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role or 'user'
+            }
+        })
     
     return jsonify({'error': 'Invalid credentials'}), 401
 

@@ -10,14 +10,15 @@ import {
   Compass,
 } from "lucide-react";
 import { useActivity } from "../context/ActivityContext";
+import { useLanguage } from "../context/LanguageContext";
 
-const tabs = [
-  { to: "/chat", label: "Chat", icon: <MessageCircle size={26} />, key: "chat" },
-  { to: "/matches", label: "Matches", icon: <HeartHandshake size={26} />, key: "matches" },
-  { to: "/nearby", label: "Nearby", icon: <Radar size={26} />, key: "nearby", showActivityBadge: true },
-  { to: "/", label: "Home", icon: <Flame size={26} />, key: "home" },
-  { to: "/events", label: "Events", icon: <CalendarPlus size={26} />, key: "events" },
-  { to: "/explore", label: "Cafes", icon: <Coffee size={26} />, key: "explore" },
+const getTabsConfig = () => [
+  { to: "/chat", labelKey: "chat", icon: <MessageCircle size={26} />, key: "chat" },
+  { to: "/matches", labelKey: "matches", icon: <HeartHandshake size={26} />, key: "matches" },
+  { to: "/nearby", labelKey: "nearby", icon: <Radar size={26} />, key: "nearby", showActivityBadge: true },
+  { to: "/", labelKey: "home", icon: <Flame size={26} />, key: "home" },
+  { to: "/events", labelKey: "events", icon: <CalendarPlus size={26} />, key: "events" },
+  { to: "/explore", labelKey: "explore", icon: <Coffee size={26} />, key: "explore" },
 ];
 
 const activeColor = "#ff6f61";
@@ -43,6 +44,8 @@ const ActivityBadge = () => (
 export default function TabNavigation() {
   const location = useLocation();
   const { hasUnreadActivity, markActivityAsRead } = useActivity();
+  const { t } = useLanguage();
+  const tabs = getTabsConfig();
 
   // Clear activity badge when user enters Nearby tab
   useEffect(() => {
@@ -68,7 +71,7 @@ export default function TabNavigation() {
             {/* Show badge dot only on Nearby tab when there's unread activity */}
             {tab.showActivityBadge && hasUnreadActivity && <ActivityBadge />}
           </span>
-          <span style={{ marginTop: 2, display: 'block' }}>{tab.label}</span>
+          <span style={{ marginTop: 2, display: 'block' }}>{t(tab.labelKey)}</span>
         </NavLink>
       ))}
     </nav>

@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
+// Admin emails - these users get admin role automatically
+const ADMIN_EMAILS = [
+  'lironi217@gmail.com',
+];
+
 // Auth States
 export const AUTH_STATE = {
   LOGGED_OUT: 'LOGGED_OUT',
@@ -104,7 +109,13 @@ export function AuthProvider({ children }) {
         }
 
         if (storedUser) {
-          setUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          // Auto-assign admin role for specific emails
+          if (parsedUser?.email && ADMIN_EMAILS.map(e => e.toLowerCase()).includes(parsedUser.email.toLowerCase())) {
+            parsedUser.role = 'admin';
+            localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(parsedUser));
+          }
+          setUser(parsedUser);
         }
 
         if (storedOnboarding) {

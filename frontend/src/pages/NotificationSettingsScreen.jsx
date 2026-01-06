@@ -37,11 +37,13 @@ import {
   X,
   AlarmClock,
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const NotificationSettingsScreen = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   // Notification settings
   const [matchNotif, setMatchNotif] = useState('always');
@@ -122,7 +124,7 @@ const NotificationSettingsScreen = () => {
           <ArrowLeft size={22} color="#1a1a2e" />
         </IconButton>
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-          Notifications
+          {t('notifications')}
         </Typography>
       </Box>
 
@@ -135,11 +137,11 @@ const NotificationSettingsScreen = () => {
           {/* Notification Types */}
           <Box sx={{ px: 2, mb: 1 }}>
             <Typography variant="overline" sx={{ color: '#94a3b8', fontWeight: 600 }}>
-              Notification Types
+              {t('notifications')}
             </Typography>
           </Box>
           <Box sx={{ backgroundColor: '#f8fafc', mx: 2, borderRadius: '16px', mb: 3 }}>
-            <SettingRow icon={Heart} title="Matches" subtitle="When someone likes you back">
+            <SettingRow icon={Heart} title={t('matches')} subtitle={t('matchNotifications')}>
               <FormControl size="small" sx={{ minWidth: 120 }}>
                 <Select
                   value={matchNotif}
@@ -154,7 +156,7 @@ const NotificationSettingsScreen = () => {
               </FormControl>
             </SettingRow>
             <Divider sx={{ mx: 2 }} />
-            <SettingRow icon={MessageCircle} title="Messages" subtitle="New messages from matches">
+            <SettingRow icon={MessageCircle} title={t('chat')} subtitle={t('messageNotifications')}>
               <FormControl size="small" sx={{ minWidth: 120 }}>
                 <Select
                   value={messageNotif}
@@ -173,11 +175,11 @@ const NotificationSettingsScreen = () => {
           {/* Quiet Hours */}
           <Box sx={{ px: 2, mb: 1 }}>
             <Typography variant="overline" sx={{ color: '#94a3b8', fontWeight: 600 }}>
-              Quiet Hours
+              {t('quietHours')}
             </Typography>
           </Box>
           <Box sx={{ backgroundColor: '#f8fafc', mx: 2, borderRadius: '16px', mb: 3, overflow: 'hidden' }}>
-            <SettingRow icon={Clock} title="Enable quiet hours" subtitle="No notifications during set times">
+            <SettingRow icon={Clock} title={t('quietHours')} subtitle={t('noNotificationsDuringSetTimes')}>
               <Switch
                 checked={quietHoursEnabled}
                 onChange={(e) => setQuietHoursEnabled(e.target.checked)}
@@ -240,14 +242,14 @@ const NotificationSettingsScreen = () => {
           {/* Smart Notifications */}
           <Box sx={{ px: 2, mb: 1 }}>
             <Typography variant="overline" sx={{ color: '#94a3b8', fontWeight: 600 }}>
-              Smart Features
+              {t('smartNotifications')}
             </Typography>
           </Box>
           <Box sx={{ backgroundColor: '#f8fafc', mx: 2, borderRadius: '16px', mb: 3 }}>
             <SettingRow 
               icon={Zap} 
-              title="Smart notifications" 
-              subtitle="Pulse learns when it's a good time to reach you"
+              title={t('smartNotifications')} 
+              subtitle={t('pulseLearns')}
             >
               <Switch
                 checked={smartNotifications}

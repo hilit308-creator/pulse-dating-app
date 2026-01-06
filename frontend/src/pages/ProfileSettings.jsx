@@ -339,130 +339,161 @@ export default function ProfileSettings({ onBack }) {
     <Box
       sx={{
         minHeight: "100vh",
-        px: 2,
         pb: `calc(${SAFE_BOTTOM} + 40px)`,
-        background: `radial-gradient(1200px 600px at 50% -220px, #eef2f9 0%, transparent 60%), radial-gradient(900px 520px at 12% 120%, #edf7f3 0%, transparent 60%), linear-gradient(90deg, #fafbff 0%, #f7f8fc 70%, #eff2f9 100%)`,
+        backgroundColor: '#f8fafc',
       }}
     >
-      {/* Main rounded card container */}
+      {/* Main container */}
       <Box
         sx={{
           maxWidth: 520,
           mx: "auto",
-          mt: 2,
-          mb: 4,
-          borderRadius: 4,
-          boxShadow: "0 16px 40px rgba(0,0,0,0.10)",
-          bgcolor: "#fff",
-          overflow: "hidden",
+          backgroundColor: '#fff',
         }}
       >
-        {/* Top bar */}
+        {/* Header */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             px: 2,
             py: 1.5,
-            borderBottom: "1px solid rgba(226,232,240,0.9)",
+            borderBottom: "1px solid rgba(0,0,0,0.05)",
             position: "sticky",
             top: 0,
             zIndex: 10,
-            bgcolor: "rgba(255,255,255,0.96)",
-            backdropFilter: "blur(10px)",
+            backgroundColor: '#fff',
           }}
         >
-          <IconButton
-            edge={theme.direction === "rtl" ? "end" : "start"}
-            onClick={handleBack}
-            sx={{
-              mr: 1,
-              borderRadius: 999,
-              bgcolor: alpha(brand.primary, 0.06),
-              "&:hover": { bgcolor: alpha(brand.primary, 0.12) },
-            }}
-          >
-            <ArrowLeft />
+          <IconButton onClick={handleBack} sx={{ mr: 1 }}>
+            <ArrowLeft size={22} color="#1a1a2e" />
           </IconButton>
-          <Typography
-            variant="h6"
-            sx={{ flex: 1, textAlign: "center", fontWeight: 800, letterSpacing: 0.2, color: "#0f172a" }}
-          >
-            Profile Settings
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+            Edit Profile
           </Typography>
-          <Box sx={{ width: 40 }} />
         </Box>
 
         {/* Completion indicator */}
-        <Box sx={{ px: 3, pt: 3, pb: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
-            <Typography sx={{ fontWeight: 700, color: "#0f172a" }}>
-              Profile strength
-            </Typography>
-            <Tooltip title="See what’s missing">
-              <Button
-                size="small"
-                onClick={() => setShowChecklist(true)}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: 13,
-                  borderRadius: 999,
-                  px: 1.4,
-                  py: 0.3,
-                  bgcolor: alpha(brand.primary, 0.06),
-                  color: brand.primary,
-                  border: `1px solid ${alpha(brand.primary, 0.16)}`,
-                }}
-              >
-                {completion}% complete
-              </Button>
-            </Tooltip>
-          </Box>
-          <LinearProgress
-            variant="determinate"
-            value={completion}
-            color={getBarColor()}
-            sx={{
-              height: 9,
-              borderRadius: 999,
-              boxShadow: "0 2px 10px rgba(15,23,42,0.15)",
-              backgroundColor: "#e5e7eb",
+        <Box sx={{ px: 2, pt: 2, pb: 2 }}>
+          <Box 
+            onClick={() => setShowChecklist(true)}
+            sx={{ 
+              background: 'linear-gradient(135deg, rgba(108,92,231,0.08) 0%, rgba(168,85,247,0.08) 100%)',
+              borderRadius: '16px',
+              p: 2,
+              cursor: 'pointer',
+              border: '1px solid rgba(108,92,231,0.15)',
             }}
-          />
+          >
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: 'space-between', mb: 1.5 }}>
+              <Typography sx={{ fontWeight: 600, color: "#1a1a2e", fontSize: '0.95rem' }}>
+                Profile Strength
+              </Typography>
+              <Chip
+                label={`${completion}%`}
+                size="small"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: 13,
+                  bgcolor: completion === 100 ? '#10b981' : '#6C5CE7',
+                  color: '#fff',
+                }}
+              />
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={completion}
+              sx={{
+                height: 8,
+                borderRadius: 999,
+                backgroundColor: 'rgba(255,255,255,0.8)',
+                '& .MuiLinearProgress-bar': {
+                  background: 'linear-gradient(90deg, #6C5CE7 0%, #a855f7 100%)',
+                  borderRadius: 999,
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: '#64748b', mt: 1, display: 'block' }}>
+              Tap to see what's missing
+            </Typography>
+          </Box>
         </Box>
 
-        <Dialog open={showChecklist} onClose={() => setShowChecklist(false)}>
-          <DialogTitle>What’s missing?</DialogTitle>
+        <Dialog 
+          open={showChecklist} 
+          onClose={() => setShowChecklist(false)}
+          PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 340 } }}
+        >
+          <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Complete Your Profile</DialogTitle>
           <DialogContent>
-            <ul style={{ paddingInlineStart: 18, margin: 0 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {checklist.map((item) => (
-                <li
+                <Box
                   key={item.label}
-                  style={{
-                    color: item.completed ? "green" : "#f97316",
-                    fontWeight: 500,
-                    marginBottom: 8,
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    p: 1.5,
+                    borderRadius: '12px',
+                    backgroundColor: item.completed ? 'rgba(16,185,129,0.08)' : 'rgba(249,115,22,0.08)',
+                    border: `1px solid ${item.completed ? 'rgba(16,185,129,0.2)' : 'rgba(249,115,22,0.2)'}`,
                   }}
                 >
-                  {item.completed ? "✔️" : "❌"} {item.label}
-                </li>
+                  <CheckCircle size={18} color={item.completed ? '#10b981' : '#f97316'} />
+                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
+                    {item.label}
+                  </Typography>
+                </Box>
               ))}
-            </ul>
+            </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowChecklist(false)}>Close</Button>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button 
+              fullWidth
+              variant="contained"
+              onClick={() => setShowChecklist(false)}
+              sx={{ 
+                borderRadius: '12px', 
+                textTransform: 'none', 
+                py: 1.5,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)' 
+              }}
+            >
+              Got it
+            </Button>
           </DialogActions>
         </Dialog>
 
         {/* Photos & videos */}
-        <Box sx={{ px: 3, pb: 3 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.6, color: "#0f172a" }}>
-            Photos & videos
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#64748b", mb: 1.25 }}>
-            Choose media that feels like the real you.
-          </Typography>
+        <Box sx={{ px: 2, pb: 2 }}>
+          <Box sx={{ 
+            backgroundColor: '#f8fafc', 
+            borderRadius: '16px', 
+            p: 2,
+            border: '1px solid rgba(0,0,0,0.05)',
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+              <Box sx={{ 
+                width: 36, 
+                height: 36, 
+                borderRadius: '10px', 
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Camera size={18} color="#fff" />
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1a1a2e" }}>
+                  Photos & Videos
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#64748b" }}>
+                  Choose media that feels like the real you
+                </Typography>
+              </Box>
+            </Box>
 
           <Grid container spacing={2}>
             {photos.map((photo, idx) => (
@@ -584,35 +615,66 @@ export default function ProfileSettings({ onBack }) {
           </Grid>
 
           {/* Photo source dialog */}
-          <Dialog open={photoModalOpen} onClose={() => setPhotoModalOpen(false)}>
-            <DialogTitle>Select photo source</DialogTitle>
-            <DialogContent>
+          <Dialog 
+            open={photoModalOpen} 
+            onClose={() => setPhotoModalOpen(false)}
+            PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 340 } }}
+          >
+            <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Add Photo</DialogTitle>
+            <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Button
                 fullWidth
                 variant="outlined"
-                sx={{ mb: 2, textTransform: "none" }}
+                sx={{ 
+                  py: 1.5,
+                  borderRadius: '12px',
+                  textTransform: "none",
+                  fontWeight: 500,
+                  borderColor: '#e2e8f0',
+                  color: '#1a1a2e',
+                  justifyContent: 'flex-start',
+                  gap: 2,
+                }}
                 onClick={handlePickGallery}
-                startIcon={<Image />}
+                startIcon={<Image size={20} color="#6C5CE7" />}
               >
-                From gallery
+                Choose from Gallery
               </Button>
               <Button
                 fullWidth
                 variant="outlined"
-                sx={{ mb: 2, textTransform: "none" }}
+                sx={{ 
+                  py: 1.5,
+                  borderRadius: '12px',
+                  textTransform: "none",
+                  fontWeight: 500,
+                  borderColor: '#e2e8f0',
+                  color: '#1a1a2e',
+                  justifyContent: 'flex-start',
+                  gap: 2,
+                }}
+                onClick={handlePickCamera}
+                startIcon={<Camera size={20} color="#6C5CE7" />}
+              >
+                Take a Photo
+              </Button>
+              <Button
+                fullWidth
+                variant="outlined"
+                sx={{ 
+                  py: 1.5,
+                  borderRadius: '12px',
+                  textTransform: "none",
+                  fontWeight: 500,
+                  borderColor: '#e2e8f0',
+                  color: '#1a1a2e',
+                  justifyContent: 'flex-start',
+                  gap: 2,
+                }}
                 onClick={handlePickInstagram}
-                startIcon={<Star />}
+                startIcon={<Star size={20} color="#E1306C" />}
               >
                 Import from Instagram
-              </Button>
-              <Button
-                fullWidth
-                variant="outlined"
-                sx={{ textTransform: "none" }}
-                onClick={handlePickCamera}
-                startIcon={<Camera />}
-              >
-                Camera
               </Button>
               <input
                 ref={fileInputRef}
@@ -622,8 +684,15 @@ export default function ProfileSettings({ onBack }) {
                 onChange={handleFileChange}
               />
             </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setPhotoModalOpen(false)}>Cancel</Button>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              <Button 
+                fullWidth 
+                variant="text" 
+                onClick={() => setPhotoModalOpen(false)}
+                sx={{ borderRadius: '12px', textTransform: 'none', color: '#64748b' }}
+              >
+                Cancel
+              </Button>
             </DialogActions>
           </Dialog>
 
@@ -640,6 +709,7 @@ export default function ProfileSettings({ onBack }) {
           >
             Drag to reorder
           </Button>
+          </Box>
         </Box>
 
         {/* Best photo toggle */}
@@ -727,22 +797,65 @@ export default function ProfileSettings({ onBack }) {
           </Box>
         </Box>
 
-        <Dialog open={showVerify} onClose={() => setShowVerify(false)}>
-          <DialogTitle>Profile verification</DialogTitle>
+        <Dialog 
+          open={showVerify} 
+          onClose={() => setShowVerify(false)}
+          PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 360 } }}
+        >
+          <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ 
+              width: 40, 
+              height: 40, 
+              borderRadius: '12px', 
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Shield size={20} color="#fff" />
+            </Box>
+            Verify Your Profile
+          </DialogTitle>
           <DialogContent>
-            <Typography variant="body2">
-              A selfie / video verification flow will live here. For now this is a demo.
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
+              Verified profiles get more matches! Take a quick selfie to prove you're real.
             </Typography>
+            <Box sx={{ 
+              p: 2, 
+              borderRadius: '12px', 
+              backgroundColor: 'rgba(16,185,129,0.08)',
+              border: '1px solid rgba(16,185,129,0.2)',
+            }}>
+              <Typography variant="caption" sx={{ color: '#059669', fontWeight: 500 }}>
+                ✓ Increases trust with other users
+              </Typography>
+            </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowVerify(false)}>Cancel</Button>
+          <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
             <Button
+              fullWidth
+              variant="contained"
               onClick={() => {
                 setVerified(true);
                 setShowVerify(false);
               }}
+              sx={{ 
+                borderRadius: '12px', 
+                textTransform: 'none', 
+                py: 1.5,
+                fontWeight: 600,
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              }}
             >
-              Confirm
+              Start Verification
+            </Button>
+            <Button 
+              fullWidth 
+              variant="text" 
+              onClick={() => setShowVerify(false)}
+              sx={{ borderRadius: '12px', textTransform: 'none', color: '#64748b' }}
+            >
+              Maybe Later
             </Button>
           </DialogActions>
         </Dialog>
@@ -1075,6 +1188,8 @@ export default function ProfileSettings({ onBack }) {
             display: "flex",
             justifyContent: "center",
             zIndex: 20,
+            background: 'linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0.95) 80%, rgba(255,255,255,0) 100%)',
+            pt: 3,
           }}
         >
           <Box
@@ -1082,26 +1197,23 @@ export default function ProfileSettings({ onBack }) {
               maxWidth: 520,
               width: "100%",
               mx: 2,
-              mb: 1.5,
-              bgcolor: "#fff",
-              borderRadius: 999,
-              boxShadow: "0 16px 40px rgba(0,0,0,0.15)",
-              border: "1px solid #e2e8f0",
-              p: 1,
+              mb: 2,
               display: "flex",
-              gap: 1,
-              justifyContent: "flex-end",
+              gap: 1.5,
             }}
           >
             <Button
+              fullWidth
               variant="outlined"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               sx={{
-                borderRadius: 999,
+                borderRadius: '12px',
                 textTransform: "none",
-                fontWeight: 700,
-                color: "#475569",
+                fontWeight: 600,
+                py: 1.5,
+                color: "#64748b",
                 borderColor: "#e2e8f0",
+                backgroundColor: '#fff',
                 "&:hover": {
                   borderColor: "#cbd5e1",
                   bgcolor: "#f8fafc",
@@ -1111,17 +1223,19 @@ export default function ProfileSettings({ onBack }) {
               Preview
             </Button>
             <Button
+              fullWidth
               variant="contained"
               onClick={handleSave}
               sx={{
-                borderRadius: 999,
+                borderRadius: '12px',
                 textTransform: "none",
-                fontWeight: 700,
-                bgcolor: "#6C5CE7",
-                boxShadow: "0 4px 14px rgba(108,92,231,0.25)",
+                fontWeight: 600,
+                py: 1.5,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                boxShadow: "0 4px 14px rgba(108,92,231,0.4)",
                 "&:hover": {
-                  bgcolor: "#5b4ec6",
-                  boxShadow: "0 6px 20px rgba(108,92,231,0.35)",
+                  background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
+                  boxShadow: "0 6px 20px rgba(108,92,231,0.5)",
                 },
               }}
             >

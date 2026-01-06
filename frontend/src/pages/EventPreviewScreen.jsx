@@ -290,17 +290,10 @@ export default function EventPreviewScreen() {
                     label={tag}
                     size="small"
                     sx={{
-                      backgroundColor:
-                        tag === "Dating-friendly"
-                          ? "rgba(236,72,153,0.1)"
-                          : "rgba(108,92,231,0.08)",
-                      color:
-                        tag === "Dating-friendly" ? "#ec4899" : "#6C5CE7",
+                      backgroundColor: "rgba(108,92,231,0.08)",
+                      color: "#6C5CE7",
                       fontWeight: 600,
-                      border:
-                        tag === "Dating-friendly"
-                          ? "1px solid rgba(236,72,153,0.2)"
-                          : "1px solid rgba(108,92,231,0.15)",
+                      border: "1px solid rgba(108,92,231,0.15)",
                     }}
                   />
                 ))}

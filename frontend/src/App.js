@@ -9,6 +9,7 @@ import { Settings, CircleUser } from 'lucide-react';
 
 // Auth
 import { AuthProvider, useAuth, ONBOARDING_STATE, PERMISSION_STATE } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 // Activity (Response & Feedback Flow)
 import { ActivityProvider } from './context/ActivityContext';
 // Notifications System
@@ -41,6 +42,7 @@ import {
   SetNewPasswordScreen,
   PasswordResetSuccessScreen,
 } from './pages/auth';
+import OAuthCallbackScreen from './pages/auth/OAuthCallbackScreen';
 
 // Legacy components
 import LandingPage from './components/LandingPage';
@@ -58,7 +60,7 @@ import TabNavigation from './components/TabNavigation';
 import ChatScreen from './pages/ChatScreen';
 import MatchesScreen from './pages/MatchesScreen';
 import ExploreScreen from './pages/ExploreScreen';
-import ProfileSettings from './pages/ProfileSettingsNew';
+import ProfileSettings from './pages/ProfileSettingsV2';
 import EventsByCategory from './pages/EventsByCategory';
 import AddEvent from './pages/AddEvent';
 import NearbyScreen from './pages/NearbyScreen';
@@ -77,6 +79,19 @@ import ContactsVisibilityScreen from './pages/ContactsVisibilityScreen';
 import NotificationSettingsScreen from './pages/NotificationSettingsScreen';
 import ChatScreenNew from './pages/ChatScreenNew';
 import BlockedUsersScreen from './pages/BlockedUsersScreen';
+import AccessibilityScreen from './pages/AccessibilityScreen';
+import HelpCenterScreen from './pages/HelpCenterScreen';
+import SafetyTipsScreen from './pages/SafetyTipsScreen';
+import CommunityGuidelinesScreen from './pages/CommunityGuidelinesScreen';
+import PrivacyPolicyScreen from './pages/PrivacyPolicyScreen';
+import TermsOfServiceScreen from './pages/TermsOfServiceScreen';
+import ConnectedAccountsScreen from './pages/ConnectedAccountsScreen';
+import SubscriptionsScreen from './pages/SubscriptionsScreen';
+import AccountScreen from './pages/AccountScreen';
+import EmailEditScreen from './pages/EmailEditScreen';
+import PointsHubScreen from './pages/PointsHubScreen';
+import LikesYouScreen from './pages/LikesYouScreen';
+import AdminDashboard from './pages/AdminDashboard';
 
 // Global components
 import { GlobalErrorProvider } from './components/GlobalErrorBanner';
@@ -102,25 +117,87 @@ class ErrorBoundary extends React.Component {
     console.error('App ErrorBoundary caught:', error, info);
     this.setState({ info });
   }
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null, info: null });
+  };
+  handleGoHome = () => {
+    window.location.href = '/home';
+  };
   render() {
     if (this.state.hasError) {
       return (
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" color="error" gutterBottom>
-            Something went wrong.
+        <Box
+          sx={{
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            p: 4,
+            backgroundColor: '#f8fafc',
+            textAlign: 'center',
+          }}
+        >
+          <Box
+            sx={{
+              width: 80,
+              height: 80,
+              borderRadius: '20px',
+              backgroundColor: 'rgba(239,68,68,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mb: 3,
+              fontSize: 40,
+            }}
+          >
+            ⚠️
+          </Box>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1 }}>
+            Something went wrong
           </Typography>
-          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 1 }}>
-            {String(this.state.error)}
+          <Typography variant="body2" sx={{ color: '#64748b', mb: 4, maxWidth: 300 }}>
+            We're sorry, but something unexpected happened. Please try again.
           </Typography>
-          {this.state.error?.stack && (
-            <Typography variant="caption" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', display: 'block', mb: 1 }}>
-              {this.state.error.stack}
-            </Typography>
-          )}
-          {this.state.info?.componentStack && (
-            <Typography variant="caption" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', display: 'block' }}>
-              {this.state.info.componentStack}
-            </Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              onClick={this.handleRetry}
+              sx={{
+                px: 3,
+                py: 1.25,
+                borderRadius: '12px',
+                backgroundColor: '#6C5CE7',
+                color: '#ffffff',
+                fontWeight: 600,
+                textTransform: 'none',
+                '&:hover': { backgroundColor: '#5b4cdb' },
+              }}
+            >
+              Try Again
+            </Button>
+            <Button
+              onClick={this.handleGoHome}
+              variant="outlined"
+              sx={{
+                px: 3,
+                py: 1.25,
+                borderRadius: '12px',
+                borderColor: '#e2e8f0',
+                color: '#64748b',
+                fontWeight: 600,
+                textTransform: 'none',
+                '&:hover': { borderColor: '#cbd5e1', backgroundColor: 'rgba(0,0,0,0.02)' },
+              }}
+            >
+              Go Home
+            </Button>
+          </Box>
+          {process.env.NODE_ENV === 'development' && this.state.error && (
+            <Box sx={{ mt: 4, p: 2, backgroundColor: 'rgba(239,68,68,0.05)', borderRadius: '12px', maxWidth: 500, textAlign: 'left' }}>
+              <Typography variant="caption" sx={{ color: '#ef4444', fontFamily: 'monospace', display: 'block' }}>
+                {String(this.state.error)}
+              </Typography>
+            </Box>
           )}
         </Box>
       );
@@ -687,6 +764,12 @@ function AppShell() {
             <Route path="/auth/set-new-password" element={<SetNewPasswordScreen />} />
             <Route path="/auth/password-reset-success" element={<PasswordResetSuccessScreen />} />
             
+            {/* OAuth Callback Routes */}
+            <Route path="/auth/callback/google" element={<OAuthCallbackScreen />} />
+            <Route path="/auth/callback/facebook" element={<OAuthCallbackScreen />} />
+            <Route path="/auth/callback/apple" element={<OAuthCallbackScreen />} />
+            <Route path="/auth/callback/instagram" element={<OAuthCallbackScreen />} />
+            
             {/* Protected Routes - Require login + onboarding */}
             <Route path="/" element={<ProtectedRoute><SmartHomeRoute /></ProtectedRoute>} />
             <Route path="/home" element={<ProtectedRoute><SmartHomeRoute /></ProtectedRoute>} />
@@ -716,6 +799,20 @@ function AppShell() {
             <Route path="/settings/contacts-visibility" element={<ProtectedRoute><ContactsVisibilityScreen /></ProtectedRoute>} />
             <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsScreen /></ProtectedRoute>} />
             <Route path="/settings/blocked-users" element={<ProtectedRoute><BlockedUsersScreen /></ProtectedRoute>} />
+            <Route path="/accessibility" element={<ProtectedRoute><AccessibilityScreen /></ProtectedRoute>} />
+            <Route path="/help-center" element={<ProtectedRoute><HelpCenterScreen /></ProtectedRoute>} />
+            <Route path="/safety-tips" element={<ProtectedRoute><SafetyTipsScreen /></ProtectedRoute>} />
+            <Route path="/community-guidelines" element={<ProtectedRoute><CommunityGuidelinesScreen /></ProtectedRoute>} />
+            <Route path="/privacy-policy" element={<ProtectedRoute><PrivacyPolicyScreen /></ProtectedRoute>} />
+            <Route path="/terms-of-service" element={<ProtectedRoute><TermsOfServiceScreen /></ProtectedRoute>} />
+            <Route path="/settings/account" element={<ProtectedRoute><AccountScreen /></ProtectedRoute>} />
+            <Route path="/settings/account/email" element={<ProtectedRoute><EmailEditScreen /></ProtectedRoute>} />
+            <Route path="/settings/account/connected-accounts" element={<ProtectedRoute><ConnectedAccountsScreen /></ProtectedRoute>} />
+            <Route path="/settings/connected-accounts" element={<ProtectedRoute><ConnectedAccountsScreen /></ProtectedRoute>} />
+            <Route path="/subscriptions" element={<ProtectedRoute><SubscriptionsScreen /></ProtectedRoute>} />
+            <Route path="/points" element={<ProtectedRoute><PointsHubScreen /></ProtectedRoute>} />
+            <Route path="/likes-you" element={<ProtectedRoute><LikesYouScreen /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile-demo" element={<ProtectedRoute><ProfileCardDemo /></ProtectedRoute>} />
@@ -740,18 +837,20 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <ActivityProvider>
-          <NotificationsProvider>
-            <GlobalErrorProvider>
-              <Router>
-                <InAppNotificationBanner />
-                <AppShell />
-              </Router>
-            </GlobalErrorProvider>
-          </NotificationsProvider>
-        </ActivityProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <ActivityProvider>
+            <NotificationsProvider>
+              <GlobalErrorProvider>
+                <Router>
+                  <InAppNotificationBanner />
+                  <AppShell />
+                </Router>
+              </GlobalErrorProvider>
+            </NotificationsProvider>
+          </ActivityProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

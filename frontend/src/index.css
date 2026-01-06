@@ -5,3 +5,41 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* Accessibility: High Contrast */
+body.high-contrast {
+  filter: contrast(1.25);
+}
+
+body.high-contrast * {
+  border-color: #000 !important;
+}
+
+/* Accessibility: Reduce Motion */
+body.reduce-motion,
+body.reduce-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Accessibility: Larger Touch Targets */
+body.larger-touch-targets button,
+body.larger-touch-targets [role="button"],
+body.larger-touch-targets a,
+body.larger-touch-targets input,
+body.larger-touch-targets select {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Accessibility: Dark Mode */
+body.dark-mode {
+  background-color: #1a1a2e !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .MuiPaper-root,
+body.dark-mode .MuiBox-root {
+  background-color: #2d2d44 !important;
+  color: #f8fafc !important;
+}

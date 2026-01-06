@@ -15,11 +15,13 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogIn, Eye, EyeOff, ArrowLeft, Phone } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { loginWithPassword, apiCall } from '../../services/authApi';
 
 const LoginScreen = () => {
   const navigate = useNavigate();
   const { loginSuccess, setError: setAuthError } = useAuth();
+  const { t } = useLanguage();
   
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');

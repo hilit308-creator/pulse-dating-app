@@ -29,11 +29,13 @@ import {
   Trash2,
   Calendar,
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const TimeVisibilityScreen = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [showAddScheduleDialog, setShowAddScheduleDialog] = useState(false);
   
   // Active hours settings

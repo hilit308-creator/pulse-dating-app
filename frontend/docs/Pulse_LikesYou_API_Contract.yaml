@@ -1,0 +1,309 @@
+# Pulse_LikesYou_API_Contract.yaml (V1)
+# Likes You Reveal Feature - Gated Access
+#
+# 🔒 LOCKED NOTES:
+# - Duration: 10 minutes
+# - Cost: 80 points
+# - Server returns NULL fields when locked (no leakage)
+# - Client must refetch immediately after activation
+
+openapi: 3.0.3
+info:
+  title: Pulse Likes You API (Gated)
+  version: 1.0.0
+  description: |
+    Likes You reveal feature with gated access.
+    
+    🔒 LOCKED RULES:
+    - Duration: 10 minutes
+    - Cost: 80 points  
+    - Server is source of truth for gate state
+    - No data leakage when locked (null fields)
+    - Immediate refetch required after activation
+
+servers:
+  - url: https://api.pulse.app
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LikesYouGate:
+      type: object
+      required: [isUnlocked, expiresAt]
+      properties:
+        isUnlocked:
+          type: boolean
+          description: Whether likes are currently revealed
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the reveal expires (null if locked or permanent via Premium)
+        source:
+          type: string
+          enum: [points, premium, none]
+          description: How the unlock was achieved
+
+    LikeCard:
+      type: object
+      required: [userId, preview]
+      properties:
+        userId:
+          type: string
+          description: User ID of the person who liked
+        preview:
+          type: object
+          required: [isBlurred]
+          properties:
+            isBlurred:
+              type: boolean
+              description: Whether this card should be displayed blurred
+            photoUrl:
+              type: string
+              nullable: true
+              description: |
+                Photo URL - NULL when locked to prevent leakage.
+                Only populated when isBlurred=false.
+            displayName:
+              type: string
+              nullable: true
+              description: |
+                Display name - NULL when locked to prevent leakage.
+                Only populated when isBlurred=false.
+            age:
+              type: integer
+              nullable: true
+              description: Age - NULL when locked
+            distanceMeters:
+              type: integer
+              nullable: true
+              description: Distance in meters - NULL when locked
+        likedAt:
+          type: string
+          format: date-time
+          description: When the like was made
+
+    LikesYouResponse:
+      type: object
+      required: [gate, items]
+      properties:
+        gate:
+          $ref: '#/components/schemas/LikesYouGate'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LikeCard'
+        totalCount:
+          type: integer
+          description: Total number of likes (shown even when locked)
+        nextCursor:
+          type: string
+          nullable: true
+          description: Cursor for pagination
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+paths:
+  /v1/likes-you:
+    get:
+      summary: Get likes-you list (blurred or revealed based on gate state)
+      operationId: getLikesYou
+      tags:
+        - Likes You
+      description: |
+        Returns the list of users who liked the current user.
+        
+        When locked:
+        - preview.isBlurred = true
+        - photoUrl, displayName, age, distanceMeters = null
+        
+        When unlocked (points feature or premium):
+        - preview.isBlurred = false
+        - All fields populated
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: string
+          description: Pagination cursor
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 30
+      responses:
+        '200':
+          description: Likes you list + gate state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikesYouResponse'
+              examples:
+                locked:
+                  summary: Locked state
+                  value:
+                    gate:
+                      isUnlocked: false
+                      expiresAt: null
+                      source: none
+                    items:
+                      - userId: "u_123"
+                        preview:
+                          isBlurred: true
+                          photoUrl: null
+                          displayName: null
+                          age: null
+                          distanceMeters: null
+                        likedAt: "2026-01-07T10:00:00Z"
+                    totalCount: 5
+                    nextCursor: null
+                unlocked:
+                  summary: Unlocked state (points)
+                  value:
+                    gate:
+                      isUnlocked: true
+                      expiresAt: "2026-01-07T21:40:00Z"
+                      source: points
+                    items:
+                      - userId: "u_123"
+                        preview:
+                          isBlurred: false
+                          photoUrl: "https://cdn.pulse.app/photos/abc123.jpg"
+                          displayName: "Sarah"
+                          age: 28
+                          distanceMeters: 1500
+                        likedAt: "2026-01-07T10:00:00Z"
+                    totalCount: 5
+                    nextCursor: null
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/likes-you/count:
+    get:
+      summary: Get likes count only (always available)
+      operationId: getLikesYouCount
+      tags:
+        - Likes You
+      description: Returns just the count of likes (teaser for locked state)
+      responses:
+        '200':
+          description: Likes count
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count]
+                properties:
+                  count:
+                    type: integer
+                    description: Number of users who liked
+
+  /v1/points/activate:
+    post:
+      summary: Activate points feature (likes_you)
+      operationId: activatePointsFeature
+      tags:
+        - Points
+      description: |
+        Use the shared points activation endpoint.
+        On success, client MUST refetch /v1/likes-you immediately.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [feature]
+              properties:
+                feature:
+                  type: string
+                  enum: [likes_you]
+      responses:
+        '200':
+          description: |
+            Activated successfully.
+            Response includes activeFeature and expiresAt in balance payload.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  activeFeature:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      expiresAt:
+                        type: string
+                        format: date-time
+                  newBalance:
+                    type: integer
+        '402':
+          description: Insufficient points
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                insufficientPoints:
+                  value:
+                    code: INSUFFICIENT_POINTS
+                    message: "Not enough points. Required: 80, Available: 50"
+        '403':
+          description: Subscription active (points disabled)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                premiumActive:
+                  value:
+                    code: PREMIUM_ACTIVE
+                    message: "Points features disabled for premium users"
+        '409':
+          description: Feature already active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# 🔒 SECURITY NOTES:
+#
+# 1. No Data Leakage:
+#    - When locked, server MUST return null for: photoUrl, displayName, age, distanceMeters
+#    - Client MUST NOT cache revealed data
+#    - Photo URLs should be signed/temporary
+#
+# 2. Gate Enforcement:
+#    - Server validates gate state on EVERY request
+#    - Client cannot bypass by caching previous responses
+#
+# 3. Expiry Handling:
+#    - Timer runs server-side
+#    - Client polls or gets notified of expiry
+#    - On expiry, next request returns blurred data

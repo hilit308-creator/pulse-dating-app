@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { requestOtp, apiCall } from '../../services/authApi';
 import OnboardingHeader from '../../components/OnboardingHeader';
 
@@ -36,6 +37,7 @@ const COUNTRY_CODES = [
 const PhoneInputScreen = () => {
   const navigate = useNavigate();
   const { setOtpSent, setError: setAuthError, updateOnboardingStep } = useAuth();
+  const { t } = useLanguage();
   
   const [countryCode, setCountryCode] = useState('+972');
 

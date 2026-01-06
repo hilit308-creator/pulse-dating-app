@@ -1,0 +1,247 @@
+# Pulse_NearbyPriority_API_Contract.yaml (V1)
+# Nearby Priority Ranking Boost - Server-Side Only
+#
+# 🔒 LOCKED NOTES:
+# - Duration: 10 minutes
+# - Cost: 70 points
+# - Affects: Nearby feed ONLY
+# - Does NOT change distance/location
+# - Invisible to other users
+
+openapi: 3.0.3
+info:
+  title: Pulse Nearby Priority API (Add-on)
+  version: 1.0.0
+  description: |
+    Nearby Priority ranking boost API.
+    
+    Activation via /v1/points/activate with nearby_priority.
+    Status endpoint for checking current state.
+    
+    🔒 LOCKED RULES:
+    - Duration: 10 minutes
+    - Cost: 70 points
+    - Nearby feed only
+    - No distance/location changes
+    - Invisible to others
+    - Server is source of truth
+
+servers:
+  - url: https://api.pulse.app
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PriorityStatus:
+      type: object
+      required: [active]
+      properties:
+        active:
+          type: boolean
+          description: Whether Nearby Priority is currently active
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the priority expires (null if not active)
+        boostValue:
+          type: number
+          nullable: true
+          description: |
+            Current boost value applied (INTERNAL ONLY).
+            Do not expose to client in production.
+
+    NearbyUser:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: string
+        distanceMeters:
+          type: integer
+          description: |
+            Distance in meters. 
+            NOT affected by Nearby Priority - always shows real distance.
+        lastActive:
+          type: string
+          format: date-time
+          nullable: true
+
+    NearbyFeedResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NearbyUser'
+        nextCursor:
+          type: string
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+paths:
+  /v1/priority/nearby/status:
+    get:
+      summary: Get Nearby Priority status (server truth)
+      operationId: getNearbyPriorityStatus
+      tags:
+        - Nearby Priority
+      responses:
+        '200':
+          description: Current priority status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriorityStatus'
+              examples:
+                active:
+                  summary: Priority active
+                  value:
+                    active: true
+                    expiresAt: "2026-01-07T22:10:00Z"
+                inactive:
+                  summary: Priority inactive
+                  value:
+                    active: false
+                    expiresAt: null
+
+  /v1/feed/nearby:
+    get:
+      summary: Nearby feed (priority applied server-side if active)
+      operationId: getNearbyFeed
+      tags:
+        - Feed
+      description: |
+        Returns nearby users with Nearby Priority ranking applied server-side.
+        
+        IMPORTANT:
+        - Distance values are REAL - not affected by priority
+        - Ranking order may be affected by priority
+        - Client cannot tell if priority is active for other users
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 30
+        - in: query
+          name: maxDistance
+          required: false
+          schema:
+            type: integer
+            description: Max distance in meters (priority does NOT bypass this)
+      responses:
+        '200':
+          description: Feed list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NearbyFeedResponse'
+
+  /v1/points/activate:
+    post:
+      summary: Activate points feature (nearby_priority)
+      operationId: activateNearbyPriority
+      tags:
+        - Points
+      description: |
+        Activates Nearby Priority feature.
+        Returns updated points balance and activeFeature expiry.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [feature]
+              properties:
+                feature:
+                  type: string
+                  enum: [nearby_priority]
+      responses:
+        '200':
+          description: Activated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  activeFeature:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: nearby_priority
+                      expiresAt:
+                        type: string
+                        format: date-time
+                  newBalance:
+                    type: integer
+        '402':
+          description: Insufficient points
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                insufficientPoints:
+                  value:
+                    code: INSUFFICIENT_POINTS
+                    message: "Not enough points. Required: 70, Available: 50"
+        '403':
+          description: Subscription active (points disabled)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# 🔒 IMPLEMENTATION NOTES:
+#
+# 1. Ranking Model (Additive - Recommended):
+#    final_score = base_score + nearby_priority_boost
+#    - boost value: configurable (e.g., 50-100 points)
+#    - cap: max X positions forward
+#
+# 2. Filter Safety (CRITICAL):
+#    Priority MUST NOT bypass:
+#    - Distance filter (maxDistance)
+#    - Age filter
+#    - Preference filters
+#    - Blocks/reports
+#    - Privacy settings
+#
+# 3. Invisibility:
+#    - No badge on user's profile
+#    - No indicator to other users
+#    - No "boosted" tag in feed
+#
+# 4. Distance Truth:
+#    - distanceMeters ALWAYS shows real distance
+#    - Priority only affects ranking, not distance display

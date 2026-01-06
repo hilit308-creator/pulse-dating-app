@@ -29,6 +29,7 @@ import {
   Tooltip,
   Alert,
 } from "@mui/material";
+import { useLanguage } from '../context/LanguageContext';
 import {
   ArrowLeft,
   Send,
@@ -48,7 +49,19 @@ import {
   Stars,
   MessageCircleQuestion,
   HeartHandshake,
+  Shield,
+  Users,
+  MapPin,
+  MessageCircle,
+  UserPlus,
+  X,
+  Navigation,
+  AlertTriangle,
+  Lock,
 } from "lucide-react";
+// Chat Gates - ready for integration when needed
+// import ChatGateBanner from "../components/ChatGateBanner";
+// import { BLOCK_REASONS, getComposerPlaceholder } from "../services/ChatGateService";
 
 /* ----------------- helpers ----------------- */
 const fmtHM = (ts) =>
@@ -100,6 +113,59 @@ const hostOf = (u) => {
   }
 };
 
+/* --------- Agent API Configuration --------- */
+const AGENT_URL = "http://localhost:5000";
+
+async function fetchAgentSuggestions({ chat, triggerType, currentDraft }) {
+  const messages = (chat?.messages || []).slice(-30).map(m => ({
+    id: m.id,
+    from: m.from, // "me" | "them"
+    text: m.text || "",
+    ts: m.timestamp || Date.now(),
+  }));
+
+  const payload = {
+    request_id: String(Date.now()),
+    mode: "dating",
+    user_id: "me",
+    chat_id: String(chat?.matchId),
+    counterparty_id: String(chat?.user?.id),
+    messages,
+    context: {
+      trigger_type: triggerType,
+      current_draft: currentDraft || "",
+      social_load: { active_chats: 1, is_primary: true },
+    },
+    preferences: {}
+  };
+
+  const res = await fetch(`${AGENT_URL}/agent/suggest`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("agent_failed");
+  return await res.json();
+}
+
+async function sendAgentFeedback({ traceId, action, suggestionText, finalText }) {
+  try {
+    await fetch(`${AGENT_URL}/agent/feedback`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        trace_id: traceId,
+        action,
+        suggestion_text: suggestionText,
+        final_text: finalText,
+        timestamp: Date.now(),
+      }),
+    });
+  } catch (e) {
+    console.warn("Agent feedback failed:", e);
+  }
+}
+
 /* --------- Demo data (כולל “שוחח עם AI” + “Therapist Bot”) --------- */
 const DEFAULT_DISAPPEARING_SECONDS = 7200; // ← שעתיים ברירת־מחדל
 
@@ -111,43 +177,34 @@ const CONNECTION_SOURCE = {
   BUSINESS: 'business',
 };
 
-const THERAPIST_ID = "bot-therapy";
-
-const THERAPY_ROW = {
-  matchId: THERAPIST_ID,
-  user: {
-    id: THERAPIST_ID,
-    name: "Therapist Bot",
-    age: "",
-    photoUrl: "",
-  },
-  user24hPhoto: null,
-  messages: [
-    {
-      id: 9001,
-      from: "them",
-      type: "text",
-      text:
-        "היי, אני כאן לשיחה תומכת ולא-קלינית. כתבי/ה מה מרגישים עכשיו ונחשוב יחד על צעד קטן שיעזור. במצב חירום — פנו מיד לעזרה דחופה באזורכם.",
-      timestamp: Date.now() - 10 * 60 * 1000,
-      status: "read",
-      reactions: {},
-    },
-  ],
-  lastSentAt: Date.now() - 10 * 60 * 1000,
-  status: "active",
-  pinned: true,
-  muted: false,
-  themeColor: "#EEF6FF",
-  disappearingSeconds: DEFAULT_DISAPPEARING_SECONDS,
-  therapist: true,
+// Meeting Time + SOS Constants (Locked Copy - Do Not Change)
+const MEETING_STATE = {
+  INACTIVE: 'inactive',
+  ACTIVE: 'active',
 };
 
-const AI_ADVISOR_ROW = {
-  matchId: -999,
+const SOS_STATE = {
+  NONE: 'none',
+  SEARCHING: 'searching',
+  HELPER_FOUND: 'helper_found',
+  HELPER_APPROACHING: 'helper_approaching',
+  HELPER_ARRIVED: 'helper_arrived',
+};
+
+const SOS_TIMEOUT_SEARCH = 90000; // 90 seconds
+const SOS_TIMEOUT_PROGRESS = 180000; // 3 minutes
+
+// Meeting contacts storage key
+const MEETING_CONTACTS_KEY = 'pulse_meeting_contacts';
+
+// Unified Agent ID - single bot for both coach and therapist modes
+const AGENT_ID = "pulse-agent";
+
+const AGENT_ROW = {
+  matchId: AGENT_ID,
   user: {
-    id: -999,
-    name: "AI Coach",
+    id: AGENT_ID,
+    name: "Pulse | Coach",
     age: "",
     photoUrl: "",
   },
@@ -158,7 +215,10 @@ const AI_ADVISOR_ROW = {
       from: "them",
       type: "text",
       text:
-        "אני כאן לעזור לך לנסח הודעות חכמות ומהירות בהתאם למי שמולך. בחר יעד שיחה משמאל או שלח לי הקשר קצר 😄",
+        "היי! 👋 אני כאן בשבילך.\n\n" +
+        "💬 צריך/ה עזרה בניסוח הודעה? פשוט תאר/י את המצב.\n" +
+        "💙 רוצה לדבר על משהו שמעיק? אני כאן להקשיב.\n\n" +
+        "איך אפשר לעזור?",
       timestamp: Date.now() - 120000,
       status: "read",
       reactions: {},
@@ -168,9 +228,15 @@ const AI_ADVISOR_ROW = {
   status: "active",
   pinned: true,
   muted: false,
-  themeColor: "#F7F7FE",
+  themeColor: "#F0F7FF",
   disappearingSeconds: DEFAULT_DISAPPEARING_SECONDS,
+  isAgent: true, // Flag to identify this as the unified agent
 };
+
+// Legacy aliases for backwards compatibility during refactor
+const THERAPIST_ID = AGENT_ID;
+const THERAPY_ROW = AGENT_ROW;
+const AI_ADVISOR_ROW = AGENT_ROW;
 
 const demoChats = [
   {
@@ -976,9 +1042,38 @@ function genTherapyReply(userText = "") {
   return reply;
 }
 
+function genCoachReply(userText = "") {
+  // Extract name from "Tips for chatting with Name (age)" pattern
+  const nameMatch = userText.match(/chatting with (\w+)/i) || userText.match(/לשוחח עם (\w+)/);
+  const name = nameMatch ? nameMatch[1] : "them";
+  
+  const tipSets = [
+    `הנה כמה רעיונות לשיחה עם ${name}:\n\n` +
+    `1️⃣ "היי ${name}! מה עשית היום שגרם לך לחייך?"\n` +
+    `2️⃣ "ראיתי שאת/ה אוהב/ת [תחום מהפרופיל] - מה הסיפור?"\n` +
+    `3️⃣ "יש לך תוכניות מעניינות לסופ\"ש?"\n\n` +
+    `💡 טיפ: שאלות פתוחות עובדות טוב יותר מכן/לא!`,
+    
+    `כמה גישות שעובדות:\n\n` +
+    `🎯 פתיחה קלילה: "היי! איך השבוע שלך?"\n` +
+    `🎯 משהו ספציפי: התייחס/י לפרטים מהפרופיל\n` +
+    `🎯 הומור קל: "אז מי מנצח בדיון על [נושא]? 😄"\n\n` +
+    `⚡ זכור/י: אותנטיות > ניסיון להרשים`,
+    
+    `טיפים לשיחה עם ${name}:\n\n` +
+    `✨ תתחיל/י בקל - לא צריך להיות מושלם\n` +
+    `✨ שאל/י משהו שמעניין אותך באמת\n` +
+    `✨ תגיב/י למה שהם אומרים, לא רק תשאל/י שאלות\n\n` +
+    `דוגמה: "נשמע מעניין! ואיך הגעת לזה?"`,
+  ];
+  
+  return tipSets[Math.floor(Math.random() * tipSets.length)];
+}
+
 /* ================== Main ================== */
 export default function ChatScreen() {
-  const [chats, setChats] = useState([THERAPY_ROW, AI_ADVISOR_ROW, ...demoChats]);
+  const { t } = useLanguage();
+  const [chats, setChats] = useState([AGENT_ROW, ...demoChats]); // Single unified Agent
   const [openChat, setOpenChat] = useState(null);
   const chat = useMemo(
     () => chats.find((c) => c.matchId === openChat),
@@ -1034,6 +1129,241 @@ export default function ChatScreen() {
     user: null,
   });
   const [viewProfile, setViewProfile] = useState({ open: false, user: null });
+
+  // ==================== Meeting Time + SOS State ====================
+  const [meetingState, setMeetingState] = useState(MEETING_STATE.INACTIVE);
+  const [meetingWith, setMeetingWith] = useState(null); // The user we're meeting with
+  const [meetingStartTime, setMeetingStartTime] = useState(null);
+  const [showMeetingScreen, setShowMeetingScreen] = useState(false);
+  
+  // Meeting contacts (in-app circles)
+  const [meetingContacts, setMeetingContacts] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(MEETING_CONTACTS_KEY) || '[]');
+    } catch { return []; }
+  });
+  const [contactsNotifiedThisMeeting, setContactsNotifiedThisMeeting] = useState([]);
+  
+  // Location sharing state
+  const [locationSharing, setLocationSharing] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const locationWatchRef = useRef(null);
+  
+  // SOS State
+  const [sosState, setSosState] = useState(SOS_STATE.NONE);
+  const [sosRequestId, setSosRequestId] = useState(null);
+  const [sosHelper, setSosHelper] = useState(null);
+  const [sosHelperDistance, setSosHelperDistance] = useState(null);
+  const sosTimeoutRef = useRef(null);
+  
+  // Modals
+  const [showContactsSetupModal, setShowContactsSetupModal] = useState(false);
+  const [showEndMeetingConfirm, setShowEndMeetingConfirm] = useState(false);
+  const [showSupportChat, setShowSupportChat] = useState(false);
+  const [showQuickAddContact, setShowQuickAddContact] = useState(false);
+  const [showSafetySummary, setShowSafetySummary] = useState(false);
+  const [meetingEndedWith, setMeetingEndedWith] = useState(null); // Store who we met with for Safety Summary
+  const [showContactNotifyModal, setShowContactNotifyModal] = useState(false);
+  const [contactToNotify, setContactToNotify] = useState(null); // Contact pending confirmation
+
+  // Save meeting contacts to localStorage
+  useEffect(() => {
+    localStorage.setItem(MEETING_CONTACTS_KEY, JSON.stringify(meetingContacts));
+  }, [meetingContacts]);
+
+  // Location tracking during meeting
+  useEffect(() => {
+    if (meetingState === MEETING_STATE.ACTIVE && locationSharing) {
+      if (navigator.geolocation) {
+        locationWatchRef.current = navigator.geolocation.watchPosition(
+          (pos) => {
+            setCurrentLocation({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy,
+              timestamp: Date.now(),
+            });
+          },
+          (err) => console.warn('Location error:', err),
+          { enableHighAccuracy: true, maximumAge: 10000 }
+        );
+      }
+    }
+    return () => {
+      if (locationWatchRef.current) {
+        navigator.geolocation.clearWatch(locationWatchRef.current);
+        locationWatchRef.current = null;
+      }
+    };
+  }, [meetingState, locationSharing]);
+
+  // Start Meeting handler
+  const handleStartMeeting = useCallback(() => {
+    if (!chat || chat.matchId === AGENT_ID) return;
+    
+    // Check if meeting contacts are set up
+    if (meetingContacts.length === 0) {
+      setShowContactsSetupModal(true);
+      return;
+    }
+    
+    // Atomic state update - Meeting starts immediately
+    setMeetingState(MEETING_STATE.ACTIVE);
+    setMeetingWith(chat.user);
+    setMeetingStartTime(Date.now());
+    setLocationSharing(true);
+    setShowMeetingScreen(true);
+    setContactsNotifiedThisMeeting([]);
+  }, [chat, meetingContacts]);
+
+  // Continue without contacts (WhatsApp only)
+  const handleContinueWithoutContacts = useCallback(() => {
+    if (!chat) return;
+    setShowContactsSetupModal(false);
+    setMeetingState(MEETING_STATE.ACTIVE);
+    setMeetingWith(chat.user);
+    setMeetingStartTime(Date.now());
+    setLocationSharing(true);
+    setShowMeetingScreen(true);
+    setContactsNotifiedThisMeeting([]);
+  }, [chat]);
+
+  // End Meeting handler
+  const handleEndMeeting = useCallback(() => {
+    // If SOS is active, show confirmation
+    if (sosState !== SOS_STATE.NONE) {
+      setShowEndMeetingConfirm(true);
+      return;
+    }
+    
+    // End meeting immediately
+    performEndMeeting();
+  }, [sosState]);
+
+  const performEndMeeting = useCallback(() => {
+    // Cancel any active SOS
+    if (sosState !== SOS_STATE.NONE) {
+      cancelSOS();
+    }
+    
+    // Stop location sharing
+    setLocationSharing(false);
+    if (locationWatchRef.current) {
+      navigator.geolocation.clearWatch(locationWatchRef.current);
+      locationWatchRef.current = null;
+    }
+    
+    // Store who we met with for Safety Summary
+    setMeetingEndedWith(meetingWith);
+    
+    // Reset meeting state
+    setMeetingState(MEETING_STATE.INACTIVE);
+    setMeetingWith(null);
+    setMeetingStartTime(null);
+    setShowMeetingScreen(false);
+    setShowEndMeetingConfirm(false);
+    setContactsNotifiedThisMeeting([]);
+    setCurrentLocation(null);
+    
+    // Show Safety Summary (as per spec section 10)
+    setShowSafetySummary(true);
+  }, [sosState, meetingWith]);
+
+  // SOS Handlers - Per corrected spec:
+  // - One helper only (first accept wins)
+  // - Cancel SOS doesn't end Meeting
+  // - Timeouts: 90s helper disappears without heartbeat → auto re-scan
+  //            3min no progress (distance not decreasing) → auto re-scan
+  const triggerSOS = useCallback(() => {
+    if (meetingState !== MEETING_STATE.ACTIVE) return;
+    
+    const requestId = `sos_${Date.now()}`;
+    setSosRequestId(requestId);
+    setSosState(SOS_STATE.SEARCHING);
+    setSosHelper(null);
+    setSosHelperDistance(null);
+    
+    // Demo: find helper after 5s (in production this would be real helper matching)
+    sosTimeoutRef.current = setTimeout(() => {
+      simulateHelperFound();
+    }, 5000);
+  }, [meetingState]);
+
+  const simulateHelperFound = useCallback(() => {
+    setSosState(SOS_STATE.HELPER_FOUND);
+    const helper = {
+      id: 'helper_1',
+      name: 'Sarah',
+      distance: 0.8,
+      eta: '3 min',
+      lastHeartbeat: Date.now(),
+    };
+    setSosHelper(helper);
+    setSosHelperDistance(0.8);
+    
+    // Per spec: Helper timeout - 90s without heartbeat/location → auto re-scan
+    // Per spec: Progress timeout - 3min without distance decrease → auto re-scan
+    // (In production, these would be real network checks)
+    
+    // Simulate helper approaching (with distance decreasing)
+    setTimeout(() => {
+      setSosState(SOS_STATE.HELPER_APPROACHING);
+      setSosHelperDistance(0.4);
+      setSosHelper(prev => prev ? { ...prev, lastHeartbeat: Date.now() } : null);
+    }, 3000);
+    
+    // Simulate helper arrived
+    setTimeout(() => {
+      setSosState(SOS_STATE.HELPER_ARRIVED);
+      setSosHelperDistance(0);
+      setSosHelper(prev => prev ? { ...prev, lastHeartbeat: Date.now() } : null);
+    }, 8000);
+  }, []);
+
+  const cancelSOS = useCallback(() => {
+    if (sosTimeoutRef.current) {
+      clearTimeout(sosTimeoutRef.current);
+      sosTimeoutRef.current = null;
+    }
+    setSosState(SOS_STATE.NONE);
+    setSosRequestId(null);
+    setSosHelper(null);
+    setSosHelperDistance(null);
+  }, []);
+
+  // Notify contact (in-app) - Show confirmation modal first (per spec section 5)
+  const handleContactCircleClick = useCallback((contact) => {
+    if (contactsNotifiedThisMeeting.includes(contact.id)) return;
+    
+    // Show confirmation modal with message preview and location notice
+    setContactToNotify(contact);
+    setShowContactNotifyModal(true);
+  }, [contactsNotifiedThisMeeting]);
+
+  // Confirm and send notification to contact
+  const confirmNotifyContact = useCallback(() => {
+    if (!contactToNotify) return;
+    
+    // Mark as notified
+    setContactsNotifiedThisMeeting(prev => [...prev, contactToNotify.id]);
+    
+    // In real app: send notification with location
+    console.log(`Notifying ${contactToNotify.name} with location:`, currentLocation);
+    
+    // Close modal
+    setShowContactNotifyModal(false);
+    setContactToNotify(null);
+  }, [contactToNotify, currentLocation]);
+
+  // Share via WhatsApp
+  const shareViaWhatsApp = useCallback(() => {
+    const locationUrl = currentLocation 
+      ? `https://maps.google.com/?q=${currentLocation.lat},${currentLocation.lng}`
+      : '';
+    const message = `I'm meeting someone from Pulse. Here's my live location: ${locationUrl}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  }, [currentLocation]);
 
   const handleOwnStoryClick = () => fileInputRef.current?.click();
   const handleOwnPhotoUpload = (e) => {
@@ -1418,39 +1748,98 @@ export default function ChatScreen() {
     setAiRemember(Boolean(localStorage.getItem(`ai_tone_${chat.matchId}`) || localStorage.getItem(`ai_len_${chat.matchId}`) || localStorage.getItem(`ai_intent_${chat.matchId}`)));
   }, [chat?.matchId]);
 
-  const computeAI = useCallback(() => {
-    const knowns = (() => {
-      try {
-        const mm = JSON.parse(localStorage.getItem("matches_demo") || "[]");
-        const ll = JSON.parse(localStorage.getItem("likes_demo") || "[]");
-        const hit = [...mm, ...ll].find(
-          (x) => x.id === chat?.matchId || x.name === chat?.user?.name
-        );
-        return hit || {};
-      } catch {
-        return {};
+  const [agentTraceId, setAgentTraceId] = useState(null);
+  const typingTimerRef = useRef(null);
+
+  const computeAI = useCallback(async (triggerType = "button_click") => {
+    if (!chat) return;
+    if (chat.matchId === AGENT_ID) return; // Agent chat has its own system
+
+    try {
+      const out = await fetchAgentSuggestions({
+        chat,
+        triggerType,
+        currentDraft: input,
+      });
+
+      if (out.action === "abstain") {
+        setAiOptions([]);
+        setAgentTraceId(null);
+        return;
       }
-    })();
 
-    const toName = knowns?.name || chat?.user?.name || "there";
-    const interests = knowns?.interests || [];
-    const last = chat?.messages?.slice(-1)[0];
-    const lastThem = last?.from === "them" ? (last.text || "") : "";
-    const list = buildAISuggestions({
-      toName,
-      interests,
-      lastThem,
-      tone: aiTone,
-      length: aiLen,
-      intent: aiIntent,
-    });
-    setAiOptions(list);
-  }, [chat?.matchId, chat?.user?.name, chat?.messages, aiTone, aiLen, aiIntent]);
+      setAgentTraceId(out?.meta?.decision_trace_id || null);
+      setAiOptions(
+        (out.suggestions || []).map((s) => s.text)
+      );
+    } catch (e) {
+      console.warn("Agent API failed, falling back to local:", e);
+      // Fallback to local suggestions
+      const knowns = (() => {
+        try {
+          const mm = JSON.parse(localStorage.getItem("matches_demo") || "[]");
+          const ll = JSON.parse(localStorage.getItem("likes_demo") || "[]");
+          const hit = [...mm, ...ll].find(
+            (x) => x.id === chat?.matchId || x.name === chat?.user?.name
+          );
+          return hit || {};
+        } catch {
+          return {};
+        }
+      })();
 
+      const toName = knowns?.name || chat?.user?.name || "there";
+      const interests = knowns?.interests || [];
+      const last = chat?.messages?.slice(-1)[0];
+      const lastThem = last?.from === "them" ? (last.text || "") : "";
+      const list = buildAISuggestions({
+        toName,
+        interests,
+        lastThem,
+        tone: aiTone,
+        length: aiLen,
+        intent: aiIntent,
+      });
+      setAiOptions(list);
+      setAgentTraceId(null);
+    }
+  }, [chat, input, aiTone, aiLen, aiIntent]);
+
+  // Track if user just sent a message (to calm down Agent)
+  const [userJustSent, setUserJustSent] = useState(false);
+  const lastThemMsgRef = useRef(null);
+
+  // Detect new incoming message
+  useEffect(() => {
+    if (!chat?.messages?.length) return;
+    const lastMsg = chat.messages[chat.messages.length - 1];
+    if (lastMsg?.from === "them" && lastMsg.id !== lastThemMsgRef.current) {
+      lastThemMsgRef.current = lastMsg.id;
+      setUserJustSent(false); // Reset - new message from them, Agent can suggest again
+    }
+  }, [chat?.messages]);
+
+  // Debounce: fetch suggestions on typing pause (850ms)
+  // Only if: there's a recent message from "them" AND user hasn't just sent their own message
   useEffect(() => {
     if (!chat) return;
-    computeAI();
-  }, [computeAI]);
+    if (!input?.trim()) return;
+    if (chat.matchId === AGENT_ID) return; // Agent chat has its own system
+    if (userJustSent) return; // Agent calms down after user sends
+
+    // Check if there's a recent message from them to respond to
+    const lastMsg = chat.messages?.[chat.messages.length - 1];
+    const hasRecentThemMessage = lastMsg?.from === "them";
+    if (!hasRecentThemMessage) return; // Only suggest after incoming message
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+
+    typingTimerRef.current = setTimeout(() => {
+      computeAI("typing_pause");
+    }, 850);
+
+    return () => clearTimeout(typingTimerRef.current);
+  }, [input, chat?.matchId, chat?.messages?.length, userJustSent]);
 
   const persistIfNeeded = useCallback(
     (tone, len, intent) => {
@@ -1468,11 +1857,59 @@ export default function ChatScreen() {
     [aiRemember, chat?.matchId]
   );
 
-  /* ======= Therapist state ======= */
-  const isAIChat = chat?.matchId === AI_ADVISOR_ROW.matchId;
-  const isTherapy = chat?.matchId === THERAPIST_ID;
+  /* ======= Agent state ======= */
+  const isAgentChat = chat?.matchId === AGENT_ID;
   const [showCrisis, setShowCrisis] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  
+  // Agent mode per chat: "auto" | "coach" | "therapist"
+  const [agentModes, setAgentModes] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("agent_modes") || "{}");
+    } catch { return {}; }
+  });
+  
+  const getAgentMode = (chatId) => agentModes[chatId] || "auto";
+  const setAgentMode = (chatId, mode) => {
+    const updated = { ...agentModes, [chatId]: mode };
+    setAgentModes(updated);
+    localStorage.setItem("agent_modes", JSON.stringify(updated));
+  };
+
+  // Call unified Agent API with new contract
+  const callAgentAPI = async (userMessage, trigger = "after_incoming_message") => {
+    try {
+      const messages = (chat?.messages || []).slice(-30).map(m => ({
+        id: m.id,
+        from: m.from,
+        text: m.text || "",
+        ts: m.timestamp || Date.now(),
+      }));
+      // Add the new message
+      messages.push({ id: Date.now(), from: "me", text: userMessage, ts: Date.now() });
+
+      const mode = getAgentMode(chat?.matchId); // Get saved mode for this chat
+
+      const res = await fetch(`${AGENT_URL}/agent/evaluate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: "me",
+          chat_id: String(chat?.matchId),
+          trigger,
+          mode, // "auto" | "coach" | "therapist"
+          draft_text: userMessage,
+          messages,
+        }),
+      });
+      
+      if (!res.ok) throw new Error("agent_failed");
+      return await res.json();
+    } catch (e) {
+      console.warn("Agent API failed:", e);
+      return null;
+    }
+  };
 
   /* ======= SEND ======= */
   const handleSend = () => {
@@ -1498,15 +1935,52 @@ export default function ChatScreen() {
     }
 
     const extra = replyDraft ? { replyTo: { ...replyDraft } } : {};
-    const sentId = pushMessage(input.trim(), extra);
+    const userMessage = input.trim();
+    const sentId = pushMessage(userMessage, extra);
+    
+    // Agent calms down after user sends their own message
+    setUserJustSent(true);
+    setAiOptions([]); // Clear suggestions after sending
 
-    if (isTherapy) {
-      const crisis = isCrisis(input);
-      if (crisis) setShowCrisis(true);
-      setTimeout(() => {
+    // Unified Agent response (handles both therapist and coach modes)
+    console.log("[DEBUG] handleSend - isAgentChat:", isAgentChat, "matchId:", chat?.matchId, "AGENT_ID:", AGENT_ID);
+    if (isAgentChat) {
+      console.log("[DEBUG] Calling callAgentAPI...");
+      // Call unified Agent API with new contract
+      callAgentAPI(userMessage, "after_incoming_message").then((res) => {
+        console.log("[DEBUG] callAgentAPI response:", res);
+        if (!res) return;
+        
+        // Handle crisis flag - show banner
+        if (res.crisis_flag) {
+          setShowCrisis(true);
+        }
+        
+        // Handle no_op - no response needed
+        if (res.decision === "no_op") {
+          return;
+        }
+        
+        let responseText;
+        const payload = res.payload || {};
+        
+        if (res.mode_used === "therapist" && payload.reply_text) {
+          // Therapist mode - empathetic reply
+          responseText = payload.reply_text;
+        } else if (res.decision === "suggest" && payload.suggestions?.length > 0) {
+          // Coach mode - format suggestions
+          const sug = payload.suggestions;
+          responseText = "הנה כמה רעיונות:\n\n" + 
+            sug.map((s, i) => `${i + 1}️⃣ "${s.text}"`).join("\n\n") +
+            "\n\n💡 לחץ/י על Regenerate לעוד אפשרויות";
+        } else {
+          // Fallback
+          responseText = "אני כאן לעזור. ספר/י לי עוד על מה שקורה?";
+        }
+
         setChats((prev) =>
           prev.map((c) =>
-            c.matchId !== THERAPIST_ID
+            c.matchId !== AGENT_ID
               ? c
               : {
                   ...c,
@@ -1516,18 +1990,19 @@ export default function ChatScreen() {
                       id: Date.now() + 1,
                       from: "them",
                       type: "text",
-                      text: genTherapyReply(input),
+                      text: responseText,
                       timestamp: Date.now(),
                       status: "read",
                       reactions: {},
-                      replyTo: { id: sentId, from: "me", text: input },
+                      agentMode: res.mode_used,
+                      agentState: res.state,
                     },
                   ],
                   lastSentAt: Date.now(),
                 }
           )
         );
-      }, 700);
+      });
     }
 
     setReplyDraft(null);
@@ -1636,6 +2111,120 @@ export default function ChatScreen() {
   if (!openChat) {
     return (
       <Box sx={{ display: "flex", flexDirection: "column", height: "100dvh", bgcolor: "#fff" }}>
+        {/* Global Meeting Top Bar - Also shown in list view */}
+        {meetingState === MEETING_STATE.ACTIVE && (
+          <Box
+            sx={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 1500,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1,
+              bgcolor: sosState === SOS_STATE.NONE ? '#10B981' : 
+                       sosState === SOS_STATE.SEARCHING ? '#F59E0B' :
+                       sosState === SOS_STATE.HELPER_ARRIVED ? '#10B981' : '#3B82F6',
+              color: '#fff',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              transition: 'background-color 0.3s ease',
+            }}
+          >
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1, 
+                cursor: 'pointer',
+                '&:hover': { opacity: 0.9 },
+              }}
+              onClick={() => setShowMeetingScreen(true)}
+              role="button"
+              aria-label="Return to Meeting Time"
+            >
+              <Box
+                sx={{
+                  position: 'relative',
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  ...(sosState === SOS_STATE.SEARCHING && {
+                    animation: 'pulseGlow 2s ease-in-out infinite',
+                  }),
+                }}
+              >
+                <Users size={18} />
+                {sosState === SOS_STATE.HELPER_ARRIVED && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: -2,
+                      right: -2,
+                      bgcolor: '#fff',
+                      borderRadius: '50%',
+                      width: 14,
+                      height: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Check size={10} color="#10B981" />
+                  </Box>
+                )}
+              </Box>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                  {sosState === SOS_STATE.NONE && 'Meeting in progress'}
+                  {sosState === SOS_STATE.SEARCHING && 'Finding helper...'}
+                  {sosState === SOS_STATE.HELPER_FOUND && `Helper found`}
+                  {sosState === SOS_STATE.HELPER_APPROACHING && `Helper approaching`}
+                  {sosState === SOS_STATE.HELPER_ARRIVED && 'Helper arrived'}
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1 }}>
+                  {meetingWith?.name && `with ${meetingWith.name}`}
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {sosState !== SOS_STATE.NONE && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={cancelSOS}
+                  sx={{ 
+                    color: '#fff', 
+                    borderColor: 'rgba(255,255,255,0.5)',
+                    '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' },
+                  }}
+                >
+                  Cancel SOS
+                </Button>
+              )}
+              <IconButton
+                aria-label="SOS"
+                onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined}
+                disabled={sosState !== SOS_STATE.NONE}
+                sx={{
+                  bgcolor: sosState === SOS_STATE.NONE ? '#DC2626' : 'rgba(255,255,255,0.2)',
+                  color: '#fff',
+                  width: 44,
+                  height: 44,
+                  '&:hover': { bgcolor: sosState === SOS_STATE.NONE ? '#B91C1C' : undefined },
+                  '&:disabled': { color: 'rgba(255,255,255,0.7)' },
+                }}
+              >
+                <Shield size={22} />
+              </IconButton>
+            </Box>
+          </Box>
+        )}
+
         {/* Header */}
         <Box
           sx={{
@@ -1643,22 +2232,22 @@ export default function ChatScreen() {
             py: 1.5,
             borderBottom: "1px solid #eee",
             position: "sticky",
-            top: 0,
+            top: meetingState === MEETING_STATE.ACTIVE ? 56 : 0,
             bgcolor: "#fff",
             zIndex: 2,
           }}
         >
           <Typography variant="h6" sx={{ fontWeight: 800 }}>
-            Your chats
+            {t('chats')}
           </Typography>
           <Typography variant="body2" sx={{ color: "#6B7280" }}>
-            Choose who you want to chat with
+            {t('startConversation')}
           </Typography>
           
           {/* Pulse spec: Sort tabs */}
           <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
             <Chip 
-              label="Active" 
+              label={t('online')} 
               onClick={() => setChatListSort('active')}
               sx={{ 
                 fontWeight: 600,
@@ -1668,7 +2257,7 @@ export default function ChatScreen() {
               }}
             />
             <Chip 
-              label="New connections" 
+              label={t('newMatch')} 
               onClick={() => setChatListSort('new')}
               sx={{ 
                 fontWeight: 600,
@@ -1962,7 +2551,7 @@ export default function ChatScreen() {
                   setViewStory({ open: false, photo: null, user: null })
                 }
               >
-                Close
+                {t('close')}
               </Button>
             </Box>
           </Fade>
@@ -2017,16 +2606,14 @@ export default function ChatScreen() {
             </Typography>
           ) : (
             <Typography variant="caption" sx={{ color: "#6B7280" }}>
-              {chat.matchId === AI_ADVISOR_ROW.matchId
-                ? "coach online"
-                : chat.matchId === THERAPIST_ID
-                ? "support online"
+              {chat.matchId === AGENT_ID
+                ? "online"
                 : "Recently active"} {/* Pulse spec: softer presence without exact time */}
-              {typing && chat.matchId !== AI_ADVISOR_ROW.matchId && chat.matchId !== THERAPIST_ID && " · typing…"}
+              {typing && chat.matchId !== AGENT_ID && " · typing…"}
             </Typography>
           )}
         </Box>
-        {chat.matchId !== AI_ADVISOR_ROW.matchId && chat.matchId !== THERAPIST_ID && (
+        {chat.matchId !== AGENT_ID && (
           <>
             <IconButton aria-label="Video call" onClick={() => startCall("video")}>
               <Video />
@@ -2034,6 +2621,56 @@ export default function ChatScreen() {
             <IconButton aria-label="Voice call" onClick={() => startCall("voice")}>
               <Phone />
             </IconButton>
+            {/* Start Meeting Button - Only in 1-on-1 chats, visible label per spec */}
+            {meetingState === MEETING_STATE.INACTIVE && (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 22,
+                      height: 22,
+                      borderRadius: '50%',
+                      bgcolor: 'rgba(255,255,255,0.25)',
+                      boxShadow: '0 0 8px rgba(52, 211, 153, 0.4)',
+                    }}
+                  >
+                    <Users size={13} />
+                  </Box>
+                }
+                onClick={handleStartMeeting}
+                aria-label="Start Meeting"
+                sx={{
+                  background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)',
+                  color: '#fff',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  textTransform: 'none',
+                  borderRadius: 20,
+                  px: 2,
+                  py: 0.75,
+                  minWidth: 'auto',
+                  boxShadow: '0 0 20px rgba(52, 211, 153, 0.5), 0 4px 12px rgba(16, 185, 129, 0.4)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  transition: 'all 0.2s ease',
+                  '&:hover': { 
+                    background: 'linear-gradient(135deg, #6EE7B7 0%, #34D399 50%, #10B981 100%)',
+                    boxShadow: '0 0 25px rgba(52, 211, 153, 0.6), 0 6px 16px rgba(16, 185, 129, 0.5)',
+                    transform: 'translateY(-1px)',
+                  },
+                  '&:active': {
+                    transform: 'translateY(0)',
+                    boxShadow: '0 0 15px rgba(52, 211, 153, 0.4), 0 2px 8px rgba(16, 185, 129, 0.3)',
+                  },
+                }}
+              >
+                Start Meeting
+              </Button>
+            )}
           </>
         )}
         <IconButton aria-label="Search" onClick={() => setSearchOpen((v) => !v)}>
@@ -2044,6 +2681,137 @@ export default function ChatScreen() {
         </IconButton>
       </Box>
       <Box sx={{ height: 56 }} />
+
+      {/* ==================== Global Meeting Top Bar ==================== */}
+      {meetingState === MEETING_STATE.ACTIVE && (
+        <Box
+          sx={{
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            top: 0,
+            zIndex: 1500,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            py: 1,
+            bgcolor: sosState === SOS_STATE.NONE ? '#10B981' : 
+                     sosState === SOS_STATE.SEARCHING ? '#F59E0B' :
+                     sosState === SOS_STATE.HELPER_ARRIVED ? '#10B981' : '#3B82F6',
+            color: '#fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            transition: 'background-color 0.3s ease',
+          }}
+        >
+          {/* Meeting Status Icon - Click to return to Meeting Time screen */}
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1, 
+              cursor: 'pointer',
+              '&:hover': { opacity: 0.9 },
+            }}
+            onClick={() => setShowMeetingScreen(true)}
+            role="button"
+            aria-label="Return to Meeting Time"
+          >
+            {/* Animated Meeting Status Icon */}
+            <Box
+              sx={{
+                position: 'relative',
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.2)',
+                ...(sosState === SOS_STATE.SEARCHING && {
+                  animation: 'pulseGlow 2s ease-in-out infinite',
+                }),
+                ...(sosState === SOS_STATE.HELPER_APPROACHING && {
+                  animation: 'smoothMove 1.5s ease-in-out infinite',
+                }),
+              }}
+            >
+              <Users size={18} />
+              {sosState === SOS_STATE.HELPER_ARRIVED && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: -2,
+                    right: -2,
+                    bgcolor: '#fff',
+                    borderRadius: '50%',
+                    width: 14,
+                    height: 14,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Check size={10} color="#10B981" />
+                </Box>
+              )}
+            </Box>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                {sosState === SOS_STATE.NONE && 'Meeting in progress'}
+                {sosState === SOS_STATE.SEARCHING && 'Finding helper...'}
+                {sosState === SOS_STATE.HELPER_FOUND && `Helper found: ${sosHelper?.name}`}
+                {sosState === SOS_STATE.HELPER_APPROACHING && `${sosHelper?.name} approaching`}
+                {sosState === SOS_STATE.HELPER_ARRIVED && 'Helper arrived'}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1 }}>
+                {meetingWith?.name && `with ${meetingWith.name}`}
+                {sosHelperDistance !== null && sosState !== SOS_STATE.NONE && 
+                  ` • ${sosHelperDistance < 0.1 ? '<100m' : `${sosHelperDistance.toFixed(1)}km`}`}
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* SOS Button */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {sosState !== SOS_STATE.NONE && (
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={cancelSOS}
+                sx={{ 
+                  color: '#fff', 
+                  borderColor: 'rgba(255,255,255,0.5)',
+                  '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' },
+                }}
+              >
+                Cancel SOS
+              </Button>
+            )}
+            {/* SOS Button - Per spec: calm UI, no panic red flashing */}
+            <IconButton
+              aria-label="SOS"
+              onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined}
+              disabled={sosState !== SOS_STATE.NONE}
+              sx={{
+                bgcolor: sosState === SOS_STATE.NONE ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.2)',
+                color: '#fff',
+                width: 44,
+                height: 44,
+                border: '2px solid rgba(255,255,255,0.4)',
+                transition: 'all 0.2s ease',
+                '&:hover': { 
+                  bgcolor: sosState === SOS_STATE.NONE ? 'rgba(255,255,255,0.25)' : undefined,
+                  borderColor: 'rgba(255,255,255,0.6)',
+                },
+                '&:disabled': { color: 'rgba(255,255,255,0.7)' },
+              }}
+            >
+              <Shield size={22} />
+            </IconButton>
+          </Box>
+        </Box>
+      )}
 
       {/* Search bar */}
       {searchOpen && (
@@ -2076,7 +2844,7 @@ export default function ChatScreen() {
         onClose={() => setMenuEl(null)}
         keepMounted
       >
-        {chat.matchId !== AI_ADVISOR_ROW.matchId && chat.matchId !== THERAPIST_ID && (
+        {chat.matchId !== AGENT_ID && (
           <>
             <MenuItem
               onClick={() => {
@@ -2121,7 +2889,7 @@ export default function ChatScreen() {
         <MenuItem onClick={() => setMenuEl(null)}>Clear chat</MenuItem>
         <MenuItem onClick={() => setMenuEl(null)}>Delete chat</MenuItem>
         {/* Pulse spec: Mute/Block/Report options */}
-        {chat.matchId !== AI_ADVISOR_ROW.matchId && chat.matchId !== THERAPIST_ID && (
+        {chat.matchId !== AGENT_ID && (
           <>
             <Divider />
             <MenuItem 
@@ -2162,7 +2930,7 @@ export default function ChatScreen() {
       </Menu>
 
       {/* Crisis banner */}
-      {chat.matchId === THERAPIST_ID && showCrisis && (
+      {chat.matchId === AGENT_ID && showCrisis && (
         <Alert
           severity="error"
           sx={{ mx: 1.25, mt: 1, mb: 0, border: "1px solid #fecaca" }}
@@ -2190,111 +2958,58 @@ export default function ChatScreen() {
           scrollPaddingBottom: `calc(${footerH}px + var(--app-bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px))`,
         }}
       >
-        {/* Quick Coach */}
-        {chat.matchId === AI_ADVISOR_ROW.matchId && (
-          <Box sx={{ mt: 1, mb: 1, p: 1, bgcolor: "#F8FAFF", border: "1px solid #E5E7EB", borderRadius: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
-              Quick Coach
-            </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-              {["open", "followup", "invite", "compliment", "clarify"].map((k) => (
-                <Chip
-                  key={k}
-                  size="small"
-                  label={k}
-                  color={aiIntent === k ? "primary" : "default"}
-                  onClick={() => {
-                    setAiIntent(k); persistIfNeeded(null, null, k); computeAI();
-                  }}
-                />
-              ))}
-              <Divider flexItem orientation="vertical" sx={{ mx: 0.5 }} />
-              {["friendly", "playful", "formal", "flirty", "confident"].map((t) => (
-                <Chip
-                  key={t}
-                  size="small"
-                  label={t}
-                  color={aiTone === t ? "primary" : "default"}
-                  onClick={() => {
-                    setAiTone(t); persistIfNeeded(t, null, null); computeAI();
-                  }}
-                />
-              ))}
-              <Divider flexItem orientation="vertical" sx={{ mx: 0.5 }} />
-              {["short", "medium", "long"].map((l) => (
-                <Chip
-                  key={l}
-                  size="small"
-                  label={l}
-                  color={aiLen === l ? "primary" : "default"}
-                  onClick={() => {
-                    setAiLen(l); persistIfNeeded(null, l, null); computeAI();
-                  }}
-                />
-              ))}
-              <FormControlLabel
-                sx={{ ml: 1 }}
-                control={
-                  <Checkbox
+        {/* Unified Agent Panel */}
+        {chat.matchId === AGENT_ID && (
+          <Box sx={{ mt: 1, mb: 1, p: 1, bgcolor: "#F0F7FF", border: "1px solid #E0E7FF", borderRadius: 2 }}>
+            {/* Mode Selector */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                💬 Pulse | Coach
+              </Typography>
+              <Box sx={{ ml: "auto", display: "flex", gap: 0.5 }}>
+                {[
+                  { key: "auto", label: "🔄 Auto", desc: "זיהוי אוטומטי" },
+                  { key: "coach", label: "📝 Coach", desc: "עזרה בניסוח" },
+                  { key: "therapist", label: "💙 Support", desc: "שיחה תומכת" },
+                ].map((m) => (
+                  <Chip
+                    key={m.key}
                     size="small"
-                    checked={aiRemember}
-                    onChange={(e) => {
-                      const v = e.target.checked;
-                      setAiRemember(v);
-                      if (!chat?.matchId) return;
-                      if (v) {
-                        localStorage.setItem(`ai_tone_${chat.matchId}`, aiTone);
-                        localStorage.setItem(`ai_len_${chat.matchId}`, aiLen);
-                        localStorage.setItem(`ai_intent_${chat.matchId}`, aiIntent);
-                      } else {
-                        localStorage.removeItem(`ai_tone_${chat.matchId}`);
-                        localStorage.removeItem(`ai_len_${chat.matchId}`);
-                        localStorage.removeItem(`ai_intent_${chat.matchId}`);
-                      }
+                    label={m.label}
+                    color={getAgentMode(chat.matchId) === m.key ? "primary" : "default"}
+                    onClick={() => setAgentMode(chat.matchId, m.key)}
+                    sx={{ 
+                      fontWeight: getAgentMode(chat.matchId) === m.key ? 700 : 400,
+                      cursor: "pointer"
                     }}
                   />
-                }
-                label={<Typography variant="caption" sx={{ color: "#64748b" }}>Remember for this chat</Typography>}
-              />
-            </Box>
-            <Box sx={{ mt: 1, display: "grid", gap: 0.5 }}>
-              {aiOptions.map((s, i) => (
-                <Box key={i} sx={{ p: 1, border: "1px solid #e5e7eb", borderRadius: 1, bgcolor: "#fff" }}>
-                  <Typography variant="body2" sx={{ mb: 0.5 }}>{s}</Typography>
-                  <Button size="small" onClick={() => setInput(s)} sx={{ borderRadius: 999 }} startIcon={<MessageCircleQuestion size={16} />}>
-                    Insert
-                  </Button>
-                </Box>
-              ))}
-              <Box sx={{ textAlign: "right" }}>
-                <Button size="small" onClick={computeAI}>Regenerate</Button>
+                ))}
               </Box>
             </Box>
-          </Box>
-        )}
-
-        {/* Therapist quick panel */}
-        {chat.matchId === THERAPIST_ID && (
-          <Box sx={{ mt: 1, mb: 1, p: 1, bgcolor: "#F6FEF9", border: "1px solid #D1FAE5", borderRadius: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
-              Support tools (non-clinical)
-            </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-              {[
-                { k: "Check-in", v: "Right now I feel… (emotion / body sensation). The urge is… and I want to choose a tiny step that helps me feel 1% better." },
-                { k: "Grounding 5-4-3-2-1", v: "Let’s try grounding: 5 things I see… 4 I can touch… 3 I hear… 2 I smell… 1 I taste." },
-                { k: "Reframe", v: "A helpful thought I can try: (Even if X happens, I can Y). Another possible perspective is…" },
-                { k: "Plan step", v: "Tiny step for next 10–15 min: (water / short walk / music / message a friend / shower / stretch)." },
-                { k: "Breathing 4-7-8", v: "Inhale 4 • Hold 7 • Exhale 8 — repeat x2 and notice where the body softens." },
+            
+            {/* Quick actions based on current mode */}
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
+              {getAgentMode(chat.matchId) !== "therapist" && [
+                { k: "📝 ניסוח הודעה", v: "עזור לי לנסח הודעה ל..." },
+                { k: "💡 טיפים", v: "מה כדאי לכתוב כשרוצים..." },
               ].map((o) => (
-                <Chip key={o.k} size="small" label={o.k} onClick={() => setInput(o.v)} />
+                <Chip key={o.k} size="small" label={o.k} onClick={() => setInput(o.v)} variant="outlined" />
+              ))}
+              {getAgentMode(chat.matchId) !== "coach" && [
+                { k: "💙 צריך/ה לדבר", v: "קשה לי עכשיו, צריך/ה לדבר..." },
+                { k: "🌬️ נשימה", v: "עזור לי להירגע" },
+              ].map((o) => (
+                <Chip key={o.k} size="small" label={o.k} onClick={() => setInput(o.v)} variant="outlined" />
               ))}
               <Button size="small" sx={{ ml: "auto" }} onClick={() => setHelpOpen(true)}>
-                Help resources
+                🆘 עזרה
               </Button>
             </Box>
-            <Typography variant="caption" sx={{ display: "block", mt: 0.5, color: "#6b7280" }}>
-              איני מטפל/ת מוסמך/ת. אם יש סכנה מיידית — פנו לעזרה דחופה באזורכם.
+            
+            <Typography variant="caption" sx={{ display: "block", color: "#6b7280" }}>
+              {getAgentMode(chat.matchId) === "auto" && "אני מזהה אוטומטית את מה שאת/ה צריך/ה."}
+              {getAgentMode(chat.matchId) === "coach" && "מצב Coach - עזרה בניסוח הודעות."}
+              {getAgentMode(chat.matchId) === "therapist" && "מצב Support - שיחה תומכת. במצב חירום — פנו לעזרה מקצועית."}
             </Typography>
           </Box>
         )}
@@ -2324,7 +3039,7 @@ export default function ChatScreen() {
       </Box>
 
       {/* Smart replies */}
-      {chat.matchId !== AI_ADVISOR_ROW.matchId && chat.matchId !== THERAPIST_ID && smart.length > 0 && (
+      {chat.matchId !== AGENT_ID && smart.length > 0 && (
         <Box sx={{ px: 1.25, py: 0.75, display: "flex", gap: 0.5, flexWrap: "wrap" }}>
           {smart.map((s, i) => (
             <Chip key={i} label={s} onClick={() => setInput(s)} />
@@ -2524,13 +3239,7 @@ export default function ChatScreen() {
             <InputBase
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={
-                chat.matchId === AI_ADVISOR_ROW.matchId
-                  ? "Write context or pick a suggestion…"
-                  : chat.matchId === THERAPIST_ID
-                  ? "Share what’s on your mind…"
-                  : "Type a message"
-              }
+              placeholder={chat.matchId === AGENT_ID ? "שאל/י אותי משהו…" : "Type a message"}
               multiline
               maxRows={4}
               fullWidth
@@ -2866,19 +3575,19 @@ export default function ChatScreen() {
 
           <Box sx={{ mb: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {["open","followup","invite","compliment","clarify"].map((k)=>(
-              <Chip key={k} size="small" label={k} onClick={() => { setAiIntent(k); persistIfNeeded(null,null,k); computeAI(); }} color={aiIntent===k?'primary':'default'} />
+              <Chip key={k} size="small" label={k} onClick={() => { setAiIntent(k); persistIfNeeded(null,null,k); computeAI("settings_change"); }} color={aiIntent===k?'primary':'default'} />
             ))}
           </Box>
 
           <Box sx={{ mb: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {["friendly","playful","formal","flirty","confident"].map((t)=>(
-              <Chip key={t} size="small" label={t} onClick={() => { setAiTone(t); persistIfNeeded(t,null,null); computeAI(); }} color={aiTone===t?'primary':'default'} />
+              <Chip key={t} size="small" label={t} onClick={() => { setAiTone(t); persistIfNeeded(t,null,null); computeAI("settings_change"); }} color={aiTone===t?'primary':'default'} />
             ))}
           </Box>
 
           <Box sx={{ mb: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {["short","medium","long"].map((l)=>(
-              <Chip key={l} size="small" label={l} onClick={() => { setAiLen(l); persistIfNeeded(null,l,null); computeAI(); }} color={aiLen===l?'primary':'default'} />
+              <Chip key={l} size="small" label={l} onClick={() => { setAiLen(l); persistIfNeeded(null,l,null); computeAI("settings_change"); }} color={aiLen===l?'primary':'default'} />
             ))}
             <FormControlLabel
               sx={{ ml: 0.5 }}
@@ -2903,7 +3612,13 @@ export default function ChatScreen() {
             {aiOptions.map((s, i) => (
               <Box key={i} sx={{ p: 1, border: '1px solid #e5e7eb', borderRadius: 1 }}>
                 <Typography variant="body2" sx={{ mb: 0.5 }}>{s}</Typography>
-                <Button size="small" onClick={() => { setInput(s); setAiAnchor(null); }} sx={{ borderRadius: 999 }}>
+                <Button size="small" onClick={() => {
+                  setInput(s);
+                  setAiAnchor(null);
+                  if (agentTraceId) {
+                    sendAgentFeedback({ traceId: agentTraceId, action: "inserted", suggestionText: s });
+                  }
+                }} sx={{ borderRadius: 999 }}>
                   Insert
                 </Button>
               </Box>
@@ -2911,10 +3626,952 @@ export default function ChatScreen() {
           </Box>
 
           <Box sx={{ textAlign: 'right', mt: 0.5 }}>
-            <Button size="small" onClick={computeAI}>Regenerate</Button>
+            <Button size="small" onClick={() => computeAI("button_click")}>Regenerate</Button>
           </Box>
         </Box>
       </Popper>
+
+      {/* ==================== Meeting Time Screen ==================== */}
+      <Modal 
+        open={showMeetingScreen && meetingState === MEETING_STATE.ACTIVE} 
+        onClose={() => setShowMeetingScreen(false)}
+      >
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            bgcolor: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)',
+            background: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'auto',
+          }}
+        >
+          {/* Header */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1.5,
+              bgcolor: 'rgba(255,255,255,0.9)',
+              backdropFilter: 'blur(8px)',
+              borderBottom: '1px solid rgba(16, 185, 129, 0.2)',
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+            }}
+          >
+            <IconButton 
+              onClick={() => setShowMeetingScreen(false)} 
+              aria-label="Close"
+              sx={{ color: '#6B7280' }}
+            >
+              <X size={22} />
+            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: '#10B981',
+                  animation: 'pulse 2s ease-in-out infinite',
+                }}
+              />
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#1F2937' }}>
+                Meeting Time
+              </Typography>
+            </Box>
+            <Button 
+              variant="text" 
+              color="error" 
+              size="small"
+              onClick={handleEndMeeting}
+              sx={{ fontWeight: 600 }}
+            >
+              End
+            </Button>
+          </Box>
+
+          {/* Content */}
+          <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 4 }}>
+            {/* Status Card */}
+            <Box 
+              sx={{ 
+                textAlign: 'center', 
+                mb: 4, 
+                maxWidth: 340,
+                p: 3,
+                bgcolor: '#fff',
+                borderRadius: 4,
+                boxShadow: '0 4px 20px rgba(16, 185, 129, 0.15)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+              }}
+            >
+              {/* Avatar */}
+              <Box
+                sx={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: '50%',
+                  bgcolor: '#10B981',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mx: 'auto',
+                  mb: 2,
+                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+                }}
+              >
+                <Users size={32} color="#fff" />
+              </Box>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: '#1F2937' }}>
+                You're all set
+              </Typography>
+              <Typography variant="body1" sx={{ color: '#10B981', fontWeight: 600, mb: 1 }}>
+                Meeting with {meetingWith?.name}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#9CA3AF', display: 'block', lineHeight: 1.5 }}>
+                The buttons below are available at any time during your meeting.
+              </Typography>
+            </Box>
+
+            {/* Action Circles */}
+            <Typography variant="overline" sx={{ color: '#6B7280', fontWeight: 600, mb: 2, letterSpacing: 1 }}>
+              Quick Actions
+            </Typography>
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(2, 1fr)', 
+              gap: 2, 
+              width: '100%', 
+              maxWidth: 340,
+              mb: 4,
+            }}>
+              {/* In-App Contact Circles */}
+              {meetingContacts.map((contact) => (
+                <Box
+                  key={contact.id}
+                  onClick={() => handleContactCircleClick(contact)}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    p: 2.5,
+                    borderRadius: 3,
+                    bgcolor: '#fff',
+                    boxShadow: contactsNotifiedThisMeeting.includes(contact.id) 
+                      ? '0 0 0 2px #10B981, 0 4px 12px rgba(16, 185, 129, 0.2)' 
+                      : '0 2px 8px rgba(0,0,0,0.06)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    '&:hover': { 
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                    },
+                    '&:active': {
+                      transform: 'scale(0.98)',
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 1.5,
+                      boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
+                    }}
+                  >
+                    <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>
+                      {contact.name.charAt(0).toUpperCase()}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'center', color: '#1F2937' }}>
+                    {contact.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: contactsNotifiedThisMeeting.includes(contact.id) ? '#10B981' : '#9CA3AF', fontWeight: 500 }}>
+                    {contactsNotifiedThisMeeting.includes(contact.id) ? '✓ Notified' : 'Tap to notify'}
+                  </Typography>
+                </Box>
+              ))}
+
+              {/* WhatsApp Circle */}
+              <Box
+                onClick={shareViaWhatsApp}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  p: 2.5,
+                  borderRadius: 3,
+                  bgcolor: '#fff',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  '&:hover': { 
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 16px rgba(37, 211, 102, 0.2)',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.98)',
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mb: 1.5,
+                    boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
+                  }}
+                >
+                  <MessageCircle size={22} color="#fff" />
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1F2937' }}>
+                  WhatsApp
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontWeight: 500 }}>
+                  Share location
+                </Typography>
+              </Box>
+
+              {/* Support Chat Circle */}
+              <Box
+                onClick={() => {
+                  setShowMeetingScreen(false);
+                  setOpenChat(AGENT_ID);
+                  // Send fixed opening message as per spec
+                  setTimeout(() => {
+                    setChats((prev) =>
+                      prev.map((c) =>
+                        c.matchId !== AGENT_ID
+                          ? c
+                          : {
+                              ...c,
+                              messages: [
+                                ...c.messages,
+                                {
+                                  id: Date.now() + 1,
+                                  from: "them",
+                                  type: "text",
+                                  text: "I'm here with you. What would help right now?",
+                                  timestamp: Date.now(),
+                                  status: "read",
+                                  reactions: {},
+                                },
+                              ],
+                              lastSentAt: Date.now(),
+                            }
+                      )
+                    );
+                  }, 300);
+                }}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  p: 2.5,
+                  borderRadius: 3,
+                  bgcolor: '#fff',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  '&:hover': { 
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 16px rgba(59, 130, 246, 0.2)',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.98)',
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mb: 1.5,
+                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                  }}
+                >
+                  <HeartHandshake size={22} color="#fff" />
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1F2937' }}>
+                  Support
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontWeight: 500 }}>
+                  In-app chat
+                </Typography>
+              </Box>
+
+              {/* Quick Add Contact */}
+              <Box
+                onClick={() => setShowQuickAddContact(true)}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  p: 2.5,
+                  borderRadius: 3,
+                  bgcolor: '#fff',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  border: '2px dashed #E5E7EB',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  '&:hover': { 
+                    transform: 'translateY(-2px)',
+                    borderColor: '#10B981',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.98)',
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '50%',
+                    bgcolor: '#F3F4F6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mb: 1.5,
+                  }}
+                >
+                  <UserPlus size={22} color="#6B7280" />
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1F2937' }}>
+                  Add Contact
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontWeight: 500 }}>
+                  Quick add
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* SOS Section - Per spec H: calm tone */}
+            <Typography variant="overline" sx={{ color: '#9CA3AF', fontWeight: 600, mb: 2, letterSpacing: 1 }}>
+              Safety Support
+            </Typography>
+            {/* Per spec H: Calm UI - subtle container, no red border when inactive */}
+            <Box
+              sx={{
+                width: '100%',
+                maxWidth: 340,
+                p: 3,
+                borderRadius: 4,
+                bgcolor: sosState === SOS_STATE.NONE ? '#F9FAFB' : 
+                         sosState === SOS_STATE.SEARCHING ? '#FFFBEB' :
+                         sosState === SOS_STATE.HELPER_ARRIVED ? '#ECFDF5' : '#EFF6FF',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                border: '1px solid',
+                borderColor: sosState === SOS_STATE.NONE ? '#E5E7EB' : 
+                             sosState === SOS_STATE.SEARCHING ? '#FCD34D' :
+                             sosState === SOS_STATE.HELPER_ARRIVED ? '#A7F3D0' : '#BFDBFE',
+                textAlign: 'center',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              {/* Per spec H: Calm UI - no harsh red, subtle appearance */}
+              {sosState === SOS_STATE.NONE ? (
+                <>
+                  <Shield size={28} color="#6B7280" style={{ marginBottom: 8 }} />
+                  <Typography variant="body2" sx={{ color: '#6B7280', mb: 2 }}>
+                    Need support? Tap to alert nearby community members.
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={triggerSOS}
+                    sx={{ 
+                      borderRadius: 999, 
+                      px: 5,
+                      py: 1.5,
+                      fontWeight: 600,
+                      color: '#6B7280',
+                      borderColor: '#D1D5DB',
+                      bgcolor: '#F9FAFB',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        borderColor: '#9CA3AF',
+                        bgcolor: '#F3F4F6',
+                      },
+                    }}
+                  >
+                    Request Help
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
+                    {sosState === SOS_STATE.SEARCHING && (
+                      <Box sx={{ 
+                        width: 10, 
+                        height: 10, 
+                        borderRadius: '50%', 
+                        bgcolor: '#F59E0B',
+                        animation: 'subtlePulse 2s ease-in-out infinite',
+                        opacity: 0.8,
+                      }} />
+                    )}
+                    <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                      {sosState === SOS_STATE.SEARCHING && 'Finding a helper nearby...'}
+                      {sosState === SOS_STATE.HELPER_FOUND && `${sosHelper?.name} is on the way`}
+                      {sosState === SOS_STATE.HELPER_APPROACHING && `${sosHelper?.name} approaching`}
+                      {sosState === SOS_STATE.HELPER_ARRIVED && `${sosHelper?.name} has arrived`}
+                    </Typography>
+                  </Box>
+                  {sosHelper && (
+                    <Typography variant="body2" sx={{ color: '#6B7280', mb: 2 }}>
+                      {sosHelperDistance !== null && sosHelperDistance > 0 
+                        ? `${sosHelperDistance < 0.1 ? '<100m' : `${sosHelperDistance.toFixed(1)}km`} away`
+                        : 'Arrived'}
+                      {sosHelper.eta && sosState !== SOS_STATE.HELPER_ARRIVED && ` • ETA: ${sosHelper.eta}`}
+                    </Typography>
+                  )}
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={cancelSOS}
+                    sx={{ borderRadius: 999 }}
+                  >
+                    Cancel SOS
+                  </Button>
+                </>
+              )}
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* ==================== Missing Contacts Setup Modal ==================== */}
+      <Modal open={showContactsSetupModal} onClose={() => setShowContactsSetupModal(false)}>
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            display: 'grid',
+            placeItems: 'center',
+            bgcolor: 'rgba(0,0,0,0.5)',
+            p: 2,
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: '#fff',
+              borderRadius: 3,
+              p: 3,
+              maxWidth: 360,
+              width: '100%',
+              textAlign: 'center',
+            }}
+          >
+            <Box
+              sx={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                bgcolor: '#FEF3C7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 2,
+              }}
+            >
+              <Users size={28} color="#F59E0B" />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+              Want to set up meeting contacts?
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#6B7280', mb: 3 }}>
+              You haven't set up meeting contacts for sharing via Pulse yet.
+              You can continue and share via WhatsApp, or set it up now.
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={() => {
+                  setShowContactsSetupModal(false);
+                  setShowQuickAddContact(true);
+                }}
+                sx={{ borderRadius: 999, py: 1.5 }}
+              >
+                Set up now
+              </Button>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={handleContinueWithoutContacts}
+                sx={{ borderRadius: 999, py: 1.5 }}
+              >
+                Continue
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* ==================== Quick Add Contact Modal ==================== */}
+      <Modal open={showQuickAddContact} onClose={() => setShowQuickAddContact(false)}>
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            display: 'grid',
+            placeItems: 'center',
+            bgcolor: 'rgba(0,0,0,0.5)',
+            p: 2,
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: '#fff',
+              borderRadius: 3,
+              p: 3,
+              maxWidth: 360,
+              width: '100%',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+              Add Meeting Contact
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#6B7280', mb: 3 }}>
+              Add someone who can receive your location during meetings.
+            </Typography>
+            <TextField
+              id="contact-name"
+              label="Contact Name"
+              fullWidth
+              sx={{ mb: 2 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const name = e.target.value.trim();
+                  if (name) {
+                    const newContact = {
+                      id: `contact_${Date.now()}`,
+                      name,
+                      addedAt: Date.now(),
+                    };
+                    setMeetingContacts(prev => [...prev, newContact]);
+                    setShowQuickAddContact(false);
+                    // If we came from setup modal, start the meeting
+                    if (meetingState === MEETING_STATE.INACTIVE && chat) {
+                      setTimeout(() => handleStartMeeting(), 100);
+                    }
+                  }
+                }
+              }}
+            />
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => setShowQuickAddContact(false)}
+                sx={{ borderRadius: 999 }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={() => {
+                  const input = document.getElementById('contact-name');
+                  const name = input?.value?.trim();
+                  if (name) {
+                    const newContact = {
+                      id: `contact_${Date.now()}`,
+                      name,
+                      addedAt: Date.now(),
+                    };
+                    setMeetingContacts(prev => [...prev, newContact]);
+                    setShowQuickAddContact(false);
+                    if (meetingState === MEETING_STATE.INACTIVE && chat) {
+                      setTimeout(() => handleStartMeeting(), 100);
+                    }
+                  }
+                }}
+                sx={{ borderRadius: 999 }}
+              >
+                Add
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* ==================== End Meeting Confirmation (During SOS) ==================== */}
+      <Modal open={showEndMeetingConfirm} onClose={() => setShowEndMeetingConfirm(false)}>
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            display: 'grid',
+            placeItems: 'center',
+            bgcolor: 'rgba(0,0,0,0.5)',
+            p: 2,
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: '#fff',
+              borderRadius: 3,
+              p: 3,
+              maxWidth: 360,
+              width: '100%',
+              textAlign: 'center',
+            }}
+          >
+            <Box
+              sx={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                bgcolor: '#FEE2E2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 2,
+              }}
+            >
+              <AlertTriangle size={28} color="#DC2626" />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+              An SOS request is active
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#6B7280', mb: 3 }}>
+              Are you sure you want to end the meeting? This will also cancel your SOS request.
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={() => setShowEndMeetingConfirm(false)}
+                sx={{ borderRadius: 999, py: 1.5 }}
+              >
+                Continue SOS
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                fullWidth
+                onClick={performEndMeeting}
+                sx={{ borderRadius: 999, py: 1.5 }}
+              >
+                End Meeting and Cancel SOS
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* ==================== Safety Summary (After Meeting Ends) ==================== */}
+      <Modal open={showSafetySummary} onClose={() => setShowSafetySummary(false)}>
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            display: 'grid',
+            placeItems: 'center',
+            bgcolor: 'rgba(0,0,0,0.5)',
+            p: 2,
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: '#fff',
+              borderRadius: 3,
+              p: 3,
+              maxWidth: 380,
+              width: '100%',
+              textAlign: 'center',
+            }}
+          >
+            {/* Header Icon */}
+            <Box
+              sx={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                bgcolor: '#ECFDF5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 2,
+              }}
+            >
+              <Check size={32} color="#10B981" />
+            </Box>
+
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+              Meeting ended
+            </Typography>
+            
+            {meetingEndedWith && (
+              <Typography variant="body2" sx={{ color: '#6B7280', mb: 3 }}>
+                Your meeting with <strong>{meetingEndedWith.name}</strong> has ended.
+                We hope everything went well.
+              </Typography>
+            )}
+
+            {/* Options */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
+              {/* AI Coach Option */}
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<MessageCircle size={18} />}
+                onClick={() => {
+                  setShowSafetySummary(false);
+                  setOpenChat(AGENT_ID);
+                  // Send supportive message
+                  setTimeout(() => {
+                    setChats((prev) =>
+                      prev.map((c) =>
+                        c.matchId !== AGENT_ID
+                          ? c
+                          : {
+                              ...c,
+                              messages: [
+                                ...c.messages,
+                                {
+                                  id: Date.now() + 1,
+                                  from: "them",
+                                  type: "text",
+                                  text: `איך היה? אני כאן אם רוצה לשתף או לדבר על הפגישה עם ${meetingEndedWith?.name || 'האדם שפגשת'}.`,
+                                  timestamp: Date.now(),
+                                  status: "read",
+                                  reactions: {},
+                                },
+                              ],
+                              lastSentAt: Date.now(),
+                            }
+                      )
+                    );
+                  }, 300);
+                }}
+                sx={{ 
+                  borderRadius: 999, 
+                  py: 1.5,
+                  borderColor: '#E5E7EB',
+                  color: '#374151',
+                  '&:hover': { borderColor: '#3B82F6', bgcolor: '#EFF6FF' },
+                }}
+              >
+                Talk to AI Coach
+              </Button>
+
+              {/* Block Option */}
+              {meetingEndedWith && (
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<X size={18} />}
+                  onClick={() => {
+                    if (window.confirm(`Are you sure you want to block ${meetingEndedWith.name}?`)) {
+                      // Find and block the chat
+                      setChats(prev => prev.map(c => 
+                        c.user?.id === meetingEndedWith.id ? { ...c, blocked: true } : c
+                      ));
+                      setShowSafetySummary(false);
+                      setMeetingEndedWith(null);
+                    }
+                  }}
+                  sx={{ 
+                    borderRadius: 999, 
+                    py: 1.5,
+                    borderColor: '#FEE2E2',
+                    color: '#DC2626',
+                    '&:hover': { borderColor: '#DC2626', bgcolor: '#FEF2F2' },
+                  }}
+                >
+                  Block {meetingEndedWith.name}
+                </Button>
+              )}
+
+              {/* Report Option */}
+              {meetingEndedWith && (
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<AlertTriangle size={18} />}
+                  onClick={() => {
+                    alert('Report submitted. Thank you for helping keep Pulse safe.');
+                    setShowSafetySummary(false);
+                    setMeetingEndedWith(null);
+                  }}
+                  sx={{ 
+                    borderRadius: 999, 
+                    py: 1.5,
+                    borderColor: '#FEE2E2',
+                    color: '#DC2626',
+                    '&:hover': { borderColor: '#DC2626', bgcolor: '#FEF2F2' },
+                  }}
+                >
+                  Report {meetingEndedWith.name}
+                </Button>
+              )}
+            </Box>
+
+            {/* Close Button */}
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={() => {
+                setShowSafetySummary(false);
+                setMeetingEndedWith(null);
+              }}
+              sx={{ borderRadius: 999, py: 1.5 }}
+            >
+              Done
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* ==================== Contact Notification Confirmation Modal (Spec Section 5) ==================== */}
+      <Modal 
+        open={showContactNotifyModal} 
+        onClose={() => {
+          setShowContactNotifyModal(false);
+          setContactToNotify(null);
+        }}
+      >
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            display: 'grid',
+            placeItems: 'center',
+            bgcolor: 'rgba(0,0,0,0.5)',
+            p: 2,
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: '#fff',
+              borderRadius: 3,
+              p: 3,
+              maxWidth: 380,
+              width: '100%',
+            }}
+          >
+            {/* Header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  bgcolor: '#6C5CE7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>
+                  {contactToNotify?.name?.charAt(0).toUpperCase()}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Notify {contactToNotify?.name}?
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#6B7280' }}>
+                  Meeting contact
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Message Preview */}
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: '#F9FAFB',
+                borderRadius: 2,
+                border: '1px solid #E5E7EB',
+                mb: 2,
+              }}
+            >
+              <Typography variant="caption" sx={{ color: '#6B7280', fontWeight: 600, display: 'block', mb: 1 }}>
+                Message preview:
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#374151' }}>
+                "I'm on a meeting through Pulse and wanted to let you know. You can see my live location while the meeting is active."
+              </Typography>
+            </Box>
+
+            {/* Location Notice */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 1.5,
+                p: 2,
+                bgcolor: '#EFF6FF',
+                borderRadius: 2,
+                border: '1px solid #BFDBFE',
+                mb: 3,
+              }}
+            >
+              <MapPin size={20} color="#3B82F6" style={{ marginTop: 2, flexShrink: 0 }} />
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E40AF', mb: 0.5 }}>
+                  Location sharing
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#3B82F6' }}>
+                  Your live location will be shared with {contactToNotify?.name} until the meeting ends. 
+                  Location is visible only to this contact and cannot be forwarded.
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Buttons */}
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => {
+                  setShowContactNotifyModal(false);
+                  setContactToNotify(null);
+                }}
+                sx={{ borderRadius: 999, py: 1.5 }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={confirmNotifyContact}
+                sx={{ borderRadius: 999, py: 1.5 }}
+              >
+                Send notification
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
 
       {/* keyframes */}
       <Box
@@ -2928,6 +4585,26 @@ export default function ChatScreen() {
           "@keyframes bar1": { "0%,100%": { height: 6 }, "50%": { height: 14 } },
           "@keyframes bar2": { "0%,100%": { height: 8 }, "50%": { height: 12 } },
           "@keyframes bar3": { "0%,100%": { height: 10 }, "50%": { height: 10 } },
+          "@keyframes pulseGlow": {
+            "0%": { opacity: 0.9, transform: "scale(1)" },
+            "50%": { opacity: 0.6, transform: "scale(1.05)" },
+            "100%": { opacity: 0.9, transform: "scale(1)" },
+          },
+          "@keyframes smoothMove": {
+            "0%": { transform: "translateX(0)" },
+            "50%": { transform: "translateX(2px)" },
+            "100%": { transform: "translateX(0)" },
+          },
+          "@keyframes subtlePulse": {
+            "0%": { opacity: 0.6, transform: "scale(1)" },
+            "50%": { opacity: 0.9, transform: "scale(1.1)" },
+            "100%": { opacity: 0.6, transform: "scale(1)" },
+          },
+          "@keyframes pulse": {
+            "0%": { opacity: 1 },
+            "50%": { opacity: 0.5 },
+            "100%": { opacity: 1 },
+          },
         }}
       />
       {/* inputs for attachments */}

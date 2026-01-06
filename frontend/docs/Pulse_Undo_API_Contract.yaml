@@ -1,0 +1,320 @@
+# Pulse_Undo_API_Contract.yaml (V1)
+# Undo Backtrack Feature - One-Step-Back
+#
+# 🔒 LOCKED NOTES:
+# - Duration: 30 minutes
+# - Cost: 40 points
+# - Unlimited undos within window
+# - One-step-back only (no multi-step)
+# - Server is source of truth for undo state
+
+openapi: 3.0.3
+info:
+  title: Pulse Undo API (Backtrack)
+  version: 1.0.0
+  description: |
+    Undo/Backtrack API for swipe decisions.
+    
+    🔒 LOCKED RULES:
+    - Duration: 30 minutes
+    - Cost: 40 points
+    - Unlimited undos within active window
+    - One-step-back only
+    - Cannot undo if match was created
+    - Server is source of truth
+
+servers:
+  - url: https://api.pulse.app
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SwipeAction:
+      type: string
+      enum: [like, pass]
+      description: Type of swipe action
+
+    SwipeDecision:
+      type: object
+      required: [sessionId, targetUserId, action]
+      properties:
+        sessionId:
+          type: string
+          description: Unique session ID for this swipe session
+        targetUserId:
+          type: string
+          description: User ID that was swiped on
+        action:
+          $ref: '#/components/schemas/SwipeAction'
+        clientTs:
+          type: string
+          format: date-time
+          nullable: true
+          description: Client timestamp (optional, for debugging)
+
+    UndoReason:
+      type: string
+      enum:
+        - OK
+        - NO_PREVIOUS_ACTION
+        - FEATURE_NOT_ACTIVE
+        - MATCH_CREATED
+        - SESSION_MISMATCH
+      description: |
+        - OK: Undo is available
+        - NO_PREVIOUS_ACTION: Nothing to undo
+        - FEATURE_NOT_ACTIVE: Undo feature not active (expired or not purchased)
+        - MATCH_CREATED: Cannot undo because a match was created
+        - SESSION_MISMATCH: Session ID doesn't match last action
+
+    UndoState:
+      type: object
+      required: [canUndo, reason]
+      properties:
+        canUndo:
+          type: boolean
+          description: Whether undo is currently possible
+        reason:
+          $ref: '#/components/schemas/UndoReason'
+        lastAction:
+          type: object
+          nullable: true
+          properties:
+            targetUserId:
+              type: string
+            action:
+              $ref: '#/components/schemas/SwipeAction'
+            timestamp:
+              type: string
+              format: date-time
+
+    UndoFeatureStatus:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        undosUsed:
+          type: integer
+          description: Number of undos used in current session (for analytics)
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+paths:
+  /v1/swipe/decision:
+    post:
+      summary: Record a swipe decision (like/pass)
+      operationId: recordSwipeDecision
+      tags:
+        - Swipe
+      description: |
+        Records a swipe decision and returns the current undo state.
+        Called after every swipe action.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwipeDecision'
+            examples:
+              like:
+                summary: Like action
+                value:
+                  sessionId: "sess_abc123"
+                  targetUserId: "u_xyz789"
+                  action: "like"
+              pass:
+                summary: Pass action
+                value:
+                  sessionId: "sess_abc123"
+                  targetUserId: "u_xyz789"
+                  action: "pass"
+      responses:
+        '200':
+          description: Decision recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [undo]
+                properties:
+                  undo:
+                    $ref: '#/components/schemas/UndoState'
+                  matchCreated:
+                    type: boolean
+                    description: True if this like created a match
+              examples:
+                undoAvailable:
+                  summary: Undo available
+                  value:
+                    undo:
+                      canUndo: true
+                      reason: OK
+                      lastAction:
+                        targetUserId: "u_xyz789"
+                        action: "pass"
+                        timestamp: "2026-01-07T21:30:00Z"
+                    matchCreated: false
+                matchCreated:
+                  summary: Match was created
+                  value:
+                    undo:
+                      canUndo: false
+                      reason: MATCH_CREATED
+                      lastAction:
+                        targetUserId: "u_xyz789"
+                        action: "like"
+                        timestamp: "2026-01-07T21:30:00Z"
+                    matchCreated: true
+        '409':
+          description: Invalid session or conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/swipe/undo:
+    post:
+      summary: Undo last swipe decision (one-step-back)
+      operationId: undoSwipeDecision
+      tags:
+        - Swipe
+      description: |
+        Undoes the last swipe decision.
+        
+        Requirements:
+        - Undo feature must be active (points or premium)
+        - Must have a previous action in current session
+        - Cannot undo if match was created
+        
+        On success, server cancels the last decision and returns
+        the restored targetUserId for client to re-render.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId]
+              properties:
+                sessionId:
+                  type: string
+                  description: Current swipe session ID
+      responses:
+        '200':
+          description: Undo successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [restoredUserId, undo]
+                properties:
+                  restoredUserId:
+                    type: string
+                    description: User ID of the restored card
+                  restoredAction:
+                    $ref: '#/components/schemas/SwipeAction'
+                    description: The action that was undone
+                  undo:
+                    $ref: '#/components/schemas/UndoState'
+              examples:
+                success:
+                  value:
+                    restoredUserId: "u_xyz789"
+                    restoredAction: "pass"
+                    undo:
+                      canUndo: false
+                      reason: NO_PREVIOUS_ACTION
+                      lastAction: null
+        '409':
+          description: Undo blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                noPreviousAction:
+                  summary: No action to undo
+                  value:
+                    code: UNDO_BLOCKED
+                    message: "No action to undo."
+                    details:
+                      reason: NO_PREVIOUS_ACTION
+                matchCreated:
+                  summary: Can't undo after match
+                  value:
+                    code: UNDO_BLOCKED
+                    message: "Can't undo after a match."
+                    details:
+                      reason: MATCH_CREATED
+                featureNotActive:
+                  summary: Undo feature not active
+                  value:
+                    code: UNDO_BLOCKED
+                    message: "Undo is not active."
+                    details:
+                      reason: FEATURE_NOT_ACTIVE
+                sessionMismatch:
+                  summary: Session mismatch
+                  value:
+                    code: UNDO_BLOCKED
+                    message: "Session has changed."
+                    details:
+                      reason: SESSION_MISMATCH
+
+  /v1/swipe/undo/status:
+    get:
+      summary: Get current undo feature status
+      operationId: getUndoStatus
+      tags:
+        - Swipe
+      description: Lightweight endpoint to check undo availability
+      responses:
+        '200':
+          description: Undo status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  feature:
+                    $ref: '#/components/schemas/UndoFeatureStatus'
+                  undo:
+                    $ref: '#/components/schemas/UndoState'
+
+# 🔒 IMPLEMENTATION NOTES:
+#
+# 1. Session Management:
+#    - Generate new sessionId when feed is refreshed
+#    - Store sessionId + lastAction on server
+#    - Validate sessionId on every undo request
+#
+# 2. Match Prevention:
+#    - Check for match before allowing undo on likes
+#    - If match exists, block undo with MATCH_CREATED
+#
+# 3. One-Step-Back:
+#    - Only store the LAST action
+#    - After successful undo, lastAction becomes null
+#    - User must swipe again before next undo

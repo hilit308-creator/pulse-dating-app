@@ -1,0 +1,256 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-01",
+  "events": [
+    {
+      "event": "account_email_added",
+      "description": "User initiated email verification",
+      "trigger": "User clicks 'Send verification code'",
+      "screen": "settings_account_email",
+      "payload": {
+        "user_id": "string (required)",
+        "is_first_email": "boolean"
+      }
+    },
+    {
+      "event": "account_email_verified",
+      "description": "Email verification completed successfully",
+      "trigger": "Verification code accepted",
+      "screen": "settings_account_email",
+      "payload": {
+        "user_id": "string (required)",
+        "verification_method": "code"
+      }
+    },
+    {
+      "event": "account_email_verification_failed",
+      "description": "Email verification failed",
+      "trigger": "Wrong or expired code entered",
+      "screen": "settings_account_email",
+      "payload": {
+        "user_id": "string (required)",
+        "failure_reason": "invalid_code | expired_code | max_attempts"
+      }
+    },
+    {
+      "event": "account_provider_connected",
+      "description": "OAuth provider connected successfully",
+      "trigger": "OAuth flow completed",
+      "screen": "settings_connected_accounts",
+      "payload": {
+        "user_id": "string (required)",
+        "provider": "google | apple"
+      }
+    },
+    {
+      "event": "account_provider_disconnected",
+      "description": "OAuth provider disconnected",
+      "trigger": "User confirms disconnect",
+      "screen": "settings_connected_accounts",
+      "payload": {
+        "user_id": "string (required)",
+        "provider": "google | apple"
+      }
+    },
+    {
+      "event": "account_disconnect_blocked",
+      "description": "Disconnect blocked - last sign-in method",
+      "trigger": "User attempts to disconnect only sign-in method",
+      "screen": "settings_connected_accounts",
+      "payload": {
+        "user_id": "string (required)",
+        "provider": "google | apple",
+        "active_methods_count": "number"
+      }
+    },
+    {
+      "event": "visibility_mode_changed",
+      "description": "User changed visibility mode",
+      "trigger": "Mode chip selected",
+      "screen": "settings_visibility",
+      "payload": {
+        "user_id": "string (required)",
+        "previous_mode": "always | selected_times | selected_places | paused",
+        "new_mode": "always | selected_times | selected_places | paused"
+      }
+    },
+    {
+      "event": "visibility_area_added",
+      "description": "Hidden area created",
+      "trigger": "User adds area on map",
+      "screen": "settings_location_visibility",
+      "payload": {
+        "user_id": "string (required)",
+        "area_count": "number",
+        "radius_meters": "number"
+      }
+    },
+    {
+      "event": "visibility_area_removed",
+      "description": "Hidden area deleted",
+      "trigger": "User removes area",
+      "screen": "settings_location_visibility",
+      "payload": {
+        "user_id": "string (required)",
+        "area_count": "number"
+      }
+    },
+    {
+      "event": "visibility_time_updated",
+      "description": "Time-based visibility settings changed",
+      "trigger": "User updates days or time range",
+      "screen": "settings_time_visibility",
+      "payload": {
+        "user_id": "string (required)",
+        "enabled": "boolean",
+        "days_count": "number",
+        "start_time": "string (HH:mm)",
+        "end_time": "string (HH:mm)"
+      }
+    },
+    {
+      "event": "contacts_visibility_toggled",
+      "description": "Hide from contacts setting changed",
+      "trigger": "User toggles setting",
+      "screen": "settings_contacts_visibility",
+      "payload": {
+        "user_id": "string (required)",
+        "hide_from_contacts": "boolean"
+      }
+    },
+    {
+      "event": "notification_setting_changed",
+      "description": "Notification preference updated",
+      "trigger": "User changes notification setting",
+      "screen": "settings_notifications",
+      "payload": {
+        "user_id": "string (required)",
+        "setting_type": "matches | messages | quiet_hours | smart",
+        "enabled": "boolean",
+        "mode": "string (optional)"
+      }
+    },
+    {
+      "event": "matching_preferences_updated",
+      "description": "Matching preferences changed",
+      "trigger": "User adjusts age/distance/gender",
+      "screen": "settings_matching",
+      "payload": {
+        "user_id": "string (required)",
+        "setting_type": "age_range | distance | gender",
+        "value": "object"
+      }
+    },
+    {
+      "event": "language_changed",
+      "description": "App language changed",
+      "trigger": "User selects new language",
+      "screen": "settings_language",
+      "payload": {
+        "user_id": "string (required)",
+        "previous_language": "string",
+        "new_language": "string"
+      }
+    },
+    {
+      "event": "accessibility_setting_changed",
+      "description": "Accessibility setting updated",
+      "trigger": "User toggles accessibility option",
+      "screen": "settings_accessibility",
+      "payload": {
+        "user_id": "string (required)",
+        "setting": "reduce_motion | high_contrast | large_text",
+        "enabled": "boolean"
+      }
+    },
+    {
+      "event": "data_export_requested",
+      "description": "User requested data download",
+      "trigger": "User clicks 'Request My Data'",
+      "screen": "settings_privacy_data",
+      "payload": {
+        "user_id": "string (required)"
+      }
+    },
+    {
+      "event": "user_blocked",
+      "description": "User blocked another user",
+      "trigger": "Block confirmed",
+      "screen": "settings_blocked_users",
+      "payload": {
+        "user_id": "string (required)",
+        "blocked_user_id": "string (required)"
+      }
+    },
+    {
+      "event": "user_unblocked",
+      "description": "User unblocked another user",
+      "trigger": "Unblock confirmed",
+      "screen": "settings_blocked_users",
+      "payload": {
+        "user_id": "string (required)",
+        "unblocked_user_id": "string (required)"
+      }
+    },
+    {
+      "event": "problem_reported",
+      "description": "User submitted a problem report",
+      "trigger": "Report submitted",
+      "screen": "settings_report_problem",
+      "payload": {
+        "user_id": "string (required)",
+        "report_type": "string",
+        "has_screenshot": "boolean"
+      }
+    },
+    {
+      "event": "invite_shared",
+      "description": "User shared invite link",
+      "trigger": "Share action completed",
+      "screen": "settings_invite",
+      "payload": {
+        "user_id": "string (required)",
+        "share_method": "copy | native | specific_app"
+      }
+    },
+    {
+      "event": "settings_screen_viewed",
+      "description": "User viewed a settings screen",
+      "trigger": "Screen mounted",
+      "screen": "any settings screen",
+      "payload": {
+        "user_id": "string (required)",
+        "screen_name": "string"
+      }
+    },
+    {
+      "event": "pause_mode_toggled",
+      "description": "Profile pause toggled",
+      "trigger": "User pauses/unpauses profile",
+      "screen": "settings_visibility",
+      "payload": {
+        "user_id": "string (required)",
+        "paused": "boolean"
+      }
+    },
+    {
+      "event": "logout_clicked",
+      "description": "User initiated logout",
+      "trigger": "Logout confirmed",
+      "screen": "settings_account",
+      "payload": {
+        "user_id": "string (required)"
+      }
+    },
+    {
+      "event": "account_deleted",
+      "description": "User deleted their account",
+      "trigger": "Delete confirmed",
+      "screen": "settings_account",
+      "payload": {
+        "user_id": "string (required)",
+        "account_age_days": "number"
+      }
+    }
+  ]
+}

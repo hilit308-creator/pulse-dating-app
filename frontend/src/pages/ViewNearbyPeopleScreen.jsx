@@ -1010,15 +1010,15 @@ export default function ViewNearbyPeopleScreen() {
   // Get data from NearbyScreen navigation (if coming from radar screen)
   const { liveNowCount = 0, scanCompleted = false } = location.state || {};
   
-  // States
-  const [people, setPeople] = useState([]);
+  // States - load cards directly, no scanning
+  const [people, setPeople] = useState(MOCK_NEARBY_PEOPLE);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedPeople, setSwipedPeople] = useState({ liked: [], passed: [] });
   const [isEmpty, setIsEmpty] = useState(false);
   const [isAllDone, setIsAllDone] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [hasScanned, setHasScanned] = useState(false);
-  const [liveCount, setLiveCount] = useState(liveNowCount);
+  const [hasScanned, setHasScanned] = useState(true);
+  const [liveCount, setLiveCount] = useState(MOCK_NEARBY_PEOPLE.length);
   const [matchPerson, setMatchPerson] = useState(null); // Person we matched with
   const [showTutorial, setShowTutorial] = useState(false); // Tutorial dialog
 
@@ -1049,21 +1049,10 @@ export default function ViewNearbyPeopleScreen() {
     }, 1800);
   }, [isScanning]);
 
-  // Load data - either from NearbyScreen or auto-scan
+  // Track page view
   useEffect(() => {
-    // If coming from NearbyScreen with scan data, use it
-    if (scanCompleted && liveNowCount > 0) {
-      const mockPeople = MOCK_NEARBY_PEOPLE.slice(0, Math.min(liveNowCount, MOCK_NEARBY_PEOPLE.length));
-      setPeople(mockPeople);
-      setLiveCount(mockPeople.length);
-      setHasScanned(true);
-      trackEvent("nearby_results_viewed", { count: mockPeople.length });
-    } 
-    // Otherwise auto-scan on first load
-    else if (!hasScanned && !isScanning) {
-      handleScan();
-    }
-  }, [scanCompleted, liveNowCount, hasScanned, isScanning, handleScan]);
+    trackEvent("nearby_results_viewed", { count: people.length });
+  }, []);
 
   // Handle swipe action
   const handleSwipe = useCallback((direction, person) => {

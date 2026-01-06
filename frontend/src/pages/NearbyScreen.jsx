@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, WifiOff, HelpCircle, Settings } from "lucide-react";
 import { useAuth, PERMISSION_STATE } from "../context/AuthContext";
+import { useLanguage } from '../context/LanguageContext';
 
 /* ------------------------------ Theme & tokens ----------------------------- */
 const APP_BG =
@@ -79,6 +80,7 @@ function useElementWidth() {
 export default function NearbyScreen() {
   const navigate = useNavigate();
   const { permissions, updatePermission } = useAuth();
+  const { t } = useLanguage();
   const [containerRef, containerW] = useElementWidth();
   const timersRef = useRef([]);
 
@@ -198,7 +200,7 @@ export default function NearbyScreen() {
     }
   }, [updatePermission]);
 
-  // Start scan action
+  // Start scan action - navigate directly to nearby/people
   const startScan = useCallback(() => {
     if (!hasLocationPermission) {
       requestLocationPermission();
@@ -208,18 +210,15 @@ export default function NearbyScreen() {
     trackEvent('nearby_scan_started');
     if (navigator?.vibrate) navigator.vibrate([10, 40, 10]);
     
-    setScanState(SCAN_STATE.SCANNING);
-    
-    // Complete scan after duration
-    pushTimer(setTimeout(() => {
-      setScanState(SCAN_STATE.COMPLETED);
-      trackEvent('nearby_scan_completed', { liveNowCount });
-      
-      if (liveNowCount === 0) {
-        trackEvent('nearby_empty_state_shown');
-      }
-    }, SCAN_DURATION));
-  }, [hasLocationPermission, requestLocationPermission, liveNowCount]);
+    // Navigate directly to nearby/people
+    navigate('/nearby/people', {
+      state: {
+        liveNowCount,
+        scanCompleted: true,
+        radiusMeters,
+      },
+    });
+  }, [hasLocationPermission, requestLocationPermission, liveNowCount, navigate, radiusMeters]);
 
   // Handle "View nearby people" CTA
   const handleViewNearbyPeople = useCallback(() => {
@@ -388,28 +387,17 @@ export default function NearbyScreen() {
           )}
         </AnimatePresence>
 
-        {/* Header */}
+        {/* Help Button */}
         <Box
           sx={{
-            pt: 2,
+            pt: 1,
             pb: 1,
             px: 2,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
           }}
         >
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 800,
-              color: '#1a1a2e',
-              letterSpacing: '-0.5px',
-            }}
-          >
-            Pulse
-          </Typography>
-          
           <IconButton
             onClick={() => setShowTutorial(true)}
             sx={{
@@ -539,10 +527,12 @@ export default function NearbyScreen() {
                       fontWeight: 900,
                       letterSpacing: 1,
                       textTransform: 'none',
-                      background: scanState === SCAN_STATE.COMPLETED && liveNowCount > 0
-                        ? 'radial-gradient(200px 200px at 30% 30%, #a7f3d0 0%, #bfdbfe 60%, #c4b5fd 100%)'
-                        : 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 60%, #d6d3ff 100%)',
+                      background: 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 60%, #d6d3ff 100%)',
                       boxShadow: '0 26px 72px rgba(0,83,166,0.20)',
+                      '&:active': {
+                        background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                        color: '#ffffff',
+                      },
                       backdropFilter: 'blur(4px)',
                       position: 'relative',
                       overflow: 'hidden',
@@ -572,13 +562,7 @@ export default function NearbyScreen() {
                           textAlign: 'center',
                         }}
                       >
-                        {scanState === SCAN_STATE.SCANNING
-                          ? 'Scanning…'
-                          : scanState === SCAN_STATE.COMPLETED
-                            ? liveNowCount > 0
-                              ? 'People found!'
-                              : 'No one nearby'
-                            : "One tap — discover who's nearby"}
+                        One tap — discover who's nearby
                       </Typography>
                     </Stack>
                   </Box>
@@ -593,69 +577,40 @@ export default function NearbyScreen() {
                 
               </Box>
 
-              {/* CTA after scan */}
-              {scanState === SCAN_STATE.COMPLETED && (
-                <Box sx={{ mt: 3 }}>
-                  {liveNowCount > 0 ? (
-                    <Button
-                      variant="contained"
-                      onClick={handleViewNearbyPeople}
-                      sx={{
-                        py: 1.25,
-                        px: 3,
-                        borderRadius: '12px',
-                        fontSize: '0.95rem',
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                        boxShadow: '0 4px 16px rgba(108,92,231,0.35)',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
-                        },
-                      }}
-                    >
-                      Discover people nearby
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outlined"
-                      onClick={handleReset}
-                      sx={{
-                        py: 1.25,
-                        px: 3,
-                        borderRadius: '12px',
-                        fontSize: '0.95rem',
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        borderColor: '#6C5CE7',
-                        color: '#6C5CE7',
-                        '&:hover': {
-                          borderColor: '#5b4cdb',
-                          backgroundColor: 'rgba(108,92,231,0.04)',
-                        },
-                      }}
-                    >
-                      Scan again
-                    </Button>
-                  )}
-                </Box>
-              )}
-
-              {/* Reset button (for testing) */}
-              {scanState === SCAN_STATE.COMPLETED && (
+              {/* CTA Buttons - Always visible */}
+              <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
                 <Button
-                  variant="text"
-                  onClick={handleReset}
+                  variant="contained"
+                  onClick={startScan}
                   sx={{
-                    mt: 2,
-                    color: '#94a3b8',
+                    py: 1.25,
+                    px: 4,
+                    borderRadius: '16px',
+                    fontSize: '0.95rem',
+                    fontWeight: 600,
                     textTransform: 'none',
-                    fontSize: '0.85rem',
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                    boxShadow: '0 4px 16px rgba(108,92,231,0.35)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
+                    },
                   }}
                 >
-                  Scan again
+                  {t('viewNearbyPeople')}
                 </Button>
-              )}
+                <Button
+                  variant="text"
+                  onClick={startScan}
+                  sx={{
+                    color: '#1a1a2e',
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    fontWeight: 500,
+                  }}
+                >
+                  {t('scanNearby')}
+                </Button>
+              </Box>
 
               {/* Loading stripes animation */}
               {scanState !== SCAN_STATE.COMPLETED && (

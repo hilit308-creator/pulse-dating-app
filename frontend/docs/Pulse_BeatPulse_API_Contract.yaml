@@ -1,0 +1,277 @@
+# Pulse_BeatPulse_API_Contract.yaml (V1)
+# BeatPulse Exposure Boost - Server-Side Only
+#
+# 🔒 LOCKED NOTES:
+# - Client does NOT receive multiplier/score in production
+# - FeedItem.score shown here to clarify server-side ranking effect
+# - All boost logic is server-enforced
+
+openapi: 3.0.3
+info:
+  title: Pulse BeatPulse API (Add-on)
+  version: 1.0.0
+  description: |
+    BeatPulse exposure boost API endpoints.
+    
+    BeatPulse "runs" through Points activation, but needs endpoints for:
+    - Status display
+    - Feed ranking (server-applied)
+    
+    🔒 LOCKED RULES:
+    - Duration: 15 minutes
+    - Cost: 70 points
+    - Affects: Home + Nearby feeds
+    - No user-facing statistics
+    - Server is source of truth
+
+servers:
+  - url: https://api.pulse.app
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    BoostStatus:
+      type: object
+      required: [beatpulseActive]
+      properties:
+        beatpulseActive:
+          type: boolean
+          description: Whether BeatPulse is currently active
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the boost expires (null if not active)
+        multiplier:
+          type: number
+          nullable: true
+          description: |
+            Current multiplier applied (1.15-1.35).
+            INTERNAL ONLY - do not expose to client in production.
+        dailyUsageCount:
+          type: integer
+          description: How many times activated today
+        dailyLimit:
+          type: integer
+          description: Maximum activations per day
+        cooldownEndsAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When cooldown period ends (null if not in cooldown)
+
+    BoostGuardrails:
+      type: object
+      properties:
+        canActivate:
+          type: boolean
+          description: Whether user can activate BeatPulse now
+        blockReason:
+          type: string
+          enum:
+            - NONE
+            - DAILY_CAP_REACHED
+            - IN_COOLDOWN
+            - PROFILE_QUALITY_LOW
+            - PREMIUM_ACTIVE
+            - FEATURE_ALREADY_ACTIVE
+          nullable: true
+        cooldownRemainingSeconds:
+          type: integer
+          nullable: true
+        dailyRemaining:
+          type: integer
+          description: Remaining activations today
+
+    FeedItem:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: string
+        score:
+          type: number
+          description: |
+            Internal ranking score.
+            Must NOT be returned to client in production.
+        reasonTags:
+          type: array
+          items:
+            type: string
+          description: |
+            Internal debug tags (e.g., "beatpulse_boosted").
+            Must NOT be returned to client in production.
+
+    FeedResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedItem'
+        nextCursor:
+          type: string
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+paths:
+  /v1/boosts/status:
+    get:
+      summary: Get current BeatPulse status (server truth)
+      operationId: getBoostStatus
+      tags:
+        - BeatPulse
+      responses:
+        '200':
+          description: Current boost status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoostStatus'
+              examples:
+                active:
+                  summary: Boost active
+                  value:
+                    beatpulseActive: true
+                    expiresAt: "2026-01-07T21:45:00Z"
+                    dailyUsageCount: 1
+                    dailyLimit: 3
+                    cooldownEndsAt: null
+                inactive:
+                  summary: Boost inactive
+                  value:
+                    beatpulseActive: false
+                    expiresAt: null
+                    dailyUsageCount: 2
+                    dailyLimit: 3
+                    cooldownEndsAt: "2026-01-07T22:00:00Z"
+
+  /v1/boosts/guardrails:
+    get:
+      summary: Check if user can activate BeatPulse
+      operationId: checkBoostGuardrails
+      tags:
+        - BeatPulse
+      responses:
+        '200':
+          description: Guardrails check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoostGuardrails'
+              examples:
+                canActivate:
+                  value:
+                    canActivate: true
+                    blockReason: null
+                    cooldownRemainingSeconds: null
+                    dailyRemaining: 2
+                dailyCapReached:
+                  value:
+                    canActivate: false
+                    blockReason: DAILY_CAP_REACHED
+                    cooldownRemainingSeconds: null
+                    dailyRemaining: 0
+                inCooldown:
+                  value:
+                    canActivate: false
+                    blockReason: IN_COOLDOWN
+                    cooldownRemainingSeconds: 1200
+                    dailyRemaining: 1
+
+  /v1/feed/home:
+    get:
+      summary: Home feed (BeatPulse applied server-side)
+      operationId: getHomeFeed
+      tags:
+        - Feed
+      description: |
+        Returns home feed with BeatPulse ranking applied server-side.
+        Client receives only user list - no scores or boost indicators.
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Feed list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedResponse'
+
+  /v1/feed/nearby:
+    get:
+      summary: Nearby feed (BeatPulse applied server-side)
+      operationId: getNearbyFeed
+      tags:
+        - Feed
+      description: |
+        Returns nearby feed with BeatPulse ranking applied server-side.
+        BeatPulse affects priority within relevance groups but NOT distance.
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: maxDistance
+          schema:
+            type: integer
+            description: Max distance in meters (unaffected by BeatPulse)
+      responses:
+        '200':
+          description: Feed list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedResponse'
+
+# 🔒 IMPORTANT NOTES:
+#
+# 1. Score Calculation (Server Only):
+#    final_score = base_score * beatpulse_multiplier
+#    - multiplier range: 1.15 - 1.35 (configurable)
+#    - multiplier = 1.0 when not active
+#
+# 2. Guardrails (Server Enforced):
+#    - Daily cap: 3 activations (configurable)
+#    - Cooldown: 30 minutes between activations (configurable)
+#    - Profile quality threshold: 70% (configurable)
+#
+# 3. Client Rules:
+#    - NO score/multiplier shown to user
+#    - NO "boosting" UI outside Points Hub
+#    - NO statistics/results displayed

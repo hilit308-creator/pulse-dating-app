@@ -1,0 +1,272 @@
+# Pulse_Points_API_Contract.yaml
+# Points System – Server Source of Truth (Locked)
+
+openapi: 3.0.3
+info:
+  title: Pulse Points System API
+  version: 1.0.0
+  description: |
+    Points system API for Pulse dating app.
+    
+    🔒 LOCKED RULES:
+    - Server is the ONLY source of truth
+    - Client is a dumb renderer
+    - One active feature maximum
+    - Subscription overrides points
+
+servers:
+  - url: https://api.pulse.app
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PointsBalance:
+      type: object
+      required: [balance, activeFeature]
+      properties:
+        balance:
+          type: integer
+          description: Total available points (non-negative)
+          example: 150
+        activeFeature:
+          type: object
+          nullable: true
+          description: Currently active feature, null if none
+          properties:
+            feature:
+              type: string
+              enum: [undo, likes_you, nearby_priority, beatpulse]
+              description: Feature identifier
+            expiresAt:
+              type: string
+              format: date-time
+              description: ISO 8601 timestamp when feature expires
+              example: "2026-01-06T21:30:00Z"
+
+    PointsFeature:
+      type: string
+      enum: [undo, likes_you, nearby_priority, beatpulse]
+      description: |
+        Available features:
+        - undo: 30 min, 40 pts (swipe screens only)
+        - likes_you: 10 min, 80 pts (list opens immediately)
+        - nearby_priority: 10 min, 70 pts (no distance change)
+        - beatpulse: 15 min, 70 pts (no user statistics)
+
+    PointsPackage:
+      type: string
+      enum: [small, medium, large]
+      description: |
+        Available packages:
+        - small: 100 pts, ₪9.90
+        - medium: 250 pts, ₪19.90
+        - large: 600 pts, ₪39.90
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Error code for client handling
+        message:
+          type: string
+          description: Human-readable error message
+
+paths:
+  /v1/points/balance:
+    get:
+      summary: Get points balance and active feature
+      description: |
+        Returns current points balance and active feature status.
+        This is the source of truth for all points-related UI.
+      operationId: getPointsBalance
+      tags:
+        - Points
+      responses:
+        '200':
+          description: Current balance and feature status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointsBalance'
+              examples:
+                no_active_feature:
+                  summary: No active feature
+                  value:
+                    balance: 150
+                    activeFeature: null
+                with_active_feature:
+                  summary: Feature active
+                  value:
+                    balance: 110
+                    activeFeature:
+                      feature: undo
+                      expiresAt: "2026-01-06T21:30:00Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/points/activate:
+    post:
+      summary: Activate a points-based feature
+      description: |
+        Activates a single feature using points.
+        
+        🔒 RULES:
+        - If another feature is active, it ends IMMEDIATELY
+        - Subscription users are BLOCKED
+        - Points are deducted immediately
+        - No confirmation required
+        - No refunds
+      operationId: activateFeature
+      tags:
+        - Points
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [feature]
+              properties:
+                feature:
+                  $ref: '#/components/schemas/PointsFeature'
+            examples:
+              activate_undo:
+                summary: Activate Undo
+                value:
+                  feature: undo
+      responses:
+        '200':
+          description: Feature activated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointsBalance'
+              examples:
+                success:
+                  value:
+                    balance: 110
+                    activeFeature:
+                      feature: undo
+                      expiresAt: "2026-01-06T21:30:00Z"
+        '402':
+          description: Insufficient points
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                insufficient_points:
+                  value:
+                    code: INSUFFICIENT_POINTS
+                    message: Not enough points to activate this feature.
+        '403':
+          description: Blocked (subscription active)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                subscription_active:
+                  value:
+                    code: SUBSCRIPTION_ACTIVE
+                    message: Points are disabled while Premium is active.
+        '409':
+          description: Conflict (invalid state)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/points/purchase/validate:
+    post:
+      summary: Validate store purchase and credit points
+      description: |
+        Validates a purchase receipt from App Store / Google Play
+        and credits points to the user's account.
+        
+        🔒 RULES:
+        - Receipt must be valid and unused
+        - Points credited immediately on success
+        - No celebration UI required
+      operationId: validatePurchase
+      tags:
+        - Points
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [receipt, package]
+              properties:
+                receipt:
+                  type: string
+                  description: Store receipt data (base64 encoded)
+                package:
+                  $ref: '#/components/schemas/PointsPackage'
+            examples:
+              small_purchase:
+                summary: Small package purchase
+                value:
+                  receipt: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  package: small
+      responses:
+        '200':
+          description: Points credited successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointsBalance'
+              examples:
+                success:
+                  value:
+                    balance: 250
+                    activeFeature: null
+        '400':
+          description: Invalid receipt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_receipt:
+                  value:
+                    code: INVALID_RECEIPT
+                    message: The purchase receipt is invalid or already used.
+        '402':
+          description: Payment failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# Feature Cost Reference (LOCKED)
+# ================================
+# | Feature          | Duration | Cost |
+# |------------------|----------|------|
+# | undo             | 30 min   | 40   |
+# | likes_you        | 10 min   | 80   |
+# | nearby_priority  | 10 min   | 70   |
+# | beatpulse        | 15 min   | 70   |
+#
+# Package Reference (LOCKED)
+# ==========================
+# | Package | Points | Price  |
+# |---------|--------|--------|
+# | small   | 100    | ₪9.90  |
+# | medium  | 250    | ₪19.90 |
+# | large   | 600    | ₪39.90 |

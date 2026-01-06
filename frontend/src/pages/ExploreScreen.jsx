@@ -39,23 +39,28 @@ import {
   Star,
   ChevronRight,
   X,
+  Heart,
+  MessageCircle,
+  Send,
+  Flower2,
 } from "lucide-react";
+import { useLanguage } from '../context/LanguageContext';
 
 /* =========================
    Constants
    ========================= */
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
 
-// Filter categories
+// Filter categories - using translation keys
 const FILTER_CATEGORIES = [
-  { id: 'all', label: 'All', icon: Sparkles },
-  { id: 'bar', label: 'Bar', icon: Wine },
-  { id: 'cafe', label: 'Cafe', icon: Coffee },
-  { id: 'live-music', label: 'Live Music', icon: Music },
-  { id: 'chill', label: 'Chill', icon: Star },
-  { id: 'dance', label: 'Dance', icon: Zap },
-  { id: 'social', label: 'Social', icon: Users },
-  { id: 'near-me', label: 'Near me', icon: MapPin },
+  { id: 'all', labelKey: 'allPlaces', icon: Sparkles },
+  { id: 'bar', labelKey: 'bars', icon: Wine },
+  { id: 'cafe', labelKey: 'cafes', icon: Coffee },
+  { id: 'live-music', labelKey: 'liveMusic', icon: Music },
+  { id: 'chill', labelKey: 'chill', icon: Star },
+  { id: 'dance', labelKey: 'dance', icon: Zap },
+  { id: 'social', labelKey: 'social', icon: Users },
+  { id: 'near-me', labelKey: 'nearMe', icon: MapPin },
 ];
 
 // Vibe icons mapping
@@ -67,6 +72,82 @@ const VIBE_ICONS = {
   romantic: { icon: '🕯️', label: 'Romantic' },
   energetic: { icon: '⚡', label: 'Energetic' },
 };
+
+// Mock nearby people for Sweet Gestures
+const NEARBY_PEOPLE = [
+  {
+    id: 1,
+    name: "Dana",
+    distance: 197,
+    unit: "m",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
+    isOnline: true,
+  },
+  {
+    id: 2,
+    name: "Tom",
+    distance: 599,
+    unit: "m",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    isOnline: true,
+  },
+  {
+    id: 3,
+    name: "Sarah",
+    distance: 1.0,
+    unit: "km",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80",
+    isOnline: false,
+  },
+  {
+    id: 4,
+    name: "Alex",
+    distance: 1.2,
+    unit: "km",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+    isOnline: true,
+  },
+  {
+    id: 5,
+    name: "Maya",
+    distance: 1.5,
+    unit: "km",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    isOnline: true,
+  },
+];
+
+// Gesture types for Sweet Gestures
+const GESTURE_TYPES = [
+  {
+    id: 'coffee',
+    label: 'Send Coffee',
+    icon: Coffee,
+    gradient: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)',
+    shadowColor: 'rgba(255, 107, 107, 0.4)',
+  },
+  {
+    id: 'flower',
+    label: 'Send Flower',
+    icon: Flower2,
+    gradient: 'linear-gradient(135deg, #a855f7 0%, #c084fc 100%)',
+    shadowColor: 'rgba(168, 85, 247, 0.4)',
+  },
+  {
+    id: 'note',
+    label: 'Send Note',
+    icon: Gift,
+    gradient: 'linear-gradient(135deg, #6C5CE7 0%, #a78bfa 100%)',
+    shadowColor: 'rgba(108, 92, 231, 0.4)',
+  },
+  {
+    id: 'hi',
+    label: 'Say Hi',
+    icon: MessageCircle,
+    gradient: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+    shadowColor: 'rgba(16, 185, 129, 0.4)',
+  },
+];
 
 // Mock places data (10-20 places only)
 const MOCK_PLACES = [
@@ -625,10 +706,340 @@ function BenefitsDialog({ open, onClose, place }) {
 
 
 /* =========================
+   Sweet Gestures Section
+   ========================= */
+function SweetGesturesSection({ people, onSendGesture }) {
+  return (
+    <Box
+      sx={{
+        mb: 3,
+        p: 2.5,
+        background: 'linear-gradient(135deg, rgba(255,107,107,0.08) 0%, rgba(168,85,247,0.08) 50%, rgba(108,92,231,0.08) 100%)',
+        borderRadius: '24px',
+        border: '1px solid rgba(108,92,231,0.12)',
+      }}
+    >
+      {/* Section Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #FF6B6B 0%, #a855f7 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Heart size={20} color="#fff" fill="#fff" />
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e', lineHeight: 1.2 }}>
+              Sweet Gestures
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b' }}>
+              Send something special to someone nearby
+            </Typography>
+          </Box>
+        </Box>
+        <Chip
+          label="New"
+          size="small"
+          sx={{
+            bgcolor: 'rgba(255,107,107,0.15)',
+            color: '#FF6B6B',
+            fontWeight: 700,
+            fontSize: '0.65rem',
+          }}
+        />
+      </Box>
+
+      {/* People List */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {people.map((person, index) => (
+          <motion.div
+            key={person.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                p: 2,
+                bgcolor: '#fff',
+                borderRadius: '16px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.1)',
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              {/* Avatar */}
+              <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                <Box
+                  component="img"
+                  src={person.avatar}
+                  alt={person.name}
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '16px',
+                    objectFit: 'cover',
+                    border: '3px solid #fff',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  }}
+                />
+                {person.isOnline && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: -2,
+                      right: -2,
+                      width: 16,
+                      height: 16,
+                      borderRadius: '50%',
+                      bgcolor: '#22c55e',
+                      border: '3px solid #fff',
+                    }}
+                  />
+                )}
+              </Box>
+
+              {/* Info */}
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                  {person.name}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <MapPin size={12} color="#64748b" />
+                  <Typography variant="caption" sx={{ color: '#64748b' }}>
+                    {person.distance} {person.unit} away
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Gesture Buttons */}
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {GESTURE_TYPES.map((gesture) => {
+                  const Icon = gesture.icon;
+                  const isMain = gesture.id === 'coffee';
+                  return (
+                    <motion.div
+                      key={gesture.id}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <IconButton
+                        onClick={() => onSendGesture(person, gesture)}
+                        sx={{
+                          width: isMain ? 52 : 40,
+                          height: isMain ? 52 : 40,
+                          borderRadius: isMain ? '16px' : '12px',
+                          background: isMain ? gesture.gradient : 'transparent',
+                          border: isMain ? 'none' : '1.5px solid #e2e8f0',
+                          boxShadow: isMain ? `0 4px 16px ${gesture.shadowColor}` : 'none',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            background: isMain ? gesture.gradient : 'rgba(108,92,231,0.08)',
+                            borderColor: isMain ? 'transparent' : '#6C5CE7',
+                          },
+                        }}
+                      >
+                        <Icon 
+                          size={isMain ? 22 : 18} 
+                          color={isMain ? '#fff' : '#64748b'} 
+                        />
+                      </IconButton>
+                    </motion.div>
+                  );
+                })}
+              </Box>
+            </Box>
+          </motion.div>
+        ))}
+      </Box>
+
+      {/* View More */}
+      <Button
+        fullWidth
+        endIcon={<ChevronRight size={18} />}
+        sx={{
+          mt: 2,
+          py: 1.25,
+          borderRadius: '12px',
+          textTransform: 'none',
+          fontWeight: 600,
+          color: '#6C5CE7',
+          bgcolor: 'rgba(108,92,231,0.08)',
+          '&:hover': {
+            bgcolor: 'rgba(108,92,231,0.15)',
+          },
+        }}
+      >
+        See more people nearby
+      </Button>
+    </Box>
+  );
+}
+
+/* =========================
+   Gesture Sent Dialog
+   ========================= */
+function GestureSentDialog({ open, onClose, person, gesture }) {
+  if (!person || !gesture) return null;
+
+  const Icon = gesture.icon;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: {
+          borderRadius: '28px',
+          maxWidth: 340,
+          width: '100%',
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {/* Animated Header */}
+      <Box
+        sx={{
+          background: gesture.gradient,
+          p: 4,
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Floating particles animation */}
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ 
+              y: -100, 
+              opacity: [0, 1, 0],
+              x: Math.sin(i) * 30,
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              delay: i * 0.3,
+              ease: "easeOut"
+            }}
+            style={{
+              position: 'absolute',
+              left: `${20 + i * 12}%`,
+              bottom: 0,
+            }}
+          >
+            <Sparkles size={16} color="rgba(255,255,255,0.6)" />
+          </motion.div>
+        ))}
+        
+        <motion.div
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", damping: 15, stiffness: 300 }}
+        >
+          <Box
+            sx={{
+              width: 80,
+              height: 80,
+              borderRadius: '24px',
+              bgcolor: 'rgba(255,255,255,0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2,
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <Icon size={40} color="#fff" />
+          </Box>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 800, color: '#fff', mb: 0.5 }}>
+            Gesture Sent! 💫
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+            {gesture.label} to {person.name}
+          </Typography>
+        </motion.div>
+      </Box>
+
+      <DialogContent sx={{ p: 3, textAlign: 'center' }}>
+        {/* Person Info */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 2 }}>
+          <Box
+            component="img"
+            src={person.avatar}
+            alt={person.name}
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '14px',
+              objectFit: 'cover',
+            }}
+          />
+          <Box sx={{ textAlign: 'left' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+              {person.name}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b' }}>
+              Will be notified soon
+            </Typography>
+          </Box>
+        </Box>
+
+        <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>
+          {person.name} will receive your sweet gesture and can choose to respond. Keep your fingers crossed! 🤞
+        </Typography>
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'center' }}>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={onClose}
+          sx={{
+            py: 1.5,
+            borderRadius: '14px',
+            textTransform: 'none',
+            fontWeight: 700,
+            background: gesture.gradient,
+            boxShadow: `0 4px 16px ${gesture.shadowColor}`,
+          }}
+        >
+          Awesome!
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+
+/* =========================
    Main ExploreScreen
    ========================= */
 export default function ExploreScreen() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   // State
   const [activeFilter, setActiveFilter] = useState('all');
@@ -638,6 +1049,11 @@ export default function ExploreScreen() {
   const [showBenefitsDialog, setShowBenefitsDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Sweet Gestures state
+  const [selectedPerson, setSelectedPerson] = useState(null);
+  const [selectedGesture, setSelectedGesture] = useState(null);
+  const [showGestureDialog, setShowGestureDialog] = useState(false);
 
   // Simulate loading
   React.useEffect(() => {
@@ -674,8 +1090,8 @@ export default function ExploreScreen() {
   // Handlers
   const handleViewPlace = useCallback((place) => {
     setSelectedPlace(place);
-    // Navigate to place detail page
-    navigate(`/explore/place/${place.id}`, { state: { place } });
+    // Navigate to business page (place detail)
+    navigate(`/business/${place.id}`, { state: { place } });
   }, [navigate]);
 
   const handleSave = useCallback((placeId) => {
@@ -698,6 +1114,13 @@ export default function ExploreScreen() {
   const handleSeeBenefits = useCallback((place) => {
     setSelectedPlace(place);
     setShowBenefitsDialog(true);
+  }, []);
+
+  // Sweet Gestures handler
+  const handleSendGesture = useCallback((person, gesture) => {
+    setSelectedPerson(person);
+    setSelectedGesture(gesture);
+    setShowGestureDialog(true);
   }, []);
 
   // Loading skeleton
@@ -743,7 +1166,7 @@ export default function ExploreScreen() {
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 0.5 }}>
-          Explore
+          {t('explore')}
         </Typography>
         <Typography variant="body1" sx={{ color: '#64748b' }}>
           Places worth stepping into
@@ -774,7 +1197,7 @@ export default function ExploreScreen() {
             <Chip
               key={cat.id}
               icon={<Icon size={16} />}
-              label={cat.label}
+              label={t(cat.labelKey)}
               onClick={() => setActiveFilter(cat.id)}
               sx={{
                 flexShrink: 0,
@@ -796,6 +1219,12 @@ export default function ExploreScreen() {
 
       {/* Places Feed */}
       <Box sx={{ flex: 1, px: 3, py: 2 }}>
+        {/* Sweet Gestures Section */}
+        <SweetGesturesSection 
+          people={NEARBY_PEOPLE} 
+          onSendGesture={handleSendGesture} 
+        />
+
         {/* Results count */}
         <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
           {sortedPlaces.length} places {activeFilter !== 'all' && `in ${activeFilter.replace('-', ' ')}`}
@@ -854,6 +1283,14 @@ export default function ExploreScreen() {
         open={showBenefitsDialog}
         onClose={() => setShowBenefitsDialog(false)}
         place={selectedPlace}
+      />
+
+      {/* Gesture Sent Dialog */}
+      <GestureSentDialog
+        open={showGestureDialog}
+        onClose={() => setShowGestureDialog(false)}
+        person={selectedPerson}
+        gesture={selectedGesture}
       />
 
       {/* Toast */}

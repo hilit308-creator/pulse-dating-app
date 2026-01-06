@@ -41,7 +41,9 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import UserAvatarButton from '../components/UserAvatarButton';
+import { UserCardStack } from '../components/UserCard';
 
 // Safe bottom padding for tab bar
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
@@ -119,9 +121,66 @@ const MOCK_ACTIVE_CHAT = {
   unread: true,
 };
 
+// Mock data for UserCard v2 (per spec section 7 - UserCardModel)
+const MOCK_DISCOVER_PROFILES = [
+  {
+    userId: 'u1',
+    firstName: 'Shani',
+    age: 24,
+    distanceMeters: 700,
+    primaryPhotoUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
+    contextLine: 'Here for the event tonight',
+    chips: [
+      { label: '168cm', type: 'factual' },
+      { label: 'Social drinker', type: 'factual' },
+      { label: 'Yoga lover', type: 'hobby' },
+    ],
+  },
+  {
+    userId: 'u2',
+    firstName: 'Noa',
+    age: 27,
+    distanceMeters: 1200,
+    primaryPhotoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+    contextLine: 'Fashion Blogger',
+    chips: [
+      { label: '172cm', type: 'factual' },
+      { label: 'Non-smoker', type: 'factual' },
+      { label: 'Art & Design', type: 'hobby' },
+    ],
+  },
+  {
+    userId: 'u3',
+    firstName: 'Maya',
+    age: 25,
+    distanceMeters: 450,
+    primaryPhotoUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
+    contextLine: 'Spontaneous coffee lover',
+    chips: [
+      { label: '165cm', type: 'factual' },
+      { label: 'Foodie', type: 'hobby' },
+      { label: 'Travel addict', type: 'hobby' },
+    ],
+  },
+  {
+    userId: 'u4',
+    firstName: 'Tamar',
+    age: 29,
+    distanceMeters: 2300,
+    primaryPhotoUrl: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=800&q=80',
+    contextLine: 'Software developer by day, musician by night',
+    chips: [
+      { label: '170cm', type: 'factual' },
+      { label: 'Guitar', type: 'hobby' },
+      { label: 'Looking for relationship', type: 'lookingFor' },
+    ],
+  },
+];
+
 const HomeScreen = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
   
   // State
   const [isLoading, setIsLoading] = useState(true);
@@ -132,6 +191,8 @@ const HomeScreen = () => {
   const [events, setEvents] = useState([]);
   const [places, setPlaces] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
+  const [discoverProfiles, setDiscoverProfiles] = useState([]);
+  const [showDiscover, setShowDiscover] = useState(true); // Toggle between Discover and Browse mode
   
   // Profile completion check
   const isProfileComplete = useMemo(() => {
@@ -182,6 +243,7 @@ const HomeScreen = () => {
       setEvents(MOCK_EVENTS.slice(0, 2));
       setPlaces(MOCK_PLACES.slice(0, 2));
       setActiveChat(MOCK_ACTIVE_CHAT);
+      setDiscoverProfiles(MOCK_DISCOVER_PROFILES);
       
       setIsLoading(false);
     };
@@ -195,6 +257,28 @@ const HomeScreen = () => {
   const handleGoToExplore = useCallback(() => navigate('/explore'), [navigate]);
   const handleGoToChats = useCallback(() => navigate('/matches'), [navigate]);
   const handleGoToProfile = useCallback(() => navigate('/profile'), [navigate]);
+  
+  // UserCard handlers
+  const handleLike = useCallback((user) => {
+    console.log('Liked:', user.firstName);
+    // In real app: send like to API, check for match
+  }, []);
+  
+  const handlePass = useCallback((user) => {
+    console.log('Passed:', user.firstName);
+    // In real app: send pass to API
+  }, []);
+  
+  const handleTapProfile = useCallback((user) => {
+    console.log('View profile:', user.firstName);
+    // In real app: navigate to expanded profile
+    navigate(`/profile/${user.userId}`);
+  }, [navigate]);
+  
+  const handleDiscoverEmpty = useCallback(() => {
+    console.log('No more profiles');
+    // Could show refresh option or switch to browse mode
+  }, []);
   
   // Check if we have any content to show
   const hasAnyContent = nearbyProfiles.length > 0 || events.length > 0 || places.length > 0 || activeChat;
@@ -368,15 +452,61 @@ const HomeScreen = () => {
           </motion.div>
         )}
 
-        {/* 4. Nearby Preview - Vertical layout per spec */}
+        {/* 4. Discover Section - UserCard v2 */}
+        {showDiscover && discoverProfiles.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <SectionHeader 
+              icon={<Sparkles size={18} color="#6C5CE7" />}
+              title="Discover"
+              subtitle="People you might like"
+            />
+            
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              mb: 2,
+              mx: -3, // Extend beyond padding for full-width card
+            }}>
+              <UserCardStack
+                users={discoverProfiles}
+                onLike={handleLike}
+                onPass={handlePass}
+                onTap={handleTapProfile}
+                onEmpty={handleDiscoverEmpty}
+                hasLocationPermission={true}
+              />
+            </Box>
+            
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2 }}>
+              <Button
+                size="small"
+                onClick={() => setShowDiscover(false)}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  color: '#64748b',
+                  p: 0,
+                }}
+              >
+                Browse instead
+              </Button>
+            </Box>
+          </motion.div>
+        )}
+
+        {/* 5. Nearby Preview - Vertical layout per spec */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: showDiscover ? 0.3 : 0.2 }}
         >
           <SectionHeader 
             icon={<Users size={18} color="#6C5CE7" />}
-            title="Nearby"
+            title={t('nearby')}
             subtitle="People worth meeting right now"
           />
           
@@ -413,7 +543,7 @@ const HomeScreen = () => {
         >
           <SectionHeader 
             icon={<Calendar size={18} color="#ec4899" />}
-            title="Events"
+            title={t('events')}
             subtitle="Things worth stepping out for"
           />
           
@@ -450,7 +580,7 @@ const HomeScreen = () => {
         >
           <SectionHeader 
             icon={<Compass size={18} color="#10b981" />}
-            title="Explore"
+            title={t('explore')}
             subtitle="Places open right now"
           />
           
@@ -488,7 +618,7 @@ const HomeScreen = () => {
           >
             <SectionHeader 
               icon={<MessageCircle size={18} color="#f59e0b" />}
-              title="Chats"
+              title={t('chats')}
             />
             
             <Box

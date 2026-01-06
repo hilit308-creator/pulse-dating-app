@@ -48,6 +48,8 @@ import {
   LogOut,
   Trash2,
   ChevronRight,
+  Coins,
+  Circle,
   AlertTriangle,
   User,
   Shield,
@@ -78,6 +80,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount, apiCall } from '../services/authApi';
 
 // Analytics helper
@@ -88,6 +91,7 @@ const trackEvent = (eventName, params = {}) => {
 const AccountSettingsScreen = () => {
   const navigate = useNavigate();
   const { logout, accessToken, user } = useAuth();
+  const { language, setLanguage: setGlobalLanguage, t, isRTL } = useLanguage();
   
   // Dialog states
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -115,9 +119,12 @@ const AccountSettingsScreen = () => {
   const [messageNotifications, setMessageNotifications] = useState('always');
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
   const [smartNotifications, setSmartNotifications] = useState(true);
-  const [language, setLanguage] = useState('English');
+  const [tempLanguage, setTempLanguage] = useState(language);
   const [units, setUnits] = useState('Metric (km)');
-  const [audioTranscription, setAudioTranscription] = useState(false);
+  const [audioTranscription, setAudioTranscription] = useState(() => {
+    const saved = localStorage.getItem('pulse_audio_transcription');
+    return saved === 'true';
+  });
   
   // Mock blocked users
   const [blockedUsers] = useState([
@@ -298,7 +305,7 @@ const AccountSettingsScreen = () => {
           <ArrowLeft size={22} color="#1a1a2e" />
         </IconButton>
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-          Settings
+          {t('settings')}
         </Typography>
       </Box>
 
@@ -323,34 +330,51 @@ const AccountSettingsScreen = () => {
           {/* ═══════════════════════════════════════════════════════════════
               1. ACCOUNT
           ═══════════════════════════════════════════════════════════════ */}
-          <SectionHeader icon={User} title="Account" />
+          <SectionHeader icon={User} title={t('account')} />
           <SectionContainer>
             <MenuItem
-              icon={Phone}
-              label="Phone number"
-              value={user?.phoneE164 || '+972 ••• •••'}
-              onClick={() => setShowPhoneDialog(true)}
-            />
-            <Divider sx={{ mx: 2 }} />
-            <MenuItem
-              icon={Mail}
-              label="Email"
-              value={user?.email || 'Not set'}
-              onClick={() => setShowEmailDialog(true)}
-            />
-            <Divider sx={{ mx: 2 }} />
-            <MenuItem
-              icon={ExternalLink}
-              label="Connected accounts"
-              sublabel="Google, Apple"
-              onClick={() => setSnackbar({ open: true, message: 'Social connections coming soon' })}
+              icon={KeyRound}
+              label={t('account')}
+              sublabel={t('emailConnectedAccounts') || 'Email, connected accounts'}
+              onClick={() => navigate('/settings/account')}
             />
           </SectionContainer>
 
           {/* ═══════════════════════════════════════════════════════════════
               2. PROFILE & VISIBILITY
           ═══════════════════════════════════════════════════════════════ */}
-          <SectionHeader icon={Eye} title="Profile & Visibility" />
+          <SectionHeader icon={Eye} title={t('profileVisibility')} />
+          
+          {/* Current Visibility Status */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              px: 2,
+              py: 1.5,
+              mb: 2,
+              backgroundColor: pauseMode ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)',
+              borderRadius: '12px',
+              border: `1px solid ${pauseMode ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`,
+            }}
+          >
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                backgroundColor: pauseMode ? '#ef4444' : '#22c55e',
+                boxShadow: `0 0 8px ${pauseMode ? '#ef4444' : '#22c55e'}60`,
+              }}
+            />
+            <Typography variant="body2" sx={{ fontWeight: 500, color: pauseMode ? '#ef4444' : '#22c55e' }}>
+              {pauseMode 
+                ? (t('pausedHiddenEverywhere') || "Paused — you're hidden everywhere")
+                : (t('visibleNow') || 'Visible now')}
+            </Typography>
+          </Box>
+          
           <SectionContainer>
             {/* Visibility Mode */}
             <Box sx={{ py: 1.75, px: 2 }}>
@@ -358,25 +382,40 @@ const AccountSettingsScreen = () => {
                 <Eye size={20} color="#64748b" />
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
-                    Visibility Mode
+                    {t('visibilityMode')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                    When you're present to others
+                    {t('whenYouArePresent')}
                   </Typography>
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, pl: 4.5 }}>
                 {[
-                  { key: 'always', label: 'Always visible' },
-                  { key: 'selected_times', label: 'Selected times' },
-                  { key: 'selected_places', label: 'Selected places' },
-                  { key: 'paused', label: 'Paused' },
+                  { key: 'always', label: t('alwaysVisible') },
+                  { key: 'selected_times', label: t('selectedTimes') },
+                  { key: 'selected_places', label: t('selectedPlaces') },
+                  { key: 'paused', label: t('paused') },
                 ].map((opt) => (
                   <Chip
                     key={opt.key}
                     label={opt.label}
                     size="small"
-                    onClick={() => setVisibilityMode(opt.key)}
+                    onClick={() => {
+                      setVisibilityMode(opt.key);
+                      if (opt.key === 'paused') {
+                        setPauseMode(true);
+                        setSnackbar({ open: true, message: t('profilePaused') });
+                      } else {
+                        setPauseMode(false);
+                        if (opt.key === 'selected_times') {
+                          navigate('/settings/time-visibility');
+                        } else if (opt.key === 'selected_places') {
+                          navigate('/settings/location-visibility');
+                        } else {
+                          setSnackbar({ open: true, message: t('visibilityUpdated') });
+                        }
+                      }
+                    }}
                     sx={{
                       backgroundColor: visibilityMode === opt.key ? '#6C5CE7' : 'rgba(0,0,0,0.06)',
                       color: visibilityMode === opt.key ? '#fff' : '#64748b',
@@ -393,22 +432,22 @@ const AccountSettingsScreen = () => {
             <Divider sx={{ mx: 2 }} />
             <MenuItem
               icon={MapPin}
-              label="Location-based visibility"
-              sublabel="Areas to hide or show yourself"
+              label={t('locationBasedVisibility')}
+              sublabel={t('areasToHideOrShow')}
               onClick={() => navigate('/settings/location-visibility')}
             />
             <Divider sx={{ mx: 2 }} />
             <MenuItem
               icon={Clock}
-              label="Time-based visibility"
-              sublabel="Set active hours"
+              label={t('timeBasedVisibility')}
+              sublabel={t('setActiveHours')}
               onClick={() => navigate('/settings/time-visibility')}
             />
             <Divider sx={{ mx: 2 }} />
             <MenuItem
               icon={Users}
-              label="Contacts visibility"
-              sublabel="Hide from specific contacts"
+              label={t('contactsVisibility')}
+              sublabel={t('hideFromContacts')}
               onClick={() => navigate('/settings/contacts-visibility')}
             />
           </SectionContainer>
@@ -420,32 +459,32 @@ const AccountSettingsScreen = () => {
               sx={{ mb: 2.5, borderRadius: '12px' }}
               icon={<Pause size={18} />}
             >
-              Your profile is paused. Existing matches & chats still work.
+              {t('profilePausedInfo')}
             </Alert>
           )}
 
           {/* ═══════════════════════════════════════════════════════════════
               3. NOTIFICATIONS
           ═══════════════════════════════════════════════════════════════ */}
-          <SectionHeader icon={Bell} title="Notifications" />
+          <SectionHeader icon={Bell} title={t('notifications')} />
           <SectionContainer>
             <MenuItem
               icon={Bell}
-              label="Notification settings"
-              sublabel="Matches, messages, quiet hours, lock-screen"
+              label={t('notificationSettings')}
+              sublabel={t('notificationsSubtitle')}
               onClick={() => navigate('/settings/notifications')}
             />
             <Divider sx={{ mx: 2 }} />
             <MenuItem
               icon={Heart}
-              label="Match notifications"
+              label={t('matchNotifications')}
               value={matchNotifications === 'always' ? 'Always' : 'Custom'}
               onClick={() => navigate('/settings/notifications')}
             />
             <Divider sx={{ mx: 2 }} />
             <MenuItem
               icon={MessageCircle}
-              label="Message notifications"
+              label={t('messageNotifications')}
               value={messageNotifications === 'always' ? 'Always' : 'Custom'}
               onClick={() => navigate('/settings/notifications')}
             />
@@ -455,10 +494,10 @@ const AccountSettingsScreen = () => {
                 <Clock size={20} color="#64748b" />
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
-                    Quiet hours
+                    {t('quietHours')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                    No notifications during set times
+                    {t('noNotificationsDuringSetTimes')}
                   </Typography>
                 </Box>
               </Box>
@@ -478,10 +517,10 @@ const AccountSettingsScreen = () => {
                 <Settings size={20} color="#64748b" />
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
-                    Smart notifications
+                    {t('smartNotifications')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                    Pulse learns the best time to reach you
+                    {t('pulseLearns')}
                   </Typography>
                 </Box>
               </Box>
@@ -500,14 +539,14 @@ const AccountSettingsScreen = () => {
           {/* ═══════════════════════════════════════════════════════════════
               4. MATCHING PREFERENCES
           ═══════════════════════════════════════════════════════════════ */}
-          <SectionHeader icon={Heart} title="Matching Preferences" />
+          <SectionHeader icon={Heart} title={t('matchingPreferences')} />
           <SectionContainer>
             <Box sx={{ py: 1.75, px: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <User size={20} color="#64748b" />
                   <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
-                    Age range
+                    {t('ageRange')}
                   </Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 600 }}>
@@ -528,7 +567,7 @@ const AccountSettingsScreen = () => {
                 />
               </Box>
               <Typography variant="caption" sx={{ color: '#94a3b8', pl: 4.5 }}>
-                This helps us suggest more relevant connections.
+                {t('ageRangeHelp')}
               </Typography>
             </Box>
           </SectionContainer>
@@ -536,18 +575,18 @@ const AccountSettingsScreen = () => {
           {/* ═══════════════════════════════════════════════════════════════
               5. SAFETY & TRUST
           ═══════════════════════════════════════════════════════════════ */}
-          <SectionHeader icon={Shield} title="Safety & Trust" />
+          <SectionHeader icon={Shield} title={t('safetyTrust')} />
           <SectionContainer>
             <MenuItem
               icon={UserX}
-              label="Blocked users"
+              label={t('blockedUsers')}
               value={blockedUsers.length > 0 ? `${blockedUsers.length}` : '0'}
               onClick={() => navigate('/settings/blocked-users')}
             />
             <Divider sx={{ mx: 2 }} />
             <MenuItem
               icon={Flag}
-              label="Report a problem"
+              label={t('reportProblem')}
               onClick={() => window.open('mailto:support@pulse.dating?subject=Problem%20Report', '_blank')}
             />
           </SectionContainer>
@@ -555,24 +594,25 @@ const AccountSettingsScreen = () => {
           {/* ═══════════════════════════════════════════════════════════════
               6. PRIVACY & DATA
           ═══════════════════════════════════════════════════════════════ */}
-          <SectionHeader icon={Lock} title="Privacy & Data" />
+          <SectionHeader icon={Lock} title={t('privacyData')} />
           <SectionContainer>
             <MenuItem
               icon={Eye}
-              label="Profile visibility"
-              sublabel="Control what's shown on your profile"
+              label={t('profileVisibilityControl')}
+              sublabel={t('controlWhatsShown')}
               onClick={() => navigate('/profile')}
             />
             <Divider sx={{ mx: 2 }} />
             <MenuItem
               icon={Download}
-              label="Download my data"
+              label={t('downloadMyData')}
+              sublabel={t('downloadMyDataSubtitle')}
               onClick={() => setShowDataDownloadDialog(true)}
             />
             <Divider sx={{ mx: 2 }} />
             <MenuItem
               icon={Lock}
-              label="Privacy preferences"
+              label={t('privacyPreferences')}
               onClick={() => navigate('/settings/location-visibility')}
             />
           </SectionContainer>
@@ -580,26 +620,26 @@ const AccountSettingsScreen = () => {
           {/* ═══════════════════════════════════════════════════════════════
               7. APP PREFERENCES
           ═══════════════════════════════════════════════════════════════ */}
-          <SectionHeader icon={Settings} title="App Preferences" />
+          <SectionHeader icon={Settings} title={t('appPreferences')} />
           <SectionContainer>
             <MenuItem
               icon={Globe}
-              label="Language"
+              label={t('language')}
               value={language}
               onClick={() => setShowLanguageDialog(true)}
             />
             <Divider sx={{ mx: 2 }} />
             <MenuItem
               icon={MapPin}
-              label="Units of measurement"
+              label={t('unitsOfMeasurement')}
               value={units}
               onClick={() => setShowUnitsDialog(true)}
             />
             <Divider sx={{ mx: 2 }} />
             <MenuItem
               icon={Accessibility}
-              label="Accessibility"
-              onClick={() => setSnackbar({ open: true, message: 'Accessibility settings coming soon' })}
+              label={t('accessibility')}
+              onClick={() => navigate('/accessibility')}
             />
             <Divider sx={{ mx: 2 }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.75, px: 2 }}>
@@ -607,17 +647,22 @@ const AccountSettingsScreen = () => {
                 <MessageCircle size={20} color="#64748b" />
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
-                    Audio transcription
+                    {t('audioTranscription')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                    Transcribe voice messages
+                    {t('transcribeVoiceMessages')}
                   </Typography>
                 </Box>
               </Box>
               <Switch
                 size="small"
                 checked={audioTranscription}
-                onChange={(e) => setAudioTranscription(e.target.checked)}
+                onChange={(e) => {
+                  const newValue = e.target.checked;
+                  setAudioTranscription(newValue);
+                  localStorage.setItem('pulse_audio_transcription', newValue.toString());
+                  setSnackbar({ open: true, message: newValue ? t('audioTranscriptionEnabled') : t('audioTranscriptionDisabled') });
+                }}
                 sx={{
                   '& .MuiSwitch-switchBase.Mui-checked': { color: '#6C5CE7' },
                   '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#6C5CE7' },
@@ -627,26 +672,33 @@ const AccountSettingsScreen = () => {
           </SectionContainer>
 
           {/* ═══════════════════════════════════════════════════════════════
-              8. SUBSCRIPTIONS
+              8. SUBSCRIPTIONS & POINTS
           ═══════════════════════════════════════════════════════════════ */}
-          <SectionHeader icon={CreditCard} title="Subscriptions" />
+          <SectionHeader icon={CreditCard} title={t('subscriptions')} />
           <SectionContainer highlighted>
             <MenuItem
               icon={CreditCard}
-              label="Pulse Premium"
-              sublabel="Unlock all features"
+              label={t('pulsePremium')}
+              sublabel={t('unlockAllFeatures')}
               onClick={() => navigate('/business-upgrade')}
+            />
+            <Divider sx={{ mx: 2 }} />
+            <MenuItem
+              icon={Coins}
+              label={t('yourPoints') || 'Your Points'}
+              sublabel={t('boostFeatures') || 'Boost your profile temporarily'}
+              onClick={() => navigate('/points')}
             />
           </SectionContainer>
 
           {/* ═══════════════════════════════════════════════════════════════
               9. INVITE & GROWTH
           ═══════════════════════════════════════════════════════════════ */}
-          <SectionHeader icon={Share2} title="Invite & Growth" />
+          <SectionHeader icon={Share2} title={t('inviteGrowth')} />
           <SectionContainer>
             <Box sx={{ py: 2, px: 2 }}>
               <Typography variant="body2" sx={{ color: '#64748b', mb: 1.5 }}>
-                Pulse works best when people you trust are around.
+                {t('pulseWorksBest')}
               </Typography>
               <Button
                 fullWidth
@@ -661,7 +713,7 @@ const AccountSettingsScreen = () => {
                   background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
                 }}
               >
-                Share Pulse
+                {t('sharePulse')}
               </Button>
             </Box>
             <Divider sx={{ mx: 2 }} />
@@ -671,10 +723,10 @@ const AccountSettingsScreen = () => {
                 <Users size={20} color="#64748b" />
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
-                    Friends joined through you
+                    {t('friendsJoined')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                    People who signed up with your invite
+                    {t('peopleWhoSignedUp')}
                   </Typography>
                 </Box>
               </Box>
@@ -696,17 +748,17 @@ const AccountSettingsScreen = () => {
           {/* ═══════════════════════════════════════════════════════════════
               10. HELP & LEGAL
           ═══════════════════════════════════════════════════════════════ */}
-          <SectionHeader icon={HelpCircle} title="Help & Legal" />
+          <SectionHeader icon={HelpCircle} title={t('helpLegal')} />
           <SectionContainer>
-            <MenuItem icon={HelpCircle} label="Help Center" onClick={() => window.open('https://help.pulse.dating', '_blank')} />
+            <MenuItem icon={HelpCircle} label={t('helpCenter')} onClick={() => navigate('/help-center')} />
             <Divider sx={{ mx: 2 }} />
-            <MenuItem icon={Shield} label="Safety Tips" onClick={() => window.open('https://pulse.dating/safety', '_blank')} />
+            <MenuItem icon={Shield} label={t('safetyTips')} onClick={() => navigate('/safety-tips')} />
             <Divider sx={{ mx: 2 }} />
-            <MenuItem icon={Users} label="Community Guidelines" onClick={() => window.open('https://pulse.dating/guidelines', '_blank')} />
+            <MenuItem icon={Users} label={t('communityGuidelines')} onClick={() => navigate('/community-guidelines')} />
             <Divider sx={{ mx: 2 }} />
-            <MenuItem icon={FileText} label="Privacy Policy" onClick={() => window.open('https://pulse.dating/privacy', '_blank')} />
+            <MenuItem icon={FileText} label={t('privacyPolicy')} onClick={() => navigate('/privacy-policy')} />
             <Divider sx={{ mx: 2 }} />
-            <MenuItem icon={FileText} label="Terms of Service" onClick={() => window.open('https://pulse.dating/terms', '_blank')} />
+            <MenuItem icon={FileText} label={t('termsOfService')} onClick={() => navigate('/terms-of-service')} />
           </SectionContainer>
 
           {/* ═══════════════════════════════════════════════════════════════
@@ -718,10 +770,10 @@ const AccountSettingsScreen = () => {
                 <Pause size={20} color="#64748b" />
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
-                    Pause account
+                    {t('pauseAccount')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                    Hide without losing connections
+                    {t('hideWithoutLosing')}
                   </Typography>
                 </Box>
               </Box>
@@ -736,16 +788,16 @@ const AccountSettingsScreen = () => {
               />
             </Box>
             <Divider sx={{ mx: 2 }} />
-            <MenuItem icon={LogOut} label="Log out" onClick={handleLogoutClick} />
+            <MenuItem icon={LogOut} label={t('logOut')} onClick={handleLogoutClick} />
           </SectionContainer>
 
           {/* Danger Zone */}
-          <SectionHeader icon={AlertTriangle} title="Danger Zone" color="#ef4444" />
+          <SectionHeader icon={AlertTriangle} title={t('dangerZone')} color="#ef4444" />
           <SectionContainer danger>
             <MenuItem
               icon={Trash2}
-              label="Delete account"
-              sublabel="This action is permanent"
+              label={t('deleteAccount')}
+              sublabel={t('thisActionIsPermanent')}
               onClick={handleDeleteClick}
               danger
             />
@@ -773,11 +825,11 @@ const AccountSettingsScreen = () => {
         }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-          Log out?
+          {t('logOutQuestion')}
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ color: '#64748b' }}>
-            Are you sure you want to log out of your account?
+            {t('logOutConfirmation')}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
@@ -792,7 +844,7 @@ const AccountSettingsScreen = () => {
               background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
             }}
           >
-            Log out
+            {t('logOut')}
           </Button>
           <Button
             fullWidth
@@ -804,7 +856,7 @@ const AccountSettingsScreen = () => {
               color: '#64748b',
             }}
           >
-            Cancel
+            {t('cancel')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -824,12 +876,12 @@ const AccountSettingsScreen = () => {
         <DialogTitle sx={{ fontWeight: 700, pb: 1, color: '#ef4444' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <AlertTriangle size={24} />
-            Delete account
+            {t('deleteAccount')}
           </Box>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ color: '#64748b' }}>
-            This action is permanent and cannot be undone. All your data will be deleted.
+            {t('deleteAccountWarning')}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
@@ -851,7 +903,7 @@ const AccountSettingsScreen = () => {
             {isDeleting ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              'Delete account'
+              t('deleteAccount')
             )}
           </Button>
           <Button
@@ -865,7 +917,7 @@ const AccountSettingsScreen = () => {
               color: '#64748b',
             }}
           >
-            Cancel
+            {t('cancel')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1167,9 +1219,9 @@ const AccountSettingsScreen = () => {
         maxWidth="xs"
         PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Language</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>{t('language')}</DialogTitle>
         <DialogContent>
-          <RadioGroup value={language} onChange={(e) => setLanguage(e.target.value)}>
+          <RadioGroup value={tempLanguage} onChange={(e) => setTempLanguage(e.target.value)}>
             {['English', 'עברית', 'Español', 'Français', 'Deutsch'].map((lang) => (
               <FormControlLabel
                 key={lang}
@@ -1186,12 +1238,13 @@ const AccountSettingsScreen = () => {
             fullWidth
             variant="contained"
             onClick={() => {
+              setGlobalLanguage(tempLanguage);
               setShowLanguageDialog(false);
-              setSnackbar({ open: true, message: `Language set to ${language}` });
+              setSnackbar({ open: true, message: t('languageUpdated') });
             }}
             sx={{ borderRadius: '12px', textTransform: 'none', py: 1.5, background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)' }}
           >
-            Save
+            {t('save')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1204,7 +1257,7 @@ const AccountSettingsScreen = () => {
         maxWidth="xs"
         PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Units of Measurement</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>{t('unitsOfMeasurement')}</DialogTitle>
         <DialogContent>
           <RadioGroup value={units} onChange={(e) => setUnits(e.target.value)}>
             {['Metric (km)', 'Imperial (miles)'].map((unit) => (
@@ -1228,27 +1281,121 @@ const AccountSettingsScreen = () => {
             }}
             sx={{ borderRadius: '12px', textTransform: 'none', py: 1.5, background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)' }}
           >
-            Save
+            {t('save')}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Data Download Dialog */}
+      {/* Data Download Dialog - Professional GDPR Compliant */}
       <Dialog
         open={showDataDownloadDialog}
         onClose={() => setShowDataDownloadDialog(false)}
         fullWidth
-        maxWidth="xs"
+        maxWidth="sm"
         PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Download Your Data</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
-            Request a copy of your personal data. This includes your profile, matches, messages, and activity.
+        <DialogTitle sx={{ fontWeight: 700, pb: 0, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ 
+            width: 40, 
+            height: 40, 
+            borderRadius: '12px', 
+            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Download size={20} color="#fff" />
+          </Box>
+          {t('downloadYourData')}
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body2" sx={{ color: '#64748b', mb: 3 }}>
+            {t('downloadDataDescription')}
           </Typography>
-          <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-            We'll send you an email with a download link within 48 hours.
+          
+          {/* Data Categories */}
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1a1a2e', mb: 1.5 }}>
+            {t('includedData')}
           </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
+            {[
+              { icon: User, label: t('profileInfo'), desc: t('profileInfoDesc') },
+              { icon: Heart, label: t('matchesLikes'), desc: t('matchesLikesDesc') },
+              { icon: MessageCircle, label: t('messagesChats'), desc: t('messagesChatsDesc') },
+              { icon: MapPin, label: t('activityLocation'), desc: t('activityLocationDesc') },
+            ].map((item, idx) => (
+              <Box key={idx} sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 2, 
+                p: 1.5, 
+                borderRadius: '12px',
+                backgroundColor: '#f8fafc'
+              }}>
+                <Box sx={{ 
+                  width: 36, 
+                  height: 36, 
+                  borderRadius: '10px', 
+                  backgroundColor: 'rgba(108,92,231,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <item.icon size={18} color="#6C5CE7" />
+                </Box>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
+                    {item.label}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                    {item.desc}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+
+          {/* Format Selection */}
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1a1a2e', mb: 1 }}>
+            {t('fileFormat')}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <Chip 
+              label="JSON" 
+              size="small"
+              sx={{ 
+                backgroundColor: '#6C5CE7', 
+                color: '#fff',
+                fontWeight: 500,
+              }} 
+            />
+            <Chip 
+              label="CSV" 
+              size="small"
+              variant="outlined"
+              sx={{ 
+                borderColor: '#e2e8f0',
+                color: '#64748b',
+                fontWeight: 500,
+              }} 
+            />
+          </Box>
+
+          {/* Processing Time Notice */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1.5, 
+            p: 2, 
+            borderRadius: '12px',
+            backgroundColor: 'rgba(108,92,231,0.05)',
+            border: '1px solid rgba(108,92,231,0.1)'
+          }}>
+            <Clock size={18} color="#6C5CE7" />
+            <Typography variant="caption" sx={{ color: '#64748b' }}>
+              {t('dataRequestTime')}
+            </Typography>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
           <Button
@@ -1257,14 +1404,26 @@ const AccountSettingsScreen = () => {
             startIcon={<Download size={18} />}
             onClick={() => {
               setShowDataDownloadDialog(false);
-              setSnackbar({ open: true, message: 'Data request submitted. Check your email in 48 hours.' });
+              setSnackbar({ open: true, message: t('dataRequestSubmitted') });
             }}
-            sx={{ borderRadius: '12px', textTransform: 'none', py: 1.5, background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)' }}
+            sx={{ 
+              borderRadius: '12px', 
+              textTransform: 'none', 
+              py: 1.5, 
+              fontWeight: 600,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              boxShadow: '0 4px 14px rgba(108,92,231,0.4)',
+            }}
           >
-            Request Data
+            {t('requestMyData')}
           </Button>
-          <Button fullWidth variant="text" onClick={() => setShowDataDownloadDialog(false)} sx={{ borderRadius: '12px', textTransform: 'none', color: '#64748b' }}>
-            Cancel
+          <Button 
+            fullWidth 
+            variant="text" 
+            onClick={() => setShowDataDownloadDialog(false)} 
+            sx={{ borderRadius: '12px', textTransform: 'none', color: '#64748b' }}
+          >
+            {t('cancel')}
           </Button>
         </DialogActions>
       </Dialog>
