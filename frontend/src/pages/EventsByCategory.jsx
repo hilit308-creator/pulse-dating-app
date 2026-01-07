@@ -218,7 +218,7 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
         aria-label={isFav ? "Remove from favorites" : "Save to favorites"}
         onClick={(e) => { e.stopPropagation(); onToggleFav?.(ev.id); }}
         size="small"
-        sx={{ position: "absolute", top: 8, right: 8, zIndex: 2, bgcolor: isFav ? "primary.main" : "rgba(255,255,255,0.9)", color: isFav ? "#fff" : "text.primary", "&:hover": { bgcolor: isFav ? "primary.dark" : "white" }, boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}
+        sx={{ position: "absolute", top: 8, right: 8, zIndex: 2, bgcolor: isFav ? "#a855f7" : "rgba(255,255,255,0.9)", color: isFav ? "#fff" : "#6C5CE7", "&:hover": { bgcolor: isFav ? "#9333ea" : "white" }, boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}
       >
         <Heart size={16} />
       </IconButton>
@@ -308,7 +308,7 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
               fullWidth 
               onClick={() => onBuy(ev)}
               disabled={ev.soldOut}
-              sx={{ bgcolor: "#6C5CE7", "&:hover": { bgcolor: "#5b4cdb" } }}
+              sx={{ background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)", "&:hover": { background: "linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)" } }}
             >
               {ev.soldOut ? "SOLD OUT" : ev.price === 0 ? "JOIN" : "BUY TICKET"}
             </Button>
@@ -320,14 +320,14 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
               variant="outlined" 
               startIcon={<UserPlus size={14} />}
               onClick={(e) => { e.stopPropagation(); onInvitePlus1?.(ev); }}
-              sx={{ flex: 1, fontSize: "0.7rem", borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}
+              sx={{ flex: 1, fontSize: "0.7rem", borderImage: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%) 1", borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}
             >
               +1
             </Button>
-            <Button size="small" variant="outlined" onClick={() => onOpenCalendar?.(ev)} sx={{ minWidth: 'auto', px: 1.5, borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}>
+            <Button size="small" variant="outlined" onClick={() => onOpenCalendar?.(ev)} sx={{ minWidth: 'auto', px: 1.5, borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}>
               <Calendar size={14} />
             </Button>
-            <Button size="small" variant="outlined" onClick={() => onOpenMaps?.(ev)} sx={{ minWidth: 'auto', px: 1.5, borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}>
+            <Button size="small" variant="outlined" onClick={() => onOpenMaps?.(ev)} sx={{ minWidth: 'auto', px: 1.5, borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}>
               <MapPin size={14} />
             </Button>
           </Stack>
@@ -751,7 +751,7 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
           size="large"
           onClick={() => { onBuy?.(event); onClose(); }}
           disabled={event.soldOut || isPurchased}
-          sx={{ fontWeight: 700, bgcolor: "#6C5CE7", "&:hover": { bgcolor: "#5b4cdb" } }}
+          sx={{ fontWeight: 700, background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)", "&:hover": { background: "linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)" } }}
         >
           {isPurchased ? "You're going! ✓" : event.soldOut ? "SOLD OUT" : event.price === 0 ? "JOIN" : "BUY TICKET"}
         </Button>
@@ -762,7 +762,7 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
             variant="outlined"
             startIcon={<Heart size={16} />}
             onClick={() => onSave?.(event.id)}
-            sx={{ flex: 1, borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}
+            sx={{ flex: 1, borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}
           >
             {isSaved ? 'Saved' : 'Save'}
           </Button>
@@ -781,7 +781,7 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
                 alert('Link copied to clipboard!');
               }
             }}
-            sx={{ flex: 1, borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}
+            sx={{ flex: 1, borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}
           >
             Share
           </Button>
@@ -789,7 +789,7 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
             variant="outlined"
             startIcon={<UserPlus size={16} />}
             onClick={() => { onInvitePlus1?.(event); onClose(); }}
-            sx={{ flex: 1, borderColor: "#6C5CE7", color: "#6C5CE7", "&:hover": { borderColor: "#5b4cdb", bgcolor: "rgba(108,92,231,0.08)" } }}
+            sx={{ flex: 1, borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}
           >
             +1
           </Button>
@@ -1046,14 +1046,14 @@ export default function EventsByCategory() {
               </ToggleButtonGroup>
 
               <Badge color="primary" badgeContent={activeFilterCount} invisible={activeFilterCount === 0}>
-                <Button variant="outlined" startIcon={<SlidersHorizontal size={16} />} onClick={() => setFiltersOpen(true)}>
+                <Button variant="outlined" startIcon={<SlidersHorizontal size={16} />} onClick={() => setFiltersOpen(true)} sx={{ borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)", borderColor: "#9333ea" } }}>
                   Filter & Sort
                 </Button>
               </Badge>
 
               {/* הכפתור "Favorites on Map" בכותרת הוסר לפי בקשה */}
 
-              <Button startIcon={<Plus size={16} />} onClick={() => navigate("/events/new")} variant="contained">
+              <Button startIcon={<Plus size={16} />} onClick={() => navigate("/events/new")} variant="contained" sx={{ background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)", "&:hover": { background: "linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)" } }}>
                 Create Event
               </Button>
             </Stack>
@@ -1061,7 +1061,7 @@ export default function EventsByCategory() {
 
           {/* Tabs */}
           <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto"
-            sx={{ mt: 1, "& .MuiTab-root": { fontWeight: 700, textTransform: "none" }, "& .MuiTabs-indicator": { height: 3 } }}>
+            sx={{ mt: 1, "& .MuiTab-root": { fontWeight: 700, textTransform: "none" }, "& .Mui-selected": { color: "#a855f7 !important" }, "& .MuiTabs-indicator": { height: 3, bgcolor: "#a855f7" } }}>
             {ALL_TABS.map((c) => <Tab key={c.key} value={c.key} label={c.label} />)}
           </Tabs>
 
