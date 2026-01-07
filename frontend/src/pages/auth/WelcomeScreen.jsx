@@ -191,9 +191,10 @@ const WelcomeScreen = () => {
           textAlign: 'center',
         }}
       >
-        <Stack direction="row" spacing={2} justifyContent="center" sx={{ mb: 1.5 }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
           <Link
-            href="/terms"
+            component="button"
+            onClick={() => navigate('/terms-of-service')}
             sx={{
               color: '#6C5CE7',
               textDecoration: 'none',
@@ -206,7 +207,8 @@ const WelcomeScreen = () => {
           </Link>
           <Typography sx={{ color: '#cbd5e1' }}>•</Typography>
           <Link
-            href="/privacy"
+            component="button"
+            onClick={() => navigate('/privacy-policy')}
             sx={{
               color: '#6C5CE7',
               textDecoration: 'none',
