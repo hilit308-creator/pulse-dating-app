@@ -25,8 +25,9 @@ import {
   Avatar,
   Card,
   CardMedia,
+  IconButton,
 } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { 
   MapPin, 
   ArrowRight, 
@@ -41,6 +42,9 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  X,
+  Heart,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -51,6 +55,7 @@ import { getPageHelpContent } from '../config/pageHelpContent';
 
 // Safe bottom padding for tab bar
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
+const SWIPE_THRESHOLD = 100; // px to trigger swipe action
 
 // Get time-based greeting
 const getTimeBasedGreeting = () => {
@@ -253,6 +258,8 @@ const HomeScreen = () => {
   const [activeChat, setActiveChat] = useState(null);
   const [todaysPicks, setTodaysPicks] = useState([]);
   const [currentPickIndex, setCurrentPickIndex] = useState(0);
+  const [swipedPicks, setSwipedPicks] = useState({ liked: [], passed: [] });
+  const [matchPerson, setMatchPerson] = useState(null);
   
   // Profile completion check
   const isProfileComplete = useMemo(() => {
@@ -330,6 +337,86 @@ const HomeScreen = () => {
   const handlePickClick = useCallback((userId) => {
     navigate(`/profile/${userId}`);
   }, [navigate]);
+  
+  // Handle swipe action
+  const handleSwipe = useCallback((direction, person) => {
+    if (navigator?.vibrate) navigator.vibrate(10);
+    
+    if (direction === 'right') {
+      setSwipedPicks(prev => ({
+        ...prev,
+        liked: [...prev.liked, person]
+      }));
+      
+      // Check for mutual like (match!)
+      if (person.likesYou) {
+        if (navigator?.vibrate) navigator.vibrate([50, 50, 100]);
+        setMatchPerson(person);
+        return;
+      }
+    } else {
+      setSwipedPicks(prev => ({
+        ...prev,
+        passed: [...prev.passed, person]
+      }));
+    }
+
+    // Move to next card
+    setTimeout(() => {
+      setCurrentPickIndex(prev => {
+        const nextIndex = prev + 1;
+        return nextIndex >= todaysPicks.length ? 0 : nextIndex;
+      });
+    }, 200);
+  }, [todaysPicks.length]);
+
+  // Handle button actions
+  const handlePass = useCallback(() => {
+    if (currentPickIndex < todaysPicks.length) {
+      handleSwipe('left', todaysPicks[currentPickIndex]);
+    }
+  }, [currentPickIndex, todaysPicks, handleSwipe]);
+
+  const handleLike = useCallback(() => {
+    if (currentPickIndex < todaysPicks.length) {
+      handleSwipe('right', todaysPicks[currentPickIndex]);
+    }
+  }, [currentPickIndex, todaysPicks, handleSwipe]);
+
+  const handleUndo = useCallback(() => {
+    if (currentPickIndex > 0) {
+      setCurrentPickIndex(prev => prev - 1);
+      setSwipedPicks(prev => {
+        const lastLiked = prev.liked[prev.liked.length - 1];
+        const lastPassed = prev.passed[prev.passed.length - 1];
+        const lastPerson = todaysPicks[currentPickIndex - 1];
+        
+        if (lastLiked && lastLiked.userId === lastPerson?.userId) {
+          return { ...prev, liked: prev.liked.slice(0, -1) };
+        } else if (lastPassed && lastPassed.userId === lastPerson?.userId) {
+          return { ...prev, passed: prev.passed.slice(0, -1) };
+        }
+        return prev;
+      });
+    }
+  }, [currentPickIndex, todaysPicks]);
+  
+  // Handle match screen actions
+  const handleStartChat = useCallback(() => {
+    if (matchPerson) {
+      navigate("/chat", { state: { matchPerson } });
+    }
+  }, [navigate, matchPerson]);
+
+  const handleKeepSwiping = useCallback(() => {
+    setMatchPerson(null);
+    setTimeout(() => {
+      setCurrentPickIndex(prev => {
+        const nextIndex = prev + 1;
+        return nextIndex >= todaysPicks.length ? 0 : nextIndex;
+      });
+    }, 200);
+  }, [todaysPicks.length]);
   
   // Check if we have any content to show
   const hasAnyContent = nearbyProfiles.length > 0 || events.length > 0 || places.length > 0 || activeChat;
@@ -488,6 +575,17 @@ const HomeScreen = () => {
         </motion.div>
       )}
 
+      {/* Match Screen Overlay */}
+      <AnimatePresence>
+        {matchPerson && (
+          <MatchScreen
+            person={matchPerson}
+            onStartChat={handleStartChat}
+            onKeepSwiping={handleKeepSwiping}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Main Content */}
       <Box sx={{ px: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         
@@ -510,66 +608,44 @@ const HomeScreen = () => {
                 >
                   Today's Picks
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Box
-                    component={motion.div}
-                    whileHover={{ scale: 1.1, backgroundColor: '#e2e8f0' }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      handlePrevPick();
-                      if (navigator?.vibrate) navigator.vibrate(5);
-                    }}
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: '50%',
-                      bgcolor: '#f8fafc',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                      '&:hover': { 
-                        boxShadow: '0 4px 12px rgba(108,92,231,0.15)',
-                      },
-                    }}
-                  >
-                    <ChevronLeft size={20} color="#64748b" />
-                  </Box>
-                  <Box
-                    component={motion.div}
-                    whileHover={{ scale: 1.1, backgroundColor: '#e2e8f0' }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      handleNextPick();
-                      if (navigator?.vibrate) navigator.vibrate(5);
-                    }}
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: '50%',
-                      bgcolor: '#f8fafc',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                      '&:hover': { 
-                        boxShadow: '0 4px 12px rgba(108,92,231,0.15)',
-                      },
-                    }}
-                  >
-                    <ChevronRight size={20} color="#64748b" />
-                  </Box>
-                </Box>
               </Box>
               
-              <TodaysPickCard 
-                profile={todaysPicks[currentPickIndex]} 
-                onClick={() => handlePickClick(todaysPicks[currentPickIndex].userId)}
-              />
+              {/* Horizontal Scrollable Carousel */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 2,
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                  pb: 2,
+                  mb: 1,
+                  scrollSnapType: 'x mandatory',
+                  scrollBehavior: 'smooth',
+                  '&::-webkit-scrollbar': {
+                    height: 8,
+                  },
+                  '&::-webkit-scrollbar-track': {
+                    backgroundColor: '#f1f5f9',
+                    borderRadius: '4px',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: '#cbd5e1',
+                    borderRadius: '4px',
+                    '&:hover': {
+                      backgroundColor: '#94a3b8',
+                    },
+                  },
+                }}
+              >
+                {todaysPicks.map((profile, index) => (
+                  <HorizontalPickCard
+                    key={profile.userId}
+                    profile={profile}
+                    onClick={() => handlePickClick(profile.userId)}
+                    index={index}
+                  />
+                ))}
+              </Box>
               
               <Typography 
                 variant="caption" 
@@ -577,10 +653,9 @@ const HomeScreen = () => {
                   display: 'block', 
                   textAlign: 'center', 
                   color: '#94a3b8', 
-                  mt: 1.5 
                 }}
               >
-                ← Swipe left = Pass • Tap to pull • Tap again to view →
+                ← Swipe to browse • Tap to pull • Tap again to view →
               </Typography>
             </Box>
           </motion.div>
@@ -1060,192 +1135,468 @@ function EmptyPreview({ text }) {
   );
 }
 
-function TodaysPickCard({ profile, onClick }) {
+// Horizontal Pick Card Component (for carousel)
+function HorizontalPickCard({ profile, onClick, index }) {
   return (
-    <Box
-      component={motion.div}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-      whileHover={{ 
-        scale: 1.02,
-        y: -6,
-        boxShadow: '0 16px 48px rgba(108,92,231,0.25), 0 0 40px rgba(108,92,231,0.15)',
-      }}
-      whileTap={{ scale: 0.98 }}
-      onClick={() => {
-        onClick();
-        if (navigator?.vibrate) navigator.vibrate([8, 3, 8]);
-      }}
-      sx={{
-        position: 'relative',
-        borderRadius: '24px',
-        overflow: 'hidden',
-        bgcolor: '#fff',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-        cursor: 'pointer',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        backdropFilter: 'blur(8px)',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          inset: 0,
-          borderRadius: '24px',
-          padding: '2px',
-          background: 'linear-gradient(135deg, rgba(108,92,231,0.3), rgba(168,85,247,0.3))',
-          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-          WebkitMaskComposite: 'xor',
-          maskComposite: 'exclude',
-          opacity: 0,
-          transition: 'opacity 0.3s ease',
-        },
-        '&:hover::before': {
-          opacity: 1,
-        },
+    <motion.div
+      initial={{ opacity: 0, x: 50 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.1 }}
+      style={{
+        minWidth: '280px',
+        maxWidth: '280px',
+        scrollSnapAlign: 'start',
       }}
     >
-      {/* Profile Image */}
       <Box
+        onClick={onClick}
         sx={{
-          width: '100%',
-          height: 420,
-          backgroundImage: `url(${profile.primaryPhotoUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
           position: 'relative',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          bgcolor: '#fff',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          height: '100%',
+          '&:hover': {
+            transform: 'translateY(-8px)',
+            boxShadow: '0 12px 32px rgba(139,92,246,0.25), 0 0 20px rgba(249,115,22,0.15)',
+          },
         }}
       >
-        {/* Match Percentage Badge */}
+        {/* Profile Image */}
         <Box
-          component={motion.div}
-          initial={{ scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ 
-            type: 'spring',
-            stiffness: 200,
-            damping: 15,
-            delay: 0.2,
-          }}
           sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-            color: '#fff',
-            px: 2.5,
-            py: 1,
-            borderRadius: '24px',
-            fontWeight: 800,
-            fontSize: '1rem',
-            backdropFilter: 'blur(12px)',
-            boxShadow: '0 4px 16px rgba(108,92,231,0.4)',
-            border: '2px solid rgba(255,255,255,0.3)',
-            animation: 'badgePulse 2s ease-in-out infinite',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              inset: -4,
-              borderRadius: '24px',
-              background: 'radial-gradient(circle, rgba(108,92,231,0.4) 0%, transparent 70%)',
-              animation: 'badgeGlow 2s ease-in-out infinite',
-            },
+            width: '100%',
+            height: 320,
+            backgroundImage: `url(${profile.primaryPhotoUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            position: 'relative',
           }}
         >
-          {profile.matchPercentage}%
-        </Box>
-      </Box>
-      
-      {/* Profile Info */}
-      <Box sx={{ p: 3 }}>
-        <Typography 
-          variant="h5" 
-          sx={{ 
-            fontWeight: 700, 
-            color: '#1a1a2e',
-            mb: 0.5,
-          }}
-        >
-          {profile.firstName}, {profile.age}
-        </Typography>
-        
-        <Typography 
-          variant="body1" 
-          sx={{ 
-            color: '#94a3b8',
-            mb: 2,
-          }}
-        >
-          {profile.primaryRole}
-        </Typography>
-        
-        {/* Tags */}
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          {/* Match Percentage Badge */}
           <Box
-            component={motion.div}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
             sx={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              background: 'linear-gradient(135deg, #8B5CF6 0%, #F97316 100%)',
+              color: '#fff',
               px: 2,
-              py: 1,
+              py: 0.75,
               borderRadius: '20px',
-              background: 'linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(168,85,247,0.08) 100%)',
-              border: '1.5px solid rgba(108, 92, 231, 0.2)',
+              fontWeight: 800,
+              fontSize: '0.95rem',
+              boxShadow: '0 4px 16px rgba(139,92,246,0.4)',
+              border: '2px solid rgba(255,255,255,0.3)',
               backdropFilter: 'blur(8px)',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                background: 'linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.12) 100%)',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(108,92,231,0.2)',
-              },
             }}
           >
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: '#6C5CE7',
-                fontWeight: 600,
-              }}
-            >
-              {profile.height}
-            </Typography>
+            {profile.matchPercentage}%
           </Box>
-          {profile.interests.map((interest, index) => (
+        </Box>
+        
+        {/* Profile Info */}
+        <Box sx={{ p: 2 }}>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              fontWeight: 700, 
+              color: '#1a1a2e',
+              mb: 0.5,
+            }}
+          >
+            {profile.firstName}, {profile.age}
+          </Typography>
+          
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: '#94a3b8',
+              mb: 1.5,
+            }}
+          >
+            {profile.primaryRole}
+          </Typography>
+          
+          {/* Tags */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Box
-              key={index}
-              component={motion.div}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + (index + 1) * 0.1 }}
               sx={{
-                px: 2,
-                py: 1,
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(168,85,247,0.08) 100%)',
-                border: '1.5px solid rgba(108, 92, 231, 0.2)',
-                backdropFilter: 'blur(8px)',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.12) 100%)',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 4px 12px rgba(108,92,231,0.2)',
-                },
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(249,115,22,0.12) 100%)',
+                border: '1px solid rgba(139,92,246,0.25)',
               }}
             >
               <Typography 
-                variant="body2" 
+                variant="caption" 
+                sx={{ 
+                  background: 'linear-gradient(135deg, #8B5CF6 0%, #F97316 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 600,
+                }}
+              >
+                {profile.height}
+              </Typography>
+            </Box>
+            {profile.interests.slice(0, 1).map((interest, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(249,115,22,0.12) 100%)',
+                  border: '1px solid rgba(139,92,246,0.25)',
+                }}
+              >
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    background: 'linear-gradient(135deg, #8B5CF6 0%, #F97316 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontWeight: 600,
+                  }}
+                >
+                  {interest}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+    </motion.div>
+  );
+}
+
+// Swipeable Card Component
+function SwipeableCard({ profile, onSwipe, isActive }) {
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-200, 200], [-15, 15]);
+  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
+  
+  const likeOpacity = useTransform(x, [0, 100], [0, 1]);
+  const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
+
+  const handleDragEnd = (event, info) => {
+    if (info.offset.x > SWIPE_THRESHOLD) {
+      onSwipe('right', profile);
+    } else if (info.offset.x < -SWIPE_THRESHOLD) {
+      onSwipe('left', profile);
+    }
+  };
+
+  if (!isActive) return null;
+
+  return (
+    <motion.div
+      style={{
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        x,
+        rotate,
+        opacity,
+        cursor: 'grab',
+      }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.9}
+      onDragEnd={handleDragEnd}
+      initial={{ scale: 0.95, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ 
+        x: x.get() > 0 ? 300 : -300,
+        opacity: 0,
+        transition: { duration: 0.3 }
+      }}
+      whileDrag={{ cursor: 'grabbing' }}
+    >
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          backgroundColor: "#fff",
+          borderRadius: "24px",
+          overflow: "hidden",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
+          position: 'relative',
+        }}
+      >
+        {/* Like indicator */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            top: 60,
+            left: 20,
+            opacity: likeOpacity,
+            zIndex: 10,
+            transform: 'rotate(-20deg)',
+          }}
+        >
+          <Box
+            sx={{
+              px: 2.5,
+              py: 1,
+              borderRadius: '12px',
+              border: '4px solid #10b981',
+              backgroundColor: 'rgba(16,185,129,0.15)',
+            }}
+          >
+            <Typography sx={{ color: '#10b981', fontWeight: 800, fontSize: '1.5rem' }}>
+              LIKE
+            </Typography>
+          </Box>
+        </motion.div>
+
+        {/* Nope indicator */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            top: 60,
+            right: 20,
+            opacity: nopeOpacity,
+            zIndex: 10,
+            transform: 'rotate(20deg)',
+          }}
+        >
+          <Box
+            sx={{
+              px: 2.5,
+              py: 1,
+              borderRadius: '12px',
+              border: '4px solid #ef4444',
+              backgroundColor: 'rgba(239,68,68,0.15)',
+            }}
+          >
+            <Typography sx={{ color: '#ef4444', fontWeight: 800, fontSize: '1.5rem' }}>
+              NOPE
+            </Typography>
+          </Box>
+        </motion.div>
+
+        {/* Profile Image */}
+        <Box
+          sx={{
+            width: '100%',
+            height: '70%',
+            backgroundImage: `url(${profile.primaryPhotoUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            position: 'relative',
+          }}
+        >
+          {/* Match Percentage Badge */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              color: '#fff',
+              px: 2.5,
+              py: 1,
+              borderRadius: '24px',
+              fontWeight: 800,
+              fontSize: '1rem',
+              boxShadow: '0 4px 16px rgba(108,92,231,0.4)',
+              border: '2px solid rgba(255,255,255,0.3)',
+            }}
+          >
+            {profile.matchPercentage}%
+          </Box>
+        </Box>
+        
+        {/* Profile Info */}
+        <Box sx={{ p: 2.5, height: '30%', overflow: 'auto' }}>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              fontWeight: 700, 
+              color: '#1a1a2e',
+              mb: 0.5,
+            }}
+          >
+            {profile.firstName}, {profile.age}
+          </Typography>
+          
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: '#94a3b8',
+              mb: 1.5,
+            }}
+          >
+            {profile.primaryRole}
+          </Typography>
+          
+          {/* Tags */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Box
+              sx={{
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '16px',
+                background: 'rgba(108,92,231,0.1)',
+                border: '1px solid rgba(108, 92, 231, 0.2)',
+              }}
+            >
+              <Typography 
+                variant="caption" 
                 sx={{ 
                   color: '#6C5CE7',
                   fontWeight: 600,
                 }}
               >
-                {interest}
+                {profile.height}
               </Typography>
             </Box>
-          ))}
+            {profile.interests.slice(0, 2).map((interest, index) => (
+              <Box
+                key={index}
+                sx={{
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: '16px',
+                  background: 'rgba(108,92,231,0.1)',
+                  border: '1px solid rgba(108, 92, 231, 0.2)',
+                }}
+              >
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: '#6C5CE7',
+                    fontWeight: 600,
+                  }}
+                >
+                  {interest}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
         </Box>
       </Box>
-    </Box>
+    </motion.div>
+  );
+}
+
+// Match Screen
+function MatchScreen({ person, onStartChat, onKeepSwiping }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 100,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(180deg, rgba(108,92,231,0.95) 0%, rgba(168,85,247,0.95) 100%)',
+        backdropFilter: 'blur(10px)',
+      }}
+    >
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <motion.div
+            animate={{ rotate: [-10, 10, -10] }}
+            transition={{ repeat: Infinity, duration: 1.5 }}
+          >
+            <Heart size={64} color="#fff" fill="#fff" />
+          </motion.div>
+        </Box>
+      </motion.div>
+
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        <Typography
+          variant="h3"
+          sx={{
+            fontWeight: 900,
+            color: '#fff',
+            textAlign: 'center',
+            mb: 1,
+            textShadow: '0 4px 20px rgba(0,0,0,0.2)',
+          }}
+        >
+          It's a Pulse!
+        </Typography>
+        <Typography
+          variant="body1"
+          sx={{
+            color: 'rgba(255,255,255,0.9)',
+            textAlign: 'center',
+            mb: 4,
+          }}
+        >
+          You can start chatting now
+        </Typography>
+      </motion.div>
+
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        style={{ width: '100%', maxWidth: 300, padding: '0 24px' }}
+      >
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={onStartChat}
+          startIcon={<MessageCircle size={20} />}
+          sx={{
+            py: 1.75,
+            mb: 2,
+            borderRadius: '14px',
+            fontSize: '1.1rem',
+            fontWeight: 700,
+            textTransform: 'none',
+            backgroundColor: '#fff',
+            color: '#6C5CE7',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+            '&:hover': {
+              backgroundColor: '#f8f8f8',
+            },
+          }}
+        >
+          Start chat
+        </Button>
+        <Button
+          fullWidth
+          variant="text"
+          onClick={onKeepSwiping}
+          sx={{
+            py: 1.25,
+            borderRadius: '12px',
+            fontSize: '1rem',
+            fontWeight: 600,
+            textTransform: 'none',
+            color: 'rgba(255,255,255,0.9)',
+            '&:hover': {
+              backgroundColor: 'rgba(255,255,255,0.1)',
+            },
+          }}
+        >
+          Keep browsing
+        </Button>
+      </motion.div>
+    </motion.div>
   );
 }
 
