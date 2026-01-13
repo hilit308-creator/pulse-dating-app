@@ -15,6 +15,8 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Dialog, TextField, CircularProgress } from '@mui/material';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, Sparkles, Eye, Zap, Clock, Shield, Ghost, CreditCard, X, Apple } from 'lucide-react';
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
 
 // Sample profile images for the people layer (collage effect)
 const PROFILE_IMAGES = [
@@ -934,6 +936,8 @@ const SubscriptionsScreen = () => {
           pb: 'calc(env(safe-area-inset-bottom, 0px) + 100px)',
         }}
       >
+        {/* Help Button */}
+        <PageHelpButton {...getPageHelpContent('subscription')} />
         {/* ===== LAYERED BACKGROUND ===== */}
         
         {/* Base Layer - Deep dark purple/black */}

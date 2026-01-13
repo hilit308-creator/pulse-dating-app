@@ -9,19 +9,22 @@ import {
   DialogContent, DialogActions, Slider
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, WifiOff, HelpCircle, Settings } from "lucide-react";
+import { MapPin, WifiOff, HelpCircle, Settings, ChevronDown } from "lucide-react";
 import { useAuth, PERMISSION_STATE } from "../context/AuthContext";
 import { useLanguage } from '../context/LanguageContext';
 import { NearbyStickyStickyBanner } from '../components/SubscriptionPromoBanner';
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
 
 /* ------------------------------ Theme & tokens ----------------------------- */
 const APP_BG =
-  "radial-gradient(1200px 600px at 50% -220px, #eef2f9 0%, transparent 60%)," +
-  "radial-gradient(900px 520px at 12% 120%, #edf7f3 0%, transparent 60%)," +
-  "linear-gradient(90deg, #fafbff 0%, #f7f8fc 70%, #eff2f9 100%)";
+  "radial-gradient(1200px 600px at 50% -220px, rgba(108,92,231,0.08) 0%, transparent 60%)," +
+  "radial-gradient(900px 520px at 12% 120%, rgba(168,85,247,0.06) 0%, transparent 60%)," +
+  "radial-gradient(800px 800px at 80% 20%, rgba(244,114,182,0.04) 0%, transparent 70%)," +
+  "linear-gradient(135deg, #fafbff 0%, #f5f3ff 50%, #eff2f9 100%)";
 
 const BOTTOM_NAV_HEIGHT = 64;
-const SCAN_DURATION = 2000; // 1.5-3 seconds per spec
+const SCAN_DURATION = 3000; // 3 seconds scanning animation
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
 
 // Scan states per spec
@@ -86,12 +89,12 @@ export default function NearbyScreen() {
   const [containerRef, containerW] = useElementWidth();
   const timersRef = useRef([]);
 
-  // Radar sizes - 40% viewport width, max 260px (compact radar)
+  // Radar sizes - 65% viewport width, max 380px (larger radar)
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
-  const ringSize = Math.max(180, Math.min(260, viewportWidth * 0.40));
+  const ringSize = Math.max(280, Math.min(380, viewportWidth * 0.65));
   const rOuter = ringSize / 2 - 4;
   const rMid = rOuter - 8;
-  const ctaSize = Math.max(110, Math.floor((rMid - 4) * 2));
+  const ctaSize = Math.max(160, Math.floor((rMid - 4) * 2));
 
   // State per spec
   const [scanState, setScanState] = useState(SCAN_STATE.IDLE);
@@ -101,7 +104,6 @@ export default function NearbyScreen() {
   const [showLocationDeniedDialog, setShowLocationDeniedDialog] = useState(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
   const [showDistanceDialog, setShowDistanceDialog] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
 
   // Location permission state
   const locationPermission = permissions?.location || PERMISSION_STATE.UNKNOWN;
@@ -203,7 +205,7 @@ export default function NearbyScreen() {
     }
   }, [updatePermission]);
 
-  // Start scan action - navigate directly to nearby/people
+  // Start scan action - show 3-second scanning animation
   const startScan = useCallback(() => {
     if (!hasLocationPermission) {
       requestLocationPermission();
@@ -213,14 +215,22 @@ export default function NearbyScreen() {
     trackEvent('nearby_scan_started');
     if (navigator?.vibrate) navigator.vibrate([10, 40, 10]);
     
-    // Navigate directly to nearby/people
-    navigate('/nearby/people', {
-      state: {
-        liveNowCount,
-        scanCompleted: true,
-        radiusMeters,
-      },
-    });
+    // Start scanning state
+    setScanState(SCAN_STATE.SCANNING);
+    
+    // After 3 seconds, navigate to results
+    const timerId = setTimeout(() => {
+      setScanState(SCAN_STATE.COMPLETED);
+      navigate('/nearby/people', {
+        state: {
+          liveNowCount,
+          scanCompleted: true,
+          radiusMeters,
+        },
+      });
+    }, SCAN_DURATION);
+    
+    pushTimer(timerId);
   }, [hasLocationPermission, requestLocationPermission, liveNowCount, navigate, radiusMeters]);
 
   // Handle "View nearby people" CTA
@@ -390,66 +400,62 @@ export default function NearbyScreen() {
           )}
         </AnimatePresence>
 
-        {/* Help Button - positioned absolute to not take space */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 10,
-          }}
-        >
-          <IconButton
-            onClick={() => setShowTutorial(true)}
-            sx={{
-              color: '#6C5CE7',
-              backgroundColor: 'rgba(108,92,231,0.08)',
-              '&:hover': { backgroundColor: 'rgba(108,92,231,0.12)' },
-            }}
-            size="small"
-          >
-            <HelpCircle size={18} />
-          </IconButton>
-        </Box>
-
         {/* Location Empty State */}
         {!hasLocationPermission ? (
           renderLocationEmptyState()
         ) : (
           <>
-            {/* Distance Selector Pill - compact */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+            {/* Top Bar with Distance Selector and Help Button */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1.5, py: 2, mt: 1 }}>
               <Box
-                onClick={() => setShowDistanceDialog(true)}
+                component={motion.div}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                onClick={() => {
+                  setShowDistanceDialog(true);
+                  if (navigator?.vibrate) navigator.vibrate(5);
+                }}
                 sx={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 0.75,
-                  px: 1.5,
-                  py: 0.5,
+                  gap: 1,
+                  px: 2.5,
+                  py: 1,
                   borderRadius: 999,
-                  backgroundColor: 'rgba(108,92,231,0.08)',
-                  border: '1px solid rgba(108,92,231,0.15)',
-                  minHeight: 32,
+                  background: 'linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(168,85,247,0.08) 100%)',
+                  border: '1.5px solid rgba(108,92,231,0.2)',
+                  minHeight: 40,
                   cursor: 'pointer',
-                  transition: 'background 0.2s ease',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 2px 8px rgba(108,92,231,0.1)',
+                  backdropFilter: 'blur(8px)',
                   '&:hover': {
-                    backgroundColor: 'rgba(108,92,231,0.12)',
+                    background: 'linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.12) 100%)',
+                    boxShadow: '0 4px 16px rgba(108,92,231,0.2)',
+                    transform: 'translateY(-2px) scale(1.02)',
+                  },
+                  '&:active': {
+                    transform: 'translateY(0) scale(0.98)',
                   },
                 }}
               >
-                <MapPin size={14} color="#6C5CE7" />
+                <MapPin size={16} color="#6C5CE7" />
                 <Typography
                   sx={{
-                    fontWeight: 600,
+                    fontWeight: 700,
                     color: '#6C5CE7',
-                    fontSize: '12px',
+                    fontSize: '13px',
+                    letterSpacing: '0.3px',
                   }}
                 >
-                  Distance · {radiusMeters >= 1000 ? `${(radiusMeters / 1000).toFixed(1)} km` : `${radiusMeters}m`}
+                  {radiusMeters >= 1000 ? `${(radiusMeters / 1000).toFixed(1)} km` : `${radiusMeters}m`}
                 </Typography>
-                <Settings size={12} color="#6C5CE7" />
+                <ChevronDown size={16} color="#6C5CE7" />
               </Box>
+              
+              {/* Help Button */}
+              <PageHelpButton {...getPageHelpContent('nearby')} />
             </Box>
 
             {/* Main Content */}
@@ -461,33 +467,54 @@ export default function NearbyScreen() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                px: 2,
+                px: 3,
+                py: 3,
               }}
             >
               {/* People Radar */}
               <Box sx={{ position: 'relative', width: ringSize, height: ringSize }}>
-                {/* Live Indicator */}
+                {/* Live Indicator - Circular Badge with Glow */}
                 <Box
+                  component={motion.div}
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ 
+                    type: 'spring',
+                    stiffness: 200,
+                    damping: 15,
+                    delay: 0.3,
+                  }}
                   sx={{
                     position: 'absolute',
-                    top: -8,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
+                    top: -20,
+                    right: -20,
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                    border: '4px solid #ffffff',
+                    boxShadow: '0 8px 24px rgba(34,197,94,0.35), 0 2px 8px rgba(0,0,0,0.1)',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    gap: 1,
-                    px: 1.5,
-                    py: 0.75,
-                    borderRadius: 999,
-                    bgcolor: '#fff',
-                    border: '1px solid #e6eaf1',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                    justifyContent: 'center',
                     zIndex: 3,
+                    animation: 'glowPulse 2s ease-in-out infinite',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      inset: -8,
+                      borderRadius: '50%',
+                      background: 'radial-gradient(circle, rgba(34,197,94,0.4) 0%, transparent 70%)',
+                      animation: 'glowExpand 2s ease-in-out infinite',
+                    },
                   }}
                 >
-                  <span className="live-dot" />
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#0b1324' }}>
-                    Live now: {liveNowCount} nearby
+                  <Typography sx={{ fontWeight: 900, color: '#ffffff', fontSize: '24px', lineHeight: 1 }}>
+                    {liveNowCount}
+                  </Typography>
+                  <Typography sx={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', mt: 0.25 }}>
+                    Live
                   </Typography>
                 </Box>
 
@@ -512,8 +539,11 @@ export default function NearbyScreen() {
                 >
                   <Box
                     component={motion.button}
-                    whileHover={{ scale: scanState === SCAN_STATE.IDLE ? 1.04 : 1 }}
-                    whileTap={{ scale: scanState === SCAN_STATE.IDLE ? 0.98 : 1 }}
+                    whileHover={{ 
+                      scale: scanState === SCAN_STATE.IDLE ? 1.05 : 1,
+                      boxShadow: scanState === SCAN_STATE.IDLE ? '0 32px 88px rgba(0,83,166,0.25)' : undefined,
+                    }}
+                    whileTap={{ scale: scanState === SCAN_STATE.IDLE ? 0.96 : 1 }}
                     onClick={scanState === SCAN_STATE.IDLE ? startScan : undefined}
                     sx={{
                       pointerEvents: scanState === SCAN_STATE.IDLE ? 'auto' : 'none',
@@ -528,15 +558,27 @@ export default function NearbyScreen() {
                       fontWeight: 900,
                       letterSpacing: 1,
                       textTransform: 'none',
-                      background: 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 60%, #d6d3ff 100%)',
+                      background: scanState === SCAN_STATE.SCANNING 
+                        ? 'radial-gradient(circle, rgba(204,255,241,0.4) 0%, rgba(207,232,255,0.4) 60%, rgba(214,211,255,0.4) 100%)'
+                        : 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 60%, #d6d3ff 100%)',
                       boxShadow: '0 26px 72px rgba(0,83,166,0.20)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:active': {
                         background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
                         color: '#ffffff',
                       },
-                      backdropFilter: 'blur(4px)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
                       position: 'relative',
                       overflow: 'hidden',
+                      '&::after': scanState === SCAN_STATE.IDLE ? {
+                        content: '""',
+                        position: 'absolute',
+                        inset: -2,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)',
+                        animation: 'shimmerSweep 3s ease-in-out infinite',
+                      } : {},
                     }}
                     aria-label={scanState === SCAN_STATE.IDLE ? "Start scanning" : "Scanning"}
                   >
@@ -549,57 +591,103 @@ export default function NearbyScreen() {
                       }}
                     />
                     <Stack alignItems="center" spacing={1} sx={{ position: 'relative', zIndex: 1, px: 2 }}>
-                      <Typography
-                        sx={{ 
-                          letterSpacing: 2, 
-                          fontWeight: 700, 
-                          opacity: 0.85, 
-                          fontSize: '12px',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        PEOPLE RADAR
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: '18px',
-                          lineHeight: 1.3,
-                          textAlign: 'center',
-                        }}
-                      >
-                        One tap — discover who's nearby
-                      </Typography>
+                      {scanState === SCAN_STATE.SCANNING ? (
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: '24px',
+                            color: '#64748b',
+                            animation: 'pulse 1.5s ease-in-out infinite',
+                          }}
+                        >
+                          Scanning...
+                        </Typography>
+                      ) : (
+                        <>
+                          <Typography
+                            sx={{ 
+                              letterSpacing: 2, 
+                              fontWeight: 700, 
+                              opacity: 0.85, 
+                              fontSize: '12px',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            PEOPLE RADAR
+                          </Typography>
+                          <Typography
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: '18px',
+                              lineHeight: 1.3,
+                              textAlign: 'center',
+                            }}
+                          >
+                            One tap — discover who's nearby
+                          </Typography>
+                        </>
+                      )}
                     </Stack>
                   </Box>
                 </Box>
               </Box>
 
               {/* Instruction Text */}
-              <Box sx={{ mt: 0.5, textAlign: 'center' }}>
-                <Typography sx={{ color: '#64748b', fontWeight: 500, fontSize: '14px' }}>
+              <Box sx={{ mt: 2, textAlign: 'center', px: 2 }}>
+                <Typography sx={{ 
+                  color: '#64748b', 
+                  fontWeight: 600, 
+                  fontSize: '15px',
+                  lineHeight: 1.5,
+                  letterSpacing: '0.2px',
+                }}>
                   {getInstructionText()}
                 </Typography>
               </Box>
 
               {/* CTA Buttons - Always visible */}
-              <Box sx={{ mt: 0.75, mb: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
+              <Box 
+                component={motion.div}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                sx={{ mt: 3, mb: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}
+              >
                 <Button
+                  component={motion.button}
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
                   variant="contained"
-                  size="small"
-                  onClick={startScan}
+                  size="large"
+                  onClick={() => {
+                    startScan();
+                    if (navigator?.vibrate) navigator.vibrate([10, 5, 10]);
+                  }}
                   sx={{
-                    py: 0.75,
-                    px: 2,
-                    borderRadius: '10px',
-                    fontSize: '13px',
-                    minHeight: 36,
-                    fontWeight: 600,
+                    py: 1.5,
+                    px: 4,
+                    borderRadius: '16px',
+                    fontSize: '15px',
+                    minHeight: 52,
+                    fontWeight: 700,
                     textTransform: 'none',
                     background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                    boxShadow: '0 3px 10px rgba(108,92,231,0.25)',
+                    boxShadow: '0 8px 24px rgba(108,92,231,0.35), 0 2px 8px rgba(108,92,231,0.2)',
+                    letterSpacing: '0.3px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                      transform: 'translateX(-100%)',
+                      animation: 'shimmerSlide 2s ease-in-out infinite',
+                    },
                     '&:hover': {
                       background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
+                      boxShadow: '0 12px 32px rgba(108,92,231,0.4), 0 4px 12px rgba(108,92,231,0.25)',
                     },
                   }}
                 >
@@ -607,14 +695,18 @@ export default function NearbyScreen() {
                 </Button>
                 <Button
                   variant="text"
-                  size="small"
+                  size="medium"
                   onClick={startScan}
                   sx={{
-                    color: '#1a1a2e',
+                    color: '#6C5CE7',
                     textTransform: 'none',
-                    fontSize: '0.8rem',
-                    fontWeight: 500,
+                    fontSize: '14px',
+                    fontWeight: 600,
                     mb: 0,
+                    letterSpacing: '0.2px',
+                    '&:hover': {
+                      backgroundColor: 'rgba(108,92,231,0.08)',
+                    },
                   }}
                 >
                   {t('scanNearby')}
@@ -807,77 +899,8 @@ export default function NearbyScreen() {
         </DialogActions>
       </Dialog>
 
-      {/* Tutorial Dialog */}
-      <Dialog
-        open={showTutorial}
-        onClose={() => setShowTutorial(false)}
-        PaperProps={{
-          sx: {
-            borderRadius: '20px',
-            p: 1,
-            maxWidth: 360,
-            width: '100%',
-          },
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1, textAlign: 'center' }}>
-          How Nearby Works
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ textAlign: 'center' }}>
-            {/* Step 1 */}
-            <Box sx={{ mb: 3 }}>
-              <Typography sx={{ fontSize: 32, mb: 1 }}>📍</Typography>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-                Set your distance
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748b' }}>
-                Tap the distance pill to choose how far you want to search
-              </Typography>
-            </Box>
 
-            {/* Step 2 */}
-            <Box sx={{ mb: 3 }}>
-              <Typography sx={{ fontSize: 32, mb: 1 }}>📡</Typography>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-                Scan the radar
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748b' }}>
-                Tap the radar to discover people nearby in real-time
-              </Typography>
-            </Box>
-
-            {/* Step 3 */}
-            <Box sx={{ mb: 2 }}>
-              <Typography sx={{ fontSize: 32, mb: 1 }}>👆</Typography>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-                Swipe to connect
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748b' }}>
-                Swipe right to like, left to pass. Match when you both like!
-              </Typography>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={() => setShowTutorial(false)}
-            sx={{
-              py: 1.5,
-              borderRadius: '12px',
-              textTransform: 'none',
-              fontWeight: 600,
-              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-            }}
-          >
-            Got it!
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* CSS for live dot animation */}
+      {/* CSS for animations */}
       <style>{`
         .live-dot {
           width: 8px;
@@ -891,13 +914,43 @@ export default function NearbyScreen() {
           content: "";
           position: absolute;
           inset: -6px;
-          border-radius: 50%;
+          borderRadius: 50%;
           border: 2px solid rgba(34,197,94,0.35);
           animation: pingPulse 1.6s ease-out infinite;
         }
         @keyframes pingPulse {
           0% { transform: scale(0.6); opacity: 1; }
           100% { transform: scale(1.6); opacity: 0; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        @keyframes glowPulse {
+          0%, 100% { 
+            box-shadow: 0 8px 24px rgba(34,197,94,0.35), 0 2px 8px rgba(0,0,0,0.1), 0 0 20px rgba(34,197,94,0.3);
+          }
+          50% { 
+            box-shadow: 0 8px 32px rgba(34,197,94,0.5), 0 2px 12px rgba(0,0,0,0.15), 0 0 40px rgba(34,197,94,0.5);
+          }
+        }
+        @keyframes glowExpand {
+          0%, 100% { 
+            transform: scale(1);
+            opacity: 0.4;
+          }
+          50% { 
+            transform: scale(1.2);
+            opacity: 0.6;
+          }
+        }
+        @keyframes shimmerSweep {
+          0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+          100% { transform: translateX(200%) translateY(200%) rotate(45deg); }
+        }
+        @keyframes shimmerSlide {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
         }
       `}</style>
 
@@ -1019,8 +1072,25 @@ function RadarRings({ size, categories, isScanning, isCompleted, hasResults }) {
         </g>
       </svg>
 
-      {/* Ripple effects */}
-      {[0, 0.6, 1.2].map((d, i) => (
+      {/* Expanding circles during scan */}
+      {isScanning && [0, 0.4, 0.8].map((d, i) => (
+        <motion.span
+          key={i}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            border: '3px solid rgba(108,92,231,0.3)',
+          }}
+          initial={{ scale: 0.5, opacity: 0.8 }}
+          animate={{ scale: 1.8, opacity: 0 }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: 'easeOut', delay: d }}
+        />
+      ))}
+      
+      {/* Ripple effects (when not scanning) */}
+      {!isScanning && [0, 0.6, 1.2].map((d, i) => (
         <motion.span
           key={i}
           style={{

@@ -31,6 +31,8 @@ import {
 } from "@mui/material";
 import { useLanguage } from '../context/LanguageContext';
 import { ChatPointsStickyBanner } from '../components/PointsPromoBanner';
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
 import {
   ArrowLeft,
   Send,
@@ -2146,6 +2148,7 @@ export default function ChatScreen() {
           flexDirection: "column",
           height: "100vh",
           bgcolor: "#fff",
+          position: "relative",
         }}
       >
         {/* Global Meeting Top Bar - Also shown in list view */}
@@ -2274,9 +2277,12 @@ export default function ChatScreen() {
             zIndex: 2,
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 800 }}>
-            {t('chats')}
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              {t('chats')}
+            </Typography>
+            <PageHelpButton {...getPageHelpContent('chat')} />
+          </Box>
           <Typography variant="body2" sx={{ color: "#6B7280" }}>
             {t('startConversation')}
           </Typography>
@@ -2624,39 +2630,74 @@ export default function ChatScreen() {
           zIndex: 1400,
           display: "flex",
           alignItems: "center",
-          gap: 1,
-          px: 1.25,
-          py: 1,
+          gap: 1.5,
+          px: 2,
+          py: 1.5,
           borderBottom: "1px solid #E5E7EB",
-          background: "#fff",
+          background: "linear-gradient(180deg, #FFFFFF 0%, #FAFBFC 100%)",
+          backdropFilter: "blur(10px)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         }}
       >
-        <IconButton onClick={() => setOpenChat(null)} aria-label="Back">
-          <ArrowLeft />
+        <IconButton 
+          onClick={() => setOpenChat(null)} 
+          aria-label="Back"
+          sx={{
+            bgcolor: "rgba(108, 92, 231, 0.08)",
+            color: "#6C5CE7",
+            width: 40,
+            height: 40,
+            transition: "all 0.2s ease",
+            "&:hover": { 
+              bgcolor: "rgba(108, 92, 231, 0.15)",
+              transform: "translateX(-2px)"
+            }
+          }}
+        >
+          <ArrowLeft size={20} />
         </IconButton>
         <Avatar
           src={chat.user.photoUrl}
-          sx={{ width: 36, height: 36, mx: 1, cursor: "pointer" }}
+          sx={{ 
+            width: 44, 
+            height: 44, 
+            cursor: "pointer",
+            border: "3px solid #fff",
+            boxShadow: "0 4px 12px rgba(108, 92, 231, 0.2), 0 0 0 1px rgba(108, 92, 231, 0.1)",
+            transition: "all 0.3s ease",
+            "&:hover": {
+              transform: "scale(1.08)",
+              boxShadow: "0 6px 16px rgba(108, 92, 231, 0.3), 0 0 0 2px rgba(108, 92, 231, 0.2)"
+            }
+          }}
           onClick={() => setViewProfile({ open: true, user: chat.user })}
         />
         <Box
           sx={{ flex: 1, minWidth: 0, cursor: "pointer" }}
           onClick={() => setViewProfile({ open: true, user: chat.user })}
         >
-          <Typography noWrap sx={{ fontWeight: 700, lineHeight: 1.1 }}>
+          <Typography noWrap sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2, color: "#1F2937" }}>
             {chat.user.name}{chat.user.age ? `, ${chat.user.age}` : ""}
           </Typography>
           {/* Pulse spec: Quick vibe line or softer presence */}
           {chat.quickVibe ? (
-            <Typography variant="caption" sx={{ color: "#6C5CE7", fontWeight: 500 }}>
-              {chat.quickVibe}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
+              <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#6C5CE7", animation: "subtlePulse 2s ease-in-out infinite" }} />
+              <Typography variant="caption" sx={{ color: "#6C5CE7", fontWeight: 600, fontSize: "0.8rem" }}>
+                {chat.quickVibe}
+              </Typography>
+            </Box>
           ) : (
-            <Typography variant="caption" sx={{ color: "#6B7280" }}>
+            <Typography variant="caption" sx={{ color: "#9CA3AF", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
               {chat.matchId === AGENT_ID
                 ? "online"
                 : "Recently active"} {/* Pulse spec: softer presence without exact time */}
-              {typing && chat.matchId !== AGENT_ID && " · typing…"}
+              {typing && chat.matchId !== AGENT_ID && (
+                <>
+                  <span>·</span>
+                  <span style={{ color: "#6C5CE7", fontWeight: 600 }}>typing…</span>
+                </>
+              )}
             </Typography>
           )}
         </Box>
@@ -2666,24 +2707,54 @@ export default function ChatScreen() {
             size="small"
             label={getEventCountdownText(chat.sharedEvent.date)}
             sx={{
-              height: 24,
-              fontSize: '11px',
-              fontWeight: 600,
+              height: 28,
+              fontSize: '0.75rem',
+              fontWeight: 700,
               background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
               color: '#fff',
-              borderRadius: '12px',
-              px: 0.5,
-              '& .MuiChip-label': { px: 1 },
+              borderRadius: '14px',
+              px: 1,
+              boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              '& .MuiChip-label': { px: 1.5 },
             }}
           />
         )}
         {chat.matchId !== AGENT_ID && (
           <>
-            <IconButton aria-label="Video call" onClick={() => startCall("video")}>
-              <Video />
+            <IconButton 
+              aria-label="Video call" 
+              onClick={() => startCall("video")}
+              sx={{
+                bgcolor: "rgba(59, 130, 246, 0.08)",
+                color: "#3B82F6",
+                width: 40,
+                height: 40,
+                transition: "all 0.2s ease",
+                "&:hover": { 
+                  bgcolor: "rgba(59, 130, 246, 0.15)",
+                  transform: "scale(1.05)"
+                }
+              }}
+            >
+              <Video size={20} />
             </IconButton>
-            <IconButton aria-label="Voice call" onClick={() => startCall("voice")}>
-              <Phone />
+            <IconButton 
+              aria-label="Voice call" 
+              onClick={() => startCall("voice")}
+              sx={{
+                bgcolor: "rgba(16, 185, 129, 0.08)",
+                color: "#10B981",
+                width: 40,
+                height: 40,
+                transition: "all 0.2s ease",
+                "&:hover": { 
+                  bgcolor: "rgba(16, 185, 129, 0.15)",
+                  transform: "scale(1.05)"
+                }
+              }}
+            >
+              <Phone size={20} />
             </IconButton>
             {/* Start Meeting Button - Only in 1-on-1 chats, visible label per spec */}
             {meetingState === MEETING_STATE.INACTIVE && (
@@ -2696,14 +2767,14 @@ export default function ChatScreen() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: 22,
-                      height: 22,
+                      width: 24,
+                      height: 24,
                       borderRadius: '50%',
-                      bgcolor: 'rgba(255,255,255,0.25)',
-                      boxShadow: '0 0 8px rgba(52, 211, 153, 0.4)',
+                      bgcolor: 'rgba(255,255,255,0.3)',
+                      boxShadow: '0 0 10px rgba(52, 211, 153, 0.5)',
                     }}
                   >
-                    <Users size={13} />
+                    <Users size={14} />
                   </Box>
                 }
                 onClick={handleStartMeeting}
@@ -2712,23 +2783,23 @@ export default function ChatScreen() {
                   background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)',
                   color: '#fff',
                   fontWeight: 700,
-                  fontSize: '0.8rem',
+                  fontSize: '0.85rem',
                   textTransform: 'none',
-                  borderRadius: 20,
-                  px: 2,
-                  py: 0.75,
+                  borderRadius: 24,
+                  px: 2.5,
+                  py: 1,
                   minWidth: 'auto',
-                  boxShadow: '0 0 20px rgba(52, 211, 153, 0.5), 0 4px 12px rgba(16, 185, 129, 0.4)',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  transition: 'all 0.2s ease',
+                  boxShadow: '0 0 24px rgba(52, 211, 153, 0.6), 0 6px 16px rgba(16, 185, 129, 0.5)',
+                  border: '2px solid rgba(255,255,255,0.4)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': { 
                     background: 'linear-gradient(135deg, #6EE7B7 0%, #34D399 50%, #10B981 100%)',
-                    boxShadow: '0 0 25px rgba(52, 211, 153, 0.6), 0 6px 16px rgba(16, 185, 129, 0.5)',
-                    transform: 'translateY(-1px)',
+                    boxShadow: '0 0 32px rgba(52, 211, 153, 0.7), 0 8px 20px rgba(16, 185, 129, 0.6)',
+                    transform: 'translateY(-2px) scale(1.02)',
                   },
                   '&:active': {
-                    transform: 'translateY(0)',
-                    boxShadow: '0 0 15px rgba(52, 211, 153, 0.4), 0 2px 8px rgba(16, 185, 129, 0.3)',
+                    transform: 'translateY(0) scale(0.98)',
+                    boxShadow: '0 0 16px rgba(52, 211, 153, 0.5), 0 4px 12px rgba(16, 185, 129, 0.4)',
                   },
                 }}
               >
@@ -2737,11 +2808,41 @@ export default function ChatScreen() {
             )}
           </>
         )}
-        <IconButton aria-label="Search" onClick={() => setSearchOpen((v) => !v)}>
-          <Search />
+        <IconButton 
+          aria-label="Search" 
+          onClick={() => setSearchOpen((v) => !v)}
+          sx={{
+            bgcolor: searchOpen ? "rgba(108, 92, 231, 0.12)" : "rgba(0,0,0,0.04)",
+            color: searchOpen ? "#6C5CE7" : "#6B7280",
+            width: 40,
+            height: 40,
+            transition: "all 0.2s ease",
+            "&:hover": { 
+              bgcolor: "rgba(108, 92, 231, 0.12)",
+              color: "#6C5CE7",
+              transform: "scale(1.05)"
+            }
+          }}
+        >
+          <Search size={20} />
         </IconButton>
-        <IconButton aria-label="More" onClick={(e) => setMenuEl(e.currentTarget)}>
-          <MoreVertical />
+        <IconButton 
+          aria-label="More" 
+          onClick={(e) => setMenuEl(e.currentTarget)}
+          sx={{
+            bgcolor: "rgba(0,0,0,0.04)",
+            color: "#6B7280",
+            width: 40,
+            height: 40,
+            transition: "all 0.2s ease",
+            "&:hover": { 
+              bgcolor: "rgba(0,0,0,0.08)",
+              color: "#1F2937",
+              transform: "rotate(90deg)"
+            }
+          }}
+        >
+          <MoreVertical size={20} />
         </IconButton>
       </Box>
       <Box sx={{ height: 56 }} />
@@ -3181,21 +3282,23 @@ export default function ChatScreen() {
           bottom:
             "calc(env(safe-area-inset-bottom, 0px) + var(--app-bottom-nav-height, 64px))",
           zIndex: 1500,
-          bgcolor: "#F0F2F5",
+          background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%)",
           borderTop: "1px solid #E5E7EB",
-          px: 1,
-          pt: replyDraft || editDraft ? 0.5 : 1,
-          pb: `calc(1rem + env(safe-area-inset-bottom, 0px))`,
+          boxShadow: "0 -4px 16px rgba(0,0,0,0.04)",
+          backdropFilter: "blur(10px)",
+          px: 2,
+          pt: replyDraft || editDraft ? 0.75 : 1.5,
+          pb: `calc(1.5rem + env(safe-area-inset-bottom, 0px))`,
         }}
       >
         {/* Smart replies - sticky above input */}
         {chat.matchId !== AGENT_ID && smart.length > 0 && (
           <Box sx={{ 
             display: "flex", 
-            gap: 0.5, 
+            gap: 0.75, 
             flexWrap: "wrap", 
-            mb: 0.5,
-            pb: 0.5,
+            mb: 1,
+            pb: 1,
             borderBottom: "1px solid #E5E7EB",
           }}>
             {smart.map((s, i) => (
@@ -3205,13 +3308,22 @@ export default function ChatScreen() {
                 size="small"
                 onClick={() => setInput(s)}
                 sx={{
-                  bgcolor: '#FFA726',
+                  background: 'linear-gradient(135deg, #FFA726 0%, #FB8C00 100%)',
                   color: '#fff',
-                  fontWeight: 500,
-                  fontSize: '0.75rem',
-                  height: 26,
+                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  height: 32,
+                  px: 1.5,
+                  boxShadow: '0 2px 8px rgba(255, 167, 38, 0.3)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  transition: 'all 0.2s ease',
                   '&:hover': {
-                    bgcolor: '#FB8C00',
+                    background: 'linear-gradient(135deg, #FB8C00 0%, #F57C00 100%)',
+                    boxShadow: '0 4px 12px rgba(255, 167, 38, 0.4)',
+                    transform: 'translateY(-2px)',
+                  },
+                  '&:active': {
+                    transform: 'translateY(0)',
                   },
                 }}
               />
@@ -3288,14 +3400,25 @@ export default function ChatScreen() {
           </Box>
         )}
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {/* Attach menu trigger */}
           <IconButton
             aria-label="Open attachments"
             size="small"
             onClick={(e) => setAttachMenu({ open: true, anchor: e.currentTarget })}
+            sx={{
+              bgcolor: "rgba(108, 92, 231, 0.08)",
+              color: "#6C5CE7",
+              width: 40,
+              height: 40,
+              transition: "all 0.2s ease",
+              "&:hover": {
+                bgcolor: "rgba(108, 92, 231, 0.15)",
+                transform: "rotate(45deg)",
+              }
+            }}
           >
-            <Plus size={18} />
+            <Plus size={20} />
           </IconButton>
 
           <Box
@@ -3304,9 +3427,16 @@ export default function ChatScreen() {
               display: "flex",
               alignItems: "center",
               bgcolor: "#fff",
-              borderRadius: 999,
-              border: "1px solid #E5E7EB",
-              py: 0.25,
+              borderRadius: 24,
+              border: "2px solid #E5E7EB",
+              py: 0.5,
+              px: 0.5,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+              transition: "all 0.2s ease",
+              "&:focus-within": {
+                borderColor: "#6C5CE7",
+                boxShadow: "0 4px 16px rgba(108, 92, 231, 0.15)",
+              }
             }}
           >
             <Tooltip title="Emoji">
@@ -3317,8 +3447,16 @@ export default function ChatScreen() {
                   setEmojiMode("compose");
                   setEmojiOpen(true);
                 }}
+                sx={{
+                  color: "#6B7280",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    color: "#FFA726",
+                    transform: "scale(1.1)",
+                  }
+                }}
               >
-                <Smile size={18} />
+                <Smile size={20} />
               </IconButton>
             </Tooltip>
 
@@ -3330,8 +3468,16 @@ export default function ChatScreen() {
                   setAiAnchor(e.currentTarget);
                   computeAI();
                 }}
+                sx={{
+                  color: "#6C5CE7",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    color: "#5B4BC4",
+                    transform: "scale(1.1) rotate(15deg)",
+                  }
+                }}
               >
-                <Wand2 size={18} />
+                <Wand2 size={20} />
               </IconButton>
             </Tooltip>
 
@@ -3342,7 +3488,17 @@ export default function ChatScreen() {
               multiline
               maxRows={4}
               fullWidth
-              sx={{ mx: 1 }}
+              sx={{ 
+                mx: 1.5,
+                fontSize: "0.95rem",
+                '& .MuiInputBase-input': {
+                  py: 0.5,
+                  '&::placeholder': {
+                    color: '#9CA3AF',
+                    opacity: 1,
+                  }
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === " " && input.startsWith("/")) {
                   const cmd = input.trim();
@@ -3359,8 +3515,20 @@ export default function ChatScreen() {
             />
 
             <Tooltip title="Attach file">
-              <IconButton aria-label="Attach file" size="small" onClick={() => fileAttachInputRef.current?.click()}>
-                <Paperclip size={18} />
+              <IconButton 
+                aria-label="Attach file" 
+                size="small" 
+                onClick={() => fileAttachInputRef.current?.click()}
+                sx={{
+                  color: "#6B7280",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    color: "#3B82F6",
+                    transform: "scale(1.1) rotate(-15deg)",
+                  }
+                }}
+              >
+                <Paperclip size={20} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Attach image">
@@ -3368,13 +3536,33 @@ export default function ChatScreen() {
                 aria-label="Attach image"
                 size="small"
                 onClick={() => imageInputRef.current?.click()}
+                sx={{
+                  color: "#6B7280",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    color: "#EC4899",
+                    transform: "scale(1.1)",
+                  }
+                }}
               >
-                <Camera size={18} />
+                <Camera size={20} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Send">
-              <IconButton aria-label="Send" size="small" onClick={handleSend}>
-                <Send size={18} />
+              <IconButton 
+                aria-label="Send" 
+                size="small" 
+                onClick={handleSend}
+                sx={{
+                  color: "#6C5CE7",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    color: "#5B4BC4",
+                    transform: "scale(1.1) rotate(-15deg)",
+                  }
+                }}
+              >
+                <Send size={20} />
               </IconButton>
             </Tooltip>
           </Box>
@@ -3384,12 +3572,22 @@ export default function ChatScreen() {
             <IconButton
               aria-label="Voice message"
               sx={{
-                bgcolor: "#00A884",
+                background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
                 color: "#fff",
-                width: 36,
-                height: 36,
+                width: 44,
+                height: 44,
                 borderRadius: "50%",
-                "&:hover": { bgcolor: "#01966f" },
+                boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+                border: "2px solid rgba(255,255,255,0.3)",
+                transition: "all 0.2s ease",
+                "&:hover": { 
+                  background: "linear-gradient(135deg, #34D399 0%, #10B981 100%)",
+                  boxShadow: "0 6px 16px rgba(16, 185, 129, 0.4)",
+                  transform: "scale(1.05)",
+                },
+                "&:active": {
+                  transform: "scale(0.95)",
+                }
               }}
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -3411,7 +3609,7 @@ export default function ChatScreen() {
                 if (recActive) stopAndSendRecording();
               }}
             >
-              <Mic size={20} />
+              <Mic size={22} />
             </IconButton>
           </Tooltip>
         </Box>
@@ -3781,26 +3979,72 @@ export default function ChatScreen() {
           <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', px: 1.5, pt: 10, pb: 1, overflowY: 'auto' }}>
             <Box sx={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
               {/* 1. Meeting Status with motivational message */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, width: '100%', p: 1.5, bgcolor: '#ECFDF5', borderRadius: 2, border: '1px solid #A7F3D0' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Users size={14} color="#fff" />
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                gap: 1, 
+                width: '100%', 
+                p: 2.5, 
+                background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+                borderRadius: 3, 
+                border: '2px solid #A7F3D0',
+                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.15)',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '3px',
+                  background: 'linear-gradient(90deg, #10B981 0%, #34D399 50%, #10B981 100%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 3s linear infinite',
+                },
+                '@keyframes shimmer': {
+                  '0%': { backgroundPosition: '200% 0' },
+                  '100%': { backgroundPosition: '-200% 0' },
+                }
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ 
+                    width: 36, 
+                    height: 36, 
+                    borderRadius: '50%', 
+                    background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4), 0 0 0 3px rgba(16, 185, 129, 0.1)',
+                  }}>
+                    <Users size={18} color="#fff" />
                   </Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#065F46' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#065F46', fontSize: '1.1rem' }}>
                     Meeting with {meetingWith?.name} ✓
                   </Typography>
                 </Box>
-                <Typography variant="caption" sx={{ color: '#6B7280', fontStyle: 'italic', textAlign: 'center' }}>
+                <Typography variant="body2" sx={{ color: '#047857', fontStyle: 'italic', textAlign: 'center', fontWeight: 500, fontSize: '0.9rem' }}>
                   ✨ Be yourself, stay safe, and enjoy the moment
                 </Typography>
               </Box>
 
               {/* 2. Quick Actions */}
               <Box sx={{ width: '100%' }}>
-                <Typography variant="overline" sx={{ color: '#6B7280', fontWeight: 600, letterSpacing: 1, fontSize: '0.6rem', display: 'block', textAlign: 'center', mb: 0.5 }}>
-                  QUICK ACTIONS
+                <Typography variant="overline" sx={{ 
+                  color: '#6B7280', 
+                  fontWeight: 700, 
+                  letterSpacing: 1.5, 
+                  fontSize: '0.65rem', 
+                  display: 'block', 
+                  textAlign: 'center', 
+                  mb: 1.5,
+                  textTransform: 'uppercase',
+                }}>
+                  Quick Actions
                 </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, flexWrap: 'wrap' }}>
               {/* In-App Contact Circles */}
               {meetingContacts.map((contact) => (
                 <Box
@@ -3810,37 +4054,51 @@ export default function ChatScreen() {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    p: 0.75,
-                    borderRadius: 1.5,
+                    p: 1.25,
+                    borderRadius: 2.5,
                     bgcolor: '#fff',
                     boxShadow: contactsNotifiedThisMeeting.includes(contact.id) 
-                      ? '0 0 0 2px #10B981' 
-                      : '0 2px 4px rgba(0,0,0,0.1)',
+                      ? '0 0 0 3px #10B981, 0 4px 16px rgba(16, 185, 129, 0.3)' 
+                      : '0 4px 12px rgba(0,0,0,0.08)',
                     cursor: 'pointer',
-                    '&:active': { transform: 'scale(0.98)' },
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: contactsNotifiedThisMeeting.includes(contact.id)
+                        ? '0 0 0 3px #10B981, 0 8px 24px rgba(16, 185, 129, 0.4)'
+                        : '0 8px 20px rgba(0,0,0,0.12)',
+                    },
+                    '&:active': { transform: 'translateY(-2px) scale(0.98)' },
                   }}
                 >
                   <Box
                     sx={{
-                      width: 40,
-                      height: 40,
+                      width: 48,
+                      height: 48,
                       borderRadius: '50%',
                       background: 'linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      mb: 0.5,
+                      mb: 0.75,
+                      boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
+                      border: '2px solid rgba(255,255,255,0.9)',
                     }}
                   >
-                    <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>
+                    <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>
                       {contact.name.charAt(0).toUpperCase()}
                     </Typography>
                   </Box>
-                  <Typography variant="caption" sx={{ fontWeight: 600, textAlign: 'center', color: '#1F2937', fontSize: '0.65rem', lineHeight: 1.2 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, textAlign: 'center', color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
                     {contact.name.length > 6 ? contact.name.slice(0, 6) + '…' : contact.name}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: contactsNotifiedThisMeeting.includes(contact.id) ? '#10B981' : '#9CA3AF', fontSize: '0.6rem' }}>
-                    {contactsNotifiedThisMeeting.includes(contact.id) ? '✓' : 'Notify'}
+                  <Typography variant="caption" sx={{ 
+                    color: contactsNotifiedThisMeeting.includes(contact.id) ? '#10B981' : '#9CA3AF', 
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                    mt: 0.25,
+                  }}>
+                    {contactsNotifiedThisMeeting.includes(contact.id) ? '✓ Notified' : 'Notify'}
                   </Typography>
                 </Box>
               ))}
@@ -3852,32 +4110,39 @@ export default function ChatScreen() {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  p: 0.75,
-                  borderRadius: 1.5,
+                  p: 1.25,
+                  borderRadius: 2.5,
                   bgcolor: '#fff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                   cursor: 'pointer',
-                  '&:active': { transform: 'scale(0.98)' },
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                  },
+                  '&:active': { transform: 'translateY(-2px) scale(0.98)' },
                 }}
               >
                 <Box
                   sx={{
-                    width: 40,
-                    height: 40,
+                    width: 48,
+                    height: 48,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mb: 0.5,
+                    mb: 0.75,
+                    boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
+                    border: '2px solid rgba(255,255,255,0.9)',
                   }}
                 >
-                  <MessageCircle size={18} color="#fff" />
+                  <MessageCircle size={20} color="#fff" />
                 </Box>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.65rem', lineHeight: 1.2 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
                   WhatsApp
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.6rem' }}>
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem', fontWeight: 600, mt: 0.25 }}>
                   Share
                 </Typography>
               </Box>
@@ -3916,32 +4181,39 @@ export default function ChatScreen() {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  p: 0.75,
-                  borderRadius: 1.5,
+                  p: 1.25,
+                  borderRadius: 2.5,
                   bgcolor: '#fff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                   cursor: 'pointer',
-                  '&:active': { transform: 'scale(0.98)' },
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                  },
+                  '&:active': { transform: 'translateY(-2px) scale(0.98)' },
                 }}
               >
                 <Box
                   sx={{
-                    width: 40,
-                    height: 40,
+                    width: 48,
+                    height: 48,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mb: 0.5,
+                    mb: 0.75,
+                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                    border: '2px solid rgba(255,255,255,0.9)',
                   }}
                 >
-                  <HeartHandshake size={18} color="#fff" />
+                  <HeartHandshake size={20} color="#fff" />
                 </Box>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.65rem', lineHeight: 1.2 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
                   Support
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.6rem' }}>
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem', fontWeight: 600, mt: 0.25 }}>
                   Chat
                 </Typography>
               </Box>
@@ -3953,33 +4225,40 @@ export default function ChatScreen() {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  p: 0.75,
-                  borderRadius: 1.5,
+                  p: 1.25,
+                  borderRadius: 2.5,
                   bgcolor: '#fff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  border: '2px dashed #E5E7EB',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  border: '2px dashed #D1D5DB',
                   cursor: 'pointer',
-                  '&:active': { transform: 'scale(0.98)' },
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                    borderColor: '#6C5CE7',
+                  },
+                  '&:active': { transform: 'translateY(-2px) scale(0.98)' },
                 }}
               >
                 <Box
                   sx={{
-                    width: 40,
-                    height: 40,
+                    width: 48,
+                    height: 48,
                     borderRadius: '50%',
                     bgcolor: '#F3F4F6',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mb: 0.5,
+                    mb: 0.75,
+                    border: '2px solid #E5E7EB',
                   }}
                 >
-                  <UserPlus size={18} color="#6B7280" />
+                  <UserPlus size={20} color="#6B7280" />
                 </Box>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.65rem', lineHeight: 1.2 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
                   Add
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.6rem' }}>
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem', fontWeight: 600, mt: 0.25 }}>
                   Contact
                 </Typography>
                 </Box>

@@ -39,11 +39,15 @@ import {
   Pause,
   Clock,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import UserAvatarButton from '../components/UserAvatarButton';
 import { UserCardStack } from '../components/UserCard';
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
 
 // Safe bottom padding for tab bar
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
@@ -179,59 +183,57 @@ const MOCK_ACTIVE_CHAT = {
   unread: true,
 };
 
-// Mock data for UserCard v2 (per spec section 7 - UserCardModel)
-const MOCK_DISCOVER_PROFILES = [
+// Mock data for Today's Picks
+const MOCK_TODAYS_PICKS = [
   {
     userId: 'u1',
-    firstName: 'Shani',
-    age: 24,
-    distanceMeters: 700,
-    primaryPhotoUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
-    contextLine: 'Here for the event tonight',
-    chips: [
-      { label: '168cm', type: 'factual' },
-      { label: 'Social drinker', type: 'factual' },
-      { label: 'Yoga lover', type: 'hobby' },
-    ],
+    firstName: 'Maya',
+    age: 27,
+    matchPercentage: 82,
+    primaryPhotoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80',
+    primaryRole: 'Product Designer',
+    height: '170 cm',
+    interests: ['Coffee lover', 'Art enthusiast'],
   },
   {
     userId: 'u2',
     firstName: 'Noa',
-    age: 27,
-    distanceMeters: 1200,
+    age: 29,
+    matchPercentage: 78,
     primaryPhotoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
-    contextLine: 'Fashion Blogger',
-    chips: [
-      { label: '172cm', type: 'factual' },
-      { label: 'Non-smoker', type: 'factual' },
-      { label: 'Art & Design', type: 'hobby' },
-    ],
+    primaryRole: 'Marketing Director',
+    height: '165 cm',
+    interests: ['Yoga', 'Travel'],
   },
   {
     userId: 'u3',
-    firstName: 'Maya',
-    age: 25,
-    distanceMeters: 450,
-    primaryPhotoUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
-    contextLine: 'Spontaneous coffee lover',
-    chips: [
-      { label: '165cm', type: 'factual' },
-      { label: 'Foodie', type: 'hobby' },
-      { label: 'Travel addict', type: 'hobby' },
-    ],
+    firstName: 'Lior',
+    age: 26,
+    matchPercentage: 72,
+    primaryPhotoUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
+    primaryRole: 'Software Engineer',
+    height: '168 cm',
+    interests: ['Music', 'Photography'],
   },
   {
     userId: 'u4',
-    firstName: 'Tamar',
-    age: 29,
-    distanceMeters: 2300,
-    primaryPhotoUrl: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=800&q=80',
-    contextLine: 'Software developer by day, musician by night',
-    chips: [
-      { label: '170cm', type: 'factual' },
-      { label: 'Guitar', type: 'hobby' },
-      { label: 'Looking for relationship', type: 'lookingFor' },
-    ],
+    firstName: 'Dana',
+    age: 30,
+    matchPercentage: 88,
+    primaryPhotoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80',
+    primaryRole: 'Architect',
+    height: '182 cm',
+    interests: ['Design', 'Coffee'],
+  },
+  {
+    userId: 'u5',
+    firstName: 'Shira',
+    age: 25,
+    matchPercentage: 85,
+    primaryPhotoUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
+    primaryRole: 'Fashion Blogger',
+    height: '168 cm',
+    interests: ['Fashion lover', 'Travel'],
   },
 ];
 
@@ -249,8 +251,8 @@ const HomeScreen = () => {
   const [events, setEvents] = useState([]);
   const [places, setPlaces] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
-  const [discoverProfiles, setDiscoverProfiles] = useState([]);
-  const [showDiscover, setShowDiscover] = useState(true); // Toggle between Discover and Browse mode
+  const [todaysPicks, setTodaysPicks] = useState([]);
+  const [currentPickIndex, setCurrentPickIndex] = useState(0);
   
   // Profile completion check
   const isProfileComplete = useMemo(() => {
@@ -301,7 +303,7 @@ const HomeScreen = () => {
       setEvents(MOCK_EVENTS.slice(0, 2));
       setPlaces(MOCK_PLACES.slice(0, 2));
       setActiveChat(MOCK_ACTIVE_CHAT);
-      setDiscoverProfiles(MOCK_DISCOVER_PROFILES);
+      setTodaysPicks(MOCK_TODAYS_PICKS);
       
       setIsLoading(false);
     };
@@ -316,27 +318,18 @@ const HomeScreen = () => {
   const handleGoToChats = useCallback(() => navigate('/matches'), [navigate]);
   const handleGoToProfile = useCallback(() => navigate('/profile'), [navigate]);
   
-  // UserCard handlers
-  const handleLike = useCallback((user) => {
-    console.log('Liked:', user.firstName);
-    // In real app: send like to API, check for match
-  }, []);
+  // Today's Picks navigation handlers
+  const handlePrevPick = useCallback(() => {
+    setCurrentPickIndex((prev) => (prev > 0 ? prev - 1 : todaysPicks.length - 1));
+  }, [todaysPicks.length]);
   
-  const handlePass = useCallback((user) => {
-    console.log('Passed:', user.firstName);
-    // In real app: send pass to API
-  }, []);
+  const handleNextPick = useCallback(() => {
+    setCurrentPickIndex((prev) => (prev < todaysPicks.length - 1 ? prev + 1 : 0));
+  }, [todaysPicks.length]);
   
-  const handleTapProfile = useCallback((user) => {
-    console.log('View profile:', user.firstName);
-    // In real app: navigate to expanded profile
-    navigate(`/profile/${user.userId}`);
+  const handlePickClick = useCallback((userId) => {
+    navigate(`/profile/${userId}`);
   }, [navigate]);
-  
-  const handleDiscoverEmpty = useCallback(() => {
-    console.log('No more profiles');
-    // Could show refresh option or switch to browse mode
-  }, []);
   
   // Check if we have any content to show
   const hasAnyContent = nearbyProfiles.length > 0 || events.length > 0 || places.length > 0 || activeChat;
@@ -363,8 +356,11 @@ const HomeScreen = () => {
         backgroundColor: '#fafbfc',
         pb: SAFE_BOTTOM,
         overflowY: 'auto',
+        position: 'relative',
       }}
     >
+      {/* Help Button */}
+      <PageHelpButton {...getPageHelpContent('home')} />
       {/* Offline Banner */}
       <AnimatePresence>
         {!isOnline && (
@@ -413,7 +409,32 @@ const HomeScreen = () => {
         >
           Pulse
         </Typography>
-        <UserAvatarButton photoUrl={user?.photoUrl} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleGoToNearby}
+            startIcon={<Compass size={16} />}
+            sx={{
+              py: 0.75,
+              px: 2,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              boxShadow: '0 4px 12px rgba(108,92,231,0.3)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
+                boxShadow: '0 6px 16px rgba(108,92,231,0.4)',
+              },
+            }}
+          >
+            גלה מי קרוב
+          </Button>
+          <PageHelpButton {...getPageHelpContent('home')} />
+          <UserAvatarButton photoUrl={user?.photoUrl} />
+        </Box>
       </Box>
 
       {/* Time-based greeting - no username per spec */}
@@ -470,6 +491,101 @@ const HomeScreen = () => {
       {/* Main Content */}
       <Box sx={{ px: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         
+        {/* Today's Picks Section */}
+        {todaysPicks.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography 
+                  component={motion.h5}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4 }}
+                  variant="h5" 
+                  sx={{ fontWeight: 700, color: '#1a1a2e' }}
+                >
+                  Today's Picks
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Box
+                    component={motion.div}
+                    whileHover={{ scale: 1.1, backgroundColor: '#e2e8f0' }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      handlePrevPick();
+                      if (navigator?.vibrate) navigator.vibrate(5);
+                    }}
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      bgcolor: '#f8fafc',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      '&:hover': { 
+                        boxShadow: '0 4px 12px rgba(108,92,231,0.15)',
+                      },
+                    }}
+                  >
+                    <ChevronLeft size={20} color="#64748b" />
+                  </Box>
+                  <Box
+                    component={motion.div}
+                    whileHover={{ scale: 1.1, backgroundColor: '#e2e8f0' }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      handleNextPick();
+                      if (navigator?.vibrate) navigator.vibrate(5);
+                    }}
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      bgcolor: '#f8fafc',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      '&:hover': { 
+                        boxShadow: '0 4px 12px rgba(108,92,231,0.15)',
+                      },
+                    }}
+                  >
+                    <ChevronRight size={20} color="#64748b" />
+                  </Box>
+                </Box>
+              </Box>
+              
+              <TodaysPickCard 
+                profile={todaysPicks[currentPickIndex]} 
+                onClick={() => handlePickClick(todaysPicks[currentPickIndex].userId)}
+              />
+              
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  display: 'block', 
+                  textAlign: 'center', 
+                  color: '#94a3b8', 
+                  mt: 1.5 
+                }}
+              >
+                ← Swipe left = Pass • Tap to pull • Tap again to view →
+              </Typography>
+            </Box>
+          </motion.div>
+        )}
+        
         {/* 3. Profile Completion Card (Conditional) */}
         {!isProfileComplete && (
           <motion.div
@@ -510,57 +626,12 @@ const HomeScreen = () => {
           </motion.div>
         )}
 
-        {/* 4. Discover Section - UserCard v2 */}
-        {showDiscover && discoverProfiles.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <SectionHeader 
-              icon={<Sparkles size={18} color="#6C5CE7" />}
-              title="Discover"
-              subtitle="People you might like"
-            />
-            
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              mb: 2,
-              mx: -3, // Extend beyond padding for full-width card
-            }}>
-              <UserCardStack
-                users={discoverProfiles}
-                onLike={handleLike}
-                onPass={handlePass}
-                onTap={handleTapProfile}
-                onEmpty={handleDiscoverEmpty}
-                hasLocationPermission={true}
-              />
-            </Box>
-            
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2 }}>
-              <Button
-                size="small"
-                onClick={() => setShowDiscover(false)}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 500,
-                  color: '#64748b',
-                  p: 0,
-                }}
-              >
-                Browse instead
-              </Button>
-            </Box>
-          </motion.div>
-        )}
 
-        {/* 5. Nearby Preview - Vertical layout per spec */}
+        {/* Nearby Preview - Vertical layout per spec */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: showDiscover ? 0.3 : 0.2 }}
+          transition={{ delay: 0.2 }}
         >
           <SectionHeader 
             icon={<Users size={18} color="#6C5CE7" />}
@@ -987,6 +1058,227 @@ function EmptyPreview({ text }) {
       </Typography>
     </Box>
   );
+}
+
+function TodaysPickCard({ profile, onClick }) {
+  return (
+    <Box
+      component={motion.div}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+      whileHover={{ 
+        scale: 1.02,
+        y: -6,
+        boxShadow: '0 16px 48px rgba(108,92,231,0.25), 0 0 40px rgba(108,92,231,0.15)',
+      }}
+      whileTap={{ scale: 0.98 }}
+      onClick={() => {
+        onClick();
+        if (navigator?.vibrate) navigator.vibrate([8, 3, 8]);
+      }}
+      sx={{
+        position: 'relative',
+        borderRadius: '24px',
+        overflow: 'hidden',
+        bgcolor: '#fff',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+        cursor: 'pointer',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        backdropFilter: 'blur(8px)',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '24px',
+          padding: '2px',
+          background: 'linear-gradient(135deg, rgba(108,92,231,0.3), rgba(168,85,247,0.3))',
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude',
+          opacity: 0,
+          transition: 'opacity 0.3s ease',
+        },
+        '&:hover::before': {
+          opacity: 1,
+        },
+      }}
+    >
+      {/* Profile Image */}
+      <Box
+        sx={{
+          width: '100%',
+          height: 420,
+          backgroundImage: `url(${profile.primaryPhotoUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          position: 'relative',
+        }}
+      >
+        {/* Match Percentage Badge */}
+        <Box
+          component={motion.div}
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ 
+            type: 'spring',
+            stiffness: 200,
+            damping: 15,
+            delay: 0.2,
+          }}
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            color: '#fff',
+            px: 2.5,
+            py: 1,
+            borderRadius: '24px',
+            fontWeight: 800,
+            fontSize: '1rem',
+            backdropFilter: 'blur(12px)',
+            boxShadow: '0 4px 16px rgba(108,92,231,0.4)',
+            border: '2px solid rgba(255,255,255,0.3)',
+            animation: 'badgePulse 2s ease-in-out infinite',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              inset: -4,
+              borderRadius: '24px',
+              background: 'radial-gradient(circle, rgba(108,92,231,0.4) 0%, transparent 70%)',
+              animation: 'badgeGlow 2s ease-in-out infinite',
+            },
+          }}
+        >
+          {profile.matchPercentage}%
+        </Box>
+      </Box>
+      
+      {/* Profile Info */}
+      <Box sx={{ p: 3 }}>
+        <Typography 
+          variant="h5" 
+          sx={{ 
+            fontWeight: 700, 
+            color: '#1a1a2e',
+            mb: 0.5,
+          }}
+        >
+          {profile.firstName}, {profile.age}
+        </Typography>
+        
+        <Typography 
+          variant="body1" 
+          sx={{ 
+            color: '#94a3b8',
+            mb: 2,
+          }}
+        >
+          {profile.primaryRole}
+        </Typography>
+        
+        {/* Tags */}
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            sx={{
+              px: 2,
+              py: 1,
+              borderRadius: '20px',
+              background: 'linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(168,85,247,0.08) 100%)',
+              border: '1.5px solid rgba(108, 92, 231, 0.2)',
+              backdropFilter: 'blur(8px)',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                background: 'linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.12) 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(108,92,231,0.2)',
+              },
+            }}
+          >
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: '#6C5CE7',
+                fontWeight: 600,
+              }}
+            >
+              {profile.height}
+            </Typography>
+          </Box>
+          {profile.interests.map((interest, index) => (
+            <Box
+              key={index}
+              component={motion.div}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 + (index + 1) * 0.1 }}
+              sx={{
+                px: 2,
+                py: 1,
+                borderRadius: '20px',
+                background: 'linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(168,85,247,0.08) 100%)',
+                border: '1.5px solid rgba(108, 92, 231, 0.2)',
+                backdropFilter: 'blur(8px)',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.12) 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(108,92,231,0.2)',
+                },
+              }}
+            >
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#6C5CE7',
+                  fontWeight: 600,
+                }}
+              >
+                {interest}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+// CSS animations for badges
+const styles = `
+  @keyframes badgePulse {
+    0%, 100% { 
+      box-shadow: 0 4px 16px rgba(108,92,231,0.4), 0 0 20px rgba(108,92,231,0.3);
+    }
+    50% { 
+      box-shadow: 0 4px 20px rgba(108,92,231,0.6), 0 0 30px rgba(108,92,231,0.5);
+    }
+  }
+  @keyframes badgeGlow {
+    0%, 100% { 
+      transform: scale(1);
+      opacity: 0.4;
+    }
+    50% { 
+      transform: scale(1.2);
+      opacity: 0.6;
+    }
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = styles;
+  if (!document.head.querySelector('style[data-home-animations]')) {
+    styleSheet.setAttribute('data-home-animations', 'true');
+    document.head.appendChild(styleSheet);
+  }
 }
 
 export default HomeScreen;

@@ -1,25 +1,25 @@
 /**
- * UserCard v2 – Home / Discover (Pulse)
+ * כרטיס משתמש v2 – בית / גילוי (Pulse)
  * 
- * Per Spec (Corrected Version - Single Source of Truth):
- * - Quick, intuitive decision (Like/Pass) without overload
- * - Human feel, clear context, minimal distractions
- * - Natural transition to expanded profile
+ * לפי המפרט (גרסה מתוקנת - מקור אמת יחיד):
+ * - החלטה מהירה ואינטואיטיבית (לייק/פאס) ללא עומס
+ * - תחושה אנושית, הקשר ברור, הסחות דעת מינימליות
+ * - מעבר טבעי לפרופיל מורחב
  * 
- * ❗ Critical Notes:
- * - No badges/icons/CTAs not defined in spec
- * - No visible Like/Pass buttons
- * - Context Line is the main element, not biography
- * - Chips = minimalism, not overload
- * - Expanded Profile opens only on Tap, not Swipe
+ * ❗ הערות קריטיות:
+ * - ללא תגים/אייקונים/CTAs שלא מוגדרים במפרט
+ * - ללא כפתורי לייק/פאס גלויים
+ * - שורת ההקשר היא האלמנט המרכזי, לא הביוגרפיה
+ * - צ'יפים = מינימליזם, לא עומס
+ * - פרופיל מורחב נפתח רק בהקשה, לא בהחלקה
  * 
- * Today's Picks (from spec section 4):
- * - Purple badge for high probability matches
- * - Badges: "High chance to meet", "Same time window", "Nearby tonight", "Same event"
+ * הבחירות של היום (ממפרט סעיף 4):
+ * - תג סגול להתאמות בסבירות גבוהה
+ * - תגים: "סיכוי גבוה להיפגש", "חלון זמן זהה", "קרוב הערב", "אותו אירוע"
  * 
- * Context Lines (from spec section 3):
- * - "0.8km · crossed paths today"
- * - "Same area this evening"
+ * שורות הקשר (ממפרט סעיף 3):
+ * - "0.8 ק"מ · חצו נתיבים היום"
+ * - "אותו אזור הערב"
  */
 
 import React, { useState, useCallback, useMemo, useRef } from 'react';
@@ -36,73 +36,149 @@ const SCREEN_W = typeof window !== 'undefined' ? window.innerWidth : 400;
 const SWIPE_THRESHOLD = SCREEN_W * 0.25;
 
 /**
- * UserCardModel (Data Contract per spec section 7)
+ * מודל כרטיס משתמש (חוזה נתונים לפי מפרט סעיף 7)
  * @typedef {Object} UserCardModel
- * @property {string} userId
- * @property {string} firstName
- * @property {number} age
- * @property {number|null} distanceMeters - nullable if no location permission
- * @property {string} primaryPhotoUrl
- * @property {string} contextLine - Human context (event, nearby, job, vibe)
- * @property {Array<{label: string, type?: string}>} chips - Max 3, priority ordered
- * @property {boolean} [isVerified] - Future use
- * @property {Object} [safetyFlags] - Internal use
- * @property {boolean} [isTodaysPick] - Today's Pick badge (high probability match)
- * @property {string} [todaysPickReason] - Reason for Today's Pick badge
- * @property {string} [crossedPathsText] - Context line for crossed paths
+ * @property {string} userId - מזהה משתמש
+ * @property {string} firstName - שם פרטי
+ * @property {number} age - גיל
+ * @property {number|null} distanceMeters - מרחק במטרים (null אם אין הרשאת מיקום)
+ * @property {string} primaryPhotoUrl - כתובת תמונה ראשית
+ * @property {string} [liveStatus] - הקשר בזמן אמת (מקס 60 תווים, אימוג'י אופציונלי)
+ * @property {string} [primaryRole] - מקצוע קצר (מקס 40 תווים, ללא שם חברה)
+ * @property {Array<{label: string, icon?: string}>} [topInterests] - מקס 3 תחומי עניין לתצוגה מקדימה
+ * @property {string} contextLine - הקשר אנושי (אירוע, קרוב, עבודה, אווירה)
+ * @property {Array<{label: string, type?: string}>} chips - מקס 3 צ'יפים, ממוינים לפי עדיפות
+ * @property {string} [height] - גובה בס"מ (ליצירת צ'יפים)
+ * @property {string} [drinking] - העדפת שתייה (ליצירת צ'יפים)
+ * @property {string} [professionalField] - תחום מקצועי/אווירה (ליצירת צ'יפים)
+ * @property {boolean} [isVerified] - מאומת (לשימוש עתידי)
+ * @property {Object} [safetyFlags] - דגלי בטיחות (שימוש פנימי)
+ * @property {boolean} [isTodaysPick] - תג "הבחירה של היום" (התאמה בסבירות גבוהה)
+ * @property {string} [todaysPickReason] - סיבה לתג "הבחירה של היום"
+ * @property {string} [crossedPathsText] - שורת הקשר לחציית נתיבים
  */
 
-// Today's Pick badge reasons (from spec section 4)
+// סיבות לתג "הבחירה של היום" (ממפרט סעיף 4)
 const TODAYS_PICK_BADGES = {
-  high_chance: "High chance to meet",
-  same_time: "Same time window",
-  nearby_tonight: "Nearby tonight",
-  same_event: "Same event",
+  high_chance: "סיכוי גבוה להיפגש",
+  same_time: "חלון זמן זהה",
+  nearby_tonight: "קרוב הערב",
+  same_event: "אותו אירוע",
 };
 
 /**
- * Generate context line based on user data (from spec section 3)
- * Examples: "0.8km · crossed paths today", "Same area this evening"
+ * יצירת שורת הקשר על בסיס נתוני משתמש (ממפרט סעיף 3)
+ * דוגמאות: "0.8 ק"מ · חצו נתיבים היום", "אותו אזור הערב"
  */
 const generateContextLine = (user, hasLocationPermission) => {
-  // Priority 1: Crossed paths
+  // עדיפות 1: חציית נתיבים
   if (user.crossedPathsText) {
     return user.crossedPathsText;
   }
   
-  // Priority 2: Same event
+  // עדיפות 2: אותו אירוע
   if (user.sharedEvent) {
-    return `Going to ${user.sharedEvent}`;
+    return `הולך ל-${user.sharedEvent}`;
   }
   
-  // Priority 3: Distance + time context
+  // עדיפות 3: מרחק + הקשר זמן
   if (hasLocationPermission && user.distanceMeters) {
     const distanceText = user.distanceMeters < 1000 
       ? `${Math.round(user.distanceMeters)}m` 
       : `${(user.distanceMeters / 1000).toFixed(1)}km`;
     
     if (user.crossedPathsToday) {
-      return `${distanceText} · crossed paths today`;
+      return `${distanceText} · חצו נתיבים היום`;
     }
     if (user.sameAreaEvening) {
-      return `${distanceText} · same area this evening`;
+      return `${distanceText} · אותו אזור הערב`;
     }
     return distanceText;
   }
   
-  // Priority 4: Occupation or vibe line
+  // עדיפות 4: עיסוק או שורת אווירה
   return user.contextLine || user.occupation || null;
 };
 
 /**
- * Format distance for display
- * @param {number|null} meters 
+ * עיצוב מרחק לתצוגה
+ * @param {number|null} meters - מרחק במטרים
  * @returns {string|null}
  */
 const formatDistance = (meters) => {
   if (meters === null || meters === undefined) return null;
   if (meters < 1000) return `${Math.round(meters)}m`;
   return `${(meters / 1000).toFixed(1)}km`;
+};
+
+/**
+ * יצירת צ'יפים של מידע מהיר (מקס 3) לפי המפרט
+ * עדיפות: גובה → שתייה → תחום מקצועי/אווירה
+ * @param {UserCardModel} user - נתוני משתמש
+ * @returns {Array<{label: string, type: string}>}
+ */
+const generateQuickInfoChips = (user) => {
+  const chips = [];
+  
+  if (user.height && chips.length < 3) {
+    chips.push({ label: `${user.height} cm`, type: 'height' });
+  }
+  
+  if (user.drinking && user.drinking !== 'מעדיף לא לומר' && chips.length < 3) {
+    chips.push({ label: user.drinking, type: 'drinking' });
+  }
+  
+  if (user.professionalField && chips.length < 3) {
+    chips.push({ label: user.professionalField, type: 'professional' });
+  }
+  
+  return chips;
+};
+
+/**
+ * קבלת אייקון תחום עניין על בסיס שם התחום
+ * @param {string} interest - שם תחום העניין
+ * @returns {string} אימוג'י אייקון
+ */
+const getInterestIcon = (interest) => {
+  const iconMap = {
+    'coffee': '☕',
+    'קפה': '☕',
+    'music': '🎶',
+    'מוזיקה': '🎶',
+    'yoga': '🧘‍♀️',
+    'יוגה': '🧘‍♀️',
+    'travel': '✈️',
+    'טיולים': '✈️',
+    'fitness': '💪',
+    'כושר': '💪',
+    'art': '🎨',
+    'אמנות': '🎨',
+    'food': '🍕',
+    'אוכל': '🍕',
+    'reading': '📚',
+    'קריאה': '📚',
+    'movies': '🎬',
+    'סרטים': '🎬',
+    'photography': '📷',
+    'צילום': '📷',
+    'hiking': '🥾',
+    'טיולי רגל': '🥾',
+    'cooking': '👨‍🍳',
+    'בישול': '👨‍🍳',
+    'dancing': '💃',
+    'ריקודים': '💃',
+    'gaming': '🎮',
+    'גיימינג': '🎮',
+    'wine': '🍷',
+    'יין': '🍷',
+  };
+  
+  const lowerInterest = interest.toLowerCase();
+  for (const [key, icon] of Object.entries(iconMap)) {
+    if (lowerInterest.includes(key)) return icon;
+  }
+  return '✨';
 };
 
 /**
@@ -162,6 +238,34 @@ export default function UserCard({
     if (!hasLocationPermission) return null;
     return formatDistance(user?.distanceMeters);
   }, [user?.distanceMeters, hasLocationPermission]);
+
+  // Generate quick info chips if not provided
+  const quickInfoChips = useMemo(() => {
+    if (user?.chips?.length > 0) return user.chips.slice(0, 3);
+    return generateQuickInfoChips(user || {});
+  }, [user]);
+
+  // Get top interests for preview (max 3)
+  const topInterests = useMemo(() => {
+    if (user?.topInterests?.length > 0) return user.topInterests.slice(0, 3);
+    if (user?.interests?.length > 0) {
+      return user.interests.slice(0, 3).map(interest => ({
+        label: typeof interest === 'string' ? interest : interest.label,
+        icon: getInterestIcon(typeof interest === 'string' ? interest : interest.label)
+      }));
+    }
+    return [];
+  }, [user]);
+
+  // Debug: Log user data to check what's being passed
+  if (process.env.NODE_ENV === 'development') {
+    console.log('UserCard Data:', {
+      liveStatus: user?.liveStatus,
+      primaryRole: user?.primaryRole,
+      topInterests: topInterests,
+      quickInfoChips: quickInfoChips,
+    });
+  }
 
   // Determine if we're on mobile
   const isMobile = useMemo(() => {
@@ -301,7 +405,7 @@ export default function UserCard({
           cursor: 'pointer',
         }}
       >
-        {/* Section A - PhotoBlock (72% height) - Scrollable vertically */}
+        {/* Section A - PhotoBlock (68% height) - Scrollable vertically */}
         <Box
           onDoubleClick={(e) => {
             e.stopPropagation();
@@ -309,7 +413,7 @@ export default function UserCard({
           }}
           sx={{
             position: 'relative',
-            height: '72%',
+            height: '68%',
             flexShrink: 0,
             overflowY: 'scroll',
             overflowX: 'hidden',
@@ -627,64 +731,125 @@ export default function UserCard({
 
         </Box>
 
-        {/* Section B - InfoBlock (28% height) */}
+        {/* Section B - InfoBlock (32% height) - Enhanced per new spec */}
         <Box
           sx={{
-            height: '28%',
+            height: '32%',
             p: 2,
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px',
+            gap: '6px',
+            overflow: 'hidden',
           }}
         >
-          {/* B1 - Human Context Line */}
-          <Typography
-            sx={{
-              fontSize: '15px',
-              fontWeight: 500,
-              color: '#1F2937',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              lineHeight: 1.4,
-            }}
-          >
-            {user.contextLine || t('lookingForConnections')}
-          </Typography>
+          {/* B1 - Live Status (if exists) - Max 60 chars, optional emoji */}
+          {user.liveStatus && (
+            <Typography
+              sx={{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#6C5CE7',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                lineHeight: 1.4,
+              }}
+            >
+              {user.liveStatus}
+            </Typography>
+          )}
 
-          {/* B2 - Smart Chips Row */}
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 1,
-              overflow: 'hidden',
-              flexWrap: 'nowrap',
-            }}
-          >
-            {(user.chips || []).slice(0, 3).map((chip, index) => (
-              <Chip
-                key={index}
-                label={chip.label || chip}
-                size="small"
-                sx={{
-                  height: '28px',
-                  borderRadius: '999px',
-                  px: '10px',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  backgroundColor: '#F3F4F6',
-                  color: '#4B5563',
-                  border: '1px solid #E5E7EB',
-                  flexShrink: 0,
-                  '& .MuiChip-label': {
-                    px: 0,
-                  },
-                }}
-              />
-            ))}
-          </Box>
+          {/* B2 - Primary Role (if exists) - Max 40 chars */}
+          {user.primaryRole && (
+            <Typography
+              sx={{
+                fontSize: '15px',
+                fontWeight: 600,
+                color: '#1F2937',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                lineHeight: 1.3,
+              }}
+            >
+              {user.primaryRole}
+            </Typography>
+          )}
 
-          {/* B3 - Action Hint (text only, no buttons) */}
+          {/* B3 - Quick Info Chips (max 3, auto-selected) */}
+          {quickInfoChips.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 1,
+                overflow: 'hidden',
+                flexWrap: 'nowrap',
+              }}
+            >
+              {quickInfoChips.map((chip, index) => (
+                <Chip
+                  key={index}
+                  label={chip.label || chip}
+                  size="small"
+                  sx={{
+                    height: '30px',
+                    borderRadius: '999px',
+                    px: '12px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    backgroundColor: '#FFA726',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    flexShrink: 0,
+                    '& .MuiChip-label': {
+                      px: 0,
+                    },
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+
+          {/* B4 - Top Interests Preview (max 3, space-dependent) */}
+          {topInterests.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 1.5,
+                overflow: 'hidden',
+                flexWrap: 'nowrap',
+                mt: 0.5,
+              }}
+            >
+              {topInterests.map((interest, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Typography sx={{ fontSize: '16px', lineHeight: 1 }}>
+                    {interest.icon}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#4B5563',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {interest.label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+
+          {/* B5 - Action Hint (text only, no buttons) */}
           <Box sx={{ mt: 'auto' }}>
             <Typography
               sx={{
@@ -1282,8 +1447,16 @@ const UserCardModelShape = PropTypes.shape({
   userId: PropTypes.string.isRequired,
   firstName: PropTypes.string.isRequired,
   age: PropTypes.number.isRequired,
-  distanceMeters: PropTypes.number, // nullable if no location permission
+  distanceMeters: PropTypes.number,
   primaryPhotoUrl: PropTypes.string.isRequired,
+  liveStatus: PropTypes.string,
+  primaryRole: PropTypes.string,
+  topInterests: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      icon: PropTypes.string,
+    })
+  ),
   contextLine: PropTypes.string,
   chips: PropTypes.arrayOf(
     PropTypes.oneOfType([
@@ -1294,6 +1467,9 @@ const UserCardModelShape = PropTypes.shape({
       }),
     ])
   ),
+  height: PropTypes.string,
+  drinking: PropTypes.string,
+  professionalField: PropTypes.string,
   isVerified: PropTypes.bool,
   safetyFlags: PropTypes.object,
 });

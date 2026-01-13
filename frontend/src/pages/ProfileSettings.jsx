@@ -30,6 +30,8 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
 import {
   ArrowLeft,
   Camera,
@@ -465,6 +467,7 @@ export default function ProfileSettings({ onBack }) {
         minHeight: "100vh",
         pb: `calc(${SAFE_BOTTOM} + 40px)`,
         backgroundColor: '#f8fafc',
+        position: 'relative',
       }}
     >
       {/* Main container */}
@@ -480,6 +483,7 @@ export default function ProfileSettings({ onBack }) {
           sx={{
             display: "flex",
             alignItems: "center",
+            justifyContent: "space-between",
             px: 2,
             py: 1.5,
             borderBottom: "1px solid rgba(0,0,0,0.05)",
@@ -489,12 +493,15 @@ export default function ProfileSettings({ onBack }) {
             backgroundColor: '#fff',
           }}
         >
-          <IconButton onClick={handleBack} sx={{ mr: 1 }}>
-            <ArrowLeft size={22} color="#1a1a2e" />
-          </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-            Edit Profile
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton onClick={handleBack}>
+              <ArrowLeft size={22} color="#1a1a2e" />
+            </IconButton>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+              Edit Profile
+            </Typography>
+          </Box>
+          <PageHelpButton {...getPageHelpContent('profile')} />
         </Box>
 
         {/* Profile Preview Card - shows how others see you */}

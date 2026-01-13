@@ -15,6 +15,8 @@ import {
   Button,
 } from '@mui/material';
 import { ArrowLeft, Calendar, MapPin, Users, Clock, Heart } from 'lucide-react';
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
 
 // Mock data for registered events
 const MY_EVENTS = [
@@ -83,6 +85,7 @@ const MyEventsScreen = () => {
         minHeight: '100vh',
         backgroundColor: '#fafbfc',
         pb: 'calc(88px + env(safe-area-inset-bottom, 0px))',
+        position: 'relative',
       }}
     >
       {/* Header */}
@@ -90,7 +93,7 @@ const MyEventsScreen = () => {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
+          justifyContent: 'space-between',
           px: 2,
           py: 2,
           backgroundColor: '#fff',
@@ -100,17 +103,18 @@ const MyEventsScreen = () => {
           zIndex: 10,
         }}
       >
-        <IconButton onClick={handleBack} sx={{ color: '#1a1a2e' }}>
-          <ArrowLeft size={22} />
-        </IconButton>
-        <Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton onClick={handleBack} sx={{ color: '#1a1a2e' }}>
+            <ArrowLeft size={22} />
+          </IconButton>
           <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
             My Events
           </Typography>
-          <Typography variant="caption" sx={{ color: '#64748b' }}>
-            {MY_EVENTS.length} events you're attending
-          </Typography>
         </Box>
+        <PageHelpButton {...getPageHelpContent('events')} />
+        <Typography variant="caption" sx={{ color: '#64748b' }}>
+          {MY_EVENTS.length} events you're attending
+        </Typography>
       </Box>
 
       {/* Events List */}

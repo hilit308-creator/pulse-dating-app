@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -18,28 +18,177 @@ import {
   DialogContent,
   DialogActions,
   MenuItem,
+  Avatar,
 } from '@mui/material';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Calendar, MapPin, Users, CreditCard, Target, Shield, Image as ImageIcon, Sparkles, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
 import { useEventForm } from '../store/eventForm';
+import { useNavigate } from 'react-router-dom';
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
+import { motion, AnimatePresence } from 'framer-motion';
 
-function Section({ title, subtitle, children }) {
+function Section({ title, subtitle, icon, children, isOpen, onToggle, isComplete, sectionNumber }) {
   return (
-    <Box sx={{ mb: 3 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>{title}</Typography>
-      {subtitle && (
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>{subtitle}</Typography>
-      )}
-      <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#fff', boxShadow: '0 6px 20px rgba(0,0,0,0.06)' }}>
-        {children}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: sectionNumber * 0.05 }}
+    >
+      <Box sx={{ mb: 2 }}>
+        {/* Section Header - Clickable */}
+        <Box
+          onClick={onToggle}
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1.5, 
+            mb: isOpen ? 1.5 : 0,
+            p: 2,
+            borderRadius: '16px',
+            bgcolor: isOpen ? 'rgba(108,92,231,0.04)' : '#fff',
+            border: isOpen ? '2px solid rgba(108,92,231,0.2)' : '1px solid rgba(0,0,0,0.05)',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: isOpen ? '0 4px 12px rgba(108,92,231,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 16px rgba(108,92,231,0.2)',
+              borderColor: 'rgba(108,92,231,0.3)',
+            }
+          }}
+        >
+          {/* Completion indicator */}
+          <Box sx={{ 
+            width: 32, 
+            height: 32, 
+            borderRadius: '8px', 
+            background: isComplete ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
+          }}>
+            {isComplete ? <CheckCircle2 size={18} color="#fff" /> : <Circle size={18} color="#64748b" />}
+          </Box>
+          
+          {icon && (
+            <Box sx={{ 
+              width: 36, 
+              height: 36, 
+              borderRadius: '10px', 
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: isOpen ? '0 4px 12px rgba(108,92,231,0.3)' : 'none',
+              transition: 'all 0.3s ease'
+            }}>
+              {icon}
+            </Box>
+          )}
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e' }}>{title}</Typography>
+            {subtitle && (
+              <Typography variant="caption" sx={{ color: '#64748b' }}>{subtitle}</Typography>
+            )}
+          </Box>
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChevronDown size={20} color="#6C5CE7" />
+          </motion.div>
+        </Box>
+        
+        {/* Section Content - Collapsible */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              style={{ overflow: 'hidden' }}
+            >
+              <Box sx={{ 
+                p: 2.5, 
+                mt: 1.5,
+                borderRadius: '16px', 
+                bgcolor: '#fff', 
+                border: '1px solid rgba(0,0,0,0.05)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              }}>
+                {children}
+              </Box>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Box>
-    </Box>
+    </motion.div>
   );
 }
 
 export default function AddEvent() {
+  const navigate = useNavigate();
   const form = useEventForm();
   const [errors, setErrors] = useState({});
   const [showPreview, setShowPreview] = useState(false);
+  
+  // Accordion state - track which section is open
+  const [openSection, setOpenSection] = useState('basic');
+  
+  // Section completion tracking
+  const [completedSections, setCompletedSections] = useState({
+    basic: false,
+    time: false,
+    capacity: false,
+    tickets: false,
+    payments: false,
+    audience: false,
+    policies: false,
+  });
+  
+  // Auto-advance to next section when current is complete
+  useEffect(() => {
+    const checkCompletion = () => {
+      const newCompleted = { ...completedSections };
+      
+      // Check basic info
+      newCompleted.basic = form.basic.title.length > 0 && form.basic.shortDescription.length > 0;
+      
+      // Check time & location
+      newCompleted.time = form.schedule.startAt && (form.schedule.locationText || form.schedule.onlineLink);
+      
+      // Check capacity
+      newCompleted.capacity = form.capacity.maxCapacity > 0;
+      
+      // Check tickets (at least one ticket if paid)
+      newCompleted.tickets = form.capacity.registrationType === 'free' || form.tickets.length > 0;
+      
+      // Check payments
+      newCompleted.payments = form.payments.methods.length > 0;
+      
+      // Check audience
+      newCompleted.audience = true; // Optional section
+      
+      // Check policies
+      newCompleted.policies = true; // Optional section
+      
+      setCompletedSections(newCompleted);
+    };
+    
+    checkCompletion();
+  }, [form, completedSections]);
+  
+  const toggleSection = (section) => {
+    setOpenSection(openSection === section ? '' : section);
+  };
+  
+  const overallProgress = useMemo(() => {
+    const completed = Object.values(completedSections).filter(Boolean).length;
+    const total = Object.keys(completedSections).length;
+    return Math.round((completed / total) * 100);
+  }, [completedSections]);
 
   const capacityLeft = useMemo(() => {
     const sum = form.tickets.reduce((s, t) => s + Number(t.inventory || 0), 0);
@@ -53,14 +202,136 @@ export default function AddEvent() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f7f7f8', pb: 10 }}>
-      <Box sx={{ position: 'sticky', top: 0, zIndex: 10, bgcolor: '#f7f7f8', pt: 1, pb: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, textAlign: 'center' }}>Add Event</Typography>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', pb: 'calc(88px + env(safe-area-inset-bottom, 0px))' }}>
+      {/* Help Button */}
+      <PageHelpButton {...getPageHelpContent('events')} />
+      
+      {/* Header */}
+      <Box sx={{ 
+        position: 'sticky', 
+        top: 0, 
+        zIndex: 10, 
+        bgcolor: '#fff', 
+        borderBottom: '1px solid rgba(0,0,0,0.05)',
+        px: 2,
+        py: 1.5
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', maxWidth: 720, mx: 'auto' }}>
+          <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }}>
+            <ArrowLeft size={22} color="#1a1a2e" />
+          </IconButton>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>Create Event</Typography>
+        </Box>
+      </Box>
+
+      {/* Hero Section with Progress */}
+      <Box sx={{ px: 2, pt: 3, pb: 2, maxWidth: 720, mx: 'auto' }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              borderRadius: '20px',
+              p: 3,
+              color: '#fff',
+              position: 'relative',
+              overflow: 'hidden',
+              mb: 3,
+            }}
+          >
+            {/* Animated decorative elements */}
+            <motion.div
+              animate={{ 
+                scale: [1, 1.2, 1],
+                opacity: [0.1, 0.15, 0.1]
+              }}
+              transition={{ duration: 4, repeat: Infinity }}
+              style={{ position: 'absolute', top: -30, right: -30 }}
+            >
+              <Box sx={{ 
+                width: 100, 
+                height: 100, 
+                borderRadius: '50%', 
+                backgroundColor: 'rgba(255,255,255,0.1)' 
+              }} />
+            </motion.div>
+            <motion.div
+              animate={{ 
+                scale: [1, 1.3, 1],
+                opacity: [0.08, 0.12, 0.08]
+              }}
+              transition={{ duration: 3, repeat: Infinity, delay: 1 }}
+              style={{ position: 'absolute', bottom: -20, left: -20 }}
+            >
+              <Box sx={{ 
+                width: 60, 
+                height: 60, 
+                borderRadius: '50%', 
+                backgroundColor: 'rgba(255,255,255,0.08)' 
+              }} />
+            </motion.div>
+            
+            <Box sx={{ position: 'relative', zIndex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                >
+                  <Sparkles size={24} />
+                </motion.div>
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>Create Your Event</Typography>
+              </Box>
+              <Typography variant="body2" sx={{ opacity: 0.9, maxWidth: 500, mb: 2 }}>
+                Share your passion, bring people together, and create memorable experiences
+              </Typography>
+              
+              {/* Progress Bar */}
+              <Box sx={{ mt: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 600 }}>
+                    Overall Progress
+                  </Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 700 }}>
+                    {overallProgress}%
+                  </Typography>
+                </Box>
+                <Box sx={{ 
+                  height: 8, 
+                  borderRadius: 999, 
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  overflow: 'hidden',
+                }}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${overallProgress}%` }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                    style={{
+                      height: '100%',
+                      background: 'linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.8) 100%)',
+                      borderRadius: 999,
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        </motion.div>
       </Box>
 
       <Box sx={{ px: 2, pt: 1, maxWidth: 720, mx: 'auto' }}>
         {/* Basic Info */}
-        <Section title="Basic Info" subtitle="Name, descriptions, tags, cover image">
+        <Section 
+          title="Basic Info" 
+          subtitle="Name, descriptions, tags, cover image"
+          icon={<Sparkles size={18} color="#fff" />}
+          isOpen={openSection === 'basic'}
+          onToggle={() => toggleSection('basic')}
+          isComplete={completedSections.basic}
+          sectionNumber={0}
+        >
           <Stack spacing={2}>
             <TextField
               label="Event Name"
@@ -163,7 +434,15 @@ export default function AddEvent() {
         </Section>
 
         {/* Time & Location */}
-        <Section title="Time & Location" subtitle="Dates, address or online link, rules">
+        <Section 
+          title="Time & Location" 
+          subtitle="Dates, address or online link, rules"
+          icon={<Calendar size={18} color="#fff" />}
+          isOpen={openSection === 'time'}
+          onToggle={() => toggleSection('time')}
+          isComplete={completedSections.time}
+          sectionNumber={1}
+        >
           <Stack spacing={2}>
             <TextField
               label="Timezone"
@@ -215,7 +494,15 @@ export default function AddEvent() {
         </Section>
 
         {/* Capacity & Registration */}
-        <Section title="Capacity & Registration" subtitle="Max capacity, counters, free/paid/donation, deadline">
+        <Section 
+          title="Capacity & Registration" 
+          subtitle="Max capacity, counters, free/paid/donation, deadline"
+          icon={<Users size={18} color="#fff" />}
+          isOpen={openSection === 'capacity'}
+          onToggle={() => toggleSection('capacity')}
+          isComplete={completedSections.capacity}
+          sectionNumber={2}
+        >
           <Stack spacing={2}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField
@@ -237,6 +524,25 @@ export default function AddEvent() {
               value={form.capacity.registrationType}
               onChange={(_, v) => v && form.setField('capacity', 'registrationType', v)}
               size="small"
+              sx={{
+                '& .MuiToggleButton-root': {
+                  borderRadius: '10px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  px: 2.5,
+                  py: 1,
+                  border: '1px solid #e2e8f0',
+                  color: '#64748b',
+                  '&.Mui-selected': {
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
+                    }
+                  }
+                }
+              }}
             >
               <ToggleButton value="free">Free</ToggleButton>
               <ToggleButton value="paid">Paid</ToggleButton>
@@ -254,10 +560,24 @@ export default function AddEvent() {
         </Section>
 
         {/* Tickets & Pricing */}
-        <Section title="Tickets & Pricing" subtitle={`Inventory vs Capacity left: ${capacityLeft}`}>
+        <Section 
+          title="Tickets & Pricing" 
+          subtitle={`Inventory vs Capacity left: ${capacityLeft}`}
+          icon={<CreditCard size={18} color="#fff" />}
+          isOpen={openSection === 'tickets'}
+          onToggle={() => toggleSection('tickets')}
+          isComplete={completedSections.tickets}
+          sectionNumber={3}
+        >
           <Stack spacing={2}>
             {form.tickets.map((t) => (
-              <Box key={t.id} sx={{ p: 2, borderRadius: 2, border: '1px solid #eee' }}>
+              <Box key={t.id} sx={{ 
+                p: 2.5, 
+                borderRadius: '14px', 
+                border: '1px solid rgba(0,0,0,0.08)',
+                bgcolor: '#f8fafc',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+              }}>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
                   <TextField label="Ticket name" value={t.name} onChange={(e) => form.updateTicket(t.id, { name: e.target.value })} sx={{ flex: 2 }} />
                   <TextField
@@ -295,17 +615,62 @@ export default function AddEvent() {
                 </Stack>
               </Box>
             ))}
-            <Button startIcon={<Plus />} variant="outlined" onClick={form.addTicket}>Add ticket tier</Button>
+            <Button 
+              startIcon={<Plus />} 
+              variant="outlined" 
+              onClick={form.addTicket}
+              sx={{
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: '#e2e8f0',
+                color: '#6C5CE7',
+                py: 1.25,
+                '&:hover': {
+                  borderColor: '#6C5CE7',
+                  bgcolor: 'rgba(108,92,231,0.04)'
+                }
+              }}
+            >
+              Add ticket tier
+            </Button>
           </Stack>
         </Section>
 
         {/* Payments */}
-        <Section title="Payments" subtitle="Choose methods, Bit info, external receipts">
+        <Section 
+          title="Payments" 
+          subtitle="Choose methods, Bit info, external receipts"
+          icon={<CreditCard size={18} color="#fff" />}
+          isOpen={openSection === 'payments'}
+          onToggle={() => toggleSection('payments')}
+          isComplete={completedSections.payments}
+          sectionNumber={4}
+        >
           <Stack spacing={2}>
             <ToggleButtonGroup
               value={form.payments.methods}
               onChange={(_, v) => v && form.setField('payments', 'methods', v)}
               size="small"
+              sx={{
+                '& .MuiToggleButton-root': {
+                  borderRadius: '10px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  px: 2.5,
+                  py: 1,
+                  border: '1px solid #e2e8f0',
+                  color: '#64748b',
+                  '&.Mui-selected': {
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
+                    }
+                  }
+                }
+              }}
             >
               <ToggleButton value="in_app">In-App</ToggleButton>
               <ToggleButton value="bit">Bit</ToggleButton>
@@ -322,7 +687,15 @@ export default function AddEvent() {
         </Section>
 
         {/* Audience */}
-        <Section title="Audience Preferences" subtitle="Recommended age, gender filter, photo verification">
+        <Section 
+          title="Audience Preferences" 
+          subtitle="Recommended age, gender filter, photo verification"
+          icon={<Target size={18} color="#fff" />}
+          isOpen={openSection === 'audience'}
+          onToggle={() => toggleSection('audience')}
+          isComplete={completedSections.audience}
+          sectionNumber={5}
+        >
           <Stack spacing={2}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField label="Min Age" type="number" value={form.audience.recommendedAge[0]} onChange={(e) => form.setField('audience', 'recommendedAge', [Number(e.target.value), form.audience.recommendedAge[1]])} sx={{ flex: 1 }} />
@@ -339,53 +712,161 @@ export default function AddEvent() {
         </Section>
 
         {/* Policies */}
-        <Section title="Policies & Safety" subtitle="Community rules, emergency contact">
+        <Section 
+          title="Policies & Safety" 
+          subtitle="Community rules, emergency contact"
+          icon={<Shield size={18} color="#fff" />}
+          isOpen={openSection === 'policies'}
+          onToggle={() => toggleSection('policies')}
+          isComplete={completedSections.policies}
+          sectionNumber={6}
+        >
           <Stack spacing={2}>
             <TextField label="Community rules" value={form.policies.communityRules} onChange={(e) => form.setField('policies', 'communityRules', e.target.value)} multiline minRows={2} fullWidth />
             <TextField label="Emergency contact" value={form.policies.emergencyContact} onChange={(e) => form.setField('policies', 'emergencyContact', e.target.value)} fullWidth />
           </Stack>
         </Section>
 
-        <Divider sx={{ my: 3 }} />
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>Drafts auto‑save locally. You can publish once required fields are valid.</Typography>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Box sx={{ 
+            p: 2.5, 
+            borderRadius: '14px', 
+            bgcolor: 'rgba(108,92,231,0.06)',
+            border: '1px solid rgba(108,92,231,0.12)',
+            mb: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            justifyContent: 'center'
+          }}>
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Typography sx={{ fontSize: 20 }}>💾</Typography>
+            </motion.div>
+            <Typography variant="body2" sx={{ color: '#64748b' }}>
+              Drafts auto-save locally. You can publish once required fields are valid.
+            </Typography>
+          </Box>
+        </motion.div>
       </Box>
 
       {/* Sticky Bottom Bar */}
-      <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, bgcolor: '#fff', borderTop: '1px solid #eee', p: 1 }}>
-        <Stack direction="row" spacing={1} justifyContent="center">
-          <Button variant="outlined" onClick={() => setShowPreview(true)}>Preview</Button>
-          <Button variant="contained" onClick={() => validateAnd(() => alert('Ready to publish (mock).'))}>Publish</Button>
+      <Box sx={{ 
+        position: 'fixed', 
+        bottom: 0, 
+        left: 0, 
+        right: 0, 
+        bgcolor: '#fff', 
+        borderTop: '1px solid rgba(0,0,0,0.08)',
+        p: 2,
+        boxShadow: '0 -4px 12px rgba(0,0,0,0.05)'
+      }}>
+        <Stack direction="row" spacing={2} justifyContent="center" sx={{ maxWidth: 720, mx: 'auto' }}>
+          <Button 
+            variant="outlined" 
+            onClick={() => setShowPreview(true)}
+            sx={{
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 4,
+              py: 1.25,
+              borderColor: '#e2e8f0',
+              color: '#64748b',
+              '&:hover': {
+                borderColor: '#6C5CE7',
+                color: '#6C5CE7',
+                bgcolor: 'rgba(108,92,231,0.04)'
+              }
+            }}
+          >
+            Preview
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={() => validateAnd(() => alert('Ready to publish (mock).'))}
+            sx={{
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 4,
+              py: 1.25,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              boxShadow: '0 4px 12px rgba(108,92,231,0.3)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
+                boxShadow: '0 6px 16px rgba(108,92,231,0.4)'
+              }
+            }}
+          >
+            Publish Event
+          </Button>
         </Stack>
       </Box>
 
       {/* Preview Dialog (lightweight) */}
-      <Dialog open={showPreview} onClose={() => setShowPreview(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Preview</DialogTitle>
-        <DialogContent dividers>
-          <Typography variant="h6" sx={{ fontWeight: 800 }}>{form.basic.title || 'Untitled event'}</Typography>
+      <Dialog 
+        open={showPreview} 
+        onClose={() => setShowPreview(false)} 
+        fullWidth 
+        maxWidth="sm"
+        PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, color: '#1a1a2e' }}>Event Preview</DialogTitle>
+        <DialogContent dividers sx={{ px: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1 }}>{form.basic.title || 'Untitled event'}</Typography>
           <Typography sx={{ color: 'text.secondary', mb: 1 }}>{form.basic.shortDescription}</Typography>
           {form.basic.coverUrl && (
-            <Box sx={{ borderRadius: 2, overflow: 'hidden', mb: 1 }}>
+            <Box sx={{ borderRadius: '16px', overflow: 'hidden', mb: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
               <img src={form.basic.coverUrl} alt="cover" style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover' }} />
             </Box>
           )}
-          <Typography variant="subtitle2">Time</Typography>
-          <Typography sx={{ mb: 1 }}>{form.schedule.startAt || '—'} → {form.schedule.endAt || '—'} ({form.schedule.timezone})</Typography>
-          <Typography variant="subtitle2">Location</Typography>
-          <Typography sx={{ mb: 1 }}>{form.schedule.isOnline ? form.schedule.onlineLink || '—' : form.schedule.locationText || '—'}</Typography>
-          <Typography variant="subtitle2">Tickets</Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>Time</Typography>
+          <Typography sx={{ mb: 2, color: '#64748b' }}>{form.schedule.startAt || '—'} → {form.schedule.endAt || '—'} ({form.schedule.timezone})</Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>Location</Typography>
+          <Typography sx={{ mb: 2, color: '#64748b' }}>{form.schedule.isOnline ? form.schedule.onlineLink || '—' : form.schedule.locationText || '—'}</Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>Tickets</Typography>
           <Stack spacing={1} sx={{ mt: 1 }}>
             {form.tickets.length === 0 && <Typography variant="body2">No tickets added.</Typography>}
             {form.tickets.map((t) => (
-              <Box key={t.id} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography>{t.name} × {t.inventory}</Typography>
-                <Typography>₪{Number(t.price || 0).toFixed(2)}</Typography>
+              <Box key={t.id} sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                p: 1.5,
+                borderRadius: '10px',
+                bgcolor: '#f8fafc',
+                border: '1px solid rgba(0,0,0,0.05)'
+              }}>
+                <Typography sx={{ color: '#1a1a2e', fontWeight: 500 }}>{t.name} × {t.inventory}</Typography>
+                <Typography sx={{ color: '#6C5CE7', fontWeight: 700 }}>₪{Number(t.price || 0).toFixed(2)}</Typography>
               </Box>
             ))}
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowPreview(false)}>Close</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button 
+            onClick={() => setShowPreview(false)}
+            fullWidth
+            sx={{
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              py: 1.25,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              color: '#fff',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)'
+              }
+            }}
+          >
+            Close Preview
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

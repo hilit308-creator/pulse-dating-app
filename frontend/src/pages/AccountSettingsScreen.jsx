@@ -82,6 +82,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount, apiCall } from '../services/authApi';
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
 
 // Analytics helper
 const trackEvent = (eventName, params = {}) => {
@@ -285,8 +287,11 @@ const AccountSettingsScreen = () => {
         flexDirection: 'column',
         backgroundColor: '#ffffff',
         pb: 4,
+        position: 'relative',
       }}
     >
+      {/* Help Button */}
+      <PageHelpButton {...getPageHelpContent('settings')} />
       {/* Header */}
       <Box
         sx={{

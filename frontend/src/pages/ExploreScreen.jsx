@@ -45,6 +45,8 @@ import {
   Flower2,
 } from "lucide-react";
 import { useLanguage } from '../context/LanguageContext';
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
 
 /* =========================
    Constants
@@ -123,29 +125,29 @@ const GESTURE_TYPES = [
     id: 'coffee',
     label: 'Send Coffee',
     icon: Coffee,
-    gradient: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)',
-    shadowColor: 'rgba(255, 107, 107, 0.4)',
+    gradient: 'linear-gradient(135deg, #6C5CE7 0%, #8b7bea 100%)',
+    shadowColor: 'rgba(108, 92, 231, 0.4)',
   },
   {
     id: 'flower',
     label: 'Send Flower',
     icon: Flower2,
-    gradient: 'linear-gradient(135deg, #a855f7 0%, #c084fc 100%)',
-    shadowColor: 'rgba(168, 85, 247, 0.4)',
+    gradient: 'linear-gradient(135deg, #6C5CE7 0%, #8b7bea 100%)',
+    shadowColor: 'rgba(108, 92, 231, 0.4)',
   },
   {
     id: 'note',
     label: 'Send Note',
     icon: Gift,
-    gradient: 'linear-gradient(135deg, #6C5CE7 0%, #a78bfa 100%)',
+    gradient: 'linear-gradient(135deg, #6C5CE7 0%, #8b7bea 100%)',
     shadowColor: 'rgba(108, 92, 231, 0.4)',
   },
   {
     id: 'hi',
     label: 'Say Hi',
     icon: MessageCircle,
-    gradient: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-    shadowColor: 'rgba(16, 185, 129, 0.4)',
+    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+    shadowColor: 'rgba(139, 92, 246, 0.4)',
   },
 ];
 
@@ -340,7 +342,7 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
               label="Perk"
               size="small"
               sx={{
-                bgcolor: 'rgba(16,185,129,0.9)',
+                bgcolor: 'rgba(108,92,231,0.9)',
                 color: '#fff',
                 fontWeight: 700,
                 fontSize: '0.7rem',
@@ -456,14 +458,14 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
               sx={{
                 mt: 1.5,
                 p: 1.5,
-                bgcolor: 'rgba(16,185,129,0.08)',
+                bgcolor: 'rgba(108,92,231,0.08)',
                 borderRadius: '12px',
-                border: '1px solid rgba(16,185,129,0.2)',
+                border: '1px solid rgba(108,92,231,0.2)',
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                <Gift size={16} color="#10b981" />
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#10b981' }}>
+                <Gift size={16} color="#6C5CE7" />
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#6C5CE7' }}>
                   {place.benefit.title}
                 </Typography>
               </Box>
@@ -500,11 +502,11 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
                 borderRadius: '12px',
                 textTransform: 'none',
                 fontWeight: 600,
-                borderColor: '#10b981',
-                color: '#10b981',
+                borderColor: '#6C5CE7',
+                color: '#6C5CE7',
                 '&:hover': {
-                  borderColor: '#059669',
-                  bgcolor: 'rgba(16,185,129,0.08)',
+                  borderColor: '#5b4cdb',
+                  bgcolor: 'rgba(108,92,231,0.08)',
                 },
               }}
             >
@@ -615,7 +617,7 @@ function BenefitsDialog({ open, onClose, place }) {
       {/* Header */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
           p: 3,
           textAlign: 'center',
           color: '#fff',
@@ -693,8 +695,8 @@ function BenefitsDialog({ open, onClose, place }) {
             borderRadius: '12px',
             textTransform: 'none',
             fontWeight: 700,
-            bgcolor: '#10b981',
-            '&:hover': { bgcolor: '#059669' },
+            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            '&:hover': { background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)' },
           }}
         >
           Scan to Redeem
@@ -708,13 +710,23 @@ function BenefitsDialog({ open, onClose, place }) {
 /* =========================
    Sweet Gestures Section
    ========================= */
-function SweetGesturesSection({ people, onSendGesture }) {
+function SweetGesturesSection({ people, onSendGesture, onSeeMore }) {
+  const [showAll, setShowAll] = React.useState(false);
+  const displayedPeople = showAll ? people : people.slice(0, 3);
+  
+  const handleSeeMore = () => {
+    setShowAll(true);
+    if (onSeeMore) {
+      onSeeMore();
+    }
+  };
+  
   return (
     <Box
       sx={{
         mb: 3,
         p: 2.5,
-        background: 'linear-gradient(135deg, rgba(255,107,107,0.08) 0%, rgba(168,85,247,0.08) 50%, rgba(108,92,231,0.08) 100%)',
+        background: 'linear-gradient(135deg, rgba(108,92,231,0.08) 0%, rgba(168,85,247,0.08) 100%)',
         borderRadius: '24px',
         border: '1px solid rgba(108,92,231,0.12)',
       }}
@@ -727,7 +739,7 @@ function SweetGesturesSection({ people, onSendGesture }) {
               width: 40,
               height: 40,
               borderRadius: '12px',
-              background: 'linear-gradient(135deg, #FF6B6B 0%, #a855f7 100%)',
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -748,8 +760,8 @@ function SweetGesturesSection({ people, onSendGesture }) {
           label="New"
           size="small"
           sx={{
-            bgcolor: 'rgba(255,107,107,0.15)',
-            color: '#FF6B6B',
+            bgcolor: 'rgba(108,92,231,0.15)',
+            color: '#6C5CE7',
             fontWeight: 700,
             fontSize: '0.65rem',
           }}
@@ -758,7 +770,7 @@ function SweetGesturesSection({ people, onSendGesture }) {
 
       {/* People List */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {people.map((person, index) => (
+        {displayedPeople.map((person, index) => (
           <motion.div
             key={person.id}
             initial={{ opacity: 0, x: -20 }}
@@ -867,32 +879,267 @@ function SweetGesturesSection({ people, onSendGesture }) {
       </Box>
 
       {/* View More */}
-      <Button
-        fullWidth
-        endIcon={<ChevronRight size={18} />}
-        sx={{
-          mt: 2,
-          py: 1.25,
-          borderRadius: '12px',
-          textTransform: 'none',
-          fontWeight: 600,
-          color: '#6C5CE7',
-          bgcolor: 'rgba(108,92,231,0.08)',
-          '&:hover': {
-            bgcolor: 'rgba(108,92,231,0.15)',
-          },
-        }}
-      >
-        See more people nearby
-      </Button>
+      {!showAll && people.length > 3 && (
+        <Button
+          fullWidth
+          onClick={handleSeeMore}
+          endIcon={<ChevronRight size={18} />}
+          sx={{
+            mt: 2,
+            py: 1.25,
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontWeight: 600,
+            color: '#6C5CE7',
+            bgcolor: 'rgba(108,92,231,0.08)',
+            '&:hover': {
+              bgcolor: 'rgba(108,92,231,0.15)',
+            },
+          }}
+        >
+          See more people nearby
+        </Button>
+      )}
     </Box>
+  );
+}
+
+/* =========================
+   Coffee Selection Dialog
+   ========================= */
+function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
+  const [selectedCafe, setSelectedCafe] = React.useState(null);
+  const [selectedDrink, setSelectedDrink] = React.useState(null);
+
+  // Nearby cafes
+  const nearbyCafes = [
+    { id: 1, name: 'Cafe Nordoy', distance: '150m', image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=200&q=80' },
+    { id: 2, name: 'Cafelix', distance: '320m', image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=200&q=80' },
+    { id: 3, name: 'Spicehaus', distance: '450m', image: 'https://images.unsplash.com/photo-1559329007-40df8a9345d8?auto=format&fit=crop&w=200&q=80' },
+  ];
+
+  // Popular drinks
+  const drinks = [
+    { id: 1, name: 'Espresso', icon: '☕', price: '₪12' },
+    { id: 2, name: 'Cappuccino', icon: '☕', price: '₪16' },
+    { id: 3, name: 'Latte', icon: '🥛', price: '₪18' },
+    { id: 4, name: 'Americano', icon: '☕', price: '₪14' },
+    { id: 5, name: 'Iced Coffee', icon: '🧊', price: '₪16' },
+    { id: 6, name: 'Flat White', icon: '☕', price: '₪17' },
+  ];
+
+  const handleConfirm = () => {
+    if (selectedCafe && selectedDrink) {
+      onConfirm({ cafe: selectedCafe, drink: selectedDrink });
+      setSelectedCafe(null);
+      setSelectedDrink(null);
+    }
+  };
+
+  const handleClose = () => {
+    setSelectedCafe(null);
+    setSelectedDrink(null);
+    onClose();
+  };
+
+  if (!person) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      PaperProps={{
+        sx: {
+          borderRadius: '28px',
+          maxWidth: 420,
+          width: '100%',
+          maxHeight: '85vh',
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Coffee size={24} color="#fff" />
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+              Send Coffee to {person.name}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b' }}>
+              Choose a cafe and drink
+            </Typography>
+          </Box>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent sx={{ px: 3 }}>
+        {/* Select Cafe */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1.5 }}>
+            Choose a nearby cafe
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {nearbyCafes.map((cafe) => (
+              <Box
+                key={cafe.id}
+                onClick={() => setSelectedCafe(cafe)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  p: 1.5,
+                  borderRadius: '16px',
+                  border: '2px solid',
+                  borderColor: selectedCafe?.id === cafe.id ? '#6C5CE7' : 'rgba(0,0,0,0.08)',
+                  bgcolor: selectedCafe?.id === cafe.id ? 'rgba(108,92,231,0.05)' : '#fff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: selectedCafe?.id === cafe.id ? '#6C5CE7' : 'rgba(0,0,0,0.15)',
+                    bgcolor: selectedCafe?.id === cafe.id ? 'rgba(108,92,231,0.08)' : 'rgba(0,0,0,0.02)',
+                  },
+                }}
+              >
+                <Box
+                  component="img"
+                  src={cafe.image}
+                  alt={cafe.name}
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '12px',
+                    objectFit: 'cover',
+                  }}
+                />
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                    {cafe.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <MapPin size={12} color="#64748b" />
+                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                      {cafe.distance} away
+                    </Typography>
+                  </Box>
+                </Box>
+                {selectedCafe?.id === cafe.id && (
+                  <Box
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      bgcolor: '#6C5CE7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography sx={{ color: '#fff', fontSize: '14px' }}>✓</Typography>
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Select Drink */}
+        <Box>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1.5 }}>
+            Choose a drink
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+            {drinks.map((drink) => (
+              <Box
+                key={drink.id}
+                onClick={() => setSelectedDrink(drink)}
+                sx={{
+                  p: 1.5,
+                  borderRadius: '14px',
+                  border: '2px solid',
+                  borderColor: selectedDrink?.id === drink.id ? '#6C5CE7' : 'rgba(0,0,0,0.08)',
+                  bgcolor: selectedDrink?.id === drink.id ? 'rgba(108,92,231,0.05)' : '#fff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'center',
+                  '&:hover': {
+                    borderColor: selectedDrink?.id === drink.id ? '#6C5CE7' : 'rgba(0,0,0,0.15)',
+                    bgcolor: selectedDrink?.id === drink.id ? 'rgba(108,92,231,0.08)' : 'rgba(0,0,0,0.02)',
+                  },
+                }}
+              >
+                <Typography sx={{ fontSize: '28px', mb: 0.5 }}>{drink.icon}</Typography>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block' }}>
+                  {drink.name}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>
+                  {drink.price}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 1 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={handleClose}
+          sx={{
+            py: 1.5,
+            borderRadius: '14px',
+            textTransform: 'none',
+            fontWeight: 600,
+            borderColor: 'rgba(0,0,0,0.12)',
+            color: '#64748b',
+            '&:hover': {
+              borderColor: 'rgba(0,0,0,0.2)',
+              bgcolor: 'rgba(0,0,0,0.02)',
+            },
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleConfirm}
+          disabled={!selectedCafe || !selectedDrink}
+          sx={{
+            py: 1.5,
+            borderRadius: '14px',
+            textTransform: 'none',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            boxShadow: '0 4px 16px rgba(108, 92, 231, 0.4)',
+            '&:disabled': {
+              background: 'rgba(0,0,0,0.12)',
+              color: 'rgba(0,0,0,0.26)',
+            },
+          }}
+        >
+          Send Coffee ☕
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
 /* =========================
    Gesture Sent Dialog
    ========================= */
-function GestureSentDialog({ open, onClose, person, gesture }) {
+function GestureSentDialog({ open, onClose, person, gesture, coffeeDetails }) {
   if (!person || !gesture) return null;
 
   const Icon = gesture.icon;
@@ -1007,6 +1254,27 @@ function GestureSentDialog({ open, onClose, person, gesture }) {
           </Box>
         </Box>
 
+        {coffeeDetails && (
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: '16px',
+              bgcolor: 'rgba(108,92,231,0.08)',
+              border: '1px solid rgba(108,92,231,0.15)',
+              mb: 2,
+            }}
+          >
+            <Typography variant="caption" sx={{ color: '#6C5CE7', fontWeight: 700, display: 'block', mb: 0.5 }}>
+              Your Coffee Invitation
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#1a1a2e', fontWeight: 600 }}>
+              {coffeeDetails.drink.name} at {coffeeDetails.cafe.name}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b' }}>
+              {coffeeDetails.cafe.distance} away
+            </Typography>
+          </Box>
+        )}
         <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>
           {person.name} will receive your sweet gesture and can choose to respond. Keep your fingers crossed! 🤞
         </Typography>
@@ -1054,6 +1322,8 @@ export default function ExploreScreen() {
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [selectedGesture, setSelectedGesture] = useState(null);
   const [showGestureDialog, setShowGestureDialog] = useState(false);
+  const [showCoffeeDialog, setShowCoffeeDialog] = useState(false);
+  const [coffeeDetails, setCoffeeDetails] = useState(null);
 
   // Simulate loading
   React.useEffect(() => {
@@ -1120,6 +1390,20 @@ export default function ExploreScreen() {
   const handleSendGesture = useCallback((person, gesture) => {
     setSelectedPerson(person);
     setSelectedGesture(gesture);
+    
+    // If it's coffee gesture, show coffee selection dialog first
+    if (gesture.id === 'coffee') {
+      setShowCoffeeDialog(true);
+    } else {
+      // For other gestures, show sent dialog directly
+      setShowGestureDialog(true);
+    }
+  }, []);
+
+  // Handle coffee selection confirmation
+  const handleCoffeeConfirm = useCallback((details) => {
+    setCoffeeDetails(details);
+    setShowCoffeeDialog(false);
     setShowGestureDialog(true);
   }, []);
 
@@ -1151,26 +1435,20 @@ export default function ExploreScreen() {
         flexDirection: 'column',
         backgroundColor: '#fafbfc',
         pb: SAFE_BOTTOM,
+        position: 'relative',
       }}
     >
       {/* Header */}
-      <Box
-        sx={{
-          px: 3,
-          pt: 3,
-          pb: 2,
-          backgroundColor: '#fff',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-        }}
-      >
-        <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 0.5 }}>
-          {t('explore')}
-        </Typography>
-        <Typography variant="body1" sx={{ color: '#64748b' }}>
-          Places worth stepping into
-        </Typography>
+      <Box sx={{ px: 3, pt: 3, pb: 2, backgroundColor: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 0.5 }}>
+            {t('explore')}
+          </Typography>
+          <Typography variant="body1" sx={{ color: '#64748b' }}>
+            Places worth stepping into
+          </Typography>
+        </Box>
+        <PageHelpButton {...getPageHelpContent('explore')} />
       </Box>
 
       {/* Filter Chips - Sticky */}
@@ -1219,12 +1497,6 @@ export default function ExploreScreen() {
 
       {/* Places Feed */}
       <Box sx={{ flex: 1, px: 3, py: 2 }}>
-        {/* Sweet Gestures Section */}
-        <SweetGesturesSection 
-          people={NEARBY_PEOPLE} 
-          onSendGesture={handleSendGesture} 
-        />
-
         {/* Results count */}
         <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
           {sortedPlaces.length} places {activeFilter !== 'all' && `in ${activeFilter.replace('-', ' ')}`}
@@ -1232,16 +1504,24 @@ export default function ExploreScreen() {
 
         {/* Place Cards - No infinite scroll */}
         <AnimatePresence mode="popLayout">
-          {sortedPlaces.map((place) => (
-            <PlaceCard
-              key={place.id}
-              place={place}
-              onViewPlace={handleViewPlace}
-              onSave={handleSave}
-              onScanQR={handleScanQR}
-              onSeeBenefits={handleSeeBenefits}
-              isSaved={savedPlaces.includes(place.id)}
-            />
+          {sortedPlaces.map((place, index) => (
+            <React.Fragment key={place.id}>
+              <PlaceCard
+                place={place}
+                onViewPlace={handleViewPlace}
+                onSave={handleSave}
+                onScanQR={handleScanQR}
+                onSeeBenefits={handleSeeBenefits}
+                isSaved={savedPlaces.includes(place.id)}
+              />
+              {/* Sweet Gestures Section - appears after 3rd place */}
+              {index === 2 && (
+                <SweetGesturesSection 
+                  people={NEARBY_PEOPLE} 
+                  onSendGesture={handleSendGesture} 
+                />
+              )}
+            </React.Fragment>
           ))}
         </AnimatePresence>
 
@@ -1285,12 +1565,24 @@ export default function ExploreScreen() {
         place={selectedPlace}
       />
 
+      {/* Coffee Selection Dialog */}
+      <CoffeeSelectionDialog
+        open={showCoffeeDialog}
+        onClose={() => setShowCoffeeDialog(false)}
+        person={selectedPerson}
+        onConfirm={handleCoffeeConfirm}
+      />
+
       {/* Gesture Sent Dialog */}
       <GestureSentDialog
         open={showGestureDialog}
-        onClose={() => setShowGestureDialog(false)}
+        onClose={() => {
+          setShowGestureDialog(false);
+          setCoffeeDetails(null);
+        }}
         person={selectedPerson}
         gesture={selectedGesture}
+        coffeeDetails={coffeeDetails}
       />
 
       {/* Toast */}

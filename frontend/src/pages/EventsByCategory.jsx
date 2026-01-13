@@ -59,6 +59,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
 
 /* ----------------------------- Mock data --------------------------------- */
 // Vibe types per Pulse spec
@@ -212,28 +214,114 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
   const vibeIcons = (ev.tags || []).filter(tag => VIBE_ICONS[tag]).slice(0, 4);
 
   return (
-    <Card elevation={0} sx={{ borderRadius: 3, boxShadow: "0 8px 30px rgba(0,0,0,0.06)", overflow: "hidden", bgcolor: "#fff", position: "relative" }}>
-      {/* Save button */}
-      <IconButton
-        aria-label={isFav ? "Remove from favorites" : "Save to favorites"}
-        onClick={(e) => { e.stopPropagation(); onToggleFav?.(ev.id); }}
-        size="small"
-        sx={{ position: "absolute", top: 8, right: 8, zIndex: 2, bgcolor: isFav ? "#a855f7" : "rgba(255,255,255,0.9)", color: isFav ? "#fff" : "#6C5CE7", "&:hover": { bgcolor: isFav ? "#9333ea" : "white" }, boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      whileHover={{ y: -8, transition: { duration: 0.2 } }}
+    >
+      <Card 
+        elevation={0} 
+        sx={{ 
+          borderRadius: 4, 
+          boxShadow: "0 8px 30px rgba(0,0,0,0.08)", 
+          overflow: "hidden", 
+          bgcolor: "#fff", 
+          position: "relative",
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          border: '1px solid rgba(102,126,234,0.1)',
+          '&:hover': {
+            boxShadow: '0 20px 60px rgba(102,126,234,0.25)',
+            borderColor: 'rgba(102,126,234,0.3)',
+          },
+        }}
       >
-        <Heart size={16} />
-      </IconButton>
+      {/* Save button */}
+      <motion.div
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        style={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }}
+      >
+        <IconButton
+          aria-label={isFav ? "Remove from favorites" : "Save to favorites"}
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            onToggleFav?.(ev.id); 
+            if (navigator?.vibrate) navigator.vibrate(10);
+          }}
+          size="small"
+          sx={{ 
+            bgcolor: isFav ? "#667eea" : "rgba(255,255,255,0.95)", 
+            color: isFav ? "#fff" : "#667eea", 
+            backdropFilter: 'blur(12px)',
+            boxShadow: isFav ? "0 4px 16px rgba(102,126,234,0.4)" : "0 4px 12px rgba(0,0,0,0.12)",
+            transition: 'all 0.2s ease',
+            '&:hover': { 
+              bgcolor: isFav ? "#5568d3" : "white",
+              transform: 'rotate(10deg)',
+            },
+          }}
+        >
+          <Heart size={16} fill={isFav ? '#fff' : 'none'} />
+        </IconButton>
+      </motion.div>
 
       {/* Status badge */}
-      <Box sx={{ position: "absolute", top: 8, left: 8, zIndex: 2, px: 1, py: 0.25, borderRadius: "6px", bgcolor: status.bg, color: status.color, fontSize: "0.7rem", fontWeight: 600 }}>
-        {status.label}
-      </Box>
+      <motion.div
+        initial={{ scale: 0, x: -20 }}
+        animate={{ scale: 1, x: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+      >
+        <Box sx={{ 
+          position: "absolute", 
+          top: 8, 
+          left: 8, 
+          zIndex: 2, 
+          px: 1.5, 
+          py: 0.5, 
+          borderRadius: "8px", 
+          bgcolor: status.bg, 
+          color: status.color, 
+          fontSize: "0.75rem", 
+          fontWeight: 700,
+          backdropFilter: 'blur(8px)',
+          border: `1.5px solid ${status.color}30`,
+          boxShadow: `0 2px 8px ${status.color}20`,
+        }}>
+          {status.label}
+        </Box>
+      </motion.div>
 
       {/* "Good Match for You" badge - subtle hint */}
       {showGoodMatch && (
-        <Box sx={{ position: "absolute", top: 44, left: 8, zIndex: 2, px: 1, py: 0.25, borderRadius: "6px", bgcolor: "rgba(108,92,231,0.1)", color: "#6C5CE7", fontSize: "0.65rem", fontWeight: 500, display: "flex", alignItems: "center", gap: 0.5 }}>
-          <Sparkles size={10} />
-          {GOOD_MATCH_COPY[Math.floor(Math.random() * GOOD_MATCH_COPY.length)]}
-        </Box>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: -10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.2, type: 'spring', stiffness: 150 }}
+        >
+          <Box sx={{ 
+            position: "absolute", 
+            top: 44, 
+            left: 8, 
+            zIndex: 2, 
+            px: 1.5, 
+            py: 0.5, 
+            borderRadius: "8px", 
+            background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)", 
+            color: "#667eea", 
+            fontSize: "0.7rem", 
+            fontWeight: 600, 
+            display: "flex", 
+            alignItems: "center", 
+            gap: 0.5,
+            backdropFilter: 'blur(8px)',
+            border: '1.5px solid rgba(102,126,234,0.3)',
+            boxShadow: '0 2px 8px rgba(102,126,234,0.2)',
+          }}>
+            <Sparkles size={11} />
+            {GOOD_MATCH_COPY[Math.floor(Math.random() * GOOD_MATCH_COPY.length)]}
+          </Box>
+        </motion.div>
       )}
 
       <CardActionArea onClick={() => onViewDetails ? onViewDetails(ev) : setOpen((v) => !v)}>
@@ -255,7 +343,20 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
         )}
         <CardContent sx={{ pb: 1 }}>
           {/* Title */}
-          <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.5 }} noWrap>{ev.title}</Typography>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              fontWeight: 900, 
+              mb: 0.5,
+              background: 'linear-gradient(135deg, #1a1a2e 0%, #667eea 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }} 
+            noWrap
+          >
+            {ev.title}
+          </Typography>
 
           {/* Pulse-style date: Thu · May 30 · 21:00 */}
           <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500 }}>
@@ -302,38 +403,116 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
         <Stack spacing={1} sx={{ width: "100%" }}>
           <Stack direction="row" spacing={1}>
             {/* Primary CTA - context dependent */}
-            <Button 
-              size="small" 
-              variant="contained" 
-              fullWidth 
-              onClick={() => onBuy(ev)}
-              disabled={ev.soldOut}
-              sx={{ background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)", "&:hover": { background: "linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)" } }}
-            >
-              {ev.soldOut ? "SOLD OUT" : ev.price === 0 ? "JOIN" : "BUY TICKET"}
-            </Button>
+            <motion.div style={{ flex: 1 }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button 
+                size="small" 
+                variant="contained" 
+                fullWidth 
+                onClick={() => {
+                  onBuy(ev);
+                  if (navigator?.vibrate) navigator.vibrate([10, 5, 10]);
+                }}
+                disabled={ev.soldOut}
+                sx={{ 
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+                  fontWeight: 700,
+                  boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
+                  '&:hover': { 
+                    background: "linear-gradient(135deg, #5568d3 0%, #6a4296 100%)",
+                    boxShadow: '0 6px 16px rgba(102,126,234,0.4)',
+                  },
+                  '&:disabled': {
+                    background: '#e5e7eb',
+                    color: '#9ca3af',
+                  },
+                }}
+              >
+                {ev.soldOut ? "SOLD OUT" : ev.price === 0 ? "JOIN" : "BUY TICKET"}
+              </Button>
+            </motion.div>
           </Stack>
           <Stack direction="row" spacing={1}>
             {/* +1 (Bring someone) - always visible per spec */}
-            <Button 
-              size="small" 
-              variant="outlined" 
-              startIcon={<UserPlus size={14} />}
-              onClick={(e) => { e.stopPropagation(); onInvitePlus1?.(ev); }}
-              sx={{ flex: 1, fontSize: "0.7rem", borderImage: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%) 1", borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}
-            >
-              +1
-            </Button>
-            <Button size="small" variant="outlined" onClick={() => onOpenCalendar?.(ev)} sx={{ minWidth: 'auto', px: 1.5, borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}>
-              <Calendar size={14} />
-            </Button>
-            <Button size="small" variant="outlined" onClick={() => onOpenMaps?.(ev)} sx={{ minWidth: 'auto', px: 1.5, borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}>
-              <MapPin size={14} />
-            </Button>
+            <motion.div style={{ flex: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button 
+                size="small" 
+                variant="outlined" 
+                startIcon={<UserPlus size={14} />}
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  onInvitePlus1?.(ev); 
+                  if (navigator?.vibrate) navigator.vibrate(8);
+                }}
+                sx={{ 
+                  flex: 1, 
+                  fontSize: "0.75rem", 
+                  fontWeight: 600,
+                  borderColor: "#667eea", 
+                  color: "#667eea", 
+                  background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                  transition: 'all 0.2s ease',
+                  '&:hover': { 
+                    background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
+                    borderColor: "#5568d3",
+                  } 
+                }}
+              >
+                +1
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <Button 
+                size="small" 
+                variant="outlined" 
+                onClick={() => {
+                  onOpenCalendar?.(ev);
+                  if (navigator?.vibrate) navigator.vibrate(8);
+                }} 
+                sx={{ 
+                  minWidth: 'auto', 
+                  px: 1.5, 
+                  borderColor: "#667eea", 
+                  color: "#667eea", 
+                  background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                  transition: 'all 0.2s ease',
+                  '&:hover': { 
+                    background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
+                    borderColor: "#5568d3",
+                  } 
+                }}
+              >
+                <Calendar size={14} />
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <Button 
+                size="small" 
+                variant="outlined" 
+                onClick={() => {
+                  onOpenMaps?.(ev);
+                  if (navigator?.vibrate) navigator.vibrate(8);
+                }} 
+                sx={{ 
+                  minWidth: 'auto', 
+                  px: 1.5, 
+                  borderColor: "#667eea", 
+                  color: "#667eea", 
+                  background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                  transition: 'all 0.2s ease',
+                  '&:hover': { 
+                    background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
+                    borderColor: "#5568d3",
+                  } 
+                }}
+              >
+                <MapPin size={14} />
+              </Button>
+            </motion.div>
           </Stack>
         </Stack>
       </CardActions>
     </Card>
+    </motion.div>
   );
 }
 
@@ -349,11 +528,49 @@ function CategorySection({ title, events, onBuy, favs, onToggleFav, onOpenCalend
   if (!events?.length) return null;
   
   return (
-    <Box sx={{ mt: 3 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 900 }}>{title}</Typography>
-      </Stack>
-      <Grid container spacing={2}>
+    <Box sx={{ mt: 4 }}>
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              sx={{
+                width: 4,
+                height: 32,
+                borderRadius: '4px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                boxShadow: '0 2px 8px rgba(102,126,234,0.3)',
+              }}
+            />
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                fontWeight: 900,
+                background: 'linear-gradient(135deg, #1a1a2e 0%, #667eea 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {title}
+            </Typography>
+          </Box>
+          <Chip 
+            label={`${events.length} events`}
+            size="small"
+            sx={{
+              fontWeight: 600,
+              background: 'linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%)',
+              color: '#667eea',
+              border: '1px solid rgba(102,126,234,0.2)',
+            }}
+          />
+        </Stack>
+      </motion.div>
+      <Grid container spacing={2.5}>
         {events.map((ev) => {
           const distanceKm = userLocation && ev.coords ? haversineKm(userLocation, ev.coords) : undefined;
           return (
@@ -595,7 +812,23 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      fullWidth 
+      maxWidth="sm" 
+      PaperProps={{ 
+        sx: { 
+          borderRadius: 4,
+          boxShadow: '0 24px 64px rgba(0,0,0,0.15)',
+          border: '1px solid rgba(102,126,234,0.1)',
+        },
+        component: motion.div,
+        initial: { opacity: 0, scale: 0.9, y: 20 },
+        animate: { opacity: 1, scale: 1, y: 0 },
+        transition: { duration: 0.3 },
+      }}
+    >
       {/* Hero - Video or Image */}
       <Box sx={{ position: 'relative' }}>
         {event.videoUrl ? (
@@ -745,54 +978,116 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
 
       <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
         {/* Primary CTA */}
-        <Button
-          variant="contained"
-          fullWidth
-          size="large"
-          onClick={() => { onBuy?.(event); onClose(); }}
-          disabled={event.soldOut || isPurchased}
-          sx={{ fontWeight: 700, background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)", "&:hover": { background: "linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)" } }}
-        >
-          {isPurchased ? "You're going! ✓" : event.soldOut ? "SOLD OUT" : event.price === 0 ? "JOIN" : "BUY TICKET"}
-        </Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            onClick={() => { 
+              onBuy?.(event); 
+              onClose();
+              if (navigator?.vibrate) navigator.vibrate([10, 5, 10]);
+            }}
+            disabled={event.soldOut || isPurchased}
+            sx={{ 
+              fontWeight: 700, 
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              boxShadow: '0 4px 16px rgba(102,126,234,0.3)',
+              '&:hover': { 
+                background: "linear-gradient(135deg, #5568d3 0%, #6a4296 100%)",
+                boxShadow: '0 6px 20px rgba(102,126,234,0.4)',
+              },
+              '&:disabled': {
+                background: '#e5e7eb',
+                color: '#9ca3af',
+              },
+            }}
+          >
+            {isPurchased ? "You're going! ✓" : event.soldOut ? "SOLD OUT" : event.price === 0 ? "JOIN" : "BUY TICKET"}
+          </Button>
+        </motion.div>
         
         {/* Secondary CTAs */}
         <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
-          <Button
-            variant="outlined"
-            startIcon={<Heart size={16} />}
-            onClick={() => onSave?.(event.id)}
-            sx={{ flex: 1, borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}
-          >
-            {isSaved ? 'Saved' : 'Save'}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<Share2 size={16} />}
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({
-                  title: event.title,
-                  text: `Check out ${event.title} on ${fmtPulseDate(event.date, event.time || "20:00")}`,
-                  url: window.location.href,
-                });
-              } else {
-                navigator.clipboard.writeText(window.location.href);
-                alert('Link copied to clipboard!');
-              }
-            }}
-            sx={{ flex: 1, borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}
-          >
-            Share
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<UserPlus size={16} />}
-            onClick={() => { onInvitePlus1?.(event); onClose(); }}
-            sx={{ flex: 1, borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)" } }}
-          >
-            +1
-          </Button>
+          <motion.div style={{ flex: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="outlined"
+              startIcon={<Heart size={16} />}
+              onClick={() => {
+                onSave?.(event.id);
+                if (navigator?.vibrate) navigator.vibrate(10);
+              }}
+              sx={{ 
+                flex: 1, 
+                borderColor: "#667eea", 
+                color: "#667eea", 
+                background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                fontWeight: 600,
+                '&:hover': { 
+                  background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
+                  borderColor: "#5568d3",
+                } 
+              }}
+            >
+              {isSaved ? 'Saved' : 'Save'}
+            </Button>
+          </motion.div>
+          <motion.div style={{ flex: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="outlined"
+              startIcon={<Share2 size={16} />}
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: event.title,
+                    text: `Check out ${event.title} on ${fmtPulseDate(event.date, event.time || "20:00")}`,
+                    url: window.location.href,
+                  });
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                  alert('Link copied to clipboard!');
+                }
+                if (navigator?.vibrate) navigator.vibrate(8);
+              }}
+              sx={{ 
+                flex: 1, 
+                borderColor: "#667eea", 
+                color: "#667eea", 
+                background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                fontWeight: 600,
+                '&:hover': { 
+                  background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
+                  borderColor: "#5568d3",
+                } 
+              }}
+            >
+              Share
+            </Button>
+          </motion.div>
+          <motion.div style={{ flex: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="outlined"
+              startIcon={<UserPlus size={16} />}
+              onClick={() => { 
+                onInvitePlus1?.(event); 
+                onClose();
+                if (navigator?.vibrate) navigator.vibrate(8);
+              }}
+              sx={{ 
+                flex: 1, 
+                borderColor: "#667eea", 
+                color: "#667eea", 
+                background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                fontWeight: 600,
+                '&:hover': { 
+                  background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
+                  borderColor: "#5568d3",
+                } 
+              }}
+            >
+              +1
+            </Button>
+          </motion.div>
         </Stack>
       </DialogActions>
     </Dialog>
@@ -1021,58 +1316,326 @@ export default function EventsByCategory() {
   const skipUser = (u) => setMatches((arr) => arr.filter((id) => id !== u.id));
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f7f7f8", pb: 10 }}>
-      {/* Header */}
-      <Box sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: "#f7f7f8", borderBottom: "1px solid #eee" }}>
-        <Container maxWidth="lg" sx={{ py: 1.25 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-            <Typography variant="h6" sx={{ fontWeight: 900 }}>Events</Typography>
+    <Box sx={{ minHeight: "100vh", bgcolor: "#fafbfc", pb: 10 }}>
+      {/* Hero Section with Gradient */}
+      <Box
+        sx={{
+          position: 'relative',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+          pt: 3,
+          pb: 6,
+          mb: 3,
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'radial-gradient(circle at 20% 50%, rgba(108,92,231,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(168,85,247,0.3) 0%, transparent 50%)',
+            pointerEvents: 'none',
+          },
+        }}
+      >
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Typography 
+              variant="h3" 
+              sx={{ 
+                fontWeight: 900, 
+                color: '#fff',
+                mb: 1,
+                textShadow: '0 2px 20px rgba(0,0,0,0.2)',
+              }}
+            >
+              Discover Events
+            </Typography>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: 'rgba(255,255,255,0.95)',
+                fontWeight: 500,
+                mb: 3,
+                maxWidth: 600,
+              }}
+            >
+              Find amazing experiences, meet new people, and create unforgettable memories
+            </Typography>
+          </motion.div>
 
-            <Stack direction="row" spacing={1} alignItems="center">
-              <ToggleButtonGroup
-                exclusive size="small" value={viewMode}
-                onChange={(_, v) => v && setViewMode(v)}
-                aria-label="View mode"
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+            <PageHelpButton {...getPageHelpContent('events')} buttonSx={{ color: '#fff' }} />
+            <Button 
+              startIcon={<Plus size={18} />} 
+              onClick={() => navigate("/events/new")} 
+              variant="contained"
+              size="large"
+              sx={{ 
+                bgcolor: '#fff',
+                color: '#667eea',
+                fontWeight: 700,
+                px: 3,
+                py: 1.5,
+                borderRadius: '16px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                '&:hover': {
+                  bgcolor: '#f8f9ff',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.2)',
+                },
+                transition: 'all 0.3s ease',
+              }}
+            >
+              Create Event
+            </Button>
+
+            <ToggleButtonGroup
+              exclusive 
+              size="medium" 
+              value={viewMode}
+              onChange={(_, v) => v && setViewMode(v)}
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.2)',
+                backdropFilter: 'blur(12px)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255,255,255,0.3)',
+                '& .MuiToggleButton-root': {
+                  color: '#fff',
+                  border: 'none',
+                  fontWeight: 600,
+                  '&.Mui-selected': {
+                    bgcolor: 'rgba(255,255,255,0.3)',
+                    color: '#fff',
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="list">
+                <ListIcon size={18} style={{ marginRight: 8 }} /> List
+              </ToggleButton>
+              <ToggleButton value="map" onClick={openAllEventsInMaps}>
+                <MapIcon size={18} style={{ marginRight: 8 }} /> Map
+              </ToggleButton>
+            </ToggleButtonGroup>
+
+            <Badge color="error" badgeContent={activeFilterCount} invisible={activeFilterCount === 0}>
+              <Button 
+                variant="outlined" 
+                startIcon={<SlidersHorizontal size={18} />} 
+                onClick={() => setFiltersOpen(true)}
+                sx={{
+                  borderColor: 'rgba(255,255,255,0.4)',
+                  color: '#fff',
+                  bgcolor: 'rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(12px)',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: 'rgba(255,255,255,0.6)',
+                    bgcolor: 'rgba(255,255,255,0.2)',
+                  },
+                }}
               >
-                <ToggleButton value="list" aria-label="List view">
-                  <ListIcon size={16} style={{ marginRight: 6 }} /> List
-                </ToggleButton>
-                <ToggleButton
-                  value="map" aria-label="Map view"
-                  onClick={openAllEventsInMaps} // פותח גוגל מאפס עם כל האירועים
-                >
-                  <MapIcon size={16} style={{ marginRight: 6 }} /> Map
-                </ToggleButton>
-              </ToggleButtonGroup>
-
-              <Badge color="primary" badgeContent={activeFilterCount} invisible={activeFilterCount === 0}>
-                <Button variant="outlined" startIcon={<SlidersHorizontal size={16} />} onClick={() => setFiltersOpen(true)} sx={{ borderColor: "#a855f7", color: "#6C5CE7", background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, rgba(168,85,247,0.05) 100%)", "&:hover": { background: "linear-gradient(135deg, rgba(108,92,231,0.15) 0%, rgba(168,85,247,0.15) 100%)", borderColor: "#9333ea" } }}>
-                  Filter & Sort
-                </Button>
-              </Badge>
-
-              {/* הכפתור "Favorites on Map" בכותרת הוסר לפי בקשה */}
-
-              <Button startIcon={<Plus size={16} />} onClick={() => navigate("/events/new")} variant="contained" sx={{ background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)", "&:hover": { background: "linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)" } }}>
-                Create Event
+                Filters
               </Button>
-            </Stack>
+            </Badge>
           </Stack>
+        </Container>
+      </Box>
+
+      {/* Sticky Tabs Bar */}
+      <Box sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: "#fafbfc", borderBottom: "1px solid #e5e7eb", boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        <Container maxWidth="lg" sx={{ py: 1 }}>
+
 
           {/* Tabs */}
-          <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto"
-            sx={{ mt: 1, "& .MuiTab-root": { fontWeight: 700, textTransform: "none" }, "& .Mui-selected": { color: "#a855f7 !important" }, "& .MuiTabs-indicator": { height: 3, bgcolor: "#a855f7" } }}>
+          <Tabs 
+            value={tab} 
+            onChange={(_, v) => setTab(v)} 
+            variant="scrollable" 
+            scrollButtons="auto"
+            sx={{ 
+              "& .MuiTab-root": { 
+                fontWeight: 700, 
+                textTransform: "none",
+                fontSize: '0.95rem',
+                minHeight: 48,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  color: '#667eea',
+                  transform: 'translateY(-2px)',
+                },
+              }, 
+              "& .Mui-selected": { 
+                color: "#667eea !important",
+                fontWeight: 800,
+              }, 
+              "& .MuiTabs-indicator": { 
+                height: 3, 
+                bgcolor: "#667eea",
+                borderRadius: '3px 3px 0 0',
+              } 
+            }}
+          >
             {ALL_TABS.map((c) => <Tab key={c.key} value={c.key} label={c.label} />)}
           </Tabs>
 
-          {/* Quick filter chips */}
-          <Stack direction="row" spacing={1} sx={{ mt: 1, pb: 1, flexWrap: "wrap" }}>
-            <Chip icon={<CalendarClock size={14} />} label="Today" color={quickToday ? "primary" : "default"} variant={quickToday ? "filled" : "outlined"} onClick={() => setQuickToday((v) => !v)} />
-            <Chip icon={<CalendarClock size={14} />} label="Weekend" color={quickWeekend ? "primary" : "default"} variant={quickWeekend ? "filled" : "outlined"} onClick={() => setQuickWeekend((v) => !v)} />
-            <Chip label="Free" color={quickFree ? "primary" : "default"} variant={quickFree ? "filled" : "outlined"} onClick={() => setQuickFree((v) => !v)} />
-            <Chip icon={<LocateFixed size={14} />} label="Near me" color={quickNear ? "primary" : "default"} variant={quickNear ? "filled" : "outlined"} onClick={() => setQuickNear((v) => !v)} />
-            <Chip icon={<Sun size={14} />} label="Outdoor" color={quickOutdoor ? "primary" : "default"} variant={quickOutdoor ? "filled" : "outlined"} onClick={() => setQuickOutdoor((v) => !v)} />
-            <Chip icon={<Music size={14} />} label="Live Music" color={quickLive ? "primary" : "default"} variant={quickLive ? "filled" : "outlined"} onClick={() => setQuickLive((v) => !v)} />
+          {/* Quick filter chips - Enhanced with animations */}
+          <Stack direction="row" spacing={1} sx={{ mt: 1.5, pb: 1.5, flexWrap: "wrap", gap: 1 }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Chip 
+                icon={<CalendarClock size={14} />} 
+                label="Today" 
+                color={quickToday ? "primary" : "default"} 
+                variant={quickToday ? "filled" : "outlined"} 
+                onClick={() => { setQuickToday((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+                sx={{
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
+                  },
+                  ...(quickToday && {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.4)',
+                  }),
+                }}
+              />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.15 }}
+            >
+              <Chip 
+                icon={<CalendarClock size={14} />} 
+                label="Weekend" 
+                color={quickWeekend ? "primary" : "default"} 
+                variant={quickWeekend ? "filled" : "outlined"} 
+                onClick={() => { setQuickWeekend((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+                sx={{
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
+                  },
+                  ...(quickWeekend && {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.4)',
+                  }),
+                }}
+              />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Chip 
+                label="Free" 
+                color={quickFree ? "primary" : "default"} 
+                variant={quickFree ? "filled" : "outlined"} 
+                onClick={() => { setQuickFree((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+                sx={{
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(34,197,94,0.3)',
+                  },
+                  ...(quickFree && {
+                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                    color: '#fff',
+                    boxShadow: '0 4px 12px rgba(34,197,94,0.4)',
+                  }),
+                }}
+              />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.25 }}
+            >
+              <Chip 
+                icon={<LocateFixed size={14} />} 
+                label="Near me" 
+                color={quickNear ? "primary" : "default"} 
+                variant={quickNear ? "filled" : "outlined"} 
+                onClick={() => { setQuickNear((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+                sx={{
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
+                  },
+                  ...(quickNear && {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.4)',
+                  }),
+                }}
+              />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Chip 
+                icon={<Sun size={14} />} 
+                label="Outdoor" 
+                color={quickOutdoor ? "primary" : "default"} 
+                variant={quickOutdoor ? "filled" : "outlined"} 
+                onClick={() => { setQuickOutdoor((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+                sx={{
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
+                  },
+                  ...(quickOutdoor && {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.4)',
+                  }),
+                }}
+              />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.35 }}
+            >
+              <Chip 
+                icon={<Music size={14} />} 
+                label="Live Music" 
+                color={quickLive ? "primary" : "default"} 
+                variant={quickLive ? "filled" : "outlined"} 
+                onClick={() => { setQuickLive((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+                sx={{
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
+                  },
+                  ...(quickLive && {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.4)',
+                  }),
+                }}
+              />
+            </motion.div>
           </Stack>
         </Container>
       </Box>

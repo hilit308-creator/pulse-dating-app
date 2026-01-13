@@ -35,6 +35,8 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from "framer-motion";
 import { HomeInlinePromoBanner } from '../components/SubscriptionPromoBanner';
+import PageHelpButton from '../components/PageHelpButton';
+import { getPageHelpContent } from '../config/pageHelpContent';
 import {
   MessageCircle,
   ChevronLeft,
@@ -1247,11 +1249,10 @@ export default function MatchesScreen() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
-        bgcolor: "background.default",
-        maxWidth: 520,
-        mx: "auto",
+        minHeight: '100vh',
+        backgroundColor: '#fafbfc',
         pb: "calc(10px + env(safe-area-inset-bottom, 0))",
+        position: 'relative',
       }}
     >
       {/* Subscription Promo Banner - appears after browsing */}
@@ -1287,16 +1288,19 @@ export default function MatchesScreen() {
               {filteredMatches.length} connections
             </Typography>
           </Box>
-          <IconButton
-            onClick={() => setDrawerOpen(true)}
-            sx={{ 
-              backgroundColor: "#f8fafc",
-              border: "1px solid rgba(0,0,0,0.06)",
-              "&:hover": { backgroundColor: "#f1f5f9" },
-            }}
-          >
-            <SlidersHorizontal size={18} color="#64748b" />
-          </IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PageHelpButton {...getPageHelpContent('matches')} />
+            <IconButton
+              onClick={() => setDrawerOpen(true)}
+              sx={{ 
+                backgroundColor: "#f8fafc",
+                border: "1px solid rgba(0,0,0,0.06)",
+                "&:hover": { backgroundColor: "#f1f5f9" },
+              }}
+            >
+              <SlidersHorizontal size={18} color="#64748b" />
+            </IconButton>
+          </Box>
         </Stack>
         <Tabs
           value={tab}
