@@ -1,4 +1,4 @@
-/* 🚀 Neon Glassy Theme for the Dating App */
+/* Clean Theme for the Dating App */
 :root {
   --color-bg: #fff;
   --color-bg-soft: #fff3e0;
@@ -7,23 +7,25 @@
   --color-accent: #ffb357;
   --color-accent-deep: #ff9800;
   --color-border: #f5f5f5;
-  /* Bottom navigation bar height for SAFE_BOTTOM calculations */
-  --app-bottom-nav-height: 96px;
+  --app-bottom-nav-height: 64px;
 }
 
 html, body, #root {
   height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   background: var(--color-bg);
   color: var(--color-text-main);
   font-family: 'Inter', 'Quicksand', sans-serif;
-  min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 }
 
 /* Cards, Paper, List */
-.profile-card, .boost-card, .partner-deal, .MuiPaper-root, .MuiList-root {
+.MuiPaper-root, .MuiList-root {
   background: var(--color-bg);
   border-radius: 16px;
   box-shadow: none;
@@ -36,53 +38,6 @@ body {
   color: var(--color-text-main) !important;
   font-weight: 500;
   border-radius: 12px;
-}
-.MuiChip-root[data-status="expired"], .status-chip.expired {
-  background: var(--color-accent-deep) !important;
-  color: #fff !important;
-}
-
-/* Buttons */
-button, .MuiButton-root {
-  background: var(--color-accent);
-  color: var(--color-text-main) !important;
-  border-radius: 18px;
-  font-weight: 600;
-  box-shadow: none;
-  border: none;
-  transition: background 0.18s;
-}
-button:hover, .MuiButton-root:hover {
-  background: var(--color-accent-deep);
-  color: #fff !important;
-}
-
-/* Tab Bar */
-.tab-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 2000;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  background: #ffffff; /* solid like top bar */
-  border-top: 1px solid rgba(0,0,0,0.06);
-  box-shadow: 0 -1px 6px rgba(0,0,0,0.04);
-  padding: 8px 0;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
-}
-.tab-bar .tab-item {
-  color: #2e2e2e; /* match top bar text color */
-  font-size: 13px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-}
-.tab-bar .tab-item.active {
-  color: #ff6f61; /* active color */
 }
 
 /* Inputs */
@@ -98,7 +53,7 @@ input, .MuiInputBase-root, .MuiOutlinedInput-root {
   border-bottom: 1px solid var(--color-border);
 }
 
-/* Misc */
+/* Scrollbar */
 ::-webkit-scrollbar-thumb {
   background: var(--color-accent);
 }
@@ -106,308 +61,52 @@ input, .MuiInputBase-root, .MuiOutlinedInput-root {
   background: var(--color-bg);
 }
 
-/* Cards */
-.profile-card, .boost-card, .partner-deal {
-  background: var(--color-soft-bg);
-  box-shadow: var(--soft-shadow);
-  border-radius: 24px;
-  border: var(--border-glossy);
-  overflow: hidden;
-  transition: box-shadow 0.25s, transform 0.15s;
-}
-.profile-card:hover, .boost-card:hover, .partner-deal:hover {
-  box-shadow: 0 0 32px 8px var(--color-accent-red), 0 0 18px 2px var(--color-coral);
-  transform: translateY(-4px) scale(1.025);
-}
-
-/* Buttons */
-button, .MuiButton-root, .super-like-button {
-  background: linear-gradient(120deg, var(--color-primary-red), var(--color-coral));
-  color: var(--color-white) !important;
-  border-radius: 24px;
-  padding: 12px 24px;
-  box-shadow: 0 4px 16px var(--color-accent-red), 0 2px 8px var(--color-coral);
-  border: none;
-  font-weight: 600;
-  transition: box-shadow 0.18s, transform 0.12s;
-}
-button:hover, .MuiButton-root:hover, .super-like-button:hover {
-  box-shadow: 0 0 24px 6px var(--color-map-gold), 0 0 18px 4px var(--color-accent-red);
-  transform: scale(1.08);
-}
-
-/* Chips */
-.MuiChip-root {
-  background: var(--color-map-gold) !important;
-  color: var(--color-primary-red) !important;
-  font-weight: 500;
-  border-radius: 16px;
-}
-
-/* Inputs */
-input, .MuiInputBase-root, .MuiOutlinedInput-root {
-  background: var(--color-white);
-  border-radius: 10px;
-  border: 1.5px solid var(--color-map-gold);
-}
-
-/* Tab Bar */
+/* Tab Bar - Single clean definition */
 .tab-bar {
-  background: var(--color-soft-bg);
-  border-top: var(--border-glossy);
-  box-shadow: var(--soft-shadow);
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 2000 !important;
+  height: var(--app-bottom-nav-height);
+  display: flex !important;
+  justify-content: space-around !important;
+  align-items: center !important;
+  background: #ffffff !important;
+  border-top: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.05) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
 }
+
 .tab-bar .tab-item {
-  color: var(--color-accent-red);
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+  gap: 2px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  padding: 6px 4px !important;
 }
+
+.tab-bar .tab-item svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+
 .tab-bar .tab-item.active {
-  color: var(--color-coral);
+  color: #ff6f61 !important;
 }
 
 /* Chat Bubble */
 .chat-bubble {
-  background: var(--color-map-gold);
-  color: var(--color-primary-red);
-  border-radius: 16px;
-  box-shadow: var(--soft-shadow);
-}
-
-/* Misc */
-::-webkit-scrollbar-thumb {
-  background: var(--color-map-gold);
-}
-::-webkit-scrollbar-track {
-  background: var(--color-white);
-}
-
-  /* Primary neon gradient colors */
-body {
-  background: var(--bg-gradient);
-  min-height: 100vh;
-  font-family: 'Inter', 'Quicksand', sans-serif;
-  color: #463f5e;
-}
-
-/* 💌 Profile Card */
-.profile-card {
-  background: var(--bg-glass);
-  box-shadow: var(--neon-shadow);
-  border-radius: 30px;
-  overflow: hidden;
-  border: var(--border-glass);
-  backdrop-filter: blur(18px) saturate(1.3);
-  transition: box-shadow 0.25s, transform 0.15s;
-}
-.profile-card:hover {
-  box-shadow: 0 0 32px 8px var(--color-neon-blue), 0 0 18px 2px var(--color-neon-pink);
-  transform: translateY(-4px) scale(1.025);
-}
-
-/* ❤️ Super Like Button */
-.super-like-button {
-  background: linear-gradient(120deg, var(--color-neon-pink), var(--color-neon-blue));
-  color: white;
-  border-radius: 50%;
-  padding: 14px;
-  box-shadow: 0 4px 16px var(--color-neon-pink), 0 2px 8px var(--color-neon-blue);
-  border: 2.5px solid var(--color-soft-white);
-  transition: box-shadow 0.18s, transform 0.12s;
-}
-.super-like-button:hover {
-  box-shadow: 0 0 24px 6px var(--color-neon-blue), 0 0 18px 4px var(--color-neon-pink);
-  transform: scale(1.12);
-}
-
-/* 💬 Chat Bubble */
-.chat-bubble {
-  background: var(--bg-glass-strong);
-  border-radius: 18px;
-  padding: 14px 20px;
-  margin-bottom: 10px;
-  max-width: 75%;
-  box-shadow: var(--soft-shadow);
-  border: 1.5px solid var(--color-lavender);
-  color: #463f5e;
-  font-size: 1.07rem;
-  transition: background 0.18s;
-}
-
-/* 🎯 Tab Navigation */
-.tab-bar {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background: var(--bg-glass-strong);
-  display: flex;
-  justify-content: space-around;
-  padding: 10px 0 6px 0;
-  border-top: var(--border-glass);
-  box-shadow: 0 0 24px 0 var(--glow-blue), 0 2px 8px var(--glow-pink);
-  backdrop-filter: blur(16px) saturate(1.2);
-}
-.tab-bar .tab-item {
-  color: #bdb7e3;
-  font-size: 13px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: color 0.18s;
-}
-.tab-bar .tab-item.active, .tab-bar .tab-item:active, .tab-bar .tab-item:hover {
-  color: var(--color-neon-pink);
-  text-shadow: 0 0 8px var(--color-neon-blue);
-}
-
-/* 🧠 Boost Card */
-.boost-card {
-  background: var(--bg-glass-strong);
-  backdrop-filter: blur(18px) saturate(1.3);
-  border-radius: 26px;
-  padding: 20px;
-  text-align: center;
-  color: var(--color-violet);
-  box-shadow: var(--neon-shadow);
-  margin: 18px auto;
-  max-width: 92%;
-  font-weight: 600;
-  font-size: 1.13rem;
-}
-
-/* 🎁 Partner Deal */
-.partner-deal {
-  background: var(--bg-glass);
-  border: var(--border-glass);
-  border-radius: 20px;
-  padding: 14px;
-  margin: 10px 0;
-  box-shadow: var(--soft-shadow);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: box-shadow 0.18s, transform 0.13s;
-}
-.partner-deal:hover {
-  box-shadow: 0 0 24px 4px var(--color-neon-blue), 0 0 12px 2px var(--color-neon-pink);
-  transform: scale(1.025);
-}
-
-/* Animations */
-@keyframes neonPulse {
-  0% { box-shadow: 0 0 8px var(--color-neon-pink); }
-  50% { box-shadow: 0 0 24px var(--color-neon-blue); }
-  100% { box-shadow: 0 0 8px var(--color-neon-pink); }
-}
-
-.super-like-button, .boost-card, .profile-card, .partner-deal {
-  animation: neonPulse 3.5s infinite alternate;
-}
-
-
-/* 💌 Profile Card */
-.profile-card {
-  background: var(--bg-light);
-  box-shadow: var(--soft-shadow);
-  border-radius: 24px;
-  overflow: hidden;
-  border: var(--border-glass);
-}
-
-/* ❤️ Super Like Button */
-.super-like-button {
-  background-color: var(--color-coral);
-  color: white;
-  border-radius: 50%;
-  padding: 12px;
-  box-shadow: 0 4px 12px rgba(255, 111, 97, 0.4);
-}
-
-/* 💬 Chat Bubble */
-.chat-bubble {
-  background: var(--bg-soft);
+  background: #f3f4f6;
   border-radius: 16px;
   padding: 12px 16px;
   margin-bottom: 8px;
   max-width: 70%;
-  box-shadow: var(--soft-shadow);
 }
-
-/* 🎯 Tab Navigation */
-.tab-bar {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background: var(--bg-light);
-  display: flex;
-  justify-content: space-around;
-  padding: 8px 0;
-  border-top: var(--border-glass);
-  box-shadow: var(--soft-shadow);
-}
-
-.tab-bar .tab-item {
-  color: var(--color-muted);
-  font-size: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.tab-bar .tab-item.active {
-  color: var(--color-coral);
-}
-
-/* 🧠 Boost Card */
-.boost-card {
-  background: var(--bg-blur);
-  backdrop-filter: blur(12px);
-  border-radius: 20px;
-  padding: 16px;
-  text-align: center;
-  color: var(--color-chocolate);
-  box-shadow: var(--soft-shadow);
-  margin: 16px auto;
-  max-width: 90%;
-}
-
-/* 🎁 Partner Deal */
-.partner-deal {
-  background: var(--bg-light);
-  border: var(--border-glass);
-  border-radius: 16px;
-  padding: 12px;
-  margin: 8px 0;
-  box-shadow: var(--soft-shadow);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-/* --- Final overrides to ensure bottom tab bar is fixed & opaque like top bar --- */
-.tab-bar {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0; right: 0;
-  z-index: 2000 !important;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  background: #ffffff !important; /* solid, not transparent */
-  border-top: 1px solid rgba(0,0,0,0.06) !important;
-  box-shadow: 0 -1px 6px rgba(0,0,0,0.04) !important;
-  padding: 8px 0;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
-  backdrop-filter: none !important;
-}
-.tab-bar .tab-item {
-  color: #2e2e2e !important; /* fixed color like top bar */
-  font-size: 13px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-}
-.tab-bar .tab-item svg {
-  color: currentColor !important;
-  opacity: 1 !important;
-}
-.tab-bar .tab-item.active { color: #ff6f61 !important; }

@@ -235,3 +235,130 @@ def agent_events():
     """GET /agent/events - Recent events for debugging."""
     limit = request.args.get("limit", 100, type=int)
     return jsonify({"events": get_recent_events(limit)})
+
+
+# ============================================
+# Orchestrator API Routes (Per Spec Section X)
+# ============================================
+
+from .orchestrator import get_orchestrator
+
+
+@agent_bp.route("/api/discover/ranked", methods=["POST"])
+def discover_ranked():
+    """
+    POST /api/discover/ranked
+    Get ranked profiles for Discover screen using Orchestrator.
+    
+    Request:
+    {
+        "user_id": str,
+        "candidate_profiles": [{user_id, location, events, ...}],
+        "context": {
+            "user_location": {lat, lng},
+            "user_events": [event_ids],
+            "current_time": timestamp
+        }
+    }
+    
+    Response:
+    {
+        "success": bool,
+        "profiles": [{user_id, score, reasons, is_todays_pick, todays_pick_reason}],
+        "todays_picks_count": int,
+        "decision_id": str,
+        "ttl_seconds": int
+    }
+    """
+    data = request.get_json(force=True) or {}
+    
+    user_id = str(data.get("user_id", ""))
+    candidate_profiles = data.get("candidate_profiles", [])
+    context = data.get("context", {})
+    
+    if not user_id:
+        return jsonify({"success": False, "error": "user_id required"}), 400
+    
+    orchestrator = get_orchestrator()
+    result = orchestrator.get_discover_profiles(user_id, candidate_profiles, context)
+    
+    return jsonify(result)
+
+
+@agent_bp.route("/api/events/<event_id>/people", methods=["POST"])
+def event_people(event_id):
+    """
+    POST /api/events/:id/people
+    Get relevant people for an event using Orchestrator.
+    
+    Request:
+    {
+        "user_id": str,
+        "attendees": [{user_id, name, photo, interests, ...}],
+        "user_interests": [str]
+    }
+    
+    Response:
+    {
+        "success": bool,
+        "people": [{user_id, name, photo, shared_interests, relevance_score}],
+        "total": int,
+        "decision_id": str
+    }
+    """
+    data = request.get_json(force=True) or {}
+    
+    user_id = str(data.get("user_id", ""))
+    attendees = data.get("attendees", [])
+    user_interests = data.get("user_interests", [])
+    
+    if not user_id:
+        return jsonify({"success": False, "error": "user_id required"}), 400
+    
+    orchestrator = get_orchestrator()
+    result = orchestrator.get_event_people(user_id, event_id, attendees, user_interests)
+    
+    return jsonify(result)
+
+
+@agent_bp.route("/api/chat/suggest", methods=["POST"])
+def chat_suggest_orchestrated():
+    """
+    POST /api/chat/suggest
+    Get chat suggestions using Orchestrator (with safety checks).
+    
+    Request:
+    {
+        "user_id": str,
+        "chat_id": str,
+        "messages": [{id, from, text, ts}],
+        "context": {},
+        "preferences": {}
+    }
+    
+    Response:
+    {
+        "success": bool,
+        "state": str,
+        "mode": str,
+        "crisis_flag": bool,
+        "should_suggest": bool,
+        "suggestions": [{text, confidence}],
+        "cooldown_seconds": int
+    }
+    """
+    data = request.get_json(force=True) or {}
+    
+    user_id = str(data.get("user_id", ""))
+    chat_id = str(data.get("chat_id", ""))
+    messages = data.get("messages", [])
+    context = data.get("context", {})
+    preferences = data.get("preferences", {})
+    
+    if not user_id or not chat_id:
+        return jsonify({"success": False, "error": "user_id and chat_id required"}), 400
+    
+    orchestrator = get_orchestrator()
+    result = orchestrator.get_chat_suggestion(user_id, chat_id, messages, context, preferences)
+    
+    return jsonify(result)

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Box, Typography, IconButton, List, ListItem, ListItemIcon, ListItemText, Divider, TextField, Button, MenuItem, Stack } from '@mui/material';
+import { Box, Typography, IconButton, List, ListItem, ListItemIcon, ListItemText, Divider, TextField, Button, MenuItem, Stack, Slider } from '@mui/material';
 import WorkIcon from '@mui/icons-material/Work';
 import SchoolIcon from '@mui/icons-material/School';
 import WcIcon from '@mui/icons-material/Wc';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import HomeIcon from '@mui/icons-material/Home';
 import HeightIcon from '@mui/icons-material/Height';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import LocalBarIcon from '@mui/icons-material/LocalBar';
 import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
 import SearchIcon from '@mui/icons-material/Search';
@@ -18,11 +18,12 @@ import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 const genderOptions = ['Man', 'Woman', 'Non-binary', 'Prefer not to say'];
 
 const initialAboutYouFields = [
+  { icon: <WcIcon />, label: 'Gender', value: 'Man', key: 'gender', type: 'select', options: genderOptions },
+  { icon: <HeightIcon />, label: 'Height', value: '170', key: 'height', type: 'height' },
+  { icon: <LocationOnIcon />, label: 'Location', value: "Tel Aviv", key: 'location', type: 'text', required: true },
+  { icon: <HomeIcon />, label: 'Hometown', value: '', key: 'hometown', type: 'text' },
   { icon: <WorkIcon />, label: 'Work', value: '', key: 'work', type: 'text' },
   { icon: <SchoolIcon />, label: 'Education', value: '', key: 'education', type: 'text' },
-  { icon: <WcIcon />, label: 'Gender', value: 'Man', key: 'gender', type: 'select', options: genderOptions },
-  { icon: <LocationOnIcon />, label: 'Location', value: "Be'er Sheva", key: 'location', type: 'text' },
-  { icon: <HomeIcon />, label: 'Hometown', value: 'Jerusalem', key: 'hometown', type: 'text' },
 ];
 
 const exerciseOptions = ['Active', 'Sometimes', 'Rarely', 'Never'];
@@ -33,14 +34,10 @@ const lookingForOptions = ['Fun', 'Casual dates', 'A long-term relationship', 'F
 const kidsOptions = ['Not sure', 'Want someday', 'Don’t want', 'Have kids'];
 
 const initialMoreAboutFields = [
-  { icon: <HeightIcon />, label: 'Height', value: '178 cm', key: 'height', type: 'text' },
-  { icon: <FitnessCenterIcon />, label: 'Exercise', value: 'Active', key: 'exercise', type: 'select', options: exerciseOptions },
-  { icon: <SchoolIcon />, label: 'Education level', value: 'In college', key: 'educationLevel', type: 'select', options: educationLevelOptions },
+  { icon: <DirectionsRunIcon />, label: 'Exercise', value: 'Active', key: 'exercise', type: 'select', options: exerciseOptions },
   { icon: <LocalBarIcon />, label: 'Drinking', value: 'I drink sometimes', key: 'drinking', type: 'select', options: drinkingOptions },
-  { icon: <SmokingRoomsIcon />, label: 'Smoking', value: ",I'm trying to quit", key: 'smoking', type: 'select', options: smokingOptions },
-  { icon: <SearchIcon />, label: 'Looking for', value: 'Fun, casual dates, A long-term relationship', key: 'lookingFor', type: 'multiselect', options: lookingForOptions },
+  { icon: <SmokingRoomsIcon />, label: 'Smoking', value: "I'm trying to quit", key: 'smoking', type: 'select', options: smokingOptions },
   { icon: <ChildCareIcon />, label: 'Kids', value: 'Not sure', key: 'kids', type: 'select', options: kidsOptions },
-  { icon: <SearchIcon />, label: 'Choice', value: 'Make a choice', key: 'choice', type: 'text' },
 ];
 
 export default function AboutSections() {
@@ -67,27 +64,92 @@ export default function AboutSections() {
     setEditMoreValue(field.value || "");
   };
 
+  // Color palette for each field
+  const fieldColors = {
+    gender: { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', light: 'rgba(102, 126, 234, 0.08)' },
+    height: { bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', light: 'rgba(240, 147, 251, 0.08)' },
+    location: { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', light: 'rgba(79, 172, 254, 0.08)' },
+    hometown: { bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', light: 'rgba(67, 233, 123, 0.08)' },
+    work: { bg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', light: 'rgba(250, 112, 154, 0.08)' },
+    education: { bg: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', light: 'rgba(161, 140, 209, 0.08)' },
+  };
+
   return (
     <Box>
-      {/* About You Section */}
-      <Typography sx={{ fontWeight: 600, fontSize: 18, mb: 1, mt: 2 }}>About you</Typography>
-      <Box sx={{ bgcolor: '#faf9fa', borderRadius: 3, border: '1px solid #eee', mb: 3, p: 1 }}>
-        <List disablePadding>
-          {fields.map((field, idx) => (
-            <React.Fragment key={field.key}>
-              <ListItem button onClick={() => editingKey === field.key ? setEditingKey(null) : handleEdit(field.key)} alignItems="flex-start">
-                <ListItemIcon sx={{ minWidth: 36 }}>{field.icon}</ListItemIcon>
-                <ListItemText
-                  primary={<Typography sx={{ fontWeight: 500 }}>{field.label}</Typography>}
-                  secondary={!field.value ? <Typography color="text.secondary">Add</Typography> : null}
-                />
-                <Typography sx={{ color: '#333', mr: 1 }}>{field.value}</Typography>
-                {editingKey === field.key
-                  ? <ArrowDropDownIcon sx={{ color: '#bbb' }} />
-                  : <ChevronRightIcon sx={{ color: '#bbb' }} />}
-              </ListItem>
-              {editingKey === field.key && (
-                <Box sx={{ px: 5, py: 1, bgcolor: '#fff', borderRadius: 2, mb: 1 }}>
+      {/* My Details Section */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 1.5, 
+        mb: 2, 
+        mt: 2 
+      }}>
+        <Box sx={{ 
+          width: 36, 
+          height: 36, 
+          borderRadius: '10px', 
+          background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
+        }}>
+          <WcIcon sx={{ color: '#fff', fontSize: 20 }} />
+        </Box>
+        <Typography sx={{ fontWeight: 700, fontSize: 18, color: '#1a1a2e' }}>My Details</Typography>
+      </Box>
+      
+      <Box sx={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(2, 1fr)', 
+        gap: 1.5, 
+        mb: 3 
+      }}>
+        {fields.map((field) => {
+          const colors = fieldColors[field.key] || fieldColors.gender;
+          const isEditing = editingKey === field.key;
+          
+          return (
+            <Box
+              key={field.key}
+              onClick={() => isEditing ? setEditingKey(null) : handleEdit(field.key)}
+              sx={{
+                bgcolor: isEditing ? colors.light : '#fff',
+                borderRadius: '16px',
+                border: isEditing ? '2px solid' : '1px solid #e2e8f0',
+                borderColor: isEditing ? 'transparent' : '#e2e8f0',
+                borderImage: isEditing ? `${colors.bg} 1` : 'none',
+                p: 2,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: isEditing ? '0 4px 20px rgba(0,0,0,0.08)' : '0 2px 8px rgba(0,0,0,0.04)',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
+                },
+                gridColumn: field.key === 'work' || field.key === 'education' ? 'span 2' : 'span 1',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Box sx={{ 
+                  width: 28, 
+                  height: 28, 
+                  borderRadius: '8px', 
+                  background: colors.bg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  {React.cloneElement(field.icon, { sx: { color: '#fff', fontSize: 16 } })}
+                </Box>
+                <Typography sx={{ fontWeight: 600, fontSize: 13, color: '#64748b' }}>
+                  {field.label}
+                  {field.required && <span style={{ color: '#f43f5e', marginLeft: 2 }}>*</span>}
+                </Typography>
+              </Box>
+              
+              {isEditing ? (
+                <Box sx={{ mt: 1 }}>
                   {field.type === 'text' ? (
                     <TextField
                       autoFocus
@@ -103,8 +165,41 @@ export default function AboutSections() {
                         setEditValue("");
                       }}
                       placeholder={`Enter your ${field.label.toLowerCase()}`}
-                      sx={{ mb: 1 }}
+                      sx={{ 
+                        '& .MuiOutlinedInput-root': { 
+                          borderRadius: '10px',
+                          bgcolor: '#fff',
+                        } 
+                      }}
                     />
+                  ) : field.type === 'height' ? (
+                    <Box>
+                      <Typography variant="body1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1 }}>
+                        {editValue} cm
+                      </Typography>
+                      <Slider
+                        value={parseInt(editValue) || 170}
+                        onChange={(_, v) => setEditValue(String(v))}
+                        onChangeCommitted={(_, v) => {
+                          setFields(fields.map(f => f.key === editingKey ? { ...f, value: String(v) } : f));
+                          setEditingKey(null);
+                          setEditValue("");
+                        }}
+                        min={140}
+                        max={220}
+                        sx={{
+                          color: '#f093fb',
+                          '& .MuiSlider-thumb': { 
+                            width: 22, 
+                            height: 22,
+                            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                          },
+                          '& .MuiSlider-track': {
+                            background: 'linear-gradient(90deg, #f093fb 0%, #f5576c 100%)',
+                          },
+                        }}
+                      />
+                    </Box>
                   ) : (
                     <TextField
                       select
@@ -117,7 +212,12 @@ export default function AboutSections() {
                         setEditingKey(null);
                         setEditValue("");
                       }}
-                      sx={{ mb: 1 }}
+                      sx={{ 
+                        '& .MuiOutlinedInput-root': { 
+                          borderRadius: '10px',
+                          bgcolor: '#fff',
+                        } 
+                      }}
                     >
                       {field.options.map(opt => (
                         <MenuItem key={opt} value={opt}>{opt}</MenuItem>
@@ -125,101 +225,143 @@ export default function AboutSections() {
                     </TextField>
                   )}
                 </Box>
+              ) : (
+                <Typography sx={{ 
+                  fontWeight: 600, 
+                  fontSize: 15, 
+                  color: field.value ? '#1a1a2e' : '#94a3b8',
+                }}>
+                  {field.key === 'height' && field.value ? `${field.value} cm` : (field.value || 'Add')}
+                </Typography>
               )}
-              {idx !== fields.length - 1 && <Divider component="li" />}
-            </React.Fragment>
-          ))}
-        </List>
+            </Box>
+          );
+        })}
       </Box>
 
-      {/* More About You Section */}
-      <Typography sx={{ fontWeight: 600, fontSize: 18, mb: 1 }}>More about you</Typography>
-      <Typography variant="body2" sx={{ color: '#888', mb: 1 }}>
-        Cover the things most people are curious about.
-      </Typography>
-      <Box sx={{ bgcolor: '#faf9fa', borderRadius: 3, border: '1px solid #eee', p: 1 }}>
-        <List disablePadding>
-          {moreFields.map((field, idx) => (
+      {/* Lifestyle Section */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 1.5, 
+        mb: 2,
+      }}>
+        <Box sx={{ 
+          width: 36, 
+          height: 36, 
+          borderRadius: '10px', 
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+        }}>
+          <DirectionsRunIcon sx={{ color: '#fff', fontSize: 20 }} />
+        </Box>
+        <Box>
+          <Typography sx={{ fontWeight: 700, fontSize: 18, color: '#1a1a2e' }}>Lifestyle</Typography>
+          <Typography variant="caption" sx={{ color: '#64748b' }}>
+            Things people are curious about
+          </Typography>
+        </Box>
+      </Box>
+      
+      <Box sx={{ 
+        bgcolor: '#fff', 
+        borderRadius: '16px', 
+        border: '1px solid #e2e8f0',
+        overflow: 'hidden',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+      }}>
+        {moreFields.map((field, idx) => {
+          const isEditing = editingMoreKey === field.key;
+          const fieldColors = {
+            exercise: '#10b981',
+            drinking: '#f59e0b',
+            smoking: '#64748b',
+            kids: '#ec4899',
+          };
+          const color = fieldColors[field.key] || '#6C5CE7';
+          
+          return (
             <React.Fragment key={field.key}>
-              <ListItem button onClick={() => editingMoreKey === field.key ? setEditingMoreKey(null) : handleEditMore(field.key)} alignItems="flex-start">
-                <ListItemIcon sx={{ minWidth: 36 }}>{field.icon}</ListItemIcon>
-                <ListItemText
-                  primary={<Typography sx={{ fontWeight: 500 }}>{field.label}</Typography>}
-                />
-                <Typography sx={{ color: '#333', mr: 1, maxWidth: 170, textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{field.value}</Typography>
-                {editingMoreKey === field.key
-                  ? <ArrowDropDownIcon sx={{ color: '#bbb' }} />
-                  : <ChevronRightIcon sx={{ color: '#bbb' }} />}
-              </ListItem>
-              {editingMoreKey === field.key && (
-                <Box sx={{ px: 5, py: 1, bgcolor: '#fff', borderRadius: 2, mb: 1 }}>
-                  {field.type === 'text' ? (
-                    <TextField
-                      autoFocus
-                      fullWidth
-                      size="small"
-                      value={editMoreValue}
-                      onChange={e => setEditMoreValue(e.target.value)}
-                      onBlur={e => {
-                        if (editMoreValue.trim()) {
-                          setMoreFields(moreFields.map(f => f.key === editingMoreKey ? { ...f, value: editMoreValue } : f));
-                        }
-                        setEditingMoreKey(null);
-                        setEditMoreValue("");
-                      }}
-                      placeholder={`Enter your ${field.label.toLowerCase()}`}
-                      sx={{ mb: 1 }}
-                    />
-                  ) : field.type === 'select' ? (
-                    <TextField
-                      select
-                      fullWidth
-                      size="small"
-                      value={editMoreValue}
-                      onChange={e => {
-                        setEditMoreValue(e.target.value);
-                        setMoreFields(moreFields.map(f => f.key === editingMoreKey ? { ...f, value: e.target.value } : f));
-                        setEditingMoreKey(null);
-                        setEditMoreValue("");
-                      }}
-                      sx={{ mb: 1 }}
-                    >
-                      {field.options.map(opt => (
-                        <MenuItem key={opt} value={opt}>{opt}</MenuItem>
-                      ))}
-                    </TextField>
-                  ) : (
-                    // Multi-select for Looking For
-                    <TextField
-                      select
-                      SelectProps={{
-                        multiple: true,
-                        value: editMoreValue ? editMoreValue.split(', ') : [],
-                        onChange: e => {
-                          const valueArr = Array.isArray(e.target.value) ? e.target.value : [e.target.value];
-                          setEditMoreValue(valueArr.join(', '));
-                          setMoreFields(moreFields.map(f => f.key === editingMoreKey ? { ...f, value: valueArr.join(', ') } : f));
-                        },
-                        onClose: () => {
-                          setEditingMoreKey(null);
-                          setEditMoreValue("");
-                        }
-                      }}
-                      fullWidth
-                      size="small"
-                      sx={{ mb: 1 }}
-                    >
-                      {field.options.map(opt => (
-                        <MenuItem key={opt} value={opt}>{opt}</MenuItem>
-                      ))}
-                    </TextField>
-                  )}
+              <Box
+                onClick={() => isEditing ? setEditingMoreKey(null) : handleEditMore(field.key)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  p: 2,
+                  cursor: 'pointer',
+                  bgcolor: isEditing ? `${color}08` : 'transparent',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    bgcolor: `${color}08`,
+                  },
+                }}
+              >
+                <Box sx={{ 
+                  width: 32, 
+                  height: 32, 
+                  borderRadius: '8px', 
+                  bgcolor: `${color}15`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mr: 1.5,
+                }}>
+                  {React.cloneElement(field.icon, { sx: { color: color, fontSize: 18 } })}
+                </Box>
+                <Typography sx={{ fontWeight: 500, flex: 1, color: '#1a1a2e' }}>
+                  {field.label}
+                </Typography>
+                <Typography sx={{ 
+                  color: field.value ? '#64748b' : '#94a3b8', 
+                  fontSize: 14,
+                  maxWidth: 150, 
+                  textAlign: 'right', 
+                  whiteSpace: 'nowrap', 
+                  overflow: 'hidden', 
+                  textOverflow: 'ellipsis',
+                  mr: 0.5,
+                }}>
+                  {field.value || 'Add'}
+                </Typography>
+                <ChevronRightIcon sx={{ color: '#cbd5e1', fontSize: 20 }} />
+              </Box>
+              
+              {isEditing && (
+                <Box sx={{ px: 2, pb: 2, bgcolor: `${color}08` }}>
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    value={editMoreValue}
+                    onChange={e => {
+                      setEditMoreValue(e.target.value);
+                      setMoreFields(moreFields.map(f => f.key === editingMoreKey ? { ...f, value: e.target.value } : f));
+                      setEditingMoreKey(null);
+                      setEditMoreValue("");
+                    }}
+                    sx={{ 
+                      '& .MuiOutlinedInput-root': { 
+                        borderRadius: '10px',
+                        bgcolor: '#fff',
+                      } 
+                    }}
+                  >
+                    {field.options.map(opt => (
+                      <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                    ))}
+                  </TextField>
                 </Box>
               )}
-              {idx !== moreFields.length - 1 && <Divider component="li" />}
+              
+              {idx !== moreFields.length - 1 && !isEditing && (
+                <Divider sx={{ mx: 2 }} />
+              )}
             </React.Fragment>
-          ))}
-        </List>
+          );
+        })}
       </Box>
     </Box>
   );

@@ -63,12 +63,13 @@ const arc0 = (r, startDeg, endDeg) => {
 /* --------------------------- hooks: element width -------------------------- */
 function useElementWidth() {
   const ref = useRef(null);
-  const [w, setW] = useState(360);
+  const [w, setW] = useState(Math.min(window.innerWidth * 0.9, 600));
   useEffect(() => {
     if (!ref.current) return;
     const ro = new ResizeObserver((entries) => {
       const { width } = entries[0].contentRect;
-      setW(Math.max(280, Math.min(400, Math.round(width))));
+      // Use viewport-based sizing, not container-limited
+      setW(Math.max(320, Math.min(600, Math.round(width))));
     });
     ro.observe(ref.current);
     return () => ro.disconnect();
@@ -84,11 +85,12 @@ export default function NearbyScreen() {
   const [containerRef, containerW] = useElementWidth();
   const timersRef = useRef([]);
 
-  // Radar sizes
-  const ringSize = containerW;
-  const rOuter = ringSize / 2 - 16;
-  const rMid = rOuter - 24;
-  const ctaSize = Math.max(170, Math.floor((rMid - 6) * 2));
+  // Radar sizes - 40% viewport width, max 260px (compact radar)
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
+  const ringSize = Math.max(180, Math.min(260, viewportWidth * 0.40));
+  const rOuter = ringSize / 2 - 4;
+  const rMid = rOuter - 8;
+  const ctaSize = Math.max(110, Math.floor((rMid - 4) * 2));
 
   // State per spec
   const [scanState, setScanState] = useState(SCAN_STATE.IDLE);
@@ -354,7 +356,7 @@ export default function NearbyScreen() {
       <Box
         sx={{
           position: "relative",
-          minHeight: "100svh",
+          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           pb: SAFE_BOTTOM,
@@ -387,15 +389,13 @@ export default function NearbyScreen() {
           )}
         </AnimatePresence>
 
-        {/* Help Button */}
+        {/* Help Button - positioned absolute to not take space */}
         <Box
           sx={{
-            pt: 1,
-            pb: 1,
-            px: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 10,
           }}
         >
           <IconButton
@@ -416,38 +416,38 @@ export default function NearbyScreen() {
           renderLocationEmptyState()
         ) : (
           <>
-            {/* Distance Selector Pill - Clickable */}
+            {/* Distance Selector Pill - compact */}
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
               <Box
                 onClick={() => setShowDistanceDialog(true)}
                 sx={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 1,
-                  px: 2,
-                  py: 0.75,
+                  gap: 0.75,
+                  px: 1.5,
+                  py: 0.5,
                   borderRadius: 999,
                   backgroundColor: 'rgba(108,92,231,0.08)',
                   border: '1px solid rgba(108,92,231,0.15)',
+                  minHeight: 32,
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
+                  transition: 'background 0.2s ease',
                   '&:hover': {
                     backgroundColor: 'rgba(108,92,231,0.12)',
-                    transform: 'scale(1.02)',
                   },
                 }}
               >
-                <MapPin size={16} color="#6C5CE7" />
+                <MapPin size={14} color="#6C5CE7" />
                 <Typography
-                  variant="body2"
                   sx={{
                     fontWeight: 600,
                     color: '#6C5CE7',
+                    fontSize: '12px',
                   }}
                 >
                   Distance · {radiusMeters >= 1000 ? `${(radiusMeters / 1000).toFixed(1)} km` : `${radiusMeters}m`}
                 </Typography>
-                <Settings size={14} color="#6C5CE7" />
+                <Settings size={12} color="#6C5CE7" />
               </Box>
             </Box>
 
@@ -547,18 +547,23 @@ export default function NearbyScreen() {
                         boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.55), 0 0 0 6px rgba(99,102,241,0.08)',
                       }}
                     />
-                    <Stack alignItems="center" spacing={0.8} sx={{ position: 'relative', zIndex: 1, px: 2 }}>
+                    <Stack alignItems="center" spacing={1} sx={{ position: 'relative', zIndex: 1, px: 2 }}>
                       <Typography
-                        variant="overline"
-                        sx={{ letterSpacing: 1.8, fontWeight: 900, opacity: 0.9 }}
+                        sx={{ 
+                          letterSpacing: 2, 
+                          fontWeight: 700, 
+                          opacity: 0.85, 
+                          fontSize: '12px',
+                          textTransform: 'uppercase',
+                        }}
                       >
                         PEOPLE RADAR
                       </Typography>
                       <Typography
                         sx={{
-                          fontWeight: 900,
-                          fontSize: 18,
-                          lineHeight: 1.15,
+                          fontWeight: 700,
+                          fontSize: '18px',
+                          lineHeight: 1.3,
                           textAlign: 'center',
                         }}
                       >
@@ -570,27 +575,28 @@ export default function NearbyScreen() {
               </Box>
 
               {/* Instruction Text */}
-              <Box sx={{ mt: 2, textAlign: 'center' }}>
-                <Typography sx={{ color: '#516173', fontWeight: 500 }}>
+              <Box sx={{ mt: 0.5, textAlign: 'center' }}>
+                <Typography sx={{ color: '#64748b', fontWeight: 500, fontSize: '14px' }}>
                   {getInstructionText()}
                 </Typography>
-                
               </Box>
 
               {/* CTA Buttons - Always visible */}
-              <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ mt: 0.75, mb: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
                 <Button
                   variant="contained"
+                  size="small"
                   onClick={startScan}
                   sx={{
-                    py: 1.25,
-                    px: 4,
-                    borderRadius: '16px',
-                    fontSize: '0.95rem',
+                    py: 0.75,
+                    px: 2,
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    minHeight: 36,
                     fontWeight: 600,
                     textTransform: 'none',
                     background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                    boxShadow: '0 4px 16px rgba(108,92,231,0.35)',
+                    boxShadow: '0 3px 10px rgba(108,92,231,0.25)',
                     '&:hover': {
                       background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
                     },
@@ -600,22 +606,23 @@ export default function NearbyScreen() {
                 </Button>
                 <Button
                   variant="text"
+                  size="small"
                   onClick={startScan}
                   sx={{
                     color: '#1a1a2e',
                     textTransform: 'none',
-                    fontSize: '0.9rem',
+                    fontSize: '0.8rem',
                     fontWeight: 500,
+                    mb: 0,
                   }}
                 >
                   {t('scanNearby')}
                 </Button>
+                {/* Loading stripes animation - directly below Scan Nearby */}
+                {scanState !== SCAN_STATE.COMPLETED && (
+                  <LoadingStripes width={Math.round(ctaSize * 0.92)} />
+                )}
               </Box>
-
-              {/* Loading stripes animation */}
-              {scanState !== SCAN_STATE.COMPLETED && (
-                <LoadingStripes width={Math.round(ctaSize * 0.92)} />
-              )}
             </Box>
           </>
         )}
@@ -1034,14 +1041,14 @@ function LoadingStripes({ width = 220 }) {
     <Box
       key={i}
       sx={{
-        height: 8,
+        height: 5,
         width: w,
         borderRadius: 999,
         background:
           'linear-gradient(90deg, rgba(34,197,94,0.25), rgba(96,165,250,0.25), rgba(139,92,246,0.25))',
         backgroundSize: '200% 100%',
         animation: `shimmer 1.6s linear ${d}s infinite, hue 6s ease-in-out ${d}s infinite`,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
         willChange: 'filter, background-position',
       }}
     />
@@ -1049,10 +1056,10 @@ function LoadingStripes({ width = 220 }) {
 
   return (
     <>
-      <Stack spacing={0.9} alignItems="center" sx={{ mt: 2 }}>
-        {line(Math.round(width * 1.0), 1, 0)}
-        {line(Math.round(width * 0.8), 2, 0.12)}
-        {line(Math.round(width * 0.62), 3, 0.24)}
+      <Stack spacing={0.4} alignItems="center" sx={{ mt: 0 }}>
+        {line(Math.round(width * 0.85), 1, 0)}
+        {line(Math.round(width * 0.65), 2, 0.12)}
+        {line(Math.round(width * 0.5), 3, 0.24)}
       </Stack>
       <style>{`
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }

@@ -8,8 +8,18 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 const zodiacSigns = [
-  'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
-  'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+  { name: 'Aries', icon: '🐏' },        // Ram
+  { name: 'Taurus', icon: '🐂' },       // Bull
+  { name: 'Gemini', icon: '👯' },       // Twins
+  { name: 'Cancer', icon: '🦀' },       // Crab
+  { name: 'Leo', icon: '🦁' },          // Lion
+  { name: 'Virgo', icon: '👩' },        // Maiden
+  { name: 'Libra', icon: '⚖️' },        // Scales
+  { name: 'Scorpio', icon: '🦂' },      // Scorpion
+  { name: 'Sagittarius', icon: '🏹' },  // Archer
+  { name: 'Capricorn', icon: '🐐' },    // Goat
+  { name: 'Aquarius', icon: '🏺' },     // Water Bearer
+  { name: 'Pisces', icon: '🐟' },       // Fish
 ];
 const politicsOptions = [
   'Liberal', 'Moderate', 'Conservative', 'Apolitical', 'Prefer not to say'
@@ -46,9 +56,14 @@ export default function ProfileExtras() {
       {/* Star Sign */}
       <Box sx={{ bgcolor: '#faf9fa', borderRadius: 3, border: '1px solid #eee', p: 2, mb: 3 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Box>
-            <Typography sx={{ fontWeight: 600 }}>Star sign</Typography>
-            <Typography variant="body2" sx={{ color: '#888' }}>{starSign}</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ fontSize: 24 }}>
+              {zodiacSigns.find(z => z.name === starSign)?.icon || '♈'}
+            </Box>
+            <Box>
+              <Typography sx={{ fontWeight: 600 }}>Star sign</Typography>
+              <Typography variant="body2" sx={{ color: '#888' }}>{starSign}</Typography>
+            </Box>
           </Box>
           <IconButton onClick={() => setStarSignDialog(true)}><ArrowForwardIosIcon fontSize="small" /></IconButton>
         </Stack>
@@ -75,9 +90,66 @@ export default function ProfileExtras() {
           Add language
         </Button>
       </Box>
-      {/* Connected Accounts - Spotify */}
+      {/* Connected Accounts - Instagram & Spotify */}
       <Box sx={{ bgcolor: '#faf9fa', borderRadius: 3, border: '1px solid #eee', p: 2 }}>
-        <Typography sx={{ fontWeight: 600, mb: 0.3 }}>Connected accounts</Typography>
+        <Typography sx={{ fontWeight: 600, mb: 2 }}>Connected accounts</Typography>
+        
+        {/* Instagram */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          p: 1.5,
+          mb: 2,
+          borderRadius: 2,
+          bgcolor: '#fff',
+          border: '1px solid #eee',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ 
+              width: 40, 
+              height: 40, 
+              borderRadius: 2, 
+              background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+              </svg>
+            </Box>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>Instagram</Typography>
+              <Typography variant="caption" sx={{ color: '#888' }}>Not connected</Typography>
+            </Box>
+          </Box>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => {
+              window.open('https://www.instagram.com/', '_blank');
+            }}
+            sx={{ 
+              borderRadius: 2, 
+              textTransform: 'none', 
+              fontWeight: 500,
+              background: 'linear-gradient(45deg, #f09433, #dc2743)',
+              color: '#fff',
+              border: 'none',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #e08323, #cc1733)',
+                border: 'none',
+              }
+            }}
+          >
+            Connect
+          </Button>
+        </Box>
+
+        {/* Spotify */}
         <Typography variant="body2" sx={{ color: '#888', mb: 1 }}>Show off your favorite music</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           <MusicNoteIcon sx={{ color: '#1db954', mr: 1 }} />
@@ -117,8 +189,8 @@ export default function ProfileExtras() {
       </Box>
 
       {/* Star Sign Dialog */}
-      <Dialog open={starSignDialog} onClose={() => setStarSignDialog(false)}>
-        <DialogTitle>Select your star sign</DialogTitle>
+      <Dialog open={starSignDialog} onClose={() => setStarSignDialog(false)} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
+        <DialogTitle sx={{ fontWeight: 700 }}>Select your star sign</DialogTitle>
         <DialogContent>
           <TextField
             select
@@ -128,11 +200,16 @@ export default function ProfileExtras() {
             onChange={e => setStarSign(e.target.value)}
             sx={{ mt: 2 }}
           >
-            {zodiacSigns.map(sign => <MenuItem key={sign} value={sign}>{sign}</MenuItem>)}
+            {zodiacSigns.map(sign => (
+              <MenuItem key={sign.name} value={sign.name} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box component="span" sx={{ fontSize: 20, width: 28 }}>{sign.icon}</Box>
+                <span>{sign.name}</span>
+              </MenuItem>
+            ))}
           </TextField>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setStarSignDialog(false)}>Done</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setStarSignDialog(false)} variant="contained" sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>Done</Button>
         </DialogActions>
       </Dialog>
       {/* Politics Dialog */}

@@ -63,6 +63,9 @@ import {
 // import ChatGateBanner from "../components/ChatGateBanner";
 // import { BLOCK_REASONS, getComposerPlaceholder } from "../services/ChatGateService";
 
+// AI First Message - Per spec section 9
+import AiFirstMessage from "../components/AiFirstMessage";
+
 /* ----------------- helpers ----------------- */
 const fmtHM = (ts) =>
   new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -84,6 +87,24 @@ const isSameDay = (a, b) => {
     da.getMonth() === db.getMonth() &&
     da.getDate() === db.getDate()
   );
+};
+
+/**
+ * Event Countdown Text - Per spec section 8
+ * Returns: "3 days to go", "Tomorrow", "Today it's happening"
+ */
+const getEventCountdownText = (eventDate) => {
+  if (!eventDate) return null;
+  
+  const now = new Date();
+  const event = new Date(eventDate);
+  const diffMs = event.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays <= 0) return "Today it's happening 🎉";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays <= 7) return `${diffDays} days to go`;
+  return null; // Don't show for events more than a week away
 };
 
 // ✓/✓✓/כחול (סימולציה) + מחיקה נעלמת (TTL)
@@ -278,13 +299,21 @@ const demoChats = [
       name: "Gali",
       age: 25,
       photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80",
+      interests: ["Art", "Music", "Photography"],
     },
     user24hPhoto: null,
     connectionSource: CONNECTION_SOURCE.EVENT,
     eventName: "Art Night @ TLV",
     quickVibe: "Same taste in art",
+    // Event Countdown - Per spec section 8
+    sharedEvent: {
+      id: 1,
+      name: "Art Night @ TLV",
+      date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+    },
     unreadCount: 0,
     blocked: false,
+    isNewMatch: true, // Show AI first message
     messages: [
       {
         id: 51,
@@ -2110,7 +2139,14 @@ export default function ChatScreen() {
   /* ================== LIST VIEW ================== */
   if (!openChat) {
     return (
-      <Box sx={{ display: "flex", flexDirection: "column", height: "100dvh", bgcolor: "#fff" }}>
+      <Box 
+        sx={{ 
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          bgcolor: "#fff",
+        }}
+      >
         {/* Global Meeting Top Bar - Also shown in list view */}
         {meetingState === MEETING_STATE.ACTIVE && (
           <Box
@@ -2270,7 +2306,7 @@ export default function ChatScreen() {
         </Box>
 
         {/* Chat List (כולל כפתורי “בקש AI” ו“תמיכה”) */}
-        <Box sx={{ flex: 1, overflowY: "auto", pt: 1 }}>
+        <Box sx={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", pt: 1 }}>
           {sortedChats.map((c) => (
             <Box
               key={c.matchId}
@@ -2566,7 +2602,14 @@ export default function ChatScreen() {
   const doodleBg = `url("data:image/svg+xml,%3Csvg width='180' height='180' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23EDEDED'%3E%3Ccircle cx='10' cy='10' r='1.2'/%3E%3Ccircle cx='90' cy='30' r='1.2'/%3E%3Ccircle cx='160' cy='80' r='1.2'/%3E%3Ccircle cx='40' cy='130' r='1.2'/%3E%3Ccircle cx='120' cy='160' r='1.2'/%3E%3C/g%3E%3C/svg%3E")`;
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100dvh", bgcolor: "#fff" }}>
+    <Box 
+      sx={{ 
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        bgcolor: "#fff",
+      }}
+    >
       {/* In-chat header */}
       <Box
         sx={{
@@ -2613,6 +2656,23 @@ export default function ChatScreen() {
             </Typography>
           )}
         </Box>
+        {/* Event Countdown Capsule - Per spec section 8 */}
+        {chat.sharedEvent && (
+          <Chip
+            size="small"
+            label={getEventCountdownText(chat.sharedEvent.date)}
+            sx={{
+              height: 24,
+              fontSize: '11px',
+              fontWeight: 600,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              color: '#fff',
+              borderRadius: '12px',
+              px: 0.5,
+              '& .MuiChip-label': { px: 1 },
+            }}
+          />
+        )}
         {chat.matchId !== AGENT_ID && (
           <>
             <IconButton aria-label="Video call" onClick={() => startCall("video")}>
@@ -2948,9 +3008,11 @@ export default function ChatScreen() {
       <Box
         ref={scrollRef}
         sx={{
-          flex: 1,
+          flex: "1 1 auto",
+          minHeight: 0, /* critical for flex scroll */
           overflowY: "auto",
           px: 1.25,
+          pt: "24px", /* padding to push first message down */
           backgroundImage: doodleBg,
           backgroundColor: chat.themeColor || "#ECE5DD",
           backgroundBlendMode: "multiply",
@@ -2960,7 +3022,7 @@ export default function ChatScreen() {
       >
         {/* Unified Agent Panel */}
         {chat.matchId === AGENT_ID && (
-          <Box sx={{ mt: 1, mb: 1, p: 1, bgcolor: "#F0F7FF", border: "1px solid #E0E7FF", borderRadius: 2 }}>
+          <Box sx={{ mt: 5, mb: 1, p: 1, bgcolor: "#F0F7FF", border: "1px solid #E0E7FF", borderRadius: 2 }}>
             {/* Mode Selector */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: 700 }}>
@@ -3014,6 +3076,15 @@ export default function ChatScreen() {
           </Box>
         )}
 
+        {/* AI First Message - Per spec section 9 */}
+        {chat.isNewMatch && chat.matchId !== AGENT_ID && chat.messages.length <= 1 && (
+          <AiFirstMessage
+            matchName={chat.user?.name || 'there'}
+            sharedInterests={chat.user?.interests || []}
+            onToneSelect={(suggestion) => setInput(suggestion)}
+          />
+        )}
+
         {chat.messages.map((m, i, arr) => {
           const prev = arr[i - 1];
           const dayBreak = !prev || !isSameDay(prev.timestamp, m.timestamp);
@@ -3037,15 +3108,6 @@ export default function ChatScreen() {
           );
         })}
       </Box>
-
-      {/* Smart replies */}
-      {chat.matchId !== AGENT_ID && smart.length > 0 && (
-        <Box sx={{ px: 1.25, py: 0.75, display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-          {smart.map((s, i) => (
-            <Chip key={i} label={s} onClick={() => setInput(s)} />
-          ))}
-        </Box>
-      )}
 
       {/* Recording bar */}
       {recActive && (
@@ -3122,6 +3184,37 @@ export default function ChatScreen() {
           pb: `calc(1rem + env(safe-area-inset-bottom, 0px))`,
         }}
       >
+        {/* Smart replies - sticky above input */}
+        {chat.matchId !== AGENT_ID && smart.length > 0 && (
+          <Box sx={{ 
+            display: "flex", 
+            gap: 0.5, 
+            flexWrap: "wrap", 
+            mb: 0.5,
+            pb: 0.5,
+            borderBottom: "1px solid #E5E7EB",
+          }}>
+            {smart.map((s, i) => (
+              <Chip 
+                key={i} 
+                label={s} 
+                size="small"
+                onClick={() => setInput(s)}
+                sx={{
+                  bgcolor: '#FFA726',
+                  color: '#fff',
+                  fontWeight: 500,
+                  fontSize: '0.75rem',
+                  height: 26,
+                  '&:hover': {
+                    bgcolor: '#FB8C00',
+                  },
+                }}
+              />
+            ))}
+          </Box>
+        )}
+
         {/* Reply banner */}
         {replyDraft && (
           <Box
@@ -3191,13 +3284,14 @@ export default function ChatScreen() {
           </Box>
         )}
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           {/* Attach menu trigger */}
           <IconButton
             aria-label="Open attachments"
+            size="small"
             onClick={(e) => setAttachMenu({ open: true, anchor: e.currentTarget })}
           >
-            <Plus />
+            <Plus size={18} />
           </IconButton>
 
           <Box
@@ -3208,6 +3302,7 @@ export default function ChatScreen() {
               bgcolor: "#fff",
               borderRadius: 999,
               border: "1px solid #E5E7EB",
+              py: 0.25,
             }}
           >
             <Tooltip title="Emoji">
@@ -3287,8 +3382,8 @@ export default function ChatScreen() {
               sx={{
                 bgcolor: "#00A884",
                 color: "#fff",
-                width: 42,
-                height: 42,
+                width: 36,
+                height: 36,
                 borderRadius: "50%",
                 "&:hover": { bgcolor: "#01966f" },
               }}
@@ -3635,121 +3730,73 @@ export default function ChatScreen() {
       <Modal 
         open={showMeetingScreen && meetingState === MEETING_STATE.ACTIVE} 
         onClose={() => setShowMeetingScreen(false)}
+        sx={{
+          '& .MuiModal-backdrop': {
+            backgroundColor: 'transparent',
+          },
+        }}
       >
         <Box
           sx={{
-            position: 'fixed',
-            inset: 0,
-            bgcolor: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             background: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'auto',
+            overflow: 'hidden',
+            outline: 'none',
           }}
         >
-          {/* Header */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 2,
-              py: 1.5,
-              bgcolor: 'rgba(255,255,255,0.9)',
-              backdropFilter: 'blur(8px)',
-              borderBottom: '1px solid rgba(16, 185, 129, 0.2)',
-              position: 'sticky',
-              top: 0,
-              zIndex: 10,
-            }}
-          >
-            <IconButton 
-              onClick={() => setShowMeetingScreen(false)} 
-              aria-label="Close"
-              sx={{ color: '#6B7280' }}
-            >
-              <X size={22} />
+          {/* Header Bar */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            px: 2, 
+            py: 1,
+            bgcolor: '#fff',
+            borderBottom: '1px solid #E5E7EB',
+            flexShrink: 0,
+          }}>
+            <IconButton onClick={() => setShowMeetingScreen(false)} size="small" sx={{ color: '#6B7280' }}>
+              <X size={20} />
             </IconButton>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box
-                sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  bgcolor: '#10B981',
-                  animation: 'pulse 2s ease-in-out infinite',
-                }}
-              />
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#1F2937' }}>
-                Meeting Time
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10B981', boxShadow: '0 0 6px #10B981' }} />
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#1F2937' }}>Meeting Time</Typography>
             </Box>
-            <Button 
-              variant="text" 
-              color="error" 
-              size="small"
-              onClick={handleEndMeeting}
-              sx={{ fontWeight: 600 }}
-            >
+            <Button variant="text" color="error" size="small" onClick={handleEndMeeting} sx={{ fontWeight: 600, fontSize: '0.8rem', minWidth: 'auto' }}>
               End
             </Button>
           </Box>
 
-          {/* Content */}
-          <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 4 }}>
-            {/* Status Card */}
-            <Box 
-              sx={{ 
-                textAlign: 'center', 
-                mb: 4, 
-                maxWidth: 340,
-                p: 3,
-                bgcolor: '#fff',
-                borderRadius: 4,
-                boxShadow: '0 4px 20px rgba(16, 185, 129, 0.15)',
-                border: '1px solid rgba(16, 185, 129, 0.2)',
-              }}
-            >
-              {/* Avatar */}
-              <Box
-                sx={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: '50%',
-                  bgcolor: '#10B981',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mx: 'auto',
-                  mb: 2,
-                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
-                }}
-              >
-                <Users size={32} color="#fff" />
+          {/* Meeting Quick Actions Block - At top, below header */}
+          <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', px: 2, pt: 10, pb: 2 }}>
+            <Box sx={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2.5 }}>
+              {/* 1. Meeting Status with motivational message */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: '100%', p: 2.5, bgcolor: '#ECFDF5', borderRadius: 3, border: '1px solid #A7F3D0' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ width: 36, height: 36, borderRadius: '50%', bgcolor: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Users size={18} color="#fff" />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#065F46' }}>
+                    Meeting with {meetingWith?.name} ✓
+                  </Typography>
+                </Box>
+                <Typography variant="body1" sx={{ color: '#6B7280', fontStyle: 'italic', textAlign: 'center' }}>
+                  ✨ Be yourself, stay safe, and enjoy the moment
+                </Typography>
               </Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: '#1F2937' }}>
-                You're all set
-              </Typography>
-              <Typography variant="body1" sx={{ color: '#10B981', fontWeight: 600, mb: 1 }}>
-                Meeting with {meetingWith?.name}
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#9CA3AF', display: 'block', lineHeight: 1.5 }}>
-                The buttons below are available at any time during your meeting.
-              </Typography>
-            </Box>
 
-            {/* Action Circles */}
-            <Typography variant="overline" sx={{ color: '#6B7280', fontWeight: 600, mb: 2, letterSpacing: 1 }}>
-              Quick Actions
-            </Typography>
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(2, 1fr)', 
-              gap: 2, 
-              width: '100%', 
-              maxWidth: 340,
-              mb: 4,
-            }}>
+              {/* 2. Quick Actions */}
+              <Box sx={{ width: '100%' }}>
+                <Typography variant="overline" sx={{ color: '#6B7280', fontWeight: 600, letterSpacing: 1.5, fontSize: '0.75rem', display: 'block', textAlign: 'center', mb: 2 }}>
+                  QUICK ACTIONS
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
               {/* In-App Contact Circles */}
               {meetingContacts.map((contact) => (
                 <Box
@@ -3759,45 +3806,37 @@ export default function ChatScreen() {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    p: 2.5,
-                    borderRadius: 3,
+                    p: 1,
+                    borderRadius: 2,
                     bgcolor: '#fff',
                     boxShadow: contactsNotifiedThisMeeting.includes(contact.id) 
-                      ? '0 0 0 2px #10B981, 0 4px 12px rgba(16, 185, 129, 0.2)' 
-                      : '0 2px 8px rgba(0,0,0,0.06)',
+                      ? '0 0 0 2px #10B981' 
+                      : '0 2px 4px rgba(0,0,0,0.1)',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    '&:hover': { 
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                    },
-                    '&:active': {
-                      transform: 'scale(0.98)',
-                    },
+                    '&:active': { transform: 'scale(0.98)' },
                   }}
                 >
                   <Box
                     sx={{
-                      width: 52,
-                      height: 52,
+                      width: 48,
+                      height: 48,
                       borderRadius: '50%',
                       background: 'linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      mb: 1.5,
-                      boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
+                      mb: 0.75,
                     }}
                   >
                     <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>
                       {contact.name.charAt(0).toUpperCase()}
                     </Typography>
                   </Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'center', color: '#1F2937' }}>
-                    {contact.name}
+                  <Typography variant="caption" sx={{ fontWeight: 600, textAlign: 'center', color: '#1F2937', fontSize: '0.75rem', lineHeight: 1.2 }}>
+                    {contact.name.length > 6 ? contact.name.slice(0, 6) + '…' : contact.name}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: contactsNotifiedThisMeeting.includes(contact.id) ? '#10B981' : '#9CA3AF', fontWeight: 500 }}>
-                    {contactsNotifiedThisMeeting.includes(contact.id) ? '✓ Notified' : 'Tap to notify'}
+                  <Typography variant="caption" sx={{ color: contactsNotifiedThisMeeting.includes(contact.id) ? '#10B981' : '#9CA3AF', fontSize: '0.65rem' }}>
+                    {contactsNotifiedThisMeeting.includes(contact.id) ? '✓' : 'Notify'}
                   </Typography>
                 </Box>
               ))}
@@ -3809,41 +3848,33 @@ export default function ChatScreen() {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  p: 2.5,
-                  borderRadius: 3,
+                  p: 1,
+                  borderRadius: 2,
                   bgcolor: '#fff',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  '&:hover': { 
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 16px rgba(37, 211, 102, 0.2)',
-                  },
-                  '&:active': {
-                    transform: 'scale(0.98)',
-                  },
+                  '&:active': { transform: 'scale(0.98)' },
                 }}
               >
                 <Box
                   sx={{
-                    width: 52,
-                    height: 52,
+                    width: 48,
+                    height: 48,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mb: 1.5,
-                    boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
+                    mb: 0.75,
                   }}
                 >
                   <MessageCircle size={22} color="#fff" />
                 </Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1F2937' }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.75rem', lineHeight: 1.2 }}>
                   WhatsApp
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontWeight: 500 }}>
-                  Share location
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem' }}>
+                  Share
                 </Typography>
               </Box>
 
@@ -3852,7 +3883,6 @@ export default function ChatScreen() {
                 onClick={() => {
                   setShowMeetingScreen(false);
                   setOpenChat(AGENT_ID);
-                  // Send fixed opening message as per spec
                   setTimeout(() => {
                     setChats((prev) =>
                       prev.map((c) =>
@@ -3882,41 +3912,33 @@ export default function ChatScreen() {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  p: 2.5,
-                  borderRadius: 3,
+                  p: 1,
+                  borderRadius: 2,
                   bgcolor: '#fff',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  '&:hover': { 
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 16px rgba(59, 130, 246, 0.2)',
-                  },
-                  '&:active': {
-                    transform: 'scale(0.98)',
-                  },
+                  '&:active': { transform: 'scale(0.98)' },
                 }}
               >
                 <Box
                   sx={{
-                    width: 52,
-                    height: 52,
+                    width: 48,
+                    height: 48,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mb: 1.5,
-                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                    mb: 0.75,
                   }}
                 >
                   <HeartHandshake size={22} color="#fff" />
                 </Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1F2937' }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.75rem', lineHeight: 1.2 }}>
                   Support
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontWeight: 500 }}>
-                  In-app chat
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem' }}>
+                  Chat
                 </Typography>
               </Box>
 
@@ -3927,163 +3949,73 @@ export default function ChatScreen() {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  p: 2.5,
-                  borderRadius: 3,
+                  p: 1,
+                  borderRadius: 2,
                   bgcolor: '#fff',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   border: '2px dashed #E5E7EB',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  '&:hover': { 
-                    transform: 'translateY(-2px)',
-                    borderColor: '#10B981',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                  },
-                  '&:active': {
-                    transform: 'scale(0.98)',
-                  },
+                  '&:active': { transform: 'scale(0.98)' },
                 }}
               >
                 <Box
                   sx={{
-                    width: 52,
-                    height: 52,
+                    width: 48,
+                    height: 48,
                     borderRadius: '50%',
                     bgcolor: '#F3F4F6',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mb: 1.5,
+                    mb: 0.75,
                   }}
                 >
                   <UserPlus size={22} color="#6B7280" />
                 </Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1F2937' }}>
-                  Add Contact
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.75rem', lineHeight: 1.2 }}>
+                  Add
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontWeight: 500 }}>
-                  Quick add
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem' }}>
+                  Contact
                 </Typography>
+                </Box>
               </Box>
-            </Box>
+              </Box>
 
-            {/* SOS Section - Per spec H: calm tone */}
-            <Typography variant="overline" sx={{ color: '#9CA3AF', fontWeight: 600, mb: 2, letterSpacing: 1 }}>
-              Safety Support
-            </Typography>
-            {/* Per spec H: Calm UI - subtle container, no red border when inactive */}
-            <Box
-              sx={{
-                width: '100%',
-                maxWidth: 340,
-                p: 3,
-                borderRadius: 4,
-                bgcolor: sosState === SOS_STATE.NONE ? '#F9FAFB' : 
-                         sosState === SOS_STATE.SEARCHING ? '#FFFBEB' :
-                         sosState === SOS_STATE.HELPER_ARRIVED ? '#ECFDF5' : '#EFF6FF',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                border: '1px solid',
-                borderColor: sosState === SOS_STATE.NONE ? '#E5E7EB' : 
-                             sosState === SOS_STATE.SEARCHING ? '#FCD34D' :
-                             sosState === SOS_STATE.HELPER_ARRIVED ? '#A7F3D0' : '#BFDBFE',
-                textAlign: 'center',
-                transition: 'all 0.3s ease',
-              }}
-            >
-              {/* Per spec H: Calm UI - no harsh red, subtle appearance */}
-              {sosState === SOS_STATE.NONE ? (
-                <>
-                  <Shield size={28} color="#6B7280" style={{ marginBottom: 8 }} />
-                  <Typography variant="body2" sx={{ color: '#6B7280', mb: 2 }}>
-                    Need support? Tap to alert nearby community members.
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={triggerSOS}
-                    sx={{ 
-                      borderRadius: 999, 
-                      px: 5,
-                      py: 1.5,
-                      fontWeight: 600,
-                      color: '#6B7280',
-                      borderColor: '#D1D5DB',
-                      bgcolor: '#F9FAFB',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        borderColor: '#9CA3AF',
-                        bgcolor: '#F3F4F6',
-                      },
-                    }}
-                  >
-                    Request Help
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-                    {sosState === SOS_STATE.SEARCHING && (
-                      <Box sx={{ 
-                        width: 10, 
-                        height: 10, 
-                        borderRadius: '50%', 
-                        bgcolor: '#F59E0B',
-                        animation: 'subtlePulse 2s ease-in-out infinite',
-                        opacity: 0.8,
-                      }} />
-                    )}
-                    <Typography variant="body1" sx={{ fontWeight: 700 }}>
-                      {sosState === SOS_STATE.SEARCHING && 'Finding a helper nearby...'}
-                      {sosState === SOS_STATE.HELPER_FOUND && `${sosHelper?.name} is on the way`}
-                      {sosState === SOS_STATE.HELPER_APPROACHING && `${sosHelper?.name} approaching`}
-                      {sosState === SOS_STATE.HELPER_ARRIVED && `${sosHelper?.name} has arrived`}
-                    </Typography>
-                  </Box>
-                  {sosHelper && (
-                    <Typography variant="body2" sx={{ color: '#6B7280', mb: 2 }}>
-                      {sosHelperDistance !== null && sosHelperDistance > 0 
-                        ? `${sosHelperDistance < 0.1 ? '<100m' : `${sosHelperDistance.toFixed(1)}km`} away`
-                        : 'Arrived'}
-                      {sosHelper.eta && sosState !== SOS_STATE.HELPER_ARRIVED && ` • ETA: ${sosHelper.eta}`}
-                    </Typography>
-                  )}
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={cancelSOS}
-                    sx={{ borderRadius: 999 }}
-                  >
-                    Cancel SOS
-                  </Button>
-                </>
-              )}
+              {/* 3. Need Support */}
+              <Box onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined} sx={{ width: '100%', p: 2, borderRadius: 2.5, bgcolor: '#F9FAFB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}>
+                <Shield size={24} color="#6B7280" />
+                <Typography variant="body1" sx={{ color: '#6B7280', flex: 1 }}>Need support? Tap for help</Typography>
+                <Typography variant="body1" sx={{ color: '#9CA3AF' }}>→</Typography>
+              </Box>
             </Box>
           </Box>
         </Box>
       </Modal>
 
       {/* ==================== Missing Contacts Setup Modal ==================== */}
-      <Modal open={showContactsSetupModal} onClose={() => setShowContactsSetupModal(false)}>
+      <Modal 
+        open={showContactsSetupModal} 
+        onClose={() => setShowContactsSetupModal(false)}
+      >
         <Box
           sx={{
-            position: 'fixed',
-            inset: 0,
-            display: 'grid',
-            placeItems: 'center',
-            bgcolor: 'rgba(0,0,0,0.5)',
-            p: 2,
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            bgcolor: '#fff',
+            borderRadius: 3,
+            p: 3,
+            maxWidth: 360,
+            width: 'calc(100% - 32px)',
+            textAlign: 'center',
+            outline: 'none',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: 24,
           }}
         >
-          <Box
-            sx={{
-              bgcolor: '#fff',
-              borderRadius: 3,
-              p: 3,
-              maxWidth: 360,
-              width: '100%',
-              textAlign: 'center',
-            }}
-          >
             <Box
               sx={{
                 width: 64,
@@ -4128,28 +4060,28 @@ export default function ChatScreen() {
               </Button>
             </Box>
           </Box>
-        </Box>
       </Modal>
 
       {/* ==================== Quick Add Contact Modal ==================== */}
-      <Modal open={showQuickAddContact} onClose={() => setShowQuickAddContact(false)}>
-        <Box
-          sx={{
-            position: 'fixed',
-            inset: 0,
-            display: 'grid',
-            placeItems: 'center',
-            bgcolor: 'rgba(0,0,0,0.5)',
-            p: 2,
-          }}
-        >
+      <Modal 
+        open={showQuickAddContact} 
+        onClose={() => setShowQuickAddContact(false)}
+      >
           <Box
             sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
               bgcolor: '#fff',
               borderRadius: 3,
               p: 3,
               maxWidth: 360,
-              width: '100%',
+              width: 'calc(100% - 32px)',
+              outline: 'none',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: 24,
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
@@ -4216,7 +4148,6 @@ export default function ChatScreen() {
               </Button>
             </Box>
           </Box>
-        </Box>
       </Modal>
 
       {/* ==================== End Meeting Confirmation (During SOS) ==================== */}

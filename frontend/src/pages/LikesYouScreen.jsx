@@ -434,7 +434,7 @@ const LikesYouScreen = () => {
   const handleLike = (userId) => {
     trackEvent('likes_you_like', { userId });
     setLikes(prev => prev.filter(l => l.userId !== userId));
-    setSnackbar({ open: true, message: t('itsAMatch') || "It's a match!", severity: 'success' });
+    setSnackbar({ open: true, message: t('itsAMatch') || "It's a Pulse!", severity: 'success' });
   };
 
   // Handle pass action

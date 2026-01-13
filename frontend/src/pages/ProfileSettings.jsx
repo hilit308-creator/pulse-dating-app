@@ -1,4 +1,9 @@
-import React, { useMemo, useRef, useState } from "react";
+// ProfileSettings.jsx
+// Per spec: "Identity hub" - human, calm, flexible, respectful
+// NOT: bureaucratic, judgmental, gamified, punitive
+// "If editing the profile feels like work — the system failed"
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -21,6 +26,8 @@ import {
   Snackbar,
   Alert,
   InputAdornment,
+  Slider,
+  CircularProgress,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
@@ -33,8 +40,32 @@ import {
   X as XIcon,
   Image,
   Search,
+  Sparkles,
+  Briefcase,
+  GraduationCap,
+  MapPin,
+  Ruler,
+  Heart,
+  Users,
+  Coffee,
+  Music,
+  Compass,
+  Instagram,
+  Link2,
+  Coins,
+  ChevronRight,
+  Lightbulb,
+  SkipForward,
+  Check,
+  X,
+  SlidersHorizontal,
+  ThumbsUp,
+  ThumbsDown,
+  HelpCircle,
+  HeartHandshake,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import AboutSections from "../components/AboutSections";
 import ProfileExtras from "../components/ProfileExtras";
 
@@ -122,6 +153,38 @@ const mockPrompts = [
   "Friends describe me as…",
 ];
 
+// Looking For options per spec - cards with icon + text
+const LOOKING_FOR_OPTIONS = [
+  { id: "relationship", label: "Relationship", icon: HeartHandshake, description: "Something serious" },
+  { id: "casual", label: "Something casual", icon: Sparkles, description: "No pressure" },
+  { id: "friends", label: "New friends", icon: Users, description: "Expand my circle" },
+  { id: "unsure", label: "Still figuring it out", icon: HelpCircle, description: "Open to possibilities" },
+];
+
+// AI Bio suggestions per spec - "inspiration pool"
+const AI_BIO_SUGGESTIONS = [
+  "Coffee enthusiast who believes the best conversations happen over a good brew ☕",
+  "Adventure seeker with a soft spot for cozy nights in 🌙",
+  "Dog lover, sunset chaser, and eternal optimist 🐕",
+  "Foodie on a mission to find the city's best hidden gems 🍜",
+  "Music is my love language — always down for a concert 🎵",
+  "Weekend hiker, weekday dreamer, full-time curious soul 🏔️",
+  "Bookworm who also knows how to have a good time 📚",
+  "Creative mind with a passion for good design and better coffee ✨",
+];
+
+// Hard Preferences questions per spec - algorithm selects 6-10
+const HARD_PREFERENCE_QUESTIONS = [
+  { id: "smoking", question: "Smoking", options: ["Works for me", "Not for me"] },
+  { id: "drinking", question: "Drinking", options: ["Works for me", "Not for me"] },
+  { id: "kids_have", question: "Has children", options: ["Works for me", "Not for me"] },
+  { id: "kids_want", question: "Wants children", options: ["Works for me", "Not for me"] },
+  { id: "pets", question: "Has pets", options: ["Works for me", "Not for me"] },
+  { id: "religion", question: "Religious practice", options: ["Works for me", "Not for me"] },
+  { id: "politics", question: "Political alignment matters", options: ["Works for me", "Not for me"] },
+  { id: "distance", question: "Long distance", options: ["Works for me", "Not for me"] },
+];
+
 const MAX_PHOTOS = 6;
 const MAX_INTERESTS = 10;
 const MAX_CAUSES = 3;
@@ -163,6 +226,67 @@ export default function ProfileSettings({ onBack }) {
   const [promptDialog, setPromptDialog] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState(null);
   const [promptAnswer, setPromptAnswer] = useState("");
+
+  // --- Looking For (per spec: cards with icon + text, multi-select) ---
+  const [lookingFor, setLookingFor] = useState(["relationship"]);
+
+  // --- Discovery (per spec: Age range, Max distance) ---
+  const [ageRange, setAgeRange] = useState([22, 35]);
+  const [maxDistance, setMaxDistance] = useState(25); // km
+
+  // --- Connected Accounts (per spec: Instagram, Spotify with OAuth + manual fallback) ---
+  const [instagramConnected, setInstagramConnected] = useState(false);
+  const [instagramUsername, setInstagramUsername] = useState("");
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [spotifyArtists, setSpotifyArtists] = useState([]);
+  const [connectAccountDialog, setConnectAccountDialog] = useState(null); // 'instagram' | 'spotify' | null
+
+  // --- Points & Hard Preferences ---
+  const [points, setPoints] = useState(150); // Mock points balance
+  const [hardPreferences, setHardPreferences] = useState({}); // { questionId: 'works' | 'not' | 'skip' }
+  const [hardPreferencesDialog, setHardPreferencesDialog] = useState(false);
+  const [currentPreferenceIndex, setCurrentPreferenceIndex] = useState(0);
+
+  const HARD_PREFERENCES_STORAGE_KEY = "pulse.hardPreferences";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(HARD_PREFERENCES_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        setHardPreferences(parsed);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(HARD_PREFERENCES_STORAGE_KEY, JSON.stringify(hardPreferences));
+    } catch {
+      // ignore
+    }
+  }, [hardPreferences]);
+
+  const getFirstUnansweredPreferenceIndex = (prefs) => {
+    const idx = HARD_PREFERENCE_QUESTIONS.findIndex((q) => prefs[q.id] == null);
+    return idx === -1 ? HARD_PREFERENCE_QUESTIONS.length - 1 : idx;
+  };
+
+  const getNextUnansweredPreferenceIndex = (fromIndex, prefs) => {
+    for (let i = fromIndex + 1; i < HARD_PREFERENCE_QUESTIONS.length; i += 1) {
+      const q = HARD_PREFERENCE_QUESTIONS[i];
+      if (prefs[q.id] == null) return i;
+    }
+    return -1;
+  };
+
+  // --- AI Bio Suggestions (per spec: inspiration pool) ---
+  const [showBioSuggestions, setShowBioSuggestions] = useState(false);
 
   // --- Photo file input ---
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
@@ -373,97 +497,155 @@ export default function ProfileSettings({ onBack }) {
           </Typography>
         </Box>
 
-        {/* Completion indicator */}
-        <Box sx={{ px: 2, pt: 2, pb: 2 }}>
-          <Box 
-            onClick={() => setShowChecklist(true)}
-            sx={{ 
-              background: 'linear-gradient(135deg, rgba(108,92,231,0.08) 0%, rgba(168,85,247,0.08) 100%)',
-              borderRadius: '16px',
-              p: 2,
-              cursor: 'pointer',
-              border: '1px solid rgba(108,92,231,0.15)',
+        {/* Profile Preview Card - shows how others see you */}
+        <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              borderRadius: '20px',
+              p: 2.5,
+              color: '#fff',
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography sx={{ fontWeight: 600, color: "#1a1a2e", fontSize: '0.95rem' }}>
-                Profile Strength
-              </Typography>
-              <Chip
-                label={`${completion}%`}
-                size="small"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: 13,
-                  bgcolor: completion === 100 ? '#10b981' : '#6C5CE7',
-                  color: '#fff',
+            {/* Decorative circles */}
+            <Box sx={{ 
+              position: 'absolute', 
+              top: -30, 
+              right: -30, 
+              width: 100, 
+              height: 100, 
+              borderRadius: '50%', 
+              backgroundColor: 'rgba(255,255,255,0.1)' 
+            }} />
+            <Box sx={{ 
+              position: 'absolute', 
+              bottom: -20, 
+              left: -20, 
+              width: 60, 
+              height: 60, 
+              borderRadius: '50%', 
+              backgroundColor: 'rgba(255,255,255,0.08)' 
+            }} />
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}>
+              <Avatar
+                src={photos[0]?.url}
+                sx={{ 
+                  width: 64, 
+                  height: 64, 
+                  border: '3px solid rgba(255,255,255,0.3)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                 }}
-              />
+              >
+                {!photos[0]?.url && <Camera size={24} />}
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.25 }}>
+                  Your Profile
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {completion === 100 ? "Looking great! ✨" : `${completion}% complete`}
+                </Typography>
+              </Box>
+              {verified && (
+                <Box sx={{ 
+                  backgroundColor: 'rgba(255,255,255,0.2)', 
+                  borderRadius: '8px', 
+                  p: 0.75,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                }}>
+                  <Shield size={14} />
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>Verified</Typography>
+                </Box>
+              )}
             </Box>
-            <LinearProgress
-              variant="determinate"
-              value={completion}
-              sx={{
-                height: 8,
-                borderRadius: 999,
-                backgroundColor: 'rgba(255,255,255,0.8)',
-                '& .MuiLinearProgress-bar': {
-                  background: 'linear-gradient(90deg, #6C5CE7 0%, #a855f7 100%)',
+
+            {/* Progress bar */}
+            <Box sx={{ mt: 2, position: 'relative', zIndex: 1 }}>
+              <Box sx={{ 
+                height: 6, 
+                borderRadius: 999, 
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                overflow: 'hidden',
+              }}>
+                <Box sx={{ 
+                  height: '100%', 
+                  width: `${completion}%`, 
+                  backgroundColor: '#fff',
                   borderRadius: 999,
-                },
-              }}
-            />
-            <Typography variant="caption" sx={{ color: '#64748b', mt: 1, display: 'block' }}>
-              Tap to see what's missing
-            </Typography>
+                  transition: 'width 0.5s ease',
+                }} />
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                  {checklist.filter(i => !i.completed).length > 0 
+                    ? `${checklist.filter(i => !i.completed).length} items to complete`
+                    : "All done!"
+                  }
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => setShowChecklist(true)}
+                  sx={{ 
+                    color: '#fff', 
+                    textTransform: 'none', 
+                    fontSize: 12,
+                    p: 0,
+                    minWidth: 'auto',
+                    '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' },
+                  }}
+                >
+                  View details
+                </Button>
+              </Box>
+            </Box>
           </Box>
         </Box>
 
-        <Dialog 
-          open={showChecklist} 
-          onClose={() => setShowChecklist(false)}
-          PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 340 } }}
-        >
-          <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Complete Your Profile</DialogTitle>
-          <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {checklist.map((item) => (
-                <Box
-                  key={item.label}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    p: 1.5,
-                    borderRadius: '12px',
-                    backgroundColor: item.completed ? 'rgba(16,185,129,0.08)' : 'rgba(249,115,22,0.08)',
-                    border: `1px solid ${item.completed ? 'rgba(16,185,129,0.2)' : 'rgba(249,115,22,0.2)'}`,
-                  }}
-                >
-                  <CheckCircle size={18} color={item.completed ? '#10b981' : '#f97316'} />
-                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
-                    {item.label}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button 
-              fullWidth
-              variant="contained"
-              onClick={() => setShowChecklist(false)}
-              sx={{ 
+        {/* Points - moved here per user request */}
+        <Box sx={{ px: 2, pb: 2 }}>
+          <Box
+            onClick={() => navigate('/points')}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              p: 2,
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, rgba(251,191,36,0.1) 0%, rgba(245,158,11,0.1) 100%)',
+              border: '1px solid rgba(251,191,36,0.2)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                boxShadow: '0 4px 12px rgba(251,191,36,0.2)',
+              },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ 
+                width: 44, 
+                height: 44, 
                 borderRadius: '12px', 
-                textTransform: 'none', 
-                py: 1.5,
-                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)' 
-              }}
-            >
-              Got it
-            </Button>
-          </DialogActions>
-        </Dialog>
+                background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(251,191,36,0.3)',
+              }}>
+                <Coins size={22} color="#fff" />
+              </Box>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a2e' }}>Your Points</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: '#f59e0b', lineHeight: 1.2 }}>{points}</Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={20} color="#94a3b8" />
+          </Box>
+        </Box>
 
         {/* Photos & videos */}
         <Box sx={{ px: 2, pb: 2 }}>
@@ -862,17 +1044,36 @@ export default function ProfileSettings({ onBack }) {
 
         {/* Bio & interests */}
         <Box sx={{ px: 3, pb: 3 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.6, color: "#0f172a" }}>Bio</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.6 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#0f172a" }}>About Me</Typography>
+            <Button
+              size="small"
+              startIcon={<Sparkles size={14} />}
+              onClick={() => setShowBioSuggestions(true)}
+              sx={{
+                textTransform: 'none',
+                fontSize: 12,
+                color: '#6C5CE7',
+                '&:hover': { backgroundColor: 'rgba(108,92,231,0.08)' },
+              }}
+            >
+              Get ideas
+            </Button>
+          </Box>
           <TextField
             variant="outlined"
             size="small"
             placeholder="Write a few lines about yourself…"
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            sx={{ width: "100%", mb: 2 }}
+            sx={{ width: "100%", mb: 0.5 }}
             multiline
             minRows={2}
+            inputProps={{ maxLength: 500 }}
           />
+          <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', mb: 2 }}>
+            {bio.length}/500 characters
+          </Typography>
 
           <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.6, color: "#0f172a" }}>Interests</Typography>
           <Typography variant="body2" sx={{ color: "#64748b", mb: 1.25 }}>
@@ -949,11 +1150,12 @@ export default function ProfileSettings({ onBack }) {
             <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
               You can pick up to {MAX_CAUSES}.
             </Typography>
-            <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
+            <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap", gap: 1 }}>
               {selectedCauses.map((cause) => (
                 <Chip
                   key={cause}
                   label={cause}
+                  onDelete={() => setSelectedCauses(prev => prev.filter(c => c !== cause))}
                   sx={{
                     borderRadius: 999,
                     bgcolor: "#fff",
@@ -996,12 +1198,13 @@ export default function ProfileSettings({ onBack }) {
             <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
               Up to {MAX_QUALITIES} qualities.
             </Typography>
-            <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
+            <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap", gap: 1 }}>
               {selectedQualities.map((q) => (
                 <Chip
                   key={q}
                   label={q}
                   variant="outlined"
+                  onDelete={() => setSelectedQualities(prev => prev.filter(quality => quality !== q))}
                   sx={{
                     borderRadius: 999,
                     bgcolor: "#fff",
@@ -1171,8 +1374,271 @@ export default function ProfileSettings({ onBack }) {
           </DialogActions>
         </Dialog>
 
+        {/* Looking For - per spec: cards with icon + text, multi-select, represents vibe not constraints */}
+        <Box sx={{ px: 2.5, pb: 3 }}>
+          <Box
+            sx={{
+              bgcolor: 'rgba(244,63,94,0.03)',
+              borderRadius: 3,
+              border: '1px solid rgba(244,63,94,0.12)',
+              p: 2,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+              <Box sx={{ 
+                width: 36, 
+                height: 36, 
+                borderRadius: '10px', 
+                background: 'linear-gradient(135deg, #f43f5e 0%, #ec4899 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Heart size={18} color="#fff" />
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1a1a2e" }}>
+                  Looking For
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#64748b" }}>
+                  What brings you here? (Select all that apply)
+                </Typography>
+              </Box>
+            </Box>
+            <Grid container spacing={1.5}>
+              {LOOKING_FOR_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                const isSelected = lookingFor.includes(option.id);
+                return (
+                  <Grid item xs={6} key={option.id}>
+                    <Box
+                      onClick={() => {
+                        setLookingFor(prev => 
+                          isSelected 
+                            ? prev.filter(id => id !== option.id)
+                            : [...prev, option.id]
+                        );
+                      }}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: '12px',
+                        border: `2px solid ${isSelected ? '#f43f5e' : 'rgba(0,0,0,0.08)'}`,
+                        backgroundColor: isSelected ? 'rgba(244,63,94,0.05)' : '#fff',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          borderColor: isSelected ? '#f43f5e' : 'rgba(244,63,94,0.3)',
+                        },
+                      }}
+                    >
+                      <Icon size={20} color={isSelected ? '#f43f5e' : '#64748b'} />
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a2e', mt: 0.5 }}>
+                        {option.label}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                        {option.description}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </Box>
+        </Box>
+
+        {/* Discovery - per spec: Age range, Max distance */}
+        <Box sx={{ px: 2.5, pb: 3 }}>
+          <Box
+            sx={{
+              bgcolor: 'rgba(16,185,129,0.03)',
+              borderRadius: 3,
+              border: '1px solid rgba(16,185,129,0.12)',
+              p: 2,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Box sx={{ 
+                width: 36, 
+                height: 36, 
+                borderRadius: '10px', 
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Compass size={18} color="#fff" />
+              </Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1a1a2e" }}>
+                Discovery Preferences
+              </Typography>
+            </Box>
+
+            {/* Age Range */}
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a2e' }}>Age range</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#10b981' }}>
+                  {ageRange[0]} - {ageRange[1]}
+                </Typography>
+              </Box>
+              <Slider
+                value={ageRange}
+                onChange={(_, v) => setAgeRange(v)}
+                min={18}
+                max={70}
+                disableSwap
+                sx={{
+                  color: '#10b981',
+                  '& .MuiSlider-thumb': { width: 20, height: 20 },
+                }}
+              />
+            </Box>
+
+            {/* Max Distance */}
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a2e' }}>Max distance</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#10b981' }}>
+                  {maxDistance} km
+                </Typography>
+              </Box>
+              <Slider
+                value={maxDistance}
+                onChange={(_, v) => setMaxDistance(v)}
+                min={1}
+                max={100}
+                sx={{
+                  color: '#10b981',
+                  '& .MuiSlider-thumb': { width: 20, height: 20 },
+                }}
+              />
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Hard Preferences - Redesigned with gradient card */}
+        <Box sx={{ px: 2.5, pb: 3 }}>
+          <Box
+            onClick={() => {
+              setCurrentPreferenceIndex(getFirstUnansweredPreferenceIndex(hardPreferences));
+              setHardPreferencesDialog(true);
+            }}
+            sx={{
+              position: 'relative',
+              overflow: 'hidden',
+              borderRadius: '20px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+              p: 2.5,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 8px 32px rgba(102, 126, 234, 0.35)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 12px 40px rgba(102, 126, 234, 0.45)',
+              },
+            }}
+          >
+            {/* Decorative elements */}
+            <Box sx={{ 
+              position: 'absolute', 
+              top: -20, 
+              right: -20, 
+              width: 100, 
+              height: 100, 
+              borderRadius: '50%', 
+              background: 'rgba(255,255,255,0.1)',
+            }} />
+            <Box sx={{ 
+              position: 'absolute', 
+              bottom: -30, 
+              left: '30%', 
+              width: 80, 
+              height: 80, 
+              borderRadius: '50%', 
+              background: 'rgba(255,255,255,0.08)',
+            }} />
+            <Box sx={{ 
+              position: 'absolute', 
+              top: '50%', 
+              right: '15%', 
+              width: 40, 
+              height: 40, 
+              borderRadius: '50%', 
+              background: 'rgba(255,255,255,0.06)',
+            }} />
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ 
+                  width: 52, 
+                  height: 52, 
+                  borderRadius: '14px', 
+                  background: 'rgba(255,255,255,0.2)',
+                  backdropFilter: 'blur(10px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <ThumbsUp size={18} color="#fff" />
+                    <ThumbsDown size={18} color="#fff" style={{ opacity: 0.6 }} />
+                  </Box>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#fff', mb: 0.25 }}>
+                    Hard Preferences
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>
+                    Help the algorithm understand you better
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ 
+                width: 36, 
+                height: 36, 
+                borderRadius: '50%', 
+                background: 'rgba(255,255,255,0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <ChevronRight size={20} color="#fff" />
+              </Box>
+            </Box>
+            
+            {/* Progress indicator */}
+            <Box sx={{ mt: 2, position: 'relative', zIndex: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
+                  {Object.keys(hardPreferences).length} of {HARD_PREFERENCE_QUESTIONS.length} answered
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>
+                  {Math.round((Object.keys(hardPreferences).length / HARD_PREFERENCE_QUESTIONS.length) * 100)}%
+                </Typography>
+              </Box>
+              <Box sx={{ 
+                height: 6, 
+                borderRadius: 999, 
+                background: 'rgba(255,255,255,0.2)',
+                overflow: 'hidden',
+              }}>
+                <Box sx={{ 
+                  height: '100%', 
+                  width: `${(Object.keys(hardPreferences).length / HARD_PREFERENCE_QUESTIONS.length) * 100}%`, 
+                  background: '#fff',
+                  borderRadius: 999,
+                  transition: 'width 0.5s ease',
+                }} />
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+
         {/* Additional sections from your app */}
         <AboutSections />
+        
+        {/* Star Sign, Politics, Languages, Connected Accounts (Instagram + Spotify) */}
         <ProfileExtras />
       </Box>
 
@@ -1244,6 +1710,488 @@ export default function ProfileSettings({ onBack }) {
           </Box>
         </Box>
       )}
+
+      {/* Profile Checklist Dialog */}
+      <Dialog 
+        open={showChecklist} 
+        onClose={() => setShowChecklist(false)}
+        PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 340 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Complete Your Profile</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {checklist.map((item) => (
+              <Box
+                key={item.label}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  p: 1.5,
+                  borderRadius: '12px',
+                  backgroundColor: item.completed ? 'rgba(16,185,129,0.08)' : 'rgba(249,115,22,0.08)',
+                  border: `1px solid ${item.completed ? 'rgba(16,185,129,0.2)' : 'rgba(249,115,22,0.2)'}`,
+                }}
+              >
+                <CheckCircle size={18} color={item.completed ? '#10b981' : '#f97316'} />
+                <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
+                  {item.label}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button 
+            fullWidth
+            variant="contained"
+            onClick={() => setShowChecklist(false)}
+            sx={{ 
+              borderRadius: '12px', 
+              textTransform: 'none', 
+              py: 1.5,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)' 
+            }}
+          >
+            Got it
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* AI Bio Suggestions Dialog - per spec: inspiration pool, fully editable */}
+      <Dialog
+        open={showBioSuggestions}
+        onClose={() => setShowBioSuggestions(false)}
+        PaperProps={{ sx: { borderRadius: '20px', maxWidth: 400, mx: 2 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Sparkles size={20} color="#6C5CE7" />
+          Get inspired
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
+            Tap any suggestion to use it as a starting point. You can edit it however you like!
+          </Typography>
+          <Stack spacing={1}>
+            {AI_BIO_SUGGESTIONS.map((suggestion, idx) => (
+              <Box
+                key={idx}
+                onClick={() => {
+                  setBio(suggestion);
+                  setShowBioSuggestions(false);
+                }}
+                sx={{
+                  p: 1.5,
+                  borderRadius: '12px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: 'rgba(108,92,231,0.08)',
+                    borderColor: 'rgba(108,92,231,0.2)',
+                  },
+                }}
+              >
+                <Typography variant="body2" sx={{ color: '#1a1a2e' }}>
+                  {suggestion}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            fullWidth
+            variant="text"
+            onClick={() => setShowBioSuggestions(false)}
+            sx={{ borderRadius: '12px', textTransform: 'none', color: '#64748b' }}
+          >
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Connected Account Dialog - per spec: OAuth primary, manual fallback */}
+      <Dialog
+        open={!!connectAccountDialog}
+        onClose={() => setConnectAccountDialog(null)}
+        PaperProps={{ sx: { borderRadius: '20px', maxWidth: 380, mx: 2 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {connectAccountDialog === 'instagram' ? (
+            <>
+              <Box sx={{ 
+                width: 36, height: 36, borderRadius: '10px', 
+                background: 'linear-gradient(45deg, #f09433, #dc2743)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Instagram size={18} color="#fff" />
+              </Box>
+              Connect Instagram
+            </>
+          ) : (
+            <>
+              <Box sx={{ 
+                width: 36, height: 36, borderRadius: '10px', backgroundColor: '#1DB954',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Music size={18} color="#fff" />
+              </Box>
+              Connect Spotify
+            </>
+          )}
+        </DialogTitle>
+        <DialogContent>
+          {connectAccountDialog === 'instagram' ? (
+            <>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => {
+                  // Mock OAuth - in real app would redirect to Instagram OAuth
+                  setInstagramConnected(true);
+                  setInstagramUsername('your_username');
+                  setConnectAccountDialog(null);
+                  setSnack({ open: true, msg: 'Instagram connected!', sev: 'success' });
+                }}
+                sx={{
+                  mb: 2,
+                  py: 1.5,
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  background: 'linear-gradient(45deg, #f09433, #dc2743)',
+                }}
+              >
+                Connect with Instagram
+              </Button>
+              <Divider sx={{ my: 2 }}>
+                <Typography variant="caption" sx={{ color: '#94a3b8' }}>or add manually</Typography>
+              </Divider>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="@username"
+                value={instagramUsername}
+                onChange={(e) => setInstagramUsername(e.target.value.replace('@', ''))}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">@</InputAdornment>,
+                }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+              />
+              <Typography variant="caption" sx={{ color: '#94a3b8', mt: 1, display: 'block' }}>
+                Will be shown as "Manually added" on your profile
+              </Typography>
+            </>
+          ) : (
+            <>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => {
+                  // Mock OAuth
+                  setSpotifyConnected(true);
+                  setSpotifyArtists(['Taylor Swift', 'The Weeknd', 'Dua Lipa']);
+                  setConnectAccountDialog(null);
+                  setSnack({ open: true, msg: 'Spotify connected!', sev: 'success' });
+                }}
+                sx={{
+                  mb: 2,
+                  py: 1.5,
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  backgroundColor: '#1DB954',
+                  '&:hover': { backgroundColor: '#1aa34a' },
+                }}
+              >
+                Connect with Spotify
+              </Button>
+              <Divider sx={{ my: 2 }}>
+                <Typography variant="caption" sx={{ color: '#94a3b8' }}>or select manually</Typography>
+              </Divider>
+              <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>
+                Select your favorite artists or genres
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {['Pop', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Jazz', 'Classical'].map((genre) => (
+                  <Chip
+                    key={genre}
+                    label={genre}
+                    clickable
+                    onClick={() => {
+                      setSpotifyArtists(prev => 
+                        prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]
+                      );
+                    }}
+                    color={spotifyArtists.includes(genre) ? 'primary' : 'default'}
+                    sx={{ borderRadius: 999, mb: 1 }}
+                  />
+                ))}
+              </Stack>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
+          {connectAccountDialog === 'instagram' && instagramUsername && (
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => {
+                setInstagramConnected(true);
+                setConnectAccountDialog(null);
+                setSnack({ open: true, msg: 'Username saved!', sev: 'success' });
+              }}
+              sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 600 }}
+            >
+              Save username
+            </Button>
+          )}
+          {connectAccountDialog === 'spotify' && spotifyArtists.length > 0 && !spotifyConnected && (
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => {
+                setSpotifyConnected(true);
+                setConnectAccountDialog(null);
+                setSnack({ open: true, msg: 'Genres saved!', sev: 'success' });
+              }}
+              sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 600 }}
+            >
+              Save selection
+            </Button>
+          )}
+          <Button
+            fullWidth
+            variant="text"
+            onClick={() => setConnectAccountDialog(null)}
+            sx={{ borderRadius: '12px', textTransform: 'none', color: '#64748b' }}
+          >
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Hard Preferences Dialog - Premium one-decision-at-a-time flow */}
+      <Dialog
+        open={hardPreferencesDialog}
+        onClose={() => setHardPreferencesDialog(false)}
+        fullScreen
+        PaperProps={{ 
+          sx: { 
+            background: '#FAFBFC',
+            pt: 'env(safe-area-inset-top, 0px)',
+          } 
+        }}
+      >
+        {/* Fixed Header - Always visible, respects safe-area */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          px: 2,
+          py: 1.5,
+          backgroundColor: '#fff',
+          borderBottom: '1px solid #E5E7EB',
+          flexShrink: 0,
+        }}>
+          {/* Left: Close button */}
+          <IconButton 
+            onClick={() => setHardPreferencesDialog(false)}
+            sx={{ 
+              width: 40,
+              height: 40,
+              color: '#6B7280',
+              '&:hover': { backgroundColor: '#F3F4F6' },
+            }}
+          >
+            <X size={22} />
+          </IconButton>
+          
+          {/* Center: Title */}
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1F2937' }}>
+            Things That Really Matter
+          </Typography>
+          
+          {/* Right: Progress indicator */}
+          <Typography variant="body2" sx={{ 
+            color: '#9CA3AF', 
+            fontWeight: 600,
+            minWidth: 40,
+            textAlign: 'right',
+          }}>
+            {currentPreferenceIndex + 1}/{HARD_PREFERENCE_QUESTIONS.length}
+          </Typography>
+        </Box>
+
+        {/* Progress bar - thin, under header */}
+        <LinearProgress
+          variant="determinate"
+          value={((currentPreferenceIndex + 1) / HARD_PREFERENCE_QUESTIONS.length) * 100}
+          sx={{
+            height: 3,
+            backgroundColor: '#E5E7EB',
+            flexShrink: 0,
+            '& .MuiLinearProgress-bar': {
+              background: 'linear-gradient(90deg, #6C5CE7 0%, #A855F7 100%)',
+            },
+          }}
+        />
+
+        {/* Main Content - Centered column, max-width for readability */}
+        <Box sx={{ 
+          flex: 1,
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          pt: { xs: 6, sm: 8 },
+          px: 3,
+          pb: 3,
+          overflow: 'auto',
+        }}>
+          <Box sx={{ 
+            width: '100%',
+            maxWidth: 420,
+          }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentPreferenceIndex}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.25 }}
+              >
+                {/* Question Block */}
+                <Box sx={{ textAlign: 'center', mb: 5 }}>
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      fontWeight: 800, 
+                      color: '#1F2937', 
+                      mb: 1.5,
+                      fontSize: { xs: '1.75rem', sm: '2rem' },
+                    }}
+                  >
+                    {HARD_PREFERENCE_QUESTIONS[currentPreferenceIndex]?.question}
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: '#6B7280', fontSize: '0.95rem' }}>
+                    This helps us find better matches for you
+                  </Typography>
+                </Box>
+
+                {/* Button Group - Unified decision set */}
+                <Stack spacing={1.5} sx={{ width: '100%' }}>
+                  {/* Works for me - Primary positive */}
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    onClick={() => {
+                      const q = HARD_PREFERENCE_QUESTIONS[currentPreferenceIndex];
+                      setHardPreferences((prev) => {
+                        const nextPrefs = { ...prev, [q.id]: 'works' };
+                        const nextIdx = getNextUnansweredPreferenceIndex(currentPreferenceIndex, nextPrefs);
+                        if (nextIdx !== -1) setCurrentPreferenceIndex(nextIdx);
+                        return nextPrefs;
+                      });
+                    }}
+                    startIcon={<Check size={20} />}
+                    sx={{
+                      py: 1.75,
+                      borderRadius: '14px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      borderWidth: 2,
+                      borderColor: '#10B981',
+                      color: '#10B981',
+                      backgroundColor: '#fff',
+                      '&:hover': { 
+                        backgroundColor: '#ECFDF5',
+                        borderColor: '#10B981',
+                        borderWidth: 2,
+                      },
+                    }}
+                  >
+                    Works for me
+                  </Button>
+                  
+                  {/* Not for me - Secondary, NOT destructive red */}
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    onClick={() => {
+                      const q = HARD_PREFERENCE_QUESTIONS[currentPreferenceIndex];
+                      setHardPreferences((prev) => {
+                        const nextPrefs = { ...prev, [q.id]: 'not' };
+                        const nextIdx = getNextUnansweredPreferenceIndex(currentPreferenceIndex, nextPrefs);
+                        if (nextIdx !== -1) setCurrentPreferenceIndex(nextIdx);
+                        return nextPrefs;
+                      });
+                    }}
+                    startIcon={<X size={20} />}
+                    sx={{
+                      py: 1.75,
+                      borderRadius: '14px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      borderWidth: 2,
+                      borderColor: '#9CA3AF',
+                      color: '#6B7280',
+                      backgroundColor: '#fff',
+                      '&:hover': { 
+                        backgroundColor: '#F9FAFB',
+                        borderColor: '#6B7280',
+                        borderWidth: 2,
+                      },
+                    }}
+                  >
+                    Not for me
+                  </Button>
+                  
+                  {/* Skip - Tertiary link style */}
+                  <Button
+                    fullWidth
+                    variant="text"
+                    onClick={() => {
+                      const q = HARD_PREFERENCE_QUESTIONS[currentPreferenceIndex];
+                      setHardPreferences((prev) => {
+                        const nextPrefs = { ...prev, [q.id]: 'skip' };
+                        const nextIdx = getNextUnansweredPreferenceIndex(currentPreferenceIndex, nextPrefs);
+                        if (nextIdx !== -1) setCurrentPreferenceIndex(nextIdx);
+                        return nextPrefs;
+                      });
+                    }}
+                    sx={{
+                      py: 1.25,
+                      borderRadius: '10px',
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: '0.9rem',
+                      color: '#9CA3AF',
+                      '&:hover': { 
+                        backgroundColor: 'transparent',
+                        color: '#6B7280',
+                      },
+                    }}
+                  >
+                    Skip this one
+                  </Button>
+                </Stack>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Footer note - subtle */}
+            <Box sx={{ mt: 6, textAlign: 'center' }}>
+              <Typography variant="caption" sx={{ color: '#D1D5DB', fontSize: '0.75rem' }}>
+                Your preferences are private and help improve your matches
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Dialog>
 
       {/* Snackbar */}
       <Snackbar

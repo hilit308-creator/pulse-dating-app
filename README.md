@@ -55,4 +55,4 @@ A modern dating application that connects people in real-time based on their loc
 - The app uses JWT for authentication
 - Passwords are hashed using bcrypt
 - Location data is only shared when users are actively using the app
-Liron was here 🙂
+

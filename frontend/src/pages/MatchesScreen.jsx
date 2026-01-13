@@ -1,11 +1,15 @@
 // MatchesScreen.jsx
+// Per spec: "Relationship management space" - calm, predictable, organized
+// NOT designed to: create excitement, drive novelty, push decisions
+// Must feel: calm, predictable, organized, trustworthy
+
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
   Avatar,
   Button,
-  Chip,
   Stack,
   Tabs,
   Tab,
@@ -15,14 +19,10 @@ import {
   IconButton,
   Slider,
   Tooltip,
-  Badge,
   Select,
   MenuItem,
-  LinearProgress,
   Drawer,
   Divider,
-  Switch,
-  Collapse,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -30,9 +30,10 @@ import {
   TextField,
   Snackbar,
   Alert,
+  Switch,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import { useLanguage } from '../context/LanguageContext';
+import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle,
   ChevronLeft,
@@ -41,20 +42,20 @@ import {
   ShieldAlert,
   Flag,
   SlidersHorizontal,
-  ShieldCheck,
   Filter,
   Lock,
-  ChevronDown,
-  ChevronUp,
   MapPin,
   Ruler,
   Wine,
   Baby,
   PawPrint,
-  HelpCircle,
   Sun,
   DoorOpen,
   HeartHandshake,
+  Heart,
+  Sparkles,
+  RotateCcw,
+  Compass,
 } from "lucide-react";
 
 /* =============================
@@ -370,261 +371,682 @@ function Dots({ count, index }) {
   );
 }
 
-function TimerBar({ seconds }) {
-  if (seconds <= 0) return null;
-  const pct = Math.min(100, Math.max(0, (seconds / 900) * 100)); // 15m window
-  return <LinearProgress variant="determinate" value={pct} sx={{ height: 3, borderRadius: 6 }} />;
-}
 
-/* Photo Carousel — TikTok-style vertical (9:16 aspect ratio) */
-function PhotoCarousel({ photos, name, onPrev, onNext, index }) {
+/* Photo Section — Compact for Matches (per spec: 60-65% of Discover card height) */
+function CompactPhotoSection({ photos, name, index, onChangeIndex }) {
   const canPrev = index > 0;
   const canNext = index < photos.length - 1;
 
+  const handleTap = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const tapX = e.clientX - rect.left;
+    if (tapX < rect.width * 0.3 && canPrev) {
+      onChangeIndex(index - 1);
+    } else if (tapX > rect.width * 0.7 && canNext) {
+      onChangeIndex(index + 1);
+    }
+  };
+
   return (
     <Box
+      onClick={handleTap}
       sx={{
         position: "relative",
         width: "100%",
-        aspectRatio: "9 / 16",
-        maxHeight: "78vh",
+        aspectRatio: "16/9",
         background: "#F4F6F8",
         overflow: "hidden",
-        borderRadius: 4,
+        borderRadius: "12px 12px 0 0",
+        cursor: "pointer",
       }}
     >
       <img
-        key={photos[index]}
         src={photos[index]}
         loading="lazy"
         alt={`${name} ${index + 1}`}
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center", display: "block" }}
       />
 
-      <IconButton
-        onClick={onPrev}
-        disabled={!canPrev}
-        size="small"
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: 8,
-          transform: "translateY(-50%)",
-          bgcolor: "rgba(255,255,255,0.9)",
-          color: "#000",
-          "&:hover": { bgcolor: "#fff" },
-        }}
-        aria-label="Previous image"
-      >
-        <ChevronLeft />
-      </IconButton>
-      <IconButton
-        onClick={onNext}
-        disabled={!canNext}
-        size="small"
-        sx={{
-          position: "absolute",
-          top: "50%",
-          right: 8,
-          transform: "translateY(-50%)",
-          bgcolor: "rgba(255,255,255,0.9)",
-          color: "#000",
-          "&:hover": { bgcolor: "#fff" },
-        }}
-        aria-label="Next image"
-      >
-        <ChevronRight />
-      </IconButton>
-
-      <Dots count={photos.length} index={index} />
+      {/* Photo dots - light navigation only per spec */}
+      {photos.length > 1 && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 8,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            gap: 0.5,
+            px: 2,
+          }}
+        >
+          {photos.map((_, i) => (
+            <Box
+              key={i}
+              sx={{
+                flex: 1,
+                height: 3,
+                maxWidth: 40,
+                borderRadius: 2,
+                backgroundColor: i === index ? "#fff" : "rgba(255,255,255,0.4)",
+                transition: "background-color 0.2s ease",
+              }}
+            />
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }
 
-/* Profile Card — white details style */
-function ProfileCard({ profile, onPass, onOpenChat, onBlock, onReport }) {
+/* Compact Match Card — Per spec: 60-65% of Discover card height
+ * Card content order: Image, Identity line, Short description, Details, Interests (4-5 max), Looking For
+ * No expandable sections allowed
+ */
+function CompactMatchCard({ profile, onPass, onOpenChat, onBlock, onReport }) {
   const { t } = useLanguage();
   const photos = profile.photos?.length ? profile.photos : [profile.photoUrl].filter(Boolean);
-  const [idx, setIdx] = useState(0);
+  const [photoIdx, setPhotoIdx] = useState(0);
 
-  const goNext = useCallback(() => setIdx((i) => Math.min(i + 1, photos.length - 1)), [photos.length]);
-  const goPrev = useCallback(() => setIdx((i) => Math.max(i - 1, 0)), []);
-  const online = !!profile.online;
-
-  const interests = profile.interests || [];
-  const aboutMe = profile.aboutMe || [];
-  const lookingFor = profile.lookingFor || [];
+  const interests = (profile.interests || []).slice(0, 5); // Max 4-5 per spec
+  const aboutMe = (profile.aboutMe || []).slice(0, 3); // Keep compact
+  const lookingFor = (profile.lookingFor || []).slice(0, 3); // Keep compact
 
   const BRAND_PRIMARY = "#6C5CE7";
-  const chipIconFor = (section, text) => {
-    const t = (text || "").toLowerCase();
-    if (section === "about") {
-      if (t.includes("cm")) return <Ruler size={14} />;
-      if (t.includes("drink")) return <Wine size={14} />;
-      if (t.includes("kid")) return <Baby size={14} />;
-      if (t.includes("pet")) return <PawPrint size={14} />;
-      return <HelpCircle size={14} />;
-    }
-    if (section === "looking") {
-      if (t.includes("partner")) return <HeartHandshake size={14} />;
-      if (t.includes("open")) return <DoorOpen size={14} />;
-      if (t.includes("optim")) return <Sun size={14} />;
-      return <HelpCircle size={14} />;
-    }
-    return <HelpCircle size={14} />;
-  };
 
-  function TagPill({ label, icon }) {
-    return (
-      <Box
-        sx={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 0.6,
-          px: 1.1,
-          py: 0.6,
-          borderRadius: 999,
-          fontSize: 13,
-          fontWeight: 700,
-          bgcolor: "#efeaff",
-          color: BRAND_PRIMARY,
-          border: `1px solid rgba(108,92,231,0.28)`,
-        }}
-      >
-        {icon ? (
-          <Box sx={{ display: "grid", placeItems: "center", "& svg": { width: 14, height: 14 } }}>{icon}</Box>
-        ) : null}
-        <Typography component="span" sx={{ fontSize: 13, fontWeight: 700 }}>
-          {label}
-        </Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <Card
+  // Compact chip component
+  const CompactChip = ({ label, variant = "default" }) => (
+    <Box
       sx={{
-        overflow: "hidden",
-        borderRadius: 4,
-        boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-        bgcolor: "#fff",
+        display: "inline-flex",
+        alignItems: "center",
+        px: 1,
+        py: 0.3,
+        borderRadius: 999,
+        fontSize: 11,
+        fontWeight: 600,
+        bgcolor: variant === "looking" ? "rgba(244,63,94,0.08)" : "#efeaff",
+        color: variant === "looking" ? "#f43f5e" : BRAND_PRIMARY,
+        border: `1px solid ${variant === "looking" ? "rgba(244,63,94,0.15)" : "rgba(108,92,231,0.2)"}`,
       }}
     >
-      <PhotoCarousel photos={photos} name={profile.name} onPrev={goPrev} onNext={goNext} index={idx} />
+      {label}
+    </Box>
+  );
 
-      <CardContent sx={{ p: { xs: 1.75, sm: 2 } }}>
-        {/* Name */}
-        <Typography variant="h6" sx={{ fontWeight: 900, color: "#0f172a" }}>
-          {profile.name}, {profile.age}
-        </Typography>
-
-        {/* Location + distance */}
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center", color: "#475569", mt: 0.25, flexWrap: "wrap" }}>
-          <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-            <MapPin size={16} />
-            <Typography variant="body2">{profile.city || "Tel Aviv"}</Typography>
-          </Stack>
-          <Typography variant="body2">·</Typography>
-          <Typography variant="body2">{(profile.distance ?? 0).toFixed(1)} km away</Typography>
-        </Stack>
-
-        {/* Profession */}
-        {profile.profession && (
-          <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5 }}>
-            {profile.profession}
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card
+        sx={{
+          overflow: "hidden",
+          borderRadius: "20px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+          bgcolor: "#fff",
+          border: "1px solid rgba(0,0,0,0.04)",
+          transition: "all 0.2s ease",
+          display: "flex",
+          flexDirection: "row",
+          "&:hover": {
+            boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+            transform: "translateY(-2px)",
+          },
+        }}
+      >
+        {/* Left side - Details */}
+        <CardContent sx={{ p: 2, flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Identity line: name, age, city, distance */}
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1a1a2e" }}>
+            {profile.name}, {profile.age}
           </Typography>
-        )}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <MapPin size={14} color="#64748b" />
+            <Typography variant="caption" sx={{ color: "#64748b" }}>
+              {(profile.distance ?? 0).toFixed(1)} km
+            </Typography>
+          </Box>
+        </Box>
 
-        {/* Tagline */}
+        {/* Short description (single line per spec) */}
         {profile.tagline && (
-          <Typography variant="body2" sx={{ color: "#0f172a", mt: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "#64748b",
+              mb: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {profile.tagline}
           </Typography>
         )}
 
-        {/* Details */}
+        {/* Details (default-visible attributes with icons) */}
         {aboutMe.length > 0 && (
-          <Box sx={{ mt: 1.25 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.6, color: "#0f172a" }}>
-              Details
-            </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.6 }}>
-              {aboutMe.map((item, i) => (
-                <TagPill key={i} icon={chipIconFor("about", item)} label={item} />
-              ))}
-            </Box>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
+            {aboutMe.map((item, i) => (
+              <CompactChip key={i} label={item} />
+            ))}
           </Box>
         )}
 
-        {/* Interests */}
+        {/* Interests (4-5 chips max, truncated per spec) */}
         {interests.length > 0 && (
-          <Box sx={{ mt: 1.25 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.6, color: "#0f172a" }}>
-              Interests
-            </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.6 }}>
-              {interests.map((item, i) => (
-                <TagPill key={i} icon={chipIconFor("interests", item)} label={item} />
-              ))}
-            </Box>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
+            {interests.map((item, i) => (
+              <CompactChip key={i} label={item} />
+            ))}
           </Box>
         )}
 
-        {/* Looking for */}
+        {/* Looking For (softer chips per spec) */}
         {lookingFor.length > 0 && (
-          <Box sx={{ mt: 1.25 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.6, color: "#0f172a" }}>
-              Looking for
-            </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.6 }}>
-              {lookingFor.map((item, i) => (
-                <TagPill key={i} icon={chipIconFor("looking", item)} label={item} />
-              ))}
-            </Box>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1.5 }}>
+            {lookingFor.map((item, i) => (
+              <CompactChip key={i} label={item} variant="looking" />
+            ))}
           </Box>
         )}
 
-        {/* Actions */}
-        <Stack direction="row" spacing={1} sx={{ mt: 1.75 }}>
+        {/* Actions: Primary = Chat, Secondary = Pass, Safety actions available */}
+        <Stack direction="row" spacing={1} alignItems="center">
           <Button
             variant="contained"
             size="small"
             onClick={() => onOpenChat?.(profile)}
             startIcon={<MessageCircle size={16} />}
-            sx={{ 
-              borderRadius: 999,
+            sx={{
+              flex: 1,
+              borderRadius: "10px",
+              py: 0.75,
+              textTransform: "none",
+              fontWeight: 600,
               background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)",
               "&:hover": { background: "linear-gradient(135deg, #5a4bd1 0%, #9333ea 100%)" },
             }}
           >
             {t('chat')}
           </Button>
-          <Button 
-            variant="outlined" 
-            size="small" 
-            onClick={() => onPass?.(profile)} 
-            sx={{ 
-              borderRadius: 999,
-              borderColor: "#6C5CE7",
-              color: "#6C5CE7",
-              "&:hover": { borderColor: "#5a4bd1", bgcolor: "rgba(108,92,231,0.04)" },
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => onPass?.(profile)}
+            sx={{
+              borderRadius: "10px",
+              py: 0.75,
+              textTransform: "none",
+              fontWeight: 600,
+              borderColor: "#e2e8f0",
+              color: "#64748b",
+              "&:hover": { borderColor: "#cbd5e1", bgcolor: "#f8fafc" },
             }}
           >
             {t('pass')}
           </Button>
-          <Tooltip title={t('block')}>
-            <IconButton onClick={() => onBlock?.(profile)} aria-label="Block">
-              <ShieldAlert />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={t('report')}>
-            <IconButton onClick={() => onReport?.(profile)} aria-label="Report">
-              <Flag />
-            </IconButton>
-          </Tooltip>
+          <IconButton
+            size="small"
+            onClick={() => onBlock?.(profile)}
+            sx={{ color: "#94a3b8" }}
+            aria-label="Block"
+          >
+            <ShieldAlert size={18} />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={() => onReport?.(profile)}
+            sx={{ color: "#94a3b8" }}
+            aria-label="Report"
+          >
+            <Flag size={18} />
+          </IconButton>
         </Stack>
       </CardContent>
+
+        {/* Right side - Photo */}
+        <Box
+          sx={{
+            width: 140,
+            minWidth: 140,
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: "0 20px 20px 0",
+          }}
+        >
+          <img
+            src={photos[photoIdx]}
+            alt={profile.name}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            onClick={() => setPhotoIdx((prev) => (prev + 1) % photos.length)}
+          />
+          {photos.length > 1 && (
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 8,
+                left: 0,
+                right: 0,
+                display: "flex",
+                justifyContent: "center",
+                gap: 0.5,
+              }}
+            >
+              {photos.map((_, i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    bgcolor: i === photoIdx ? "#fff" : "rgba(255,255,255,0.5)",
+                    transition: "all 0.2s",
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+        </Box>
     </Card>
+    </motion.div>
+  );
+}
+
+/* Full Profile Card for Interested in You - Opens identical to Discover/Home card per spec */
+function FullProfileCard({ profile, onLike, onPass, onClose }) {
+  const photos = profile.photos?.length ? profile.photos : [profile.photoUrl].filter(Boolean);
+  const [photoIdx, setPhotoIdx] = useState(0);
+
+  const interests = profile.interests || [];
+  const aboutMe = profile.aboutMe || [];
+  const lookingFor = profile.lookingFor || [];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: '100%', maxWidth: 380, maxHeight: '85vh', overflow: 'auto' }}
+      >
+        <Box
+          sx={{
+            backgroundColor: '#fff',
+            borderRadius: '24px',
+            overflow: 'hidden',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }}
+        >
+          {/* Close button */}
+          <IconButton
+            onClick={onClose}
+            sx={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              zIndex: 10,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              color: '#fff',
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' },
+            }}
+            size="small"
+          >
+            <X size={18} />
+          </IconButton>
+
+          {/* Photo */}
+          <Box
+            sx={{
+              position: 'relative',
+              width: '100%',
+              height: 320,
+              overflow: 'hidden',
+            }}
+          >
+            <img
+              src={photos[photoIdx]}
+              alt={profile.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+            />
+            {/* Photo navigation */}
+            {photos.length > 1 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  left: 0,
+                  right: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: 0.5,
+                  px: 2,
+                }}
+              >
+                {photos.map((_, i) => (
+                  <Box
+                    key={i}
+                    onClick={() => setPhotoIdx(i)}
+                    sx={{
+                      flex: 1,
+                      height: 3,
+                      maxWidth: 50,
+                      borderRadius: 2,
+                      backgroundColor: i === photoIdx ? '#fff' : 'rgba(255,255,255,0.4)',
+                      cursor: 'pointer',
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
+            {/* Gradient */}
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 100,
+                background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
+              }}
+            />
+            {/* Name overlay */}
+            <Box sx={{ position: 'absolute', bottom: 12, left: 16 }}>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: '#fff' }}>
+                {profile.name}, {profile.age}
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <MapPin size={14} color="#fff" />
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                  {profile.city || 'Nearby'}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Content */}
+          <Box sx={{ p: 2.5 }}>
+            {/* Tagline */}
+            {profile.tagline && (
+              <Typography variant="body1" sx={{ color: '#1a1a2e', mb: 2 }}>
+                {profile.tagline}
+              </Typography>
+            )}
+
+            {/* Details */}
+            {aboutMe.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.75 }}>
+                  Details
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {aboutMe.map((item, i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        px: 1,
+                        py: 0.4,
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        bgcolor: '#efeaff',
+                        color: '#6C5CE7',
+                      }}
+                    >
+                      {item}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* Interests */}
+            {interests.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.75 }}>
+                  Interests
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {interests.map((item, i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        px: 1,
+                        py: 0.4,
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        bgcolor: 'rgba(108,92,231,0.08)',
+                        color: '#6C5CE7',
+                      }}
+                    >
+                      {item}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* Looking for */}
+            {lookingFor.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.75 }}>
+                  Looking for
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {lookingFor.map((item, i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        px: 1,
+                        py: 0.4,
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        bgcolor: 'rgba(244,63,94,0.08)',
+                        color: '#f43f5e',
+                      }}
+                    >
+                      {item}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* Actions - Same Like / Pass logic as Discover per spec */}
+            <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => onPass(profile)}
+                startIcon={<X size={20} />}
+                sx={{
+                  py: 1.25,
+                  borderRadius: '14px',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderColor: '#e2e8f0',
+                  color: '#64748b',
+                  '&:hover': { borderColor: '#cbd5e1', bgcolor: '#f8fafc' },
+                }}
+              >
+                Pass
+              </Button>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => onLike(profile)}
+                startIcon={<Heart size={20} />}
+                sx={{
+                  py: 1.25,
+                  borderRadius: '14px',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  boxShadow: '0 4px 16px rgba(16,185,129,0.3)',
+                  '&:hover': { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' },
+                }}
+              >
+                Like
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* It's a Pulse! Match celebration - shown when Like creates match from Interested in You */
+function MatchCelebration({ person, onStartChat, onKeepBrowsing }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1100,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingTop: 100,
+        background: 'linear-gradient(180deg, rgba(108,92,231,0.95) 0%, rgba(168,85,247,0.95) 100%)',
+        backdropFilter: 'blur(10px)',
+      }}
+    >
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <Sparkles size={48} color="#fff" />
+        </Box>
+      </motion.div>
+
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 900,
+            color: '#fff',
+            textAlign: 'center',
+            mb: 0.5,
+          }}
+        >
+          It's a Pulse!
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'rgba(255,255,255,0.9)',
+            textAlign: 'center',
+            mb: 2.5,
+          }}
+        >
+          You and {person?.name} liked each other
+        </Typography>
+      </motion.div>
+
+      {/* Profile photo */}
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Box
+          sx={{
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            border: '3px solid #fff',
+            overflow: 'hidden',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+            mb: 2.5,
+          }}
+        >
+          <img
+            src={person?.photos?.[0] || person?.photoUrl}
+            alt={person?.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+          />
+        </Box>
+      </motion.div>
+
+      {/* Actions */}
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        style={{ width: '100%', maxWidth: 260, padding: '0 20px' }}
+      >
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={onStartChat}
+          startIcon={<MessageCircle size={18} />}
+          sx={{
+            py: 1.25,
+            mb: 1.5,
+            borderRadius: '12px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            textTransform: 'none',
+            backgroundColor: '#fff',
+            color: '#6C5CE7',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+            '&:hover': { backgroundColor: '#f8f8f8' },
+          }}
+        >
+          Start chat
+        </Button>
+        <Button
+          fullWidth
+          variant="text"
+          onClick={onKeepBrowsing}
+          sx={{
+            py: 1,
+            borderRadius: '10px',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            textTransform: 'none',
+            color: 'rgba(255,255,255,0.9)',
+            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+          }}
+        >
+          Keep browsing
+        </Button>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -632,7 +1054,7 @@ function ProfileCard({ profile, onPass, onOpenChat, onBlock, onReport }) {
    Main Screen
 ============================= */
 export default function MatchesScreen() {
-  const theme = useTheme();
+  const navigate = useNavigate();
   const { t } = useLanguage();
 
   const [tab, setTab] = useState(0);
@@ -652,6 +1074,11 @@ export default function MatchesScreen() {
   const [reportTarget, setReportTarget] = useState(null);
   const [reportNote, setReportNote] = useState("");
   const [snack, setSnack] = useState({ open: false, msg: "", severity: "success" });
+
+  // Interested in You - unlocked state per spec
+  const [isSubscribed, setIsSubscribed] = useState(true); // Mock: user has subscription
+  const [selectedLikeProfile, setSelectedLikeProfile] = useState(null); // Profile card open
+  const [matchCelebration, setMatchCelebration] = useState(null); // "It's a Pulse!" celebration
 
   // Blocked profiles (per current user)
   const [blocked, setBlocked] = useState(() => loadBlocks());
@@ -779,6 +1206,43 @@ export default function MatchesScreen() {
 
   const handleReport = (p) => openReportDialog(p);
 
+  // Interested in You - Like/Pass handlers per spec
+  // Like: Immediate match creation, show "It's a Pulse", CTA: Start chat
+  // Pass: Profile removed permanently, no notification, no match created
+  const handleLikeFromInterested = useCallback((profile) => {
+    // Create match immediately
+    const newMatch = {
+      ...profile,
+      status: "mutual",
+      matchedAt: Date.now(),
+      chatActive: true,
+      chatTimeLeft: 900, // 15 min window
+    };
+    
+    // Remove from likes, add to matches
+    setLikes(prev => prev.filter(l => l.id !== profile.id));
+    setMatches(prev => [newMatch, ...prev]);
+    
+    // Close profile card and show celebration
+    setSelectedLikeProfile(null);
+    setMatchCelebration(profile);
+  }, []);
+
+  const handlePassFromInterested = useCallback((profile) => {
+    // Profile removed permanently per spec - no notification, no match
+    setLikes(prev => prev.filter(l => l.id !== profile.id));
+    setSelectedLikeProfile(null);
+  }, []);
+
+  const handleStartChatFromMatch = useCallback((person) => {
+    setMatchCelebration(null);
+    navigate(`/chat?matchId=${person.id}`);
+  }, [navigate]);
+
+  const handleKeepBrowsingFromMatch = useCallback(() => {
+    setMatchCelebration(null);
+  }, []);
+
   return (
     <Box
       sx={{
@@ -789,65 +1253,116 @@ export default function MatchesScreen() {
         pb: "calc(10px + env(safe-area-inset-bottom, 0))",
       }}
     >
-      {/* Top bar */}
+      {/* Top bar - per spec: calm, organized, no excitement */}
       <Box
         sx={{
           position: "sticky",
           top: 0,
           zIndex: 10,
-          bgcolor: "background.paper",
-          borderBottom: "1px solid",
-          borderColor: "divider",
+          bgcolor: "#fff",
+          borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
         <Stack
           direction="row"
           alignItems="center"
           justifyContent="space-between"
-          sx={{ px: 1.25, pt: 0.75, pb: 0.5 }}
+          sx={{ px: 2, pt: 1.5, pb: 1 }}
         >
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 800,
-              letterSpacing: 0.2,
-              fontSize: { xs: 18, sm: 20 },
-            }}
-          >
-            {t('matches')}
-          </Typography>
-          <Tooltip title={t('filters')}>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Filter size={16} />}
-              onClick={() => setDrawerOpen(true)}
-              sx={{ 
-                borderRadius: 999, 
-                minHeight: 34,
-                borderColor: "#6C5CE7",
-                color: "#6C5CE7",
-                "&:hover": { borderColor: "#5a4bd1", bgcolor: "rgba(108,92,231,0.04)" },
+          <Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: "#1a1a2e",
               }}
             >
-              {t('filters')}
-            </Button>
-          </Tooltip>
+              {t('matches')}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#64748b" }}>
+              {filteredMatches.length} connections
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={() => setDrawerOpen(true)}
+            sx={{ 
+              backgroundColor: "#f8fafc",
+              border: "1px solid rgba(0,0,0,0.06)",
+              "&:hover": { backgroundColor: "#f1f5f9" },
+            }}
+          >
+            <SlidersHorizontal size={18} color="#64748b" />
+          </IconButton>
         </Stack>
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
-          centered
-          variant="scrollable"
-          allowScrollButtonsMobile
           sx={{ 
-            ".MuiTab-root": { minWidth: { xs: 140, sm: 160 } },
-            "& .MuiTabs-indicator": { backgroundColor: "#6C5CE7" },
-            "& .Mui-selected": { color: "#6C5CE7 !important" },
+            px: 2,
+            minHeight: 44,
+            ".MuiTab-root": { 
+              minWidth: 'auto',
+              minHeight: 44,
+              px: 2,
+              py: 1,
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              color: '#64748b',
+              '&.Mui-selected': { color: '#6C5CE7' },
+            },
+            "& .MuiTabs-indicator": { 
+              backgroundColor: "#6C5CE7",
+              height: 3,
+              borderRadius: '3px 3px 0 0',
+            },
+            "& .MuiTabs-flexContainer": { gap: 1 },
           }}
         >
-          <Tab label={t('mutualMatches')} />
-          <Tab label={t('interestedInYou')} />
+          <Tab 
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span>{t('mutualMatches')}</span>
+                {filteredMatches.length > 0 && (
+                  <Box sx={{ 
+                    backgroundColor: tab === 0 ? '#6C5CE7' : '#e2e8f0',
+                    color: tab === 0 ? '#fff' : '#64748b',
+                    borderRadius: 999,
+                    px: 0.75,
+                    py: 0.25,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    minWidth: 20,
+                    textAlign: 'center',
+                  }}>
+                    {filteredMatches.length}
+                  </Box>
+                )}
+              </Box>
+            } 
+          />
+          <Tab 
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span>{t('interestedInYou')}</span>
+                {likes.filter(l => !blocked.has(l.id)).length > 0 && (
+                  <Box sx={{ 
+                    backgroundColor: tab === 1 ? '#f43f5e' : '#e2e8f0',
+                    color: tab === 1 ? '#fff' : '#64748b',
+                    borderRadius: 999,
+                    px: 0.75,
+                    py: 0.25,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    minWidth: 20,
+                    textAlign: 'center',
+                  }}>
+                    {likes.filter(l => !blocked.has(l.id)).length}
+                  </Box>
+                )}
+              </Box>
+            } 
+          />
         </Tabs>
       </Box>
 
@@ -862,7 +1377,7 @@ export default function MatchesScreen() {
           ) : filteredMatches.length === 0 ? (
             <Box
               sx={{
-                py: 8,
+                py: 6,
                 px: 3,
                 textAlign: "center",
                 display: "flex",
@@ -870,39 +1385,62 @@ export default function MatchesScreen() {
                 alignItems: "center",
               }}
             >
-              <HeartHandshake size={64} color="#cbd5e1" />
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 2, color: "#1a1a2e" }}>
+              {/* Illustration */}
+              <Box
+                sx={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(168,85,247,0.1) 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mb: 3,
+                }}
+              >
+                <HeartHandshake size={48} color="#6C5CE7" />
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a2e", mb: 1 }}>
                 {t('noMatchesYet')}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#64748b", mt: 1, mb: 3 }}>
-                {t('yourNextConnection')}
+              <Typography variant="body2" sx={{ color: "#64748b", mb: 3, maxWidth: 280 }}>
+                When you match with someone, they'll appear here. No rush — good things take time.
               </Typography>
               <Button
                 variant="contained"
-                onClick={() => window.location.href = "/nearby"}
+                onClick={() => navigate("/nearby")}
+                startIcon={<Compass size={18} />}
                 sx={{
-                  py: 1.25,
-                  px: 3,
-                  borderRadius: "12px",
+                  py: 1.5,
+                  px: 4,
+                  borderRadius: "14px",
                   textTransform: "none",
                   fontWeight: 600,
+                  fontSize: '0.95rem',
                   background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)",
+                  boxShadow: '0 4px 16px rgba(108,92,231,0.3)',
                 }}
               >
-                {t('goToNearby')}
+                Explore Nearby
               </Button>
             </Box>
           ) : (
-            <Stack spacing={3}>
-              {filteredMatches.map((m) => (
-                <ProfileCard
+            <Stack spacing={2}>
+              {filteredMatches.map((m, index) => (
+                <motion.div
                   key={m.id}
-                  profile={m}
-                  onPass={(p) => setMatches((prev) => prev.filter((x) => x.id !== p.id))}
-                  onOpenChat={(p) => (window.location.href = `/chat?matchId=${p.id}`)}
-                  onBlock={handleBlock}
-                  onReport={handleReport}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
+                  <CompactMatchCard
+                    profile={m}
+                    onPass={(p) => setMatches((prev) => prev.filter((x) => x.id !== p.id))}
+                    onOpenChat={(p) => navigate(`/chat?matchId=${p.id}`)}
+                    onBlock={handleBlock}
+                    onReport={handleReport}
+                  />
+                </motion.div>
               ))}
             </Stack>
           )}
@@ -914,10 +1452,84 @@ export default function MatchesScreen() {
           {loading ? (
             <Skeleton variant="rounded" height={110} sx={{ mb: 1.25 }} />
           ) : likes.length === 0 ? (
-            <Typography sx={{ color: "text.secondary", textAlign: "center", mt: 4 }}>
-              {t('keepExploring')}
-            </Typography>
+            <Box
+              sx={{
+                py: 8,
+                px: 3,
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <Heart size={64} color="#cbd5e1" />
+              <Typography variant="h6" sx={{ fontWeight: 700, mt: 2, color: "#1a1a2e" }}>
+                No one yet
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#64748b", mt: 1 }}>
+                {t('keepExploring')}
+              </Typography>
+            </Box>
+          ) : isSubscribed ? (
+            /* Unlocked State - per spec: blocks become clickable, each opens full profile card */
+            <Stack spacing={1.5}>
+              {likes
+                .filter((l) => !blocked.has(l.id))
+                .map((l) => (
+                  <Card
+                    key={l.id}
+                    onClick={() => setSelectedLikeProfile(l)}
+                    sx={{
+                      borderRadius: "16px",
+                      border: "1px solid rgba(0,0,0,0.06)",
+                      bgcolor: "#fff",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        boxShadow: "0 4px 16px rgba(108,92,231,0.15)",
+                        borderColor: "rgba(108,92,231,0.2)",
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 2 }}>
+                      <Avatar 
+                        src={l.photoUrl} 
+                        sx={{ 
+                          width: 56, 
+                          height: 56,
+                          border: "2px solid #6C5CE7",
+                        }} 
+                      />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 700, color: "#1a1a2e", fontSize: 16 }}>
+                          {l.name}, {l.age}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "#64748b" }}>
+                          {l.interestHint ? `Interested in ${l.interestHint}` : "Likes you"}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: 999,
+                          bgcolor: "rgba(16,185,129,0.1)",
+                        }}
+                      >
+                        <Heart size={14} color="#10b981" fill="#10b981" />
+                        <Typography variant="caption" sx={{ color: "#10b981", fontWeight: 600 }}>
+                          View
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+            </Stack>
           ) : (
+            /* Locked State - per spec: uniform blocks, obscured profile, hint text only, unlock CTA */
             <Stack spacing={1.25}>
               {likes
                 .filter((l) => !blocked.has(l.id))
@@ -925,23 +1537,42 @@ export default function MatchesScreen() {
                   <Card
                     key={l.id}
                     sx={{
-                      borderRadius: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      bgcolor: "background.paper",
+                      borderRadius: "16px",
+                      border: "1px solid rgba(0,0,0,0.06)",
+                      bgcolor: "#f8fafc",
                     }}
                   >
-                    <CardContent sx={{ display: "flex", alignItems: "center", gap: 10, p: 1.25 }}>
-                      <Avatar src={l.photoUrl} sx={{ width: 44, height: 44, filter: "blur(1.2px)" }} />
+                    <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 2 }}>
+                      <Avatar 
+                        src={l.photoUrl} 
+                        sx={{ 
+                          width: 48, 
+                          height: 48, 
+                          filter: "blur(8px)",
+                          opacity: 0.7,
+                        }} 
+                      />
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 700, color: "text.primary", fontSize: 15 }}>
+                        <Typography sx={{ fontWeight: 700, color: "#1a1a2e", fontSize: 15 }}>
                           {t('someoneLikedYou')}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        <Typography variant="caption" sx={{ color: "#94a3b8" }}>
                           {l.interestHint ? `Hint: likes ${l.interestHint}` : ""}
                         </Typography>
                       </Box>
-                      <Button variant="contained" size="small" startIcon={<Lock />} sx={{ minHeight: 34, background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)" }}>
+                      <Button 
+                        variant="contained" 
+                        size="small" 
+                        startIcon={<Lock size={14} />} 
+                        onClick={() => setIsSubscribed(true)} // Mock unlock
+                        sx={{ 
+                          minHeight: 36,
+                          borderRadius: "10px",
+                          textTransform: "none",
+                          fontWeight: 600,
+                          background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)",
+                        }}
+                      >
                         {t('unlock')}
                       </Button>
                     </CardContent>
@@ -951,6 +1582,29 @@ export default function MatchesScreen() {
           )}
         </Box>
       )}
+
+      {/* Full Profile Card - opens when clicking unlocked "Interested in You" */}
+      <AnimatePresence>
+        {selectedLikeProfile && (
+          <FullProfileCard
+            profile={selectedLikeProfile}
+            onLike={handleLikeFromInterested}
+            onPass={handlePassFromInterested}
+            onClose={() => setSelectedLikeProfile(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Match Celebration - "It's a Pulse!" */}
+      <AnimatePresence>
+        {matchCelebration && (
+          <MatchCelebration
+            person={matchCelebration}
+            onStartChat={() => handleStartChatFromMatch(matchCelebration)}
+            onKeepBrowsing={handleKeepBrowsingFromMatch}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Filters Drawer */}
       <Drawer

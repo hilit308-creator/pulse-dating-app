@@ -59,8 +59,9 @@ import BusinessPage from './pages/BusinessPage';
 import TabNavigation from './components/TabNavigation';
 import ChatScreen from './pages/ChatScreen';
 import MatchesScreen from './pages/MatchesScreen';
+import MatchPulseScreen from './components/MatchPulseScreen';
 import ExploreScreen from './pages/ExploreScreen';
-import ProfileSettings from './pages/ProfileSettingsV2';
+import ProfileSettings from './pages/ProfileSettings';
 import EventsByCategory from './pages/EventsByCategory';
 import AddEvent from './pages/AddEvent';
 import NearbyScreen from './pages/NearbyScreen';
@@ -778,6 +779,7 @@ function AppShell() {
             <Route path="/home-pulse" element={<ProtectedRoute><HomeScreen /></ProtectedRoute>} />
             <Route path="/explore" element={<ProtectedRoute><ExploreScreen /></ProtectedRoute>} />
             <Route path="/matches" element={<ProtectedRoute><MatchesScreen /></ProtectedRoute>} />
+            <Route path="/match-pulse" element={<ProtectedRoute><MatchPulseScreen /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><ChatScreen /></ProtectedRoute>} />
             <Route path="/nearby" element={<ProtectedRoute><NearbyScreen /></ProtectedRoute>} />
             <Route path="/nearby/people" element={<ProtectedRoute><ViewNearbyPeopleScreen /></ProtectedRoute>} />

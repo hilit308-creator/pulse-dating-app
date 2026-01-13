@@ -14,7 +14,8 @@ import {
   DialogActions,
 } from "@mui/material";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
-import { ArrowLeft, MapPin, Sparkles, X, Heart, RotateCcw, Ruler, Wine, PawPrint, Baby, ShieldCheck, HeartHandshake, Sun, Smile, Radar, RefreshCw, MessageCircle, HelpCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Sparkles, X, Heart, RotateCcw, Ruler, Wine, PawPrint, Baby, ShieldCheck, HeartHandshake, Sun, Smile, Radar, RefreshCw, MessageCircle, HelpCircle, Coffee } from "lucide-react";
+import { NearbyMatchMoment, InvitationModal } from "../components/nearby";
 
 /* ------------------------------ Constants --------------------------------- */
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
@@ -714,7 +715,8 @@ function EmptyState({ onBack }) {
 }
 
 // Match Screen - shown when there's a mutual like
-function MatchScreen({ person, onStartChat, onKeepSwiping }) {
+// Per spec: "Start chat" and "Keep browsing" are equal choices
+function MatchScreen({ person, onStartChat, onKeepSwiping, onSuggestMeeting }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -764,7 +766,7 @@ function MatchScreen({ person, onStartChat, onKeepSwiping }) {
             textShadow: '0 4px 20px rgba(0,0,0,0.2)',
           }}
         >
-          It's a Match!
+          It's a Pulse!
         </Typography>
         <Typography
           variant="body1"
@@ -847,6 +849,31 @@ function MatchScreen({ person, onStartChat, onKeepSwiping }) {
         >
           Start chat
         </Button>
+        {/* Suggest meeting - per spec: equally valid option */}
+        {onSuggestMeeting && (
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={() => onSuggestMeeting(person)}
+            startIcon={<Coffee size={18} />}
+            sx={{
+              py: 1.25,
+              mb: 1,
+              borderRadius: '12px',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              textTransform: 'none',
+              borderColor: 'rgba(255,255,255,0.5)',
+              color: '#fff',
+              '&:hover': {
+                borderColor: '#fff',
+                backgroundColor: 'rgba(255,255,255,0.1)',
+              },
+            }}
+          >
+            Suggest meeting up
+          </Button>
+        )}
         <Button
           fullWidth
           variant="text"
@@ -1021,6 +1048,10 @@ export default function ViewNearbyPeopleScreen() {
   const [liveCount, setLiveCount] = useState(MOCK_NEARBY_PEOPLE.length);
   const [matchPerson, setMatchPerson] = useState(null); // Person we matched with
   const [showTutorial, setShowTutorial] = useState(false); // Tutorial dialog
+  const [showNearbyMoment, setShowNearbyMoment] = useState(false); // Nearby match moment
+  const [nearbyMomentPerson, setNearbyMomentPerson] = useState(null);
+  const [showInvitationModal, setShowInvitationModal] = useState(false); // Invitation modal
+  const [invitationPerson, setInvitationPerson] = useState(null);
 
   // Scan for nearby people
   const handleScan = useCallback(() => {
@@ -1152,6 +1183,42 @@ export default function ViewNearbyPeopleScreen() {
     }, 200);
   }, [people.length]);
 
+  // Handle Nearby Match Moment - per spec: "invitation, not gate"
+  const handleNearbyMomentChat = useCallback(() => {
+    if (nearbyMomentPerson) {
+      trackEvent("nearby_moment_chat_started", { personId: nearbyMomentPerson.id });
+      navigate("/chat", { state: { matchPerson: nearbyMomentPerson } });
+    }
+    setShowNearbyMoment(false);
+  }, [navigate, nearbyMomentPerson]);
+
+  const handleNearbyMomentContinue = useCallback(() => {
+    trackEvent("nearby_moment_continued_browsing");
+    setShowNearbyMoment(false);
+  }, []);
+
+  // Handle Invitation Modal - per spec: "two equal paths"
+  const handleOpenInvitation = useCallback((person) => {
+    setInvitationPerson(person);
+    setShowInvitationModal(true);
+  }, []);
+
+  const handleSendInvitation = useCallback((invitation) => {
+    trackEvent("invitation_sent", { 
+      type: invitation.type, 
+      personId: invitation.person.id,
+      hasVenue: !!invitation.venue,
+    });
+    // Navigate to chat with invitation context
+    navigate("/chat", { 
+      state: { 
+        matchPerson: invitation.person,
+        invitation,
+      } 
+    });
+    setShowInvitationModal(false);
+  }, [navigate]);
+
   // Empty state
   if (isEmpty) {
     return (
@@ -1237,9 +1304,30 @@ export default function ViewNearbyPeopleScreen() {
             person={matchPerson}
             onStartChat={handleStartChat}
             onKeepSwiping={handleKeepSwiping}
+            onSuggestMeeting={(person) => {
+              setMatchPerson(null);
+              handleOpenInvitation(person);
+            }}
           />
         )}
       </AnimatePresence>
+
+      {/* Nearby Match Moment - per spec: calm invitation */}
+      <NearbyMatchMoment
+        isOpen={showNearbyMoment}
+        person={nearbyMomentPerson}
+        onClose={() => setShowNearbyMoment(false)}
+        onStartChat={handleNearbyMomentChat}
+        onContinueBrowsing={handleNearbyMomentContinue}
+      />
+
+      {/* Invitation Modal - per spec: two equal paths */}
+      <InvitationModal
+        isOpen={showInvitationModal}
+        person={invitationPerson}
+        onClose={() => setShowInvitationModal(false)}
+        onSendInvitation={handleSendInvitation}
+      />
       {/* Header */}
       <Box
         sx={{
@@ -1510,7 +1598,7 @@ export default function ViewNearbyPeopleScreen() {
             <Box sx={{ mb: 3 }}>
               <Typography sx={{ fontSize: 32, mb: 1 }}>💚</Typography>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-                It's a match!
+                It's a Pulse!
               </Typography>
               <Typography variant="body2" sx={{ color: '#64748b' }}>
                 When you both like each other, you can start chatting!

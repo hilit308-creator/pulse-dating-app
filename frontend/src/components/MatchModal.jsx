@@ -8,7 +8,7 @@ export default function MatchModal({ open, onClose, me, other, onStartChat }) {
   if (!other) return null;
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>It's a match!</DialogTitle>
+      <DialogTitle>It's a Pulse!</DialogTitle>
       <DialogContent>
         <Stack direction="row" spacing={2} alignItems="center" justifyContent="center" sx={{ my: 1 }}>
           <Avatar src={me?.photoUrl} sx={{ width: 64, height: 64 }} />

@@ -13,12 +13,12 @@ import { useActivity } from "../context/ActivityContext";
 import { useLanguage } from "../context/LanguageContext";
 
 const getTabsConfig = () => [
-  { to: "/chat", labelKey: "chat", icon: <MessageCircle size={26} />, key: "chat" },
-  { to: "/matches", labelKey: "matches", icon: <HeartHandshake size={26} />, key: "matches" },
-  { to: "/nearby", labelKey: "nearby", icon: <Radar size={26} />, key: "nearby", showActivityBadge: true },
-  { to: "/", labelKey: "home", icon: <Flame size={26} />, key: "home" },
-  { to: "/events", labelKey: "events", icon: <CalendarPlus size={26} />, key: "events" },
-  { to: "/explore", labelKey: "explore", icon: <Coffee size={26} />, key: "explore" },
+  { to: "/chat", labelKey: "chat", icon: <MessageCircle size={24} />, key: "chat" },
+  { to: "/matches", labelKey: "matches", icon: <HeartHandshake size={24} />, key: "matches" },
+  { to: "/nearby", labelKey: "nearby", icon: <Radar size={24} />, key: "nearby", showActivityBadge: true },
+  { to: "/", labelKey: "home", icon: <Flame size={24} />, key: "home" },
+  { to: "/events", labelKey: "events", icon: <CalendarPlus size={24} />, key: "events" },
+  { to: "/explore", labelKey: "explore", icon: <Coffee size={24} />, key: "explore" },
 ];
 
 const activeColor = "#ff6f61";
