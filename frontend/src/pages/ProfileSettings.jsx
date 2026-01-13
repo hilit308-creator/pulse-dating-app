@@ -606,44 +606,89 @@ export default function ProfileSettings({ onBack }) {
           </Box>
         </Box>
 
-        {/* Points - moved here per user request */}
+        {/* Points - Vibrant colorful banner */}
         <Box sx={{ px: 2, pb: 2 }}>
           <Box
             onClick={() => navigate('/points')}
             sx={{
+              position: 'relative',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              p: 2,
+              p: 2.5,
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, rgba(251,191,36,0.1) 0%, rgba(245,158,11,0.1) 100%)',
-              border: '1px solid rgba(251,191,36,0.2)',
+              background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
               cursor: 'pointer',
+              overflow: 'hidden',
+              boxShadow: '0 4px 20px rgba(139,92,246,0.4)',
               transition: 'all 0.2s ease',
               '&:hover': {
-                boxShadow: '0 4px 12px rgba(251,191,36,0.2)',
+                transform: 'scale(1.01)',
+                boxShadow: '0 6px 24px rgba(139,92,246,0.5)',
               },
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {/* Floating sparkles */}
+            <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+              {[...Array(4)].map((_, i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    position: 'absolute',
+                    left: `${15 + i * 25}%`,
+                    top: `${20 + (i % 2) * 40}%`,
+                    opacity: 0.4,
+                    animation: `float${i} ${2 + i * 0.5}s ease-in-out infinite`,
+                    '@keyframes float0': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
+                    '@keyframes float1': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-6px)' } },
+                    '@keyframes float2': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
+                    '@keyframes float3': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-5px)' } },
+                  }}
+                >
+                  <Sparkles size={12 + i * 2} color="rgba(255,255,255,0.6)" />
+                </Box>
+              ))}
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, position: 'relative', zIndex: 1 }}>
               <Box sx={{ 
-                width: 44, 
-                height: 44, 
-                borderRadius: '12px', 
-                background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                width: 48, 
+                height: 48, 
+                borderRadius: '14px', 
+                background: 'rgba(255,255,255,0.25)',
+                backdropFilter: 'blur(10px)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(251,191,36,0.3)',
+                border: '1px solid rgba(255,255,255,0.3)',
               }}>
-                <Coins size={22} color="#fff" />
+                <Coins size={24} color="#fff" />
               </Box>
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a2e' }}>Your Points</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: '#f59e0b', lineHeight: 1.2 }}>{points}</Typography>
+                <Typography sx={{ fontWeight: 700, color: '#fff', fontSize: '1.1rem' }}>
+                  {points} Points available
+                </Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem' }}>
+                  Use points to unlock short premium boosts
+                </Typography>
               </Box>
             </Box>
-            <ChevronRight size={20} color="#94a3b8" />
+            
+            <Box sx={{
+              background: 'rgba(255,255,255,0.25)',
+              backdropFilter: 'blur(10px)',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              px: 2,
+              py: 1,
+              borderRadius: '10px',
+              border: '1px solid rgba(255,255,255,0.3)',
+              position: 'relative',
+              zIndex: 1,
+            }}>
+              Get More
+            </Box>
           </Box>
         </Box>
 

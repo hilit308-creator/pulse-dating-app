@@ -13,11 +13,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button } from '@mui/material';
-import { Coins, Sparkles, ChevronRight, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Coins, Sparkles, ChevronRight, Zap, Gift } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 /**
- * Compact banner for inline use (Chat, Home sidebar)
+ * Compact banner for inline use (Chat, Home sidebar) - VIBRANT STYLE
  */
 export const PointsBannerCompact = ({ balance = 0, onClick }) => {
   const navigate = useNavigate();
@@ -32,56 +33,82 @@ export const PointsBannerCompact = ({ balance = 0, onClick }) => {
     <Box
       onClick={handleClick}
       sx={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         px: 2,
         py: 1.5,
-        backgroundColor: 'rgba(108,92,231,0.08)',
-        borderRadius: '12px',
+        background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
+        borderRadius: '14px',
         cursor: 'pointer',
+        overflow: 'hidden',
+        boxShadow: '0 4px 16px rgba(139,92,246,0.35)',
         transition: 'all 0.2s',
         '&:hover': {
-          backgroundColor: 'rgba(108,92,231,0.15)',
+          transform: 'scale(1.01)',
+          boxShadow: '0 6px 20px rgba(139,92,246,0.45)',
         },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      {/* Floating sparkles */}
+      <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        {[...Array(3)].map((_, i) => (
+          <Box
+            key={i}
+            sx={{
+              position: 'absolute',
+              left: `${20 + i * 30}%`,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              opacity: 0.4,
+              animation: `sparkle${i} ${2 + i * 0.3}s ease-in-out infinite`,
+              '@keyframes sparkle0': { '0%, 100%': { transform: 'translateY(-50%) scale(1)' }, '50%': { transform: 'translateY(-50%) scale(1.3)' } },
+              '@keyframes sparkle1': { '0%, 100%': { transform: 'translateY(-50%) scale(1)' }, '50%': { transform: 'translateY(-50%) scale(1.2)' } },
+              '@keyframes sparkle2': { '0%, 100%': { transform: 'translateY(-50%) scale(1)' }, '50%': { transform: 'translateY(-50%) scale(1.4)' } },
+            }}
+          >
+            <Sparkles size={10 + i * 2} color="rgba(255,255,255,0.6)" />
+          </Box>
+        ))}
+      </Box>
+      
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, position: 'relative', zIndex: 1 }}>
         <Box
           sx={{
-            width: 36,
-            height: 36,
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            width: 40,
+            height: 40,
+            borderRadius: '12px',
+            background: 'rgba(255,255,255,0.25)',
+            backdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            border: '1px solid rgba(255,255,255,0.3)',
           }}
         >
-          <Coins size={18} color="#ffffff" />
+          <Coins size={20} color="#ffffff" />
         </Box>
         <Box>
           <Typography
-            variant="body2"
-            sx={{ fontWeight: 600, color: '#1a1a2e', fontSize: '0.85rem' }}
+            sx={{ fontWeight: 700, color: '#fff', fontSize: '0.95rem' }}
           >
             {balance} {t('points') || 'Points'}
           </Typography>
           <Typography
-            variant="caption"
-            sx={{ color: '#6C5CE7', fontSize: '0.7rem' }}
+            sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.75rem' }}
           >
             {t('boostYourProfile') || 'Boost your profile'}
           </Typography>
         </Box>
       </Box>
-      <ChevronRight size={18} color="#6C5CE7" />
+      <ChevronRight size={20} color="#fff" style={{ position: 'relative', zIndex: 1 }} />
     </Box>
   );
 };
 
 /**
- * Promo card for Home screen
+ * Promo card for Home screen - VIBRANT STYLE
  */
 export const PointsPromoCard = ({ balance = 0 }) => {
   const navigate = useNavigate();
@@ -91,72 +118,104 @@ export const PointsPromoCard = ({ balance = 0 }) => {
     <Box
       onClick={() => navigate('/points')}
       sx={{
-        background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-        borderRadius: '16px',
-        p: 2.5,
+        position: 'relative',
+        background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
+        borderRadius: '20px',
+        p: 3,
         cursor: 'pointer',
-        transition: 'transform 0.2s',
+        overflow: 'hidden',
+        boxShadow: '0 8px 32px rgba(139,92,246,0.4)',
+        transition: 'all 0.2s',
         '&:hover': {
           transform: 'scale(1.02)',
+          boxShadow: '0 12px 40px rgba(139,92,246,0.5)',
         },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      {/* Floating particles */}
+      <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        {[...Array(5)].map((_, i) => (
+          <Box
+            key={i}
+            sx={{
+              position: 'absolute',
+              left: `${10 + i * 20}%`,
+              top: `${20 + (i % 3) * 25}%`,
+              opacity: 0.4,
+              animation: `float${i} ${2.5 + i * 0.3}s ease-in-out infinite`,
+              '@keyframes float0': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
+              '@keyframes float1': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
+              '@keyframes float2': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-12px)' } },
+              '@keyframes float3': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-6px)' } },
+              '@keyframes float4': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-9px)' } },
+            }}
+          >
+            <Sparkles size={8 + i * 2} color="rgba(255,255,255,0.6)" />
+          </Box>
+        ))}
+      </Box>
+      
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <Sparkles size={18} color="#ffffff" />
             <Typography
-              variant="caption"
               sx={{
                 color: 'rgba(255,255,255,0.9)',
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: 1,
+                fontSize: '0.7rem',
               }}
             >
               {t('yourPoints') || 'Your Points'}
             </Typography>
           </Box>
           <Typography
-            variant="h4"
-            sx={{ fontWeight: 800, color: '#ffffff', mb: 0.5 }}
+            sx={{ fontWeight: 900, color: '#ffffff', fontSize: '2.5rem', lineHeight: 1, mb: 0.5, textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}
           >
             {balance}
           </Typography>
           <Typography
-            variant="body2"
-            sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem' }}
+            sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }}
           >
             {t('usePointsToBoost') || 'Use points to boost your visibility'}
           </Typography>
         </Box>
         <Box
           sx={{
-            width: 48,
-            height: 48,
-            borderRadius: '14px',
-            backgroundColor: 'rgba(255,255,255,0.2)',
+            width: 52,
+            height: 52,
+            borderRadius: '16px',
+            background: 'rgba(255,255,255,0.25)',
+            backdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            border: '1px solid rgba(255,255,255,0.3)',
           }}
         >
-          <Zap size={24} color="#ffffff" />
+          <Gift size={26} color="#ffffff" />
         </Box>
       </Box>
       
       <Button
         fullWidth
         sx={{
-          mt: 2,
-          py: 1,
-          borderRadius: '10px',
-          backgroundColor: 'rgba(255,255,255,0.2)',
+          mt: 2.5,
+          py: 1.25,
+          borderRadius: '12px',
+          background: 'rgba(255,255,255,0.25)',
+          backdropFilter: 'blur(10px)',
           color: '#ffffff',
-          fontWeight: 600,
+          fontWeight: 700,
           textTransform: 'none',
+          fontSize: '0.95rem',
+          border: '1px solid rgba(255,255,255,0.3)',
+          position: 'relative',
+          zIndex: 1,
           '&:hover': {
-            backgroundColor: 'rgba(255,255,255,0.3)',
+            background: 'rgba(255,255,255,0.35)',
           },
         }}
       >
@@ -167,7 +226,7 @@ export const PointsPromoCard = ({ balance = 0 }) => {
 };
 
 /**
- * Sticky banner for Chat screen
+ * Sticky banner for Chat screen - VIBRANT STYLE
  */
 export const PointsStickyBanner = ({ balance = 0 }) => {
   const navigate = useNavigate();
@@ -177,31 +236,50 @@ export const PointsStickyBanner = ({ balance = 0 }) => {
     <Box
       onClick={() => navigate('/points')}
       sx={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         px: 3,
         py: 1.5,
-        backgroundColor: '#6C5CE7',
+        background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
         cursor: 'pointer',
+        overflow: 'hidden',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      {/* Sparkle effect */}
+      <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        {[...Array(3)].map((_, i) => (
+          <Box
+            key={i}
+            sx={{
+              position: 'absolute',
+              left: `${25 + i * 25}%`,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              opacity: 0.3,
+            }}
+          >
+            <Sparkles size={10} color="rgba(255,255,255,0.6)" />
+          </Box>
+        ))}
+      </Box>
+      
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}>
         <Coins size={20} color="#ffffff" />
         <Typography
-          variant="body2"
-          sx={{ color: '#ffffff', fontWeight: 500 }}
+          sx={{ color: '#ffffff', fontWeight: 600, fontSize: '0.9rem' }}
         >
           {t('boostWithPoints') || 'Boost with'} <strong>{balance}</strong> {t('points') || 'points'}
         </Typography>
       </Box>
-      <ChevronRight size={18} color="#ffffff" />
+      <ChevronRight size={18} color="#ffffff" style={{ position: 'relative', zIndex: 1 }} />
     </Box>
   );
 };
 
 /**
- * Feature gate banner (when feature is blocked)
+ * Feature gate banner (when feature is blocked) - VIBRANT STYLE
  */
 export const PointsFeatureGate = ({ 
   feature, 
@@ -216,40 +294,59 @@ export const PointsFeatureGate = ({
   return (
     <Box
       sx={{
-        backgroundColor: '#fff',
-        borderRadius: '16px',
-        p: 3,
+        position: 'relative',
+        background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1b4e 100%)',
+        borderRadius: '24px',
+        p: 4,
         textAlign: 'center',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+        boxShadow: '0 8px 32px rgba(139,92,246,0.3)',
+        overflow: 'hidden',
+        border: '1px solid rgba(139,92,246,0.3)',
       }}
     >
+      {/* Background glow */}
+      <Box sx={{
+        position: 'absolute',
+        top: '30%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 150,
+        height: 150,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(236,72,153,0.3) 0%, transparent 70%)',
+        filter: 'blur(30px)',
+      }} />
+      
       <Box
         sx={{
-          width: 64,
-          height: 64,
-          borderRadius: '16px',
-          background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+          position: 'relative',
+          zIndex: 1,
+          width: 72,
+          height: 72,
+          borderRadius: '20px',
+          background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           mx: 'auto',
           mb: 2,
+          boxShadow: '0 8px 24px rgba(236,72,153,0.4)',
         }}
       >
-        <Sparkles size={28} color="#ffffff" />
+        <Sparkles size={32} color="#ffffff" />
       </Box>
       
-      <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1 }}>
+      <Typography sx={{ fontWeight: 700, color: '#fff', fontSize: '1.25rem', mb: 1, position: 'relative', zIndex: 1 }}>
         {t('unlockFeature') || 'Unlock'} {feature}
       </Typography>
       
-      <Typography variant="body2" sx={{ color: '#64748b', mb: 3 }}>
+      <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', mb: 3, position: 'relative', zIndex: 1 }}>
         {t('usePointsToUnlock') || 'Use points to unlock this feature temporarily'}
       </Typography>
       
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 3 }}>
-        <Coins size={20} color="#6C5CE7" />
-        <Typography variant="h5" sx={{ fontWeight: 700, color: '#6C5CE7' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 3, position: 'relative', zIndex: 1 }}>
+        <Coins size={24} color="#F59E0B" />
+        <Typography sx={{ fontWeight: 800, color: '#F59E0B', fontSize: '1.5rem' }}>
           {cost} {t('pts') || 'pts'}
         </Typography>
       </Box>
@@ -260,19 +357,25 @@ export const PointsFeatureGate = ({
           onClick={onActivate}
           sx={{
             py: 1.5,
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            borderRadius: '14px',
+            background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
             color: '#ffffff',
-            fontWeight: 600,
+            fontWeight: 700,
             textTransform: 'none',
             fontSize: '1rem',
+            boxShadow: '0 4px 20px rgba(236,72,153,0.4)',
+            position: 'relative',
+            zIndex: 1,
+            '&:hover': {
+              opacity: 0.9,
+            },
           }}
         >
           {t('activateNow') || 'Activate Now'}
         </Button>
       ) : (
         <>
-          <Typography variant="caption" sx={{ color: '#ef4444', display: 'block', mb: 2 }}>
+          <Typography sx={{ color: '#F59E0B', fontSize: '0.85rem', mb: 2, position: 'relative', zIndex: 1 }}>
             {t('notEnoughPoints') || 'Not enough points'} ({currentBalance}/{cost})
           </Typography>
           <Button
@@ -280,12 +383,18 @@ export const PointsFeatureGate = ({
             onClick={() => navigate('/points')}
             sx={{
               py: 1.5,
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
               color: '#ffffff',
-              fontWeight: 600,
+              fontWeight: 700,
               textTransform: 'none',
               fontSize: '1rem',
+              boxShadow: '0 4px 20px rgba(236,72,153,0.4)',
+              position: 'relative',
+              zIndex: 1,
+              '&:hover': {
+                opacity: 0.9,
+              },
             }}
           >
             {t('getMorePoints') || 'Get More Points'}

@@ -30,6 +30,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useLanguage } from '../context/LanguageContext';
+import { ChatPointsStickyBanner } from '../components/PointsPromoBanner';
 import {
   ArrowLeft,
   Send,
@@ -2592,6 +2593,9 @@ export default function ChatScreen() {
             </Box>
           </Fade>
         </Modal>
+
+        {/* Points Promo Sticky Banner */}
+        <ChatPointsStickyBanner />
       </Box>
     );
   }

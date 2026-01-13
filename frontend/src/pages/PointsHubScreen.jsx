@@ -49,9 +49,72 @@ import {
   Clock,
   Coins,
   Crown,
+  Gift,
+  Star,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { PointsBalanceSkeleton, FeatureCardsSkeleton } from '../components/SkeletonLoading';
+
+// Floating particles animation for vibrant feel
+const FloatingParticles = () => (
+  <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+    {[...Array(8)].map((_, i) => (
+      <motion.div
+        key={i}
+        style={{
+          position: 'absolute',
+          width: 8 + Math.random() * 12,
+          height: 8 + Math.random() * 12,
+          borderRadius: '50%',
+          background: `rgba(${200 + Math.random() * 55}, ${100 + Math.random() * 100}, ${200 + Math.random() * 55}, 0.6)`,
+          left: `${10 + Math.random() * 80}%`,
+          top: `${10 + Math.random() * 80}%`,
+        }}
+        animate={{
+          y: [0, -20, 0],
+          x: [0, Math.random() * 10 - 5, 0],
+          scale: [1, 1.2, 1],
+          opacity: [0.4, 0.8, 0.4],
+        }}
+        transition={{
+          duration: 3 + Math.random() * 2,
+          repeat: Infinity,
+          delay: Math.random() * 2,
+        }}
+      />
+    ))}
+  </Box>
+);
+
+// Coin icon with glow effect
+const GlowingCoin = ({ size = 40 }) => (
+  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+    <motion.div
+      animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
+      transition={{ duration: 2, repeat: Infinity }}
+      style={{
+        position: 'absolute',
+        inset: -8,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(255,200,50,0.4) 0%, transparent 70%)',
+      }}
+    />
+    <Box
+      sx={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: '0 4px 20px rgba(255,165,0,0.5)',
+      }}
+    >
+      <Coins size={size * 0.5} color="#fff" />
+    </Box>
+  </Box>
+);
 
 // Feature definitions (LOCKED - do not modify)
 const FEATURES = [
@@ -312,7 +375,7 @@ const PointsHubScreen = () => {
   return (
     <Box sx={{ 
       minHeight: '100vh', 
-      bgcolor: '#f8fafc',
+      background: 'linear-gradient(180deg, #8B5CF6 0%, #EC4899 40%, #F87171 100%)',
       pb: 4,
     }}>
       {/* Header */}
@@ -320,61 +383,98 @@ const PointsHubScreen = () => {
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        bgcolor: '#ffffff',
-        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        background: 'transparent',
+        backdropFilter: 'blur(10px)',
         px: 2,
         py: 1.5,
         display: 'flex',
         alignItems: 'center',
         gap: 2,
       }}>
-        <IconButton onClick={() => navigate(-1)} sx={{ color: '#1a1a2e' }}>
+        <IconButton onClick={() => navigate(-1)} sx={{ color: '#fff' }}>
           <ArrowLeft size={24} />
         </IconButton>
-        <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff' }}>
           {t('yourPoints') || 'Your Points'}
         </Typography>
       </Box>
 
       <Box sx={{ px: 2, pt: 3 }}>
-        {/* Section A: Balance Display */}
+        {/* Section A: Balance Display - Vibrant Hero Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.4 }}
         >
           <Box sx={{
-            bgcolor: '#ffffff',
-            borderRadius: '20px',
-            p: 3,
+            position: 'relative',
+            p: 4,
             textAlign: 'center',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
             mb: 3,
+            overflow: 'hidden',
           }}>
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 1,
-              mb: 1,
-            }}>
-              <Coins size={28} color="#6C5CE7" />
+            {/* Floating particles */}
+            <FloatingParticles />
+            
+            {/* Glowing coin icon */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, position: 'relative', zIndex: 1 }}>
+              <GlowingCoin size={56} />
             </Box>
+            
+            {/* Points balance */}
+            <motion.div
+              animate={{ scale: [1, 1.02, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Typography sx={{
+                fontSize: 56,
+                fontWeight: 900,
+                color: '#fff',
+                lineHeight: 1,
+                textShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                position: 'relative',
+                zIndex: 1,
+              }}>
+                {pointsBalance}
+              </Typography>
+            </motion.div>
+            
             <Typography sx={{
-              fontSize: 48,
-              fontWeight: 800,
-              color: '#1a1a2e',
-              lineHeight: 1,
-            }}>
-              {pointsBalance}
-            </Typography>
-            <Typography sx={{
-              fontSize: 16,
-              color: '#64748b',
+              fontSize: 18,
+              color: 'rgba(255,255,255,0.9)',
               mt: 1,
+              fontWeight: 600,
+              position: 'relative',
+              zIndex: 1,
             }}>
-              {t('points') || 'Points'}
+              {t('pointsAvailable') || 'Points Available'}
             </Typography>
+            
+            {/* Get More Points button */}
+            <Button
+              onClick={() => {/* scroll to buy section */}}
+              sx={{
+                mt: 2,
+                px: 4,
+                py: 1.5,
+                borderRadius: '50px',
+                background: 'rgba(255,255,255,0.25)',
+                backdropFilter: 'blur(10px)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                textTransform: 'none',
+                border: '2px solid rgba(255,255,255,0.4)',
+                position: 'relative',
+                zIndex: 1,
+                '&:hover': {
+                  background: 'rgba(255,255,255,0.35)',
+                },
+              }}
+            >
+              <Gift size={18} style={{ marginRight: 8 }} />
+              {t('getMorePoints') || 'Get More Points'}
+            </Button>
           </Box>
         </motion.div>
 
@@ -458,7 +558,7 @@ const PointsHubScreen = () => {
         <Typography sx={{
           fontSize: 14,
           fontWeight: 700,
-          color: '#64748b',
+          color: 'rgba(255,255,255,0.7)',
           textTransform: 'uppercase',
           letterSpacing: 1,
           mb: 2,
@@ -467,7 +567,7 @@ const PointsHubScreen = () => {
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
-          {FEATURES.map((feature) => {
+          {FEATURES.map((feature, idx) => {
             const FeatureIcon = feature.icon;
             const isActive = activeFeature?.id === feature.id;
             const isDisabled = hasSubscription || 
@@ -475,21 +575,32 @@ const PointsHubScreen = () => {
                              pointsBalance < feature.cost;
             const notEnoughPoints = pointsBalance < feature.cost && !hasSubscription && !activeFeature;
             const isActivating = activatingFeature === feature.id;
+            
+            // Vibrant gradient colors for each feature
+            const featureColors = [
+              'linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%)', // Undo - pink to purple
+              'linear-gradient(135deg, #F43F5E 0%, #EC4899 100%)', // Likes - red to pink
+              'linear-gradient(135deg, #06B6D4 0%, #8B5CF6 100%)', // Nearby - cyan to purple
+              'linear-gradient(135deg, #F59E0B 0%, #EC4899 100%)', // BeatPulse - orange to pink
+            ];
 
             return (
               <motion.div
                 key={feature.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.2, delay: idx * 0.05 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <Box sx={{
-                  bgcolor: '#ffffff',
+                  background: 'rgba(255,255,255,0.2)',
+                  backdropFilter: 'blur(15px)',
                   borderRadius: '16px',
                   p: 2,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                   opacity: isDisabled && !isActive ? 0.6 : 1,
-                  border: isActive ? '2px solid #6C5CE7' : '2px solid transparent',
+                  border: isActive ? '2px solid #fff' : '1px solid rgba(255,255,255,0.3)',
+                  boxShadow: isActive ? '0 0 20px rgba(255,255,255,0.3)' : '0 4px 15px rgba(0,0,0,0.1)',
                 }}>
                   <Box sx={{
                     display: 'flex',
@@ -500,25 +611,27 @@ const PointsHubScreen = () => {
                       <Box sx={{
                         width: 48,
                         height: 48,
-                        borderRadius: '12px',
-                        bgcolor: isActive ? '#6C5CE7' : 'rgba(108,92,231,0.1)',
+                        borderRadius: '14px',
+                        background: featureColors[idx],
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
                       }}>
-                        <FeatureIcon size={24} color={isActive ? '#ffffff' : '#6C5CE7'} />
+                        <FeatureIcon size={24} color="#fff" />
                       </Box>
                       <Box>
                         <Typography sx={{ 
                           fontWeight: 600, 
-                          color: '#1a1a2e',
+                          color: '#fff',
                           fontSize: 15,
+                          textShadow: '0 1px 3px rgba(0,0,0,0.2)',
                         }}>
                           {getFeatureInfo(feature)}
                         </Typography>
                         <Typography sx={{ 
                           fontSize: 13, 
-                          color: '#64748b',
+                          color: 'rgba(255,255,255,0.85)',
                         }}>
                           {feature.duration} {t('minutes') || 'min'} • {feature.cost} {t('pts') || 'pts'}
                         </Typography>
@@ -527,13 +640,14 @@ const PointsHubScreen = () => {
 
                     {isActive ? (
                       <Box sx={{
-                        bgcolor: '#6C5CE7',
+                        background: 'linear-gradient(135deg, #22C55E 0%, #10B981 100%)',
                         color: '#ffffff',
                         px: 2,
                         py: 1,
                         borderRadius: '10px',
                         fontSize: 13,
                         fontWeight: 600,
+                        boxShadow: '0 4px 15px rgba(34,197,94,0.4)',
                       }}>
                         {t('active') || 'Active'}
                       </Box>
@@ -542,8 +656,8 @@ const PointsHubScreen = () => {
                         onClick={() => handleActivateFeature(feature)}
                         disabled={isDisabled || isActivating}
                         sx={{
-                          bgcolor: isDisabled ? '#e2e8f0' : '#6C5CE7',
-                          color: isDisabled ? '#94a3b8' : '#ffffff',
+                          background: isDisabled ? 'rgba(255,255,255,0.1)' : featureColors[idx],
+                          color: isDisabled ? 'rgba(255,255,255,0.4)' : '#ffffff',
                           px: 2.5,
                           py: 1,
                           borderRadius: '10px',
@@ -551,12 +665,13 @@ const PointsHubScreen = () => {
                           fontWeight: 600,
                           textTransform: 'none',
                           minWidth: 90,
+                          boxShadow: isDisabled ? 'none' : '0 4px 15px rgba(236,72,153,0.3)',
                           '&:hover': {
-                            bgcolor: isDisabled ? '#e2e8f0' : '#5b4cdb',
+                            opacity: 0.9,
                           },
                           '&.Mui-disabled': {
-                            bgcolor: '#e2e8f0',
-                            color: '#94a3b8',
+                            background: 'rgba(255,255,255,0.1)',
+                            color: 'rgba(255,255,255,0.4)',
                           },
                         }}
                       >
@@ -573,7 +688,7 @@ const PointsHubScreen = () => {
                   {notEnoughPoints && (
                     <Typography sx={{
                       fontSize: 12,
-                      color: '#f59e0b',
+                      color: '#F59E0B',
                       mt: 1.5,
                       display: 'flex',
                       alignItems: 'center',
@@ -593,7 +708,7 @@ const PointsHubScreen = () => {
         <Typography sx={{
           fontSize: 14,
           fontWeight: 700,
-          color: '#64748b',
+          color: 'rgba(255,255,255,0.7)',
           textTransform: 'uppercase',
           letterSpacing: 1,
           mb: 2,
@@ -602,69 +717,100 @@ const PointsHubScreen = () => {
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
-          {PACKAGES.map((pkg) => {
+          {PACKAGES.map((pkg, idx) => {
             const isPurchasing = purchasingPackage === pkg.id;
+            
+            // Package colors - gold theme
+            const packageColors = [
+              'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', // Small - gold
+              'linear-gradient(135deg, #EC4899 0%, #F59E0B 100%)', // Medium - pink to gold
+              'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)', // Large - rainbow
+            ];
+            
+            const coinSizes = [1, 1.5, 2]; // Relative size multipliers
             
             return (
               <motion.div
                 key={pkg.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.2, delay: idx * 0.05 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <Box
                   onClick={() => !isPurchasing && handlePurchasePackage(pkg)}
                   sx={{
-                    bgcolor: '#ffffff',
+                    position: 'relative',
+                    background: 'rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(15px)',
                     borderRadius: '16px',
-                    p: 2,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    p: 2.5,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     cursor: 'pointer',
-                    transition: 'transform 0.2s',
-                    '&:hover': {
-                      transform: 'scale(1.01)',
-                    },
-                    '&:active': {
-                      transform: 'scale(0.99)',
-                    },
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  {/* Decorative glow */}
+                  <Box sx={{
+                    position: 'absolute',
+                    top: -20,
+                    right: -20,
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    background: packageColors[idx],
+                    opacity: 0.2,
+                    filter: 'blur(20px)',
+                  }} />
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}>
                     <Box sx={{
                       width: 48,
                       height: 48,
-                      borderRadius: '12px',
-                      bgcolor: 'rgba(108,92,231,0.1)',
+                      borderRadius: '14px',
+                      background: packageColors[idx],
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      boxShadow: '0 4px 15px rgba(245,158,11,0.4)',
                     }}>
-                      <Coins size={24} color="#6C5CE7" />
+                      <Coins size={24} color="#fff" />
                     </Box>
                     <Box>
                       <Typography sx={{ 
                         fontWeight: 700, 
-                        color: '#1a1a2e',
-                        fontSize: 18,
+                        color: '#fff',
+                        fontSize: 20,
                       }}>
-                        {pkg.points} {t('points') || 'Points'}
+                        {pkg.points}
+                      </Typography>
+                      <Typography sx={{ 
+                        fontSize: 13, 
+                        color: 'rgba(255,255,255,0.6)',
+                      }}>
+                        {t('points') || 'Points'}
                       </Typography>
                     </Box>
                   </Box>
 
                   <Box sx={{
-                    bgcolor: '#6C5CE7',
+                    background: packageColors[idx],
                     color: '#ffffff',
-                    px: 2.5,
-                    py: 1,
-                    borderRadius: '10px',
-                    fontSize: 15,
+                    px: 3,
+                    py: 1.25,
+                    borderRadius: '12px',
+                    fontSize: 16,
                     fontWeight: 700,
-                    minWidth: 80,
+                    minWidth: 90,
                     textAlign: 'center',
+                    boxShadow: '0 4px 15px rgba(245,158,11,0.4)',
+                    position: 'relative',
+                    zIndex: 1,
                   }}>
                     {isPurchasing ? (
                       <CircularProgress size={18} sx={{ color: '#ffffff' }} />
@@ -680,15 +826,19 @@ const PointsHubScreen = () => {
 
         {/* Premium comparison text (required) */}
         <Box sx={{
-          bgcolor: 'rgba(108,92,231,0.08)',
-          borderRadius: '12px',
-          p: 2,
+          background: 'rgba(255,255,255,0.2)',
+          backdropFilter: 'blur(15px)',
+          border: '1px solid rgba(255,255,255,0.3)',
+          borderRadius: '16px',
+          p: 2.5,
           textAlign: 'center',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
         }}>
           <Typography sx={{
             fontSize: 14,
-            color: '#6C5CE7',
-            fontWeight: 500,
+            color: '#fff',
+            fontWeight: 600,
+            textShadow: '0 1px 3px rgba(0,0,0,0.2)',
           }}>
             <Crown size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
             {t('premiumUnlocksEverything') || 'Premium unlocks everything — anytime'}

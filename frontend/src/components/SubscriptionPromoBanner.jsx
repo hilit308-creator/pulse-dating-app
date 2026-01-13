@@ -399,14 +399,13 @@ export const NearbyStickyStickyBanner = ({ userId = 'anonymous' }) => {
                 px: 2,
                 py: 0.75,
                 borderRadius: '10px',
-                background: 'rgba(255,255,255,0.2)',
+                background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
                 color: '#fff',
                 fontWeight: 600,
                 fontSize: '0.85rem',
                 textTransform: 'none',
-                backdropFilter: 'blur(4px)',
                 '&:hover': {
-                  background: 'rgba(255,255,255,0.3)',
+                  background: 'linear-gradient(135deg, #db2777 0%, #9333ea 100%)',
                 },
               }}
             >
