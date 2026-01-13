@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, WifiOff, HelpCircle, Settings } from "lucide-react";
 import { useAuth, PERMISSION_STATE } from "../context/AuthContext";
 import { useLanguage } from '../context/LanguageContext';
+import { NearbyStickyStickyBanner } from '../components/SubscriptionPromoBanner';
 
 /* ------------------------------ Theme & tokens ----------------------------- */
 const APP_BG =
@@ -899,6 +900,9 @@ export default function NearbyScreen() {
           100% { transform: scale(1.6); opacity: 0; }
         }
       `}</style>
+
+      {/* Subscription Promo Banner - Fixed at bottom */}
+      <NearbyStickyStickyBanner />
     </>
   );
 }

@@ -93,6 +93,8 @@ import EmailEditScreen from './pages/EmailEditScreen';
 import PointsHubScreen from './pages/PointsHubScreen';
 import LikesYouScreen from './pages/LikesYouScreen';
 import AdminDashboard from './pages/AdminDashboard';
+import ReportProblemScreen from './pages/ReportProblemScreen';
+import MeetingsSafetyScreen from './pages/MeetingsSafetyScreen';
 
 // Global components
 import { GlobalErrorProvider } from './components/GlobalErrorBanner';
@@ -811,6 +813,8 @@ function AppShell() {
             <Route path="/settings/account/email" element={<ProtectedRoute><EmailEditScreen /></ProtectedRoute>} />
             <Route path="/settings/account/connected-accounts" element={<ProtectedRoute><ConnectedAccountsScreen /></ProtectedRoute>} />
             <Route path="/settings/connected-accounts" element={<ProtectedRoute><ConnectedAccountsScreen /></ProtectedRoute>} />
+            <Route path="/settings/report-problem" element={<ProtectedRoute><ReportProblemScreen /></ProtectedRoute>} />
+            <Route path="/settings/meetings-safety" element={<ProtectedRoute><MeetingsSafetyScreen /></ProtectedRoute>} />
             <Route path="/subscriptions" element={<ProtectedRoute><SubscriptionsScreen /></ProtectedRoute>} />
             <Route path="/points" element={<ProtectedRoute><PointsHubScreen /></ProtectedRoute>} />
             <Route path="/likes-you" element={<ProtectedRoute><LikesYouScreen /></ProtectedRoute>} />

@@ -3774,29 +3774,29 @@ export default function ChatScreen() {
           </Box>
 
           {/* Meeting Quick Actions Block - At top, below header */}
-          <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', px: 2, pt: 10, pb: 2 }}>
-            <Box sx={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2.5 }}>
+          <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', px: 1.5, pt: 10, pb: 1, overflowY: 'auto' }}>
+            <Box sx={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
               {/* 1. Meeting Status with motivational message */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: '100%', p: 2.5, bgcolor: '#ECFDF5', borderRadius: 3, border: '1px solid #A7F3D0' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 36, height: 36, borderRadius: '50%', bgcolor: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Users size={18} color="#fff" />
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, width: '100%', p: 1.5, bgcolor: '#ECFDF5', borderRadius: 2, border: '1px solid #A7F3D0' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Users size={14} color="#fff" />
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#065F46' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#065F46' }}>
                     Meeting with {meetingWith?.name} ✓
                   </Typography>
                 </Box>
-                <Typography variant="body1" sx={{ color: '#6B7280', fontStyle: 'italic', textAlign: 'center' }}>
+                <Typography variant="caption" sx={{ color: '#6B7280', fontStyle: 'italic', textAlign: 'center' }}>
                   ✨ Be yourself, stay safe, and enjoy the moment
                 </Typography>
               </Box>
 
               {/* 2. Quick Actions */}
               <Box sx={{ width: '100%' }}>
-                <Typography variant="overline" sx={{ color: '#6B7280', fontWeight: 600, letterSpacing: 1.5, fontSize: '0.75rem', display: 'block', textAlign: 'center', mb: 2 }}>
+                <Typography variant="overline" sx={{ color: '#6B7280', fontWeight: 600, letterSpacing: 1, fontSize: '0.6rem', display: 'block', textAlign: 'center', mb: 0.5 }}>
                   QUICK ACTIONS
                 </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
               {/* In-App Contact Circles */}
               {meetingContacts.map((contact) => (
                 <Box
@@ -3806,8 +3806,8 @@ export default function ChatScreen() {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    p: 1,
-                    borderRadius: 2,
+                    p: 0.75,
+                    borderRadius: 1.5,
                     bgcolor: '#fff',
                     boxShadow: contactsNotifiedThisMeeting.includes(contact.id) 
                       ? '0 0 0 2px #10B981' 
@@ -3818,24 +3818,24 @@ export default function ChatScreen() {
                 >
                   <Box
                     sx={{
-                      width: 48,
-                      height: 48,
+                      width: 40,
+                      height: 40,
                       borderRadius: '50%',
                       background: 'linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      mb: 0.75,
+                      mb: 0.5,
                     }}
                   >
-                    <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>
+                    <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>
                       {contact.name.charAt(0).toUpperCase()}
                     </Typography>
                   </Box>
-                  <Typography variant="caption" sx={{ fontWeight: 600, textAlign: 'center', color: '#1F2937', fontSize: '0.75rem', lineHeight: 1.2 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, textAlign: 'center', color: '#1F2937', fontSize: '0.65rem', lineHeight: 1.2 }}>
                     {contact.name.length > 6 ? contact.name.slice(0, 6) + '…' : contact.name}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: contactsNotifiedThisMeeting.includes(contact.id) ? '#10B981' : '#9CA3AF', fontSize: '0.65rem' }}>
+                  <Typography variant="caption" sx={{ color: contactsNotifiedThisMeeting.includes(contact.id) ? '#10B981' : '#9CA3AF', fontSize: '0.6rem' }}>
                     {contactsNotifiedThisMeeting.includes(contact.id) ? '✓' : 'Notify'}
                   </Typography>
                 </Box>
@@ -3848,8 +3848,8 @@ export default function ChatScreen() {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  p: 1,
-                  borderRadius: 2,
+                  p: 0.75,
+                  borderRadius: 1.5,
                   bgcolor: '#fff',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   cursor: 'pointer',
@@ -3858,22 +3858,22 @@ export default function ChatScreen() {
               >
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
+                    width: 40,
+                    height: 40,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mb: 0.75,
+                    mb: 0.5,
                   }}
                 >
-                  <MessageCircle size={22} color="#fff" />
+                  <MessageCircle size={18} color="#fff" />
                 </Box>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.75rem', lineHeight: 1.2 }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.65rem', lineHeight: 1.2 }}>
                   WhatsApp
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem' }}>
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.6rem' }}>
                   Share
                 </Typography>
               </Box>
@@ -3912,8 +3912,8 @@ export default function ChatScreen() {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  p: 1,
-                  borderRadius: 2,
+                  p: 0.75,
+                  borderRadius: 1.5,
                   bgcolor: '#fff',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   cursor: 'pointer',
@@ -3922,22 +3922,22 @@ export default function ChatScreen() {
               >
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
+                    width: 40,
+                    height: 40,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mb: 0.75,
+                    mb: 0.5,
                   }}
                 >
-                  <HeartHandshake size={22} color="#fff" />
+                  <HeartHandshake size={18} color="#fff" />
                 </Box>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.75rem', lineHeight: 1.2 }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.65rem', lineHeight: 1.2 }}>
                   Support
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem' }}>
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.6rem' }}>
                   Chat
                 </Typography>
               </Box>
@@ -3949,8 +3949,8 @@ export default function ChatScreen() {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  p: 1,
-                  borderRadius: 2,
+                  p: 0.75,
+                  borderRadius: 1.5,
                   bgcolor: '#fff',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   border: '2px dashed #E5E7EB',
@@ -3960,22 +3960,22 @@ export default function ChatScreen() {
               >
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
+                    width: 40,
+                    height: 40,
                     borderRadius: '50%',
                     bgcolor: '#F3F4F6',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mb: 0.75,
+                    mb: 0.5,
                   }}
                 >
-                  <UserPlus size={22} color="#6B7280" />
+                  <UserPlus size={18} color="#6B7280" />
                 </Box>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.75rem', lineHeight: 1.2 }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.65rem', lineHeight: 1.2 }}>
                   Add
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem' }}>
+                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.6rem' }}>
                   Contact
                 </Typography>
                 </Box>
@@ -3983,10 +3983,10 @@ export default function ChatScreen() {
               </Box>
 
               {/* 3. Need Support */}
-              <Box onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined} sx={{ width: '100%', p: 2, borderRadius: 2.5, bgcolor: '#F9FAFB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}>
-                <Shield size={24} color="#6B7280" />
-                <Typography variant="body1" sx={{ color: '#6B7280', flex: 1 }}>Need support? Tap for help</Typography>
-                <Typography variant="body1" sx={{ color: '#9CA3AF' }}>→</Typography>
+              <Box onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined} sx={{ width: '100%', p: 1, borderRadius: 2, bgcolor: '#F9FAFB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+                <Shield size={18} color="#6B7280" />
+                <Typography variant="caption" sx={{ color: '#6B7280', flex: 1 }}>Need support? Tap for help</Typography>
+                <Typography variant="caption" sx={{ color: '#9CA3AF' }}>→</Typography>
               </Box>
             </Box>
           </Box>
@@ -4001,13 +4001,13 @@ export default function ChatScreen() {
         <Box
           sx={{
             position: 'absolute',
-            top: '50%',
+            top: '45%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
             bgcolor: '#fff',
-            borderRadius: 3,
-            p: 3,
-            maxWidth: 360,
+            borderRadius: 2,
+            p: 1.5,
+            maxWidth: 260,
             width: 'calc(100% - 32px)',
             textAlign: 'center',
             outline: 'none',
@@ -4018,43 +4018,45 @@ export default function ChatScreen() {
         >
             <Box
               sx={{
-                width: 64,
-                height: 64,
+                width: 36,
+                height: 36,
                 borderRadius: '50%',
                 bgcolor: '#FEF3C7',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 mx: 'auto',
-                mb: 2,
+                mb: 1,
               }}
             >
-              <Users size={28} color="#F59E0B" />
+              <Users size={18} color="#F59E0B" />
             </Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.25 }}>
               Want to set up meeting contacts?
             </Typography>
-            <Typography variant="body2" sx={{ color: '#6B7280', mb: 3 }}>
+            <Typography variant="caption" sx={{ color: '#6B7280', mb: 1.5, display: 'block', fontSize: '0.7rem', lineHeight: 1.3 }}>
               You haven't set up meeting contacts for sharing via Pulse yet.
               You can continue and share via WhatsApp, or set it up now.
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
               <Button
                 variant="contained"
                 fullWidth
+                size="small"
                 onClick={() => {
                   setShowContactsSetupModal(false);
                   setShowQuickAddContact(true);
                 }}
-                sx={{ borderRadius: 999, py: 1.5 }}
+                sx={{ borderRadius: 999, py: 0.75, fontSize: '0.8rem' }}
               >
                 Set up now
               </Button>
               <Button
                 variant="outlined"
                 fullWidth
+                size="small"
                 onClick={handleContinueWithoutContacts}
-                sx={{ borderRadius: 999, py: 1.5 }}
+                sx={{ borderRadius: 999, py: 0.75, fontSize: '0.8rem' }}
               >
                 Continue
               </Button>
@@ -4070,13 +4072,13 @@ export default function ChatScreen() {
           <Box
             sx={{
               position: 'absolute',
-              top: '50%',
+              top: '45%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
               bgcolor: '#fff',
-              borderRadius: 3,
-              p: 3,
-              maxWidth: 360,
+              borderRadius: 2,
+              p: 2,
+              maxWidth: 280,
               width: 'calc(100% - 32px)',
               outline: 'none',
               maxHeight: '90vh',
@@ -4084,17 +4086,18 @@ export default function ChatScreen() {
               boxShadow: 24,
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
               Add Meeting Contact
             </Typography>
-            <Typography variant="body2" sx={{ color: '#6B7280', mb: 3 }}>
+            <Typography variant="caption" sx={{ color: '#6B7280', mb: 2, display: 'block' }}>
               Add someone who can receive your location during meetings.
             </Typography>
             <TextField
               id="contact-name"
               label="Contact Name"
               fullWidth
-              sx={{ mb: 2 }}
+              size="small"
+              sx={{ mb: 1.5 }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   const name = e.target.value.trim();
@@ -4114,18 +4117,20 @@ export default function ChatScreen() {
                 }
               }}
             />
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 0.75 }}>
               <Button
                 variant="outlined"
                 fullWidth
+                size="small"
                 onClick={() => setShowQuickAddContact(false)}
-                sx={{ borderRadius: 999 }}
+                sx={{ borderRadius: 999, py: 0.75, fontSize: '0.8rem' }}
               >
                 Cancel
               </Button>
               <Button
                 variant="contained"
                 fullWidth
+                size="small"
                 onClick={() => {
                   const input = document.getElementById('contact-name');
                   const name = input?.value?.trim();
@@ -4142,7 +4147,7 @@ export default function ChatScreen() {
                     }
                   }
                 }}
-                sx={{ borderRadius: 999 }}
+                sx={{ borderRadius: 999, py: 0.75, fontSize: '0.8rem' }}
               >
                 Add
               </Button>

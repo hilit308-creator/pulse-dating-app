@@ -393,7 +393,6 @@ const AccountSettingsScreen = () => {
                 {[
                   { key: 'always', label: t('alwaysVisible') },
                   { key: 'selected_times', label: t('selectedTimes') },
-                  { key: 'selected_places', label: t('selectedPlaces') },
                   { key: 'paused', label: t('paused') },
                 ].map((opt) => (
                   <Chip
@@ -409,8 +408,6 @@ const AccountSettingsScreen = () => {
                         setPauseMode(false);
                         if (opt.key === 'selected_times') {
                           navigate('/settings/time-visibility');
-                        } else if (opt.key === 'selected_places') {
-                          navigate('/settings/location-visibility');
                         } else {
                           setSnackbar({ open: true, message: t('visibilityUpdated') });
                         }
@@ -573,7 +570,20 @@ const AccountSettingsScreen = () => {
           </SectionContainer>
 
           {/* ═══════════════════════════════════════════════════════════════
-              5. SAFETY & TRUST
+              5. MEETINGS & SAFETY
+          ═══════════════════════════════════════════════════════════════ */}
+          <SectionHeader icon={Shield} title={t('meetingsSafety') || 'Meetings & Safety'} />
+          <SectionContainer>
+            <MenuItem
+              icon={Users}
+              label={t('meetingContacts') || 'Meeting Contacts'}
+              sublabel={t('meetingContactsSubtitle') || 'Set up contacts for safety during meetings'}
+              onClick={() => navigate('/settings/meetings-safety')}
+            />
+          </SectionContainer>
+
+          {/* ═══════════════════════════════════════════════════════════════
+              6. SAFETY & TRUST
           ═══════════════════════════════════════════════════════════════ */}
           <SectionHeader icon={Shield} title={t('safetyTrust')} />
           <SectionContainer>
@@ -587,7 +597,7 @@ const AccountSettingsScreen = () => {
             <MenuItem
               icon={Flag}
               label={t('reportProblem')}
-              onClick={() => window.open('mailto:support@pulse.dating?subject=Problem%20Report', '_blank')}
+              onClick={() => navigate('/settings/report-problem')}
             />
           </SectionContainer>
 
@@ -680,7 +690,7 @@ const AccountSettingsScreen = () => {
               icon={CreditCard}
               label={t('pulsePremium')}
               sublabel={t('unlockAllFeatures')}
-              onClick={() => navigate('/business-upgrade')}
+              onClick={() => navigate('/subscriptions')}
             />
             <Divider sx={{ mx: 2 }} />
             <MenuItem

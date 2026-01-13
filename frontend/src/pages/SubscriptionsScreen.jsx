@@ -1050,6 +1050,79 @@ const SubscriptionsScreen = () => {
             </motion.div>
           </Box>
           
+          {/* ===== MY SUBSCRIPTION (if active) ===== */}
+          {activePlan && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <Box
+                sx={{
+                  mx: 2,
+                  mb: 4,
+                  p: 3,
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(16,185,129,0.1) 100%)',
+                  border: '1px solid rgba(34,197,94,0.3)',
+                }}
+              >
+                <Typography
+                  sx={{
+                    color: 'rgba(255,255,255,0.6)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    letterSpacing: 1,
+                    mb: 1,
+                  }}
+                >
+                  YOUR CURRENT PLAN
+                </Typography>
+                
+                <Typography
+                  variant="h5"
+                  sx={{
+                    color: '#fff',
+                    fontWeight: 700,
+                    mb: 0.5,
+                  }}
+                >
+                  {activePlan === 'pro' ? 'Pulse Pro' : 'Pulse Plus'} — {activePlan === 'pro' ? PRO_PRICING_OPTIONS[proPricing]?.duration : PLUS_PRICING_OPTIONS[plusPricing]?.duration}
+                </Typography>
+                
+                <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', mb: 0.5 }}>
+                  Next renewal: {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                </Typography>
+                
+                <Typography sx={{ color: '#22c55e', fontWeight: 600, fontSize: '0.95rem', mb: 2 }}>
+                  {activePlan === 'pro' ? PRO_PRICING_OPTIONS[proPricing]?.price : PLUS_PRICING_OPTIONS[plusPricing]?.price} / {activePlan === 'pro' ? PRO_PRICING_OPTIONS[proPricing]?.duration?.toLowerCase() : PLUS_PRICING_OPTIONS[plusPricing]?.duration?.toLowerCase()}
+                </Typography>
+                
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    // Open App Store subscription management
+                    window.open('https://apps.apple.com/account/subscriptions', '_blank');
+                  }}
+                  sx={{
+                    borderRadius: '12px',
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: '#fff',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 3,
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      background: 'rgba(255,255,255,0.05)',
+                    },
+                  }}
+                >
+                  Manage subscription
+                </Button>
+              </Box>
+            </motion.div>
+          )}
+          
           {/* ===== PULSE PLUS SECTION ===== */}
           <SubscriptionSection
             type="PULSE PLUS"

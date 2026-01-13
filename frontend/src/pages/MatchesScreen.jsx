@@ -34,6 +34,7 @@ import {
 } from "@mui/material";
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from "framer-motion";
+import { HomeInlinePromoBanner } from '../components/SubscriptionPromoBanner';
 import {
   MessageCircle,
   ChevronLeft,
@@ -1253,6 +1254,9 @@ export default function MatchesScreen() {
         pb: "calc(10px + env(safe-area-inset-bottom, 0))",
       }}
     >
+      {/* Subscription Promo Banner - appears after browsing */}
+      <HomeInlinePromoBanner swipeCount={filteredMatches.length > 0 ? 8 : 0} />
+
       {/* Top bar - per spec: calm, organized, no excitement */}
       <Box
         sx={{
