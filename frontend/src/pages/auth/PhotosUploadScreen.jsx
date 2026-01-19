@@ -8,6 +8,10 @@ import {
   Grid,
   CircularProgress,
   Alert,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Camera, Plus, X, Star, Image } from 'lucide-react';
@@ -21,6 +25,13 @@ const PhotosUploadScreen = () => {
   const navigate = useNavigate();
   const { updateUser, user, updateOnboardingStep, saveOnboardingData } = useAuth();
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraReady, setCameraReady] = useState(false);
   
   const [photos, setPhotos] = useState(user?.photos || Array(MAX_PHOTOS).fill(null));
   const [isUploading, setIsUploading] = useState(false);
@@ -30,9 +41,116 @@ const PhotosUploadScreen = () => {
   const uploadedCount = photos.filter(p => p !== null).length;
   const canContinue = uploadedCount >= MIN_PHOTOS;
 
-  const handleSlotClick = (index) => {
+  const handleSlotClick = (event, index) => {
     setActiveSlot(index);
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+  };
+
+  const handleChooseFromGallery = () => {
+    handleMenuClose();
     fileInputRef.current?.click();
+  };
+
+  const handleTakePhoto = async () => {
+    handleMenuClose();
+    
+    try {
+      // Request camera permission and open camera
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+      });
+      setCameraStream(stream);
+      setShowCamera(true);
+      
+      // Wait for video element to be ready
+      setCameraReady(false);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play();
+            setCameraReady(true);
+          };
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Camera permission error:', error);
+      if (error.name === 'NotAllowedError') {
+        setError('Camera access denied. Please allow camera access in your browser settings.');
+      } else if (error.name === 'NotFoundError') {
+        setError('No camera found on this device.');
+      } else {
+        setError('Could not access camera. Please try again.');
+      }
+    }
+  };
+
+  const handleCapturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) {
+      console.error('Video or canvas ref not available');
+      return;
+    }
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    // Check if video is ready
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.error('Video not ready yet');
+      setError('Camera not ready. Please wait a moment and try again.');
+      return;
+    }
+    
+    // Set canvas size to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw video frame to canvas (mirror the image to match preview)
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+    
+    // Convert to blob
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        console.error('Failed to create blob');
+        setError('Failed to capture photo. Please try again.');
+        return;
+      }
+      
+      // Create file from blob
+      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const imageUrl = URL.createObjectURL(blob);
+      
+      console.log('Photo captured:', imageUrl);
+      
+      // Add to photos
+      const newPhotos = [...photos];
+      newPhotos[activeSlot] = {
+        url: imageUrl,
+        file: file,
+        isMain: activeSlot === 0 || !photos.some(p => p?.isMain),
+      };
+      setPhotos(newPhotos);
+      
+      // Close camera
+      handleCloseCamera();
+    }, 'image/jpeg', 0.9);
+  };
+
+  const handleCloseCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setCameraReady(false);
+    setShowCamera(false);
   };
 
   const handleFileSelect = async (e) => {
@@ -108,10 +226,30 @@ const PhotosUploadScreen = () => {
     setPhotos(newPhotos);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const validPhotos = photos.filter(p => p !== null);
-    saveOnboardingData({ photos: validPhotos });
-    updateUser({ photos: validPhotos });
+    
+    // Convert blob URLs to base64 for persistence
+    const photosWithBase64 = await Promise.all(
+      validPhotos.map(async (photo) => {
+        if (photo.file) {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve({
+                url: reader.result, // base64 string
+                isMain: photo.isMain,
+              });
+            };
+            reader.readAsDataURL(photo.file);
+          });
+        }
+        return photo;
+      })
+    );
+    
+    saveOnboardingData({ photos: photosWithBase64 });
+    updateUser({ photos: photosWithBase64 });
     navigate('/auth/bio');
   };
 
@@ -137,7 +275,7 @@ const PhotosUploadScreen = () => {
         backgroundColor: '#ffffff',
       }}
     >
-      {/* Hidden file input */}
+      {/* Hidden file input for gallery */}
       <input
         type="file"
         ref={fileInputRef}
@@ -145,6 +283,160 @@ const PhotosUploadScreen = () => {
         accept="image/*"
         style={{ display: 'none' }}
       />
+      
+      {/* Hidden file input for camera */}
+      <input
+        type="file"
+        ref={cameraInputRef}
+        onChange={handleFileSelect}
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+      />
+
+      {/* Hidden canvas for photo capture */}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+      {/* Camera Modal */}
+      <AnimatePresence>
+        {showCamera && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              backgroundColor: '#000',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Camera header */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              p: 2,
+              pt: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+            }}>
+              <IconButton onClick={handleCloseCamera} sx={{ color: 'white' }}>
+                <X size={24} />
+              </IconButton>
+              <Typography sx={{ color: 'white', fontWeight: 600 }}>
+                Take a photo
+              </Typography>
+              <Box sx={{ width: 40 }} />
+            </Box>
+
+            {/* Video preview */}
+            <Box sx={{ 
+              flex: 1, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  transform: 'scaleX(-1)', // Mirror for selfie
+                }}
+              />
+            </Box>
+
+            {/* Capture button */}
+            <Box sx={{ 
+              p: 4, 
+              pb: 'calc(env(safe-area-inset-bottom, 0px) + 32px)',
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center' 
+            }}>
+              {!cameraReady && (
+                <Typography sx={{ color: 'rgba(255,255,255,0.7)', mb: 2, fontSize: '0.875rem' }}>
+                  Loading camera...
+                </Typography>
+              )}
+              <Box
+                onClick={cameraReady ? handleCapturePhoto : undefined}
+                sx={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: '50%',
+                  border: '4px solid white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: cameraReady ? 'pointer' : 'not-allowed',
+                  opacity: cameraReady ? 1 : 0.5,
+                  transition: 'all 0.2s',
+                  '&:hover': cameraReady ? { transform: 'scale(1.05)' } : {},
+                  '&:active': cameraReady ? { transform: 'scale(0.95)' } : {},
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '50%',
+                    backgroundColor: 'white',
+                  }}
+                />
+              </Box>
+            </Box>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Photo source menu */}
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'center',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'center',
+          horizontal: 'center',
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            minWidth: 200,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          }
+        }}
+      >
+        <MenuItem onClick={handleChooseFromGallery} sx={{ py: 1.5 }}>
+          <ListItemIcon>
+            <Image size={20} color="#6C5CE7" />
+          </ListItemIcon>
+          <ListItemText 
+            primary="Choose from gallery" 
+            primaryTypographyProps={{ fontWeight: 500 }}
+          />
+        </MenuItem>
+        <MenuItem onClick={handleTakePhoto} sx={{ py: 1.5 }}>
+          <ListItemIcon>
+            <Camera size={20} color="#F43F5E" />
+          </ListItemIcon>
+          <ListItemText 
+            primary="Take a photo" 
+            primaryTypographyProps={{ fontWeight: 500 }}
+          />
+        </MenuItem>
+      </Menu>
 
       {/* Header with Progress */}
       <OnboardingHeader
@@ -232,7 +524,7 @@ const PhotosUploadScreen = () => {
                   photo={photo}
                   index={index}
                   isUploading={isUploading && activeSlot === index}
-                  onClick={() => handleSlotClick(index)}
+                  onClick={(e) => handleSlotClick(e, index)}
                   onRemove={(e) => handleRemovePhoto(index, e)}
                   onSetMain={(e) => handleSetMain(index, e)}
                 />

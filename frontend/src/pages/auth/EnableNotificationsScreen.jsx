@@ -27,18 +27,44 @@ const EnableNotificationsScreen = () => {
     try {
       // Check if notifications are supported
       if (!('Notification' in window)) {
+        console.log('Notifications not supported in this browser');
         updatePermission('notifications', PERMISSION_STATE.DENIED);
         updateOnboardingStep('onboarding');
         navigate('/auth/onboarding');
         return;
       }
 
-      // Request permission
-      const permission = await Notification.requestPermission();
-      
-      if (permission === 'granted') {
+      // Check current permission state first
+      if (Notification.permission === 'granted') {
         updatePermission('notifications', PERMISSION_STATE.GRANTED);
-      } else if (permission === 'denied') {
+        updateOnboardingStep('onboarding');
+        navigate('/auth/onboarding');
+        return;
+      }
+
+      if (Notification.permission === 'denied') {
+        // Already denied, can't request again
+        updatePermission('notifications', PERMISSION_STATE.DENIED);
+        updateOnboardingStep('onboarding');
+        navigate('/auth/onboarding');
+        return;
+      }
+
+      // Request permission with timeout fallback
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => resolve('timeout'), 5000);
+      });
+
+      const permissionPromise = Notification.requestPermission();
+      const result = await Promise.race([permissionPromise, timeoutPromise]);
+      
+      if (result === 'timeout') {
+        // Browser didn't respond, continue anyway
+        console.log('Notification permission request timed out');
+        updatePermission('notifications', PERMISSION_STATE.NOT_NOW);
+      } else if (result === 'granted') {
+        updatePermission('notifications', PERMISSION_STATE.GRANTED);
+      } else if (result === 'denied') {
         updatePermission('notifications', PERMISSION_STATE.DENIED);
       } else {
         updatePermission('notifications', PERMISSION_STATE.NOT_NOW);

@@ -238,7 +238,7 @@ const UserProfileScreen = () => {
               variant="h5"
               sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}
             >
-              {firstName || 'Your Name'}{age ? `, ${age}` : ''}
+              {firstName || 'Your Name'}{user?.lastName ? ` ${user.lastName}` : ''}{age ? `, ${age}` : ''}
             </Typography>
 
             {/* Location */}

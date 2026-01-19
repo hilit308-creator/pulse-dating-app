@@ -24,6 +24,7 @@ const OnboardingScreen = () => {
   const { accessToken, updateUser, updateOnboardingState, updateOnboardingStep, saveOnboardingData } = useAuth();
   
   const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   useEffect(() => {
     updateOnboardingStep('onboarding');
@@ -76,6 +77,7 @@ const OnboardingScreen = () => {
     try {
       const result = await apiCall(updateProfile, accessToken, {
         firstName: firstName.trim(),
+        lastName: lastName.trim() || null,
         dateOfBirth,
         gender: gender || null,
         showMePreference: showMe,
@@ -84,6 +86,7 @@ const OnboardingScreen = () => {
       // Update user in context
       updateUser({
         ...result.user,
+        lastName: lastName.trim() || null,
         computedAge: result.computedAge,
       });
       
@@ -245,6 +248,46 @@ const OnboardingScreen = () => {
                   },
                   '&.Mui-focused fieldset': {
                     borderColor: fieldErrors.firstName ? '#ef4444' : '#6C5CE7',
+                  },
+                },
+              }}
+            />
+          </Box>
+
+          {/* Last Name (Optional) */}
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                color: '#1a1a2e',
+                mb: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              <User size={16} />
+              Last name
+            </Typography>
+            <TextField
+              fullWidth
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Your last name (optional)"
+              inputProps={{ maxLength: 30 }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '12px',
+                  backgroundColor: '#f8fafc',
+                  '& fieldset': {
+                    borderColor: 'rgba(0,0,0,0.1)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#6C5CE7',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#6C5CE7',
                   },
                 },
               }}

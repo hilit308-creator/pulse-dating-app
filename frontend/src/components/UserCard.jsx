@@ -700,7 +700,7 @@ export default function UserCard({
                   textShadow: '0 1px 3px rgba(0,0,0,0.3)',
                 }}
               >
-                {user.firstName}, {user.age}
+                {user.firstName}{user.lastName ? ` ${user.lastName}` : ''}, {user.age}
               </Typography>
               
               {/* Distance - Only show if location permission exists */}
@@ -984,7 +984,7 @@ export default function UserCard({
           <Box sx={{ p: 3, pb: 6 }}>
             {/* Name and age */}
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
-              {user.firstName}, {user.age}
+              {user.firstName}{user.lastName ? ` ${user.lastName}` : ''}, {user.age}
             </Typography>
             {distanceText && (
               <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>

@@ -300,7 +300,7 @@ const AgeConfirmationScreen = () => {
               }}
             >
               <Typography variant="body2" sx={{ color: '#64748b' }}>
-                Welcome, <strong style={{ color: '#1a1a2e' }}>{user.firstName}</strong>! 👋
+                Welcome, <strong style={{ color: '#1a1a2e' }}>{user.firstName}{user.lastName ? ` ${user.lastName}` : ''}</strong>! 👋
               </Typography>
             </Box>
           )}

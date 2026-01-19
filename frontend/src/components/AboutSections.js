@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, IconButton, List, ListItem, ListItemIcon, ListItemText, Divider, TextField, Button, MenuItem, Stack, Slider } from '@mui/material';
 import WorkIcon from '@mui/icons-material/Work';
 import SchoolIcon from '@mui/icons-material/School';
@@ -14,6 +14,7 @@ import ChildCareIcon from '@mui/icons-material/ChildCare';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
+import { useAuth } from '../context/AuthContext';
 
 const genderOptions = ['Man', 'Woman', 'Non-binary', 'Prefer not to say'];
 
@@ -28,10 +29,23 @@ const initialAboutYouFields = [
 
 const exerciseOptions = ['Active', 'Sometimes', 'Rarely', 'Never'];
 const educationLevelOptions = ['In college', 'Graduate', 'High school', 'Other'];
-const drinkingOptions = ['I drink sometimes', 'Never', 'Socially', 'Frequently'];
-const smokingOptions = ["I don't smoke", 'I smoke sometimes', "I'm trying to quit", 'Regularly'];
+const drinkingOptions = ['Never', 'Rarely', 'Socially', 'Regularly'];
+const smokingOptions = ['Never', 'Sometimes', 'Regularly'];
 const lookingForOptions = ['Fun', 'Casual dates', 'A long-term relationship', 'Friendship', 'Marriage'];
 const kidsOptions = ['Not sure', 'Want someday', 'Don’t want', 'Have kids'];
+
+// Map registration values to display values
+const drinkingDisplayMap = {
+  'never': 'Never',
+  'rarely': 'Rarely', 
+  'socially': 'Socially',
+  'regularly': 'Regularly',
+};
+const smokingDisplayMap = {
+  'never': 'Never',
+  'sometimes': 'Sometimes',
+  'regularly': 'Regularly',
+};
 
 const initialMoreAboutFields = [
   { icon: <DirectionsRunIcon />, label: 'Exercise', value: 'Active', key: 'exercise', type: 'select', options: exerciseOptions },
@@ -41,14 +55,41 @@ const initialMoreAboutFields = [
 ];
 
 export default function AboutSections() {
-  // About You state
-  const [fields, setFields] = useState(initialAboutYouFields);
+  const { user } = useAuth();
+  
+  // Build fields from user data
+  const buildFieldsFromUser = () => [
+    { icon: <WcIcon />, label: 'Gender', value: user?.gender || '', key: 'gender', type: 'select', options: genderOptions },
+    { icon: <HeightIcon />, label: 'Height', value: user?.height ? String(user.height) : '', key: 'height', type: 'height' },
+    { icon: <LocationOnIcon />, label: 'Location', value: user?.location || user?.city || '', key: 'location', type: 'text', required: true },
+    { icon: <HomeIcon />, label: 'Hometown', value: user?.hometown || '', key: 'hometown', type: 'text' },
+    { icon: <WorkIcon />, label: 'Work', value: user?.jobTitle || user?.company ? `${user?.jobTitle || ''}${user?.jobTitle && user?.company ? ' at ' : ''}${user?.company || ''}` : '', key: 'work', type: 'text' },
+    { icon: <SchoolIcon />, label: 'Education', value: user?.education || user?.school ? `${user?.education || ''}${user?.education && user?.school ? ' - ' : ''}${user?.school || ''}` : '', key: 'education', type: 'text' },
+  ];
+
+  const buildMoreFieldsFromUser = () => [
+    { icon: <DirectionsRunIcon />, label: 'Exercise', value: user?.exercise || '', key: 'exercise', type: 'select', options: exerciseOptions },
+    { icon: <LocalBarIcon />, label: 'Drinking', value: user?.drinking || '', key: 'drinking', type: 'select', options: drinkingOptions },
+    { icon: <SmokingRoomsIcon />, label: 'Smoking', value: user?.smoking || '', key: 'smoking', type: 'select', options: smokingOptions },
+    { icon: <ChildCareIcon />, label: 'Kids', value: user?.kids || '', key: 'kids', type: 'select', options: kidsOptions },
+  ];
+
+  // About You state - initialize from user data
+  const [fields, setFields] = useState(buildFieldsFromUser);
   const [editingKey, setEditingKey] = useState(null);
   const [editValue, setEditValue] = useState("");
   // More About You state
-  const [moreFields, setMoreFields] = useState(initialMoreAboutFields);
+  const [moreFields, setMoreFields] = useState(buildMoreFieldsFromUser);
   const [editingMoreKey, setEditingMoreKey] = useState(null);
   const [editMoreValue, setEditMoreValue] = useState("");
+
+  // Update fields when user data changes
+  useEffect(() => {
+    if (user) {
+      setFields(buildFieldsFromUser());
+      setMoreFields(buildMoreFieldsFromUser());
+    }
+  }, [user]);
 
   // About You handlers
   const handleEdit = (key) => {

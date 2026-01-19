@@ -192,9 +192,12 @@ export function AuthProvider({ children }) {
 
   // Update user profile
   const updateUser = useCallback((userData) => {
-    setUser(prev => ({ ...prev, ...userData }));
-    persistState(STORAGE_KEYS.USER, { ...user, ...userData });
-  }, [user, persistState]);
+    setUser(prev => {
+      const updated = { ...prev, ...userData };
+      persistState(STORAGE_KEYS.USER, updated);
+      return updated;
+    });
+  }, [persistState]);
 
   // Update onboarding state
   const updateOnboardingState = useCallback((state) => {
@@ -247,8 +250,11 @@ export function AuthProvider({ children }) {
   // Clear onboarding data on completion
   const completeOnboarding = useCallback(() => {
     // Merge onboarding data into user
-    setUser(prev => ({ ...prev, ...onboardingData }));
-    persistState(STORAGE_KEYS.USER, { ...user, ...onboardingData });
+    setUser(prev => {
+      const updated = { ...prev, ...onboardingData };
+      persistState(STORAGE_KEYS.USER, updated);
+      return updated;
+    });
     
     // Update state
     setOnboardingState(ONBOARDING_STATE.COMPLETED);
@@ -259,7 +265,7 @@ export function AuthProvider({ children }) {
     setCurrentOnboardingStep('phone');
     persistState(STORAGE_KEYS.ONBOARDING_DATA, null);
     persistState(STORAGE_KEYS.ONBOARDING_STEP, null);
-  }, [onboardingData, user, persistState]);
+  }, [onboardingData, persistState]);
 
   // Update permissions
   const updatePermission = useCallback((permissionType, state) => {

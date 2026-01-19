@@ -1208,7 +1208,7 @@ function HorizontalPickCard({ profile, onClick, index }) {
               mb: 0.5,
             }}
           >
-            {profile.firstName}, {profile.age}
+            {profile.firstName}{profile.lastName ? ` ${profile.lastName}` : ''}, {profile.age}
           </Typography>
           
           <Typography 
@@ -1423,7 +1423,7 @@ function SwipeableCard({ profile, onSwipe, isActive }) {
               mb: 0.5,
             }}
           >
-            {profile.firstName}, {profile.age}
+            {profile.firstName}{profile.lastName ? ` ${profile.lastName}` : ''}, {profile.age}
           </Typography>
           
           <Typography 

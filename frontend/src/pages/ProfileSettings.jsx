@@ -65,11 +65,13 @@ import {
   ThumbsDown,
   HelpCircle,
   HeartHandshake,
+  ChevronDown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import AboutSections from "../components/AboutSections";
 import ProfileExtras from "../components/ProfileExtras";
+import { useAuth } from "../context/AuthContext";
 
 /* ---------------------------------------
    Brand / theme settings (same as Home)
@@ -124,6 +126,51 @@ const mockInterests = [
   { emoji: "⛺", label: "Camping" },
 ];
 
+const INTEREST_CATEGORIES = [
+  {
+    name: 'Music & Entertainment',
+    emoji: '🎵',
+    interests: ['Live Music', 'Concerts', 'Karaoke', 'Podcasts', 'Stand-up Comedy', 'Theater', 'Movies', 'Netflix', 'K-Pop', 'Hip Hop', 'Rock', 'Jazz'],
+  },
+  {
+    name: 'Sports & Fitness',
+    emoji: '⚽',
+    interests: ['Gym', 'Running', 'Yoga', 'Swimming', 'Football', 'Basketball', 'Tennis', 'Hiking', 'Cycling', 'CrossFit', 'Martial Arts', 'Dancing'],
+  },
+  {
+    name: 'Food & Drinks',
+    emoji: '🍕',
+    interests: ['Cooking', 'Foodie', 'Wine', 'Coffee', 'Brunch', 'Vegan', 'Sushi', 'BBQ', 'Baking', 'Craft Beer', 'Cocktails', 'Street Food'],
+  },
+  {
+    name: 'Travel & Adventure',
+    emoji: '✈️',
+    interests: ['Travel', 'Backpacking', 'Road Trips', 'Beach', 'Mountains', 'Camping', 'City Breaks', 'Adventure Sports', 'Scuba Diving', 'Skiing'],
+  },
+  {
+    name: 'Arts & Culture',
+    emoji: '🎨',
+    interests: ['Art', 'Photography', 'Museums', 'Reading', 'Writing', 'Poetry', 'Design', 'Fashion', 'Architecture', 'History'],
+  },
+  {
+    name: 'Lifestyle',
+    emoji: '🌱',
+    interests: ['Meditation', 'Spirituality', 'Volunteering', 'Sustainability', 'Pets', 'Dogs', 'Cats', 'Plants', 'Self-care', 'Astrology'],
+  },
+  {
+    name: 'Tech & Gaming',
+    emoji: '🎮',
+    interests: ['Gaming', 'Tech', 'Startups', 'Crypto', 'AI', 'Board Games', 'Anime', 'Esports', 'VR', 'Coding'],
+  },
+  {
+    name: 'Social',
+    emoji: '🎉',
+    interests: ['Parties', 'Nightlife', 'Festivals', 'Networking', 'Trivia', 'Wine Tasting', 'Book Club', 'Language Exchange'],
+  },
+];
+
+const MAX_PER_CATEGORY = 3;
+
 const mockCauses = [
   "Animal welfare",
   "Climate & environment",
@@ -155,12 +202,13 @@ const mockPrompts = [
   "Friends describe me as…",
 ];
 
-// Looking For options per spec - cards with icon + text
+// Looking For options - matching registration screen style
 const LOOKING_FOR_OPTIONS = [
-  { id: "relationship", label: "Relationship", icon: HeartHandshake, description: "Something serious" },
-  { id: "casual", label: "Something casual", icon: Sparkles, description: "No pressure" },
-  { id: "friends", label: "New friends", icon: Users, description: "Expand my circle" },
-  { id: "unsure", label: "Still figuring it out", icon: HelpCircle, description: "Open to possibilities" },
+  { id: "long_term", label: "Long-term relationship", icon: Heart, description: "Looking for something serious", color: '#F43F5E', bgColor: 'rgba(244,63,94,0.1)' },
+  { id: "short_term", label: "Short-term, open to long", icon: Sparkles, description: "See where things go", color: '#a855f7', bgColor: 'rgba(168,85,247,0.1)' },
+  { id: "casual", label: "Something casual", icon: Coffee, description: "Fun without pressure", color: '#f59e0b', bgColor: 'rgba(245,158,11,0.1)' },
+  { id: "friends", label: "New friends", icon: Users, description: "Expand my social circle", color: '#22c55e', bgColor: 'rgba(34,197,94,0.1)' },
+  { id: "not_sure", label: "Not sure yet", icon: HelpCircle, description: "Still figuring it out", color: '#64748b', bgColor: 'rgba(100,116,139,0.1)' },
 ];
 
 // AI Bio suggestions per spec - "inspiration pool"
@@ -175,16 +223,35 @@ const AI_BIO_SUGGESTIONS = [
   "Creative mind with a passion for good design and better coffee ✨",
 ];
 
-// Hard Preferences questions per spec - algorithm selects 6-10
+// Hard Preferences questions - Full repository (22 questions)
 const HARD_PREFERENCE_QUESTIONS = [
-  { id: "smoking", question: "Smoking", options: ["Works for me", "Not for me"] },
-  { id: "drinking", question: "Drinking", options: ["Works for me", "Not for me"] },
-  { id: "kids_have", question: "Has children", options: ["Works for me", "Not for me"] },
-  { id: "kids_want", question: "Wants children", options: ["Works for me", "Not for me"] },
-  { id: "pets", question: "Has pets", options: ["Works for me", "Not for me"] },
-  { id: "religion", question: "Religious practice", options: ["Works for me", "Not for me"] },
-  { id: "politics", question: "Political alignment matters", options: ["Works for me", "Not for me"] },
-  { id: "distance", question: "Long distance", options: ["Works for me", "Not for me"] },
+  // Habits & Lifestyle (1-5)
+  { id: "smoking_cigarettes", question: "Am I open to dating someone who smokes cigarettes?", category: "Habits & Lifestyle" },
+  { id: "smoking_weed", question: "Am I open to dating someone who smokes weed?", category: "Habits & Lifestyle" },
+  { id: "drinks_frequently", question: "Am I open to dating someone who drinks alcohol frequently?", category: "Habits & Lifestyle" },
+  { id: "no_alcohol", question: "Am I open to dating someone who doesn't drink alcohol at all?", category: "Habits & Lifestyle" },
+  { id: "not_into_sports", question: "Am I open to dating someone who isn't into sports?", category: "Habits & Lifestyle" },
+  // Relationship Style (6-10)
+  { id: "serious_only", question: "Do I want a serious relationship only?", category: "Relationship Style" },
+  { id: "open_to_casual", question: "Am I open to something casual?", category: "Relationship Style" },
+  { id: "open_polyamorous", question: "Am I open to an open / polyamorous relationship?", category: "Relationship Style" },
+  { id: "monogamy_only", question: "Do I want monogamy only?", category: "Relationship Style" },
+  { id: "unsure_partner", question: "Am I open to dating someone who isn't sure what they're looking for?", category: "Relationship Style" },
+  // Location & Living (11-14)
+  { id: "lives_far", question: "Am I open to dating someone who lives far away?", category: "Location & Living" },
+  { id: "lives_abroad", question: "Am I open to dating someone who lives abroad?", category: "Location & Living" },
+  { id: "same_country", question: "Is it important that my partner lives in the same country long-term?", category: "Location & Living" },
+  { id: "first_date_home", question: "Am I open to a first date at home?", category: "Location & Living" },
+  // Career & Education (15-18)
+  { id: "self_employed", question: "Is it important that my partner is self-employed?", category: "Career & Education" },
+  { id: "salaried", question: "Is it important that my partner is a salaried employee?", category: "Career & Education" },
+  { id: "has_degree", question: "Is it important that my partner has or is pursuing a degree?", category: "Career & Education" },
+  { id: "no_degree", question: "Am I open to dating someone without a degree?", category: "Career & Education" },
+  // Values & Future (19-22)
+  { id: "wants_children", question: "Is it important that my partner wants children someday?", category: "Values & Future" },
+  { id: "no_children", question: "Am I open to dating someone who doesn't want children?", category: "Values & Future" },
+  { id: "calm_lifestyle", question: "Is a calm, quiet lifestyle important to me?", category: "Values & Future" },
+  { id: "intense_lifestyle", question: "Am I open to dating someone with a very intense lifestyle?", category: "Values & Future" },
 ];
 
 const MAX_PHOTOS = 6;
@@ -192,9 +259,43 @@ const MAX_INTERESTS = 10;
 const MAX_CAUSES = 3;
 const MAX_QUALITIES = 3;
 
+// Helper to get merged user data from localStorage
+function getUserDataFromStorage() {
+  try {
+    const storedUser = localStorage.getItem('pulse_user');
+    const storedOnboarding = localStorage.getItem('pulse_onboarding_data');
+    const user = storedUser ? JSON.parse(storedUser) : {};
+    const onboarding = storedOnboarding ? JSON.parse(storedOnboarding) : {};
+    // Merge: onboarding data takes precedence
+    return { ...user, ...onboarding };
+  } catch (e) {
+    console.error('Error loading user data:', e);
+    return {};
+  }
+}
+
 export default function ProfileSettings({ onBack }) {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { user, updateUser } = useAuth();
+  
+  // Get merged data from localStorage directly
+  const [userData, setUserData] = useState(getUserDataFromStorage);
+  
+  // Helper to save and refresh userData
+  const saveAndRefreshUserData = (newData) => {
+    const currentData = getUserDataFromStorage();
+    const merged = { ...currentData, ...newData };
+    localStorage.setItem('pulse_user', JSON.stringify(merged));
+    localStorage.setItem('pulse_onboarding_data', JSON.stringify(merged));
+    setUserData(merged);
+  };
+  
+  // Refresh userData when component mounts or user changes
+  useEffect(() => {
+    const data = getUserDataFromStorage();
+    setUserData(data);
+  }, [user]);
 
   const [appSettings] = useState(loadAppSettings());
   const { brand } = appSettings;
@@ -202,12 +303,40 @@ export default function ProfileSettings({ onBack }) {
   const bg1 = alpha(brand.primary, 0.12);
   const bg2 = alpha(brand.accent || brand.primary, 0.1);
 
-  // --- Profile state ---
-  const [photos, setPhotos] = useState(mockPhotos);
-  const [bio, setBio] = useState("");
+  // --- Profile state - Load from merged userData ---
+  const [photos, setPhotos] = useState(() => {
+    const data = getUserDataFromStorage();
+    if (data?.photos && data.photos.length > 0) {
+      const userPhotos = data.photos.map((p, i) => ({ 
+        url: p?.url || p || "", 
+        label: i === 0 ? "Primary" : String(i + 1) 
+      }));
+      while (userPhotos.length < 6) {
+        userPhotos.push({ url: "", label: String(userPhotos.length + 1) });
+      }
+      return userPhotos;
+    }
+    return [
+      { url: "", label: "Primary" },
+      { url: "", label: "2" },
+      { url: "", label: "3" },
+      { url: "", label: "4" },
+      { url: "", label: "5" },
+      { url: "", label: "6" },
+    ];
+  });
+  const [bio, setBio] = useState(() => getUserDataFromStorage()?.bio || "");
   const [bestPhoto, setBestPhoto] = useState(true);
-  const [verified, setVerified] = useState(false);
-  const [interests, setInterests] = useState(mockInterests);
+  const [verified, setVerified] = useState(() => getUserDataFromStorage()?.isVerified || false);
+  const [interests, setInterests] = useState(() => {
+    const data = getUserDataFromStorage();
+    if (data?.interests && data.interests.length > 0) {
+      // interests are stored as strings
+      return data.interests;
+    }
+    return [];
+  });
+  const [expandedCategory, setExpandedCategory] = useState(null);
   const [interestInput, setInterestInput] = useState("");
 
   // --- Dialogs / selections ---
@@ -224,17 +353,61 @@ export default function ProfileSettings({ onBack }) {
   ]);
   const [qualitiesDialog, setQualitiesDialog] = useState(false);
 
-  const [selectedPrompts, setSelectedPrompts] = useState([]); // {prompt, answer}
+  const [selectedPrompts, setSelectedPrompts] = useState(() => {
+    const data = getUserDataFromStorage();
+    if (data?.prompts && data.prompts.length > 0) {
+      return data.prompts;
+    }
+    return [];
+  }); // {prompt, answer}
   const [promptDialog, setPromptDialog] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState(null);
   const [promptAnswer, setPromptAnswer] = useState("");
 
   // --- Looking For (per spec: cards with icon + text, multi-select) ---
-  const [lookingFor, setLookingFor] = useState(["relationship"]);
+  const [lookingFor, setLookingFor] = useState(() => {
+    const data = getUserDataFromStorage();
+    if (data?.lookingFor) {
+      return Array.isArray(data.lookingFor) ? data.lookingFor : [data.lookingFor];
+    }
+    return [];
+  });
+
+  // --- Update state when userData changes ---
+  useEffect(() => {
+    const data = getUserDataFromStorage();
+    if (data) {
+      // Update photos
+      if (data.photos && data.photos.length > 0) {
+        const userPhotos = data.photos.map((p, i) => ({ 
+          url: p?.url || p || "", 
+          label: i === 0 ? "Primary" : String(i + 1) 
+        }));
+        while (userPhotos.length < 6) {
+          userPhotos.push({ url: "", label: String(userPhotos.length + 1) });
+        }
+        setPhotos(userPhotos);
+      }
+      // Update other fields
+      if (data.bio) setBio(data.bio);
+      if (data.isVerified !== undefined) setVerified(data.isVerified);
+      if (data.interests && data.interests.length > 0) {
+        setInterests(data.interests);
+      }
+      if (data.lookingFor) {
+        setLookingFor(Array.isArray(data.lookingFor) ? data.lookingFor : [data.lookingFor]);
+      }
+      if (data.prompts && data.prompts.length > 0) {
+        setSelectedPrompts(data.prompts);
+      }
+      if (data.ageRange) setAgeRange(data.ageRange);
+      if (data.maxDistance) setMaxDistance(data.maxDistance);
+    }
+  }, [user]);
 
   // --- Discovery (per spec: Age range, Max distance) ---
-  const [ageRange, setAgeRange] = useState([22, 35]);
-  const [maxDistance, setMaxDistance] = useState(25); // km
+  const [ageRange, setAgeRange] = useState(() => getUserDataFromStorage()?.ageRange || [22, 35]);
+  const [maxDistance, setMaxDistance] = useState(() => getUserDataFromStorage()?.maxDistance || 25); // km
 
   // --- Connected Accounts (per spec: Instagram, Spotify with OAuth + manual fallback) ---
   const [instagramConnected, setInstagramConnected] = useState(false);
@@ -274,17 +447,33 @@ export default function ProfileSettings({ onBack }) {
     }
   }, [hardPreferences]);
 
+  // Check if question is truly answered (not skipped or null)
+  const isQuestionAnswered = (prefs, questionId) => {
+    const answer = prefs[questionId];
+    return answer === 'works' || answer === 'not';
+  };
+
   const getFirstUnansweredPreferenceIndex = (prefs) => {
-    const idx = HARD_PREFERENCE_QUESTIONS.findIndex((q) => prefs[q.id] == null);
-    return idx === -1 ? HARD_PREFERENCE_QUESTIONS.length - 1 : idx;
+    const idx = HARD_PREFERENCE_QUESTIONS.findIndex((q) => !isQuestionAnswered(prefs, q.id));
+    return idx === -1 ? 0 : idx;
   };
 
   const getNextUnansweredPreferenceIndex = (fromIndex, prefs) => {
     for (let i = fromIndex + 1; i < HARD_PREFERENCE_QUESTIONS.length; i += 1) {
       const q = HARD_PREFERENCE_QUESTIONS[i];
-      if (prefs[q.id] == null) return i;
+      if (!isQuestionAnswered(prefs, q.id)) return i;
+    }
+    // If no more unanswered after current, check from beginning
+    for (let i = 0; i < fromIndex; i += 1) {
+      const q = HARD_PREFERENCE_QUESTIONS[i];
+      if (!isQuestionAnswered(prefs, q.id)) return i;
     }
     return -1;
+  };
+
+  // Count only truly answered questions (not skipped)
+  const getAnsweredCount = (prefs) => {
+    return HARD_PREFERENCE_QUESTIONS.filter(q => isQuestionAnswered(prefs, q.id)).length;
   };
 
   // --- AI Bio Suggestions (per spec: inspiration pool) ---
@@ -294,6 +483,12 @@ export default function ProfileSettings({ onBack }) {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [photoSlotIdx, setPhotoSlotIdx] = useState(null);
   const fileInputRef = useRef(null);
+  
+  // --- Camera state ---
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
   // --- Snackbar ---
   const [snack, setSnack] = useState({
@@ -303,18 +498,49 @@ export default function ProfileSettings({ onBack }) {
   });
 
   // --- Profile completion ---
+  // Each item has a weight (percentage) - total should be 100%
   const checklist = useMemo(
-    () => [
-      { label: "Profile photo", completed: photos.some((p) => p.url) },
-      { label: "Bio", completed: bio.trim().length > 0 },
-      { label: "Interests", completed: interests.length > 0 },
-      { label: "Verification", completed: verified },
-    ],
-    [photos, bio, interests, verified]
+    () => {
+      const hasPhoto = photos.some((p) => p.url && p.url.length > 10); // base64 is long
+      const hasBio = bio && bio.trim().length > 0;
+      const hasInterests = interests && interests.length > 0;
+      const hasLookingFor = lookingFor && lookingFor.length > 0;
+      const hasLocation = !!(userData?.location || userData?.city);
+      const hasJobTitle = !!userData?.jobTitle && userData.jobTitle.trim().length > 0;
+      const hasEducation = !!userData?.education && userData.education.trim().length > 0;
+      const hasHeight = !!userData?.height;
+      const hasGender = !!userData?.gender;
+      const hasPrompts = selectedPrompts && selectedPrompts.length > 0;
+      const isVerified = verified === true;
+      // Hard Preferences - count how many are answered (not skipped)
+      const hardPrefsAnswered = getAnsweredCount(hardPreferences);
+      const hasHardPrefs = hardPrefsAnswered >= 5; // At least 5 answered
+      
+      const items = [
+        { label: "Profile photo", completed: hasPhoto, weight: 15 },
+        { label: "Bio", completed: hasBio, weight: 10 },
+        { label: "Interests", completed: hasInterests, weight: 10 },
+        { label: "Looking for", completed: hasLookingFor, weight: 10 },
+        { label: "Location", completed: hasLocation, weight: 5 },
+        { label: "Job title", completed: hasJobTitle, weight: 5 },
+        { label: "Education", completed: hasEducation, weight: 5 },
+        { label: "Height", completed: hasHeight, weight: 5 },
+        { label: "Gender", completed: hasGender, weight: 5 },
+        { label: "Prompts", completed: hasPrompts, weight: 10 },
+        { label: "Verification", completed: isVerified, weight: 10 },
+        { label: "Hard Preferences", completed: hasHardPrefs, weight: 10 },
+      ];
+      return items;
+    },
+    [photos, bio, interests, lookingFor, userData, verified, selectedPrompts, hardPreferences]
   );
 
+  // Calculate completion based on weights
+  const completion = useMemo(() => {
+    return checklist.reduce((sum, item) => sum + (item.completed ? item.weight : 0), 0);
+  }, [checklist]);
+  
   const completedCount = checklist.filter((i) => i.completed).length;
-  const completion = Math.round((completedCount / checklist.length) * 100);
   const getBarColor = () =>
     completion < 40 ? "error" : completion < 80 ? "warning" : "success";
 
@@ -369,9 +595,69 @@ export default function ProfileSettings({ onBack }) {
     setTimeout(() => triggerFileInput(), 100);
   };
 
-  const handlePickCamera = () => {
+  const handlePickCamera = async () => {
     setPhotoModalOpen(false);
-    setTimeout(() => triggerFileInput({ capture: "environment" }), 100);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+      });
+      setCameraStream(stream);
+      setShowCamera(true);
+      
+      // Wait for video element to be ready
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play();
+          };
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Camera permission error:', error);
+      setSnack({ open: true, msg: 'Could not access camera', sev: 'error' });
+    }
+  };
+
+  const handleCapturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      setSnack({ open: true, msg: 'Camera not ready', sev: 'error' });
+      return;
+    }
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    
+    const base64Url = canvas.toDataURL('image/jpeg', 0.9);
+    
+    setPhotos((prev) => {
+      const updated = prev.map((p, i) => (i === photoSlotIdx ? { ...p, url: base64Url } : p));
+      // Save and refresh userData
+      const photosToSave = updated.filter(p => p.url).map(p => ({ url: p.url, isMain: p.label === "Primary" }));
+      saveAndRefreshUserData({ photos: photosToSave });
+      return updated;
+    });
+    
+    handleCloseCamera();
+  };
+
+  const handleCloseCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setShowCamera(false);
   };
 
   const handlePickInstagram = () => {
@@ -384,16 +670,27 @@ export default function ProfileSettings({ onBack }) {
     if (!file || photoSlotIdx == null) return;
     const reader = new FileReader();
     reader.onloadend = () => {
-      setPhotos((prev) =>
-        prev.map((p, i) => (i === photoSlotIdx ? { ...p, url: reader.result } : p))
-      );
+      const base64Url = reader.result;
+      setPhotos((prev) => {
+        const updated = prev.map((p, i) => (i === photoSlotIdx ? { ...p, url: base64Url } : p));
+        // Save and refresh userData
+        const photosToSave = updated.filter(p => p.url).map(p => ({ url: p.url, isMain: p.label === "Primary" }));
+        saveAndRefreshUserData({ photos: photosToSave });
+        return updated;
+      });
     };
     reader.readAsDataURL(file);
     e.target.value = "";
   };
 
   const handlePhotoRemove = (idx) => {
-    setPhotos((prev) => prev.map((p, i) => (i === idx ? { ...p, url: "" } : p)));
+    setPhotos((prev) => {
+      const updated = prev.map((p, i) => (i === idx ? { ...p, url: "" } : p));
+      // Save and refresh userData
+      const photosToSave = updated.filter(p => p.url).map(p => ({ url: p.url, isMain: p.label === "Primary" }));
+      saveAndRefreshUserData({ photos: photosToSave });
+      return updated;
+    });
   };
 
   const handlePhotoReorder = () => {
@@ -403,17 +700,36 @@ export default function ProfileSettings({ onBack }) {
   };
 
   // --- Interests ---
-  const handleAddInterest = () => {
-    const val = interestInput.trim();
-    if (!val) return;
-    if (interests.length >= MAX_INTERESTS) return;
-    if (interests.some((i) => i.label.toLowerCase() === val.toLowerCase())) return;
-    setInterests([...interests, { emoji: "⭐", label: val }]);
-    setInterestInput("");
+  const getSelectedCountInCategory = (category) => {
+    return category.interests.filter(interest => interests.includes(interest)).length;
   };
 
-  const handleRemoveInterest = (idx) => {
-    setInterests(interests.filter((_, i) => i !== idx));
+  const toggleInterest = (interest, category) => {
+    setInterests(prev => {
+      let newInterests;
+      if (prev.includes(interest)) {
+        newInterests = prev.filter(i => i !== interest);
+      } else {
+        // Check if category limit reached
+        const categoryCount = category.interests.filter(i => prev.includes(i)).length;
+        if (categoryCount >= MAX_PER_CATEGORY) {
+          return prev;
+        }
+        newInterests = [...prev, interest];
+      }
+      // Save and refresh userData
+      saveAndRefreshUserData({ interests: newInterests });
+      return newInterests;
+    });
+  };
+
+  const handleRemoveInterest = (interest) => {
+    setInterests(prev => {
+      const newInterests = prev.filter(i => i !== interest);
+      // Save and refresh userData
+      saveAndRefreshUserData({ interests: newInterests });
+      return newInterests;
+    });
   };
 
   // --- Causes ---
@@ -930,6 +1246,59 @@ export default function ProfileSettings({ onBack }) {
             </DialogActions>
           </Dialog>
 
+          {/* Camera Modal */}
+          <Dialog
+            open={showCamera}
+            onClose={handleCloseCamera}
+            fullScreen
+            PaperProps={{ sx: { backgroundColor: '#000' } }}
+          >
+            <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+              {/* Close button */}
+              <IconButton
+                onClick={handleCloseCamera}
+                sx={{ position: 'absolute', top: 16, right: 16, zIndex: 10, color: '#fff' }}
+              >
+                <XIcon size={24} />
+              </IconButton>
+              
+              {/* Video preview */}
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+                />
+              </Box>
+              
+              {/* Capture button */}
+              <Box sx={{ 
+                p: 3, 
+                pb: 8,
+                display: 'flex', 
+                justifyContent: 'center',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+              }}>
+                <IconButton
+                  onClick={handleCapturePhoto}
+                  sx={{
+                    width: 72,
+                    height: 72,
+                    backgroundColor: '#fff',
+                    border: '4px solid rgba(255,255,255,0.3)',
+                    '&:hover': { backgroundColor: '#f0f0f0' },
+                  }}
+                >
+                  <Camera size={32} color="#1a1a2e" />
+                </IconButton>
+              </Box>
+              
+              {/* Hidden canvas for capture */}
+              <canvas ref={canvasRef} style={{ display: 'none' }} />
+            </Box>
+          </Dialog>
+
           <Button
             size="small"
             startIcon={<Image />}
@@ -1129,59 +1498,123 @@ export default function ProfileSettings({ onBack }) {
 
           <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.6, color: "#0f172a" }}>Interests</Typography>
           <Typography variant="body2" sx={{ color: "#64748b", mb: 1.25 }}>
-            Be specific: what do you truly enjoy?
+            Select up to {MAX_PER_CATEGORY} per category
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Add an interest"
-              value={interestInput}
-              onChange={(e) => setInterestInput(e.target.value)}
-              sx={{ flex: 1 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search size={18} style={{ color: "#9ca3af" }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <IconButton
-              color="primary"
-              onClick={handleAddInterest}
-              disabled={!interestInput.trim() || interests.length >= MAX_INTERESTS}
-              aria-label="Add interest"
-            >
-              <Plus />
-            </IconButton>
-          </Box>
 
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            {interests.map((interest, idx) => (
-              <Chip
-                key={`${interest.label}-${idx}`}
-                label={
-                  <span>
-                    {interest.emoji} {interest.label}
-                  </span>
-                }
-                onDelete={() => handleRemoveInterest(idx)}
-                sx={{
-                  borderRadius: 999,
-                  fontWeight: 600,
-                  fontSize: 13,
-                  bgcolor: "#f1f5f9",
-                  color: "#475569",
-                  border: "1px solid #e2e8f0",
-                  mb: 1,
-                }}
-              />
-            ))}
-          </Stack>
-          <Typography variant="caption" sx={{ color: "#9ca3af", mt: 1, display: "block" }}>
-            Up to {MAX_INTERESTS} tags
-          </Typography>
+          {/* Selected interests */}
+          {interests.length > 0 && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="caption" sx={{ color: "#64748b", mb: 1, display: "block" }}>
+                Selected ({interests.length}):
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {interests.map((interest) => (
+                  <Chip
+                    key={interest}
+                    label={interest}
+                    onDelete={() => handleRemoveInterest(interest)}
+                    size="small"
+                    sx={{
+                      borderRadius: 999,
+                      fontWeight: 600,
+                      fontSize: 12,
+                      bgcolor: brand.primary,
+                      color: "#fff",
+                      mb: 0.5,
+                      '& .MuiChip-deleteIcon': { color: 'rgba(255,255,255,0.7)' },
+                    }}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          )}
+
+          {/* Categories */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {INTEREST_CATEGORIES.map((category) => {
+              const selectedCount = getSelectedCountInCategory(category);
+              const isExpanded = expandedCategory === category.name;
+              
+              return (
+                <Box key={category.name}>
+                  <Box
+                    onClick={() => setExpandedCategory(isExpanded ? null : category.name)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      p: 1.5,
+                      borderRadius: '12px',
+                      bgcolor: isExpanded ? alpha(brand.primary, 0.08) : '#f8fafc',
+                      border: `1px solid ${isExpanded ? brand.primary : '#e2e8f0'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ fontSize: 18 }}>{category.emoji}</Typography>
+                      <Typography sx={{ fontWeight: 600, fontSize: 14, color: '#1a1a2e' }}>
+                        {category.name}
+                      </Typography>
+                      {selectedCount > 0 && (
+                        <Chip
+                          label={selectedCount}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            bgcolor: brand.primary,
+                            color: '#fff',
+                          }}
+                        />
+                      )}
+                    </Box>
+                    <ChevronDown 
+                      size={18} 
+                      style={{ 
+                        transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s ease',
+                        color: '#64748b',
+                      }} 
+                    />
+                  </Box>
+                  
+                  {isExpanded && (
+                    <Box sx={{ p: 1.5, display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                      {category.interests.map((interest) => {
+                        const isSelected = interests.includes(interest);
+                        const categoryCount = getSelectedCountInCategory(category);
+                        const isDisabled = !isSelected && categoryCount >= MAX_PER_CATEGORY;
+                        
+                        return (
+                          <Chip
+                            key={interest}
+                            label={interest}
+                            onClick={() => !isDisabled && toggleInterest(interest, category)}
+                            size="small"
+                            sx={{
+                              borderRadius: 999,
+                              fontWeight: 500,
+                              fontSize: 12,
+                              bgcolor: isSelected ? brand.primary : '#fff',
+                              color: isSelected ? '#fff' : '#475569',
+                              border: `1px solid ${isSelected ? brand.primary : '#e2e8f0'}`,
+                              opacity: isDisabled ? 0.5 : 1,
+                              cursor: isDisabled ? 'not-allowed' : 'pointer',
+                              '&:hover': {
+                                bgcolor: isSelected ? brand.primary : '#f1f5f9',
+                              },
+                            }}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                </Box>
+              );
+            })}
+          </Box>
         </Box>
 
         {/* Causes, qualities, prompts */}
@@ -1465,11 +1898,12 @@ export default function ProfileSettings({ onBack }) {
                   <Grid item xs={6} key={option.id}>
                     <Box
                       onClick={() => {
-                        setLookingFor(prev => 
-                          isSelected 
-                            ? prev.filter(id => id !== option.id)
-                            : [...prev, option.id]
-                        );
+                        const newLookingFor = isSelected 
+                          ? lookingFor.filter(id => id !== option.id)
+                          : [...lookingFor, option.id];
+                        setLookingFor(newLookingFor);
+                        // Save and refresh userData
+                        saveAndRefreshUserData({ lookingFor: newLookingFor });
                       }}
                       sx={{
                         p: 1.5,
@@ -1663,10 +2097,10 @@ export default function ProfileSettings({ onBack }) {
             <Box sx={{ mt: 2, position: 'relative', zIndex: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
                 <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
-                  {Object.keys(hardPreferences).length} of {HARD_PREFERENCE_QUESTIONS.length} answered
+                  {getAnsweredCount(hardPreferences)} of {HARD_PREFERENCE_QUESTIONS.length} answered
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>
-                  {Math.round((Object.keys(hardPreferences).length / HARD_PREFERENCE_QUESTIONS.length) * 100)}%
+                  {Math.round((getAnsweredCount(hardPreferences) / HARD_PREFERENCE_QUESTIONS.length) * 100)}%
                 </Typography>
               </Box>
               <Box sx={{ 
@@ -1677,7 +2111,7 @@ export default function ProfileSettings({ onBack }) {
               }}>
                 <Box sx={{ 
                   height: '100%', 
-                  width: `${(Object.keys(hardPreferences).length / HARD_PREFERENCE_QUESTIONS.length) * 100}%`, 
+                  width: `${(getAnsweredCount(hardPreferences) / HARD_PREFERENCE_QUESTIONS.length) * 100}%`, 
                   background: '#fff',
                   borderRadius: 999,
                   transition: 'width 0.5s ease',
@@ -2037,50 +2471,12 @@ export default function ProfileSettings({ onBack }) {
           } 
         }}
       >
-        {/* Fixed Header - Always visible, respects safe-area */}
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          px: 2,
-          py: 1.5,
-          backgroundColor: '#fff',
-          borderBottom: '1px solid #E5E7EB',
-          flexShrink: 0,
-        }}>
-          {/* Left: Close button */}
-          <IconButton 
-            onClick={() => setHardPreferencesDialog(false)}
-            sx={{ 
-              width: 40,
-              height: 40,
-              color: '#6B7280',
-              '&:hover': { backgroundColor: '#F3F4F6' },
-            }}
-          >
-            <X size={22} />
-          </IconButton>
-          
-          {/* Center: Title */}
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1F2937' }}>
-            Things That Really Matter
-          </Typography>
-          
-          {/* Right: Progress indicator */}
-          <Typography variant="body2" sx={{ 
-            color: '#9CA3AF', 
-            fontWeight: 600,
-            minWidth: 40,
-            textAlign: 'right',
-          }}>
-            {currentPreferenceIndex + 1}/{HARD_PREFERENCE_QUESTIONS.length}
-          </Typography>
-        </Box>
+        {/* No header - just progress bar */}
 
         {/* Progress bar - thin, under header */}
         <LinearProgress
           variant="determinate"
-          value={((currentPreferenceIndex + 1) / HARD_PREFERENCE_QUESTIONS.length) * 100}
+          value={(getAnsweredCount(hardPreferences) / HARD_PREFERENCE_QUESTIONS.length) * 100}
           sx={{
             height: 3,
             backgroundColor: '#E5E7EB',
@@ -2098,7 +2494,7 @@ export default function ProfileSettings({ onBack }) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'flex-start',
-          pt: { xs: 6, sm: 8 },
+          pt: 8,
           px: 3,
           pb: 3,
           overflow: 'auto',
@@ -2107,6 +2503,58 @@ export default function ProfileSettings({ onBack }) {
             width: '100%',
             maxWidth: 420,
           }}>
+            {/* Header with title, icon and progress */}
+            <Box sx={{ textAlign: 'center', mb: 5 }}>
+              {/* Icon */}
+              <Box sx={{ 
+                width: 56, 
+                height: 56, 
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #A855F7 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 2,
+                boxShadow: '0 8px 24px rgba(108,92,231,0.3)',
+              }}>
+                <Heart size={28} color="#fff" fill="#fff" />
+              </Box>
+              
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 800, 
+                  color: '#1F2937',
+                  mb: 0.5,
+                  letterSpacing: '-0.5px',
+                }}
+              >
+                Things That Really Matter
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#9CA3AF' }}>
+                {getAnsweredCount(hardPreferences)} of {HARD_PREFERENCE_QUESTIONS.length} answered
+              </Typography>
+              
+              {/* Progress bar */}
+              <Box sx={{ 
+                mt: 2, 
+                mx: 'auto', 
+                maxWidth: 200,
+                height: 6, 
+                borderRadius: 999, 
+                background: '#E5E7EB',
+                overflow: 'hidden',
+              }}>
+                <Box sx={{ 
+                  height: '100%', 
+                  width: `${(getAnsweredCount(hardPreferences) / HARD_PREFERENCE_QUESTIONS.length) * 100}%`, 
+                  background: 'linear-gradient(90deg, #6C5CE7 0%, #A855F7 100%)',
+                  borderRadius: 999,
+                  transition: 'width 0.5s ease',
+                }} />
+              </Box>
+            </Box>
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentPreferenceIndex}
@@ -2144,7 +2592,12 @@ export default function ProfileSettings({ onBack }) {
                       setHardPreferences((prev) => {
                         const nextPrefs = { ...prev, [q.id]: 'works' };
                         const nextIdx = getNextUnansweredPreferenceIndex(currentPreferenceIndex, nextPrefs);
-                        if (nextIdx !== -1) setCurrentPreferenceIndex(nextIdx);
+                        if (nextIdx !== -1) {
+                          setCurrentPreferenceIndex(nextIdx);
+                        } else {
+                          // All questions answered, close dialog
+                          setHardPreferencesDialog(false);
+                        }
                         return nextPrefs;
                       });
                     }}
@@ -2178,7 +2631,12 @@ export default function ProfileSettings({ onBack }) {
                       setHardPreferences((prev) => {
                         const nextPrefs = { ...prev, [q.id]: 'not' };
                         const nextIdx = getNextUnansweredPreferenceIndex(currentPreferenceIndex, nextPrefs);
-                        if (nextIdx !== -1) setCurrentPreferenceIndex(nextIdx);
+                        if (nextIdx !== -1) {
+                          setCurrentPreferenceIndex(nextIdx);
+                        } else {
+                          // All questions answered, close dialog
+                          setHardPreferencesDialog(false);
+                        }
                         return nextPrefs;
                       });
                     }}
@@ -2212,7 +2670,12 @@ export default function ProfileSettings({ onBack }) {
                       setHardPreferences((prev) => {
                         const nextPrefs = { ...prev, [q.id]: 'skip' };
                         const nextIdx = getNextUnansweredPreferenceIndex(currentPreferenceIndex, nextPrefs);
-                        if (nextIdx !== -1) setCurrentPreferenceIndex(nextIdx);
+                        if (nextIdx !== -1) {
+                          setCurrentPreferenceIndex(nextIdx);
+                        } else {
+                          // All questions answered, close dialog
+                          setHardPreferencesDialog(false);
+                        }
                         return nextPrefs;
                       });
                     }}
@@ -2235,11 +2698,28 @@ export default function ProfileSettings({ onBack }) {
               </motion.div>
             </AnimatePresence>
 
-            {/* Footer note - subtle */}
-            <Box sx={{ mt: 6, textAlign: 'center' }}>
-              <Typography variant="caption" sx={{ color: '#D1D5DB', fontSize: '0.75rem' }}>
-                Your preferences are private and help improve your matches
-              </Typography>
+            {/* Exit button */}
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Button
+                variant="outlined"
+                onClick={() => setHardPreferencesDialog(false)}
+                startIcon={<X size={18} />}
+                sx={{
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  px: 4,
+                  py: 1.5,
+                  borderColor: '#6C5CE7',
+                  color: '#6C5CE7',
+                  '&:hover': {
+                    borderColor: '#5B4BD5',
+                    backgroundColor: 'rgba(108,92,231,0.05)',
+                  },
+                }}
+              >
+                Exit & Save
+              </Button>
             </Box>
           </Box>
         </Box>

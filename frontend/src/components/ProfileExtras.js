@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Chip, Stack, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Avatar, IconButton
 } from '@mui/material';
@@ -6,20 +6,21 @@ import LanguageIcon from '@mui/icons-material/Language';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import { useAuth } from '../context/AuthContext';
 
 const zodiacSigns = [
-  { name: 'Aries', icon: '🐏' },        // Ram
-  { name: 'Taurus', icon: '🐂' },       // Bull
-  { name: 'Gemini', icon: '👯' },       // Twins
-  { name: 'Cancer', icon: '🦀' },       // Crab
-  { name: 'Leo', icon: '🦁' },          // Lion
-  { name: 'Virgo', icon: '👩' },        // Maiden
-  { name: 'Libra', icon: '⚖️' },        // Scales
-  { name: 'Scorpio', icon: '🦂' },      // Scorpion
-  { name: 'Sagittarius', icon: '🏹' },  // Archer
-  { name: 'Capricorn', icon: '🐐' },    // Goat
-  { name: 'Aquarius', icon: '🏺' },     // Water Bearer
-  { name: 'Pisces', icon: '🐟' },       // Fish
+  { name: 'Aries', icon: '♈' },
+  { name: 'Taurus', icon: '♉' },
+  { name: 'Gemini', icon: '♊' },
+  { name: 'Cancer', icon: '♋' },
+  { name: 'Leo', icon: '♌' },
+  { name: 'Virgo', icon: '♍' },
+  { name: 'Libra', icon: '♎' },
+  { name: 'Scorpio', icon: '♏' },
+  { name: 'Sagittarius', icon: '♐' },
+  { name: 'Capricorn', icon: '♑' },
+  { name: 'Aquarius', icon: '♒' },
+  { name: 'Pisces', icon: '♓' },
 ];
 const politicsOptions = [
   'Liberal', 'Moderate', 'Conservative', 'Apolitical', 'Prefer not to say'
@@ -27,18 +28,34 @@ const politicsOptions = [
 const allLanguages = ['English', 'Hebrew', 'French', 'Spanish', 'Russian', 'Arabic', 'German', 'Chinese', 'Japanese', 'Italian'];
 
 export default function ProfileExtras() {
-  // Star Sign
-  const [starSign, setStarSign] = useState('Taurus');
+  const { user } = useAuth();
+  
+  // Star Sign - load from user
+  const [starSign, setStarSign] = useState(user?.starSign || '');
   const [starSignDialog, setStarSignDialog] = useState(false);
-  // Politics
-  const [politics, setPolitics] = useState('Moderate');
+  // Politics - load from user
+  const [politics, setPolitics] = useState(user?.politics || '');
   const [politicsDialog, setPoliticsDialog] = useState(false);
-  // Languages
-  const [languages, setLanguages] = useState(['English', 'Hebrew']);
+  // Languages - load from user
+  const [languages, setLanguages] = useState(user?.languages || []);
   const [languageDialog, setLanguageDialog] = useState(false);
   const [languageInput, setLanguageInput] = useState('');
-  // Spotify
-  const [spotifyConnected, setSpotifyConnected] = useState(false);
+  // Connected accounts - load from user
+  const [instagramConnected, setInstagramConnected] = useState(user?.instagramConnected || false);
+  const [instagramUsername, setInstagramUsername] = useState(user?.instagramUsername || '');
+  const [spotifyConnected, setSpotifyConnected] = useState(user?.spotifyConnected || false);
+
+  // Update state when user data changes
+  useEffect(() => {
+    if (user) {
+      setStarSign(user.starSign || '');
+      setPolitics(user.politics || '');
+      setLanguages(user.languages || []);
+      setInstagramConnected(user.instagramConnected || false);
+      setInstagramUsername(user.instagramUsername || '');
+      setSpotifyConnected(user.spotifyConnected || false);
+    }
+  }, [user]);
 
   // Handlers
   const handleAddLanguage = () => {
@@ -123,29 +140,36 @@ export default function ProfileExtras() {
             </Box>
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>Instagram</Typography>
-              <Typography variant="caption" sx={{ color: '#888' }}>Not connected</Typography>
+              <Typography variant="caption" sx={{ color: instagramConnected ? '#1db954' : '#888' }}>
+                {instagramConnected ? `@${instagramUsername}` : 'Not connected'}
+              </Typography>
             </Box>
           </Box>
           <Button
             variant="outlined"
             size="small"
             onClick={() => {
-              window.open('https://www.instagram.com/', '_blank');
+              if (instagramConnected) {
+                setInstagramConnected(false);
+                setInstagramUsername('');
+              } else {
+                window.open('https://www.instagram.com/', '_blank');
+              }
             }}
             sx={{ 
               borderRadius: 2, 
               textTransform: 'none', 
               fontWeight: 500,
-              background: 'linear-gradient(45deg, #f09433, #dc2743)',
-              color: '#fff',
-              border: 'none',
+              background: instagramConnected ? '#fff' : 'linear-gradient(45deg, #f09433, #dc2743)',
+              color: instagramConnected ? '#dc2743' : '#fff',
+              border: instagramConnected ? '1px solid #dc2743' : 'none',
               '&:hover': {
-                background: 'linear-gradient(45deg, #e08323, #cc1733)',
-                border: 'none',
+                background: instagramConnected ? '#fff5f5' : 'linear-gradient(45deg, #e08323, #cc1733)',
+                border: instagramConnected ? '1px solid #dc2743' : 'none',
               }
             }}
           >
-            Connect
+            {instagramConnected ? 'Disconnect' : 'Connect'}
           </Button>
         </Box>
 
@@ -189,28 +213,49 @@ export default function ProfileExtras() {
       </Box>
 
       {/* Star Sign Dialog */}
-      <Dialog open={starSignDialog} onClose={() => setStarSignDialog(false)} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
+      <Dialog 
+        open={starSignDialog} 
+        onClose={() => setStarSignDialog(false)} 
+        PaperProps={{ sx: { borderRadius: 3, minWidth: 320, maxWidth: 400, m: 2 } }}
+      >
         <DialogTitle sx={{ fontWeight: 700 }}>Select your star sign</DialogTitle>
-        <DialogContent>
-          <TextField
-            select
-            fullWidth
-            label="Star sign"
-            value={starSign}
-            onChange={e => setStarSign(e.target.value)}
-            sx={{ mt: 2 }}
-          >
+        <DialogContent sx={{ p: 2 }}>
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(3, 1fr)', 
+            gap: 1,
+            maxHeight: '50vh',
+            overflowY: 'auto',
+          }}>
             {zodiacSigns.map(sign => (
-              <MenuItem key={sign.name} value={sign.name} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box component="span" sx={{ fontSize: 20, width: 28 }}>{sign.icon}</Box>
-                <span>{sign.name}</span>
-              </MenuItem>
+              <Box
+                key={sign.name}
+                onClick={() => {
+                  setStarSign(sign.name);
+                  setStarSignDialog(false);
+                }}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  p: 1.5,
+                  borderRadius: 2,
+                  cursor: 'pointer',
+                  border: starSign === sign.name ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                  bgcolor: starSign === sign.name ? 'rgba(108,92,231,0.1)' : '#fff',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: '#6C5CE7',
+                    bgcolor: 'rgba(108,92,231,0.05)',
+                  },
+                }}
+              >
+                <Typography sx={{ fontSize: 28, color: '#6C5CE7' }}>{sign.icon}</Typography>
+                <Typography sx={{ fontSize: 12, fontWeight: 500, mt: 0.5 }}>{sign.name}</Typography>
+              </Box>
             ))}
-          </TextField>
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setStarSignDialog(false)} variant="contained" sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>Done</Button>
-        </DialogActions>
       </Dialog>
       {/* Politics Dialog */}
       <Dialog open={politicsDialog} onClose={() => setPoliticsDialog(false)}>

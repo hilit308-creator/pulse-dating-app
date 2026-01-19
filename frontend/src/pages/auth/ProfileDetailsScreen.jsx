@@ -10,9 +10,12 @@ import {
   FormControl,
   InputLabel,
   Slider,
+  Autocomplete,
+  Paper,
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { User, Briefcase, GraduationCap, Ruler, MapPin, Wine, Cigarette } from 'lucide-react';
+import { User, Briefcase, GraduationCap, Ruler, MapPin, Wine, Cigarette, Globe } from 'lucide-react';
+import { COUNTRIES, getCitiesForCountry, formatLocation } from '../../data/locations';
 import { useAuth } from '../../context/AuthContext';
 import OnboardingHeader from '../../components/OnboardingHeader';
 
@@ -53,7 +56,9 @@ const ProfileDetailsScreen = () => {
   const [company, setCompany] = useState(user?.company || '');
   const [education, setEducation] = useState(user?.education || '');
   const [school, setSchool] = useState(user?.school || '');
-  const [location, setLocation] = useState(user?.location || '');
+  const [selectedCountry, setSelectedCountry] = useState(user?.countryCode ? COUNTRIES.find(c => c.code === user.countryCode) : null);
+  const [selectedCity, setSelectedCity] = useState(user?.city || null);
+  const [cityOptions, setCityOptions] = useState([]);
   const [drinking, setDrinking] = useState(user?.drinking || '');
   const [smoking, setSmoking] = useState(user?.smoking || '');
 
@@ -70,7 +75,10 @@ const ProfileDetailsScreen = () => {
       company: company.trim(),
       education,
       school: school.trim(),
-      location: location.trim(),
+      location: formatLocation(selectedCity, selectedCountry?.code),
+      city: selectedCity,
+      countryCode: selectedCountry?.code,
+      countryName: selectedCountry?.name,
       drinking,
       smoking,
     };
@@ -307,16 +315,73 @@ const ProfileDetailsScreen = () => {
               <MapPin size={16} />
               Location
             </Typography>
-            <TextField
-              fullWidth
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="City, Country"
-              size="small"
+            
+            {/* Country Selection */}
+            <Autocomplete
+              options={COUNTRIES}
+              getOptionLabel={(option) => `${option.emoji} ${option.name}`}
+              value={selectedCountry}
+              onChange={(e, newValue) => {
+                setSelectedCountry(newValue);
+                setSelectedCity(null);
+                if (newValue) {
+                  setCityOptions(getCitiesForCountry(newValue.code));
+                } else {
+                  setCityOptions([]);
+                }
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Select country"
+                  size="small"
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <Globe size={16} style={{ marginLeft: 8, marginRight: 4, color: '#94a3b8' }} />
+                    ),
+                  }}
+                />
+              )}
+              PaperComponent={(props) => (
+                <Paper {...props} sx={{ borderRadius: '12px', mt: 0.5 }} />
+              )}
               sx={{
+                mb: 1.5,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '12px',
                   backgroundColor: '#f8fafc',
+                },
+              }}
+            />
+            
+            {/* City Selection */}
+            <Autocomplete
+              options={cityOptions}
+              value={selectedCity}
+              onChange={(e, newValue) => setSelectedCity(newValue)}
+              disabled={!selectedCountry}
+              freeSolo
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder={selectedCountry ? "Select or type city" : "Select country first"}
+                  size="small"
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <MapPin size={16} style={{ marginLeft: 8, marginRight: 4, color: '#94a3b8' }} />
+                    ),
+                  }}
+                />
+              )}
+              PaperComponent={(props) => (
+                <Paper {...props} sx={{ borderRadius: '12px', mt: 0.5 }} />
+              )}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '12px',
+                  backgroundColor: selectedCountry ? '#f8fafc' : '#f1f5f9',
                 },
               }}
             />

@@ -12,7 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import OnboardingHeader from '../../components/OnboardingHeader';
 
 const MIN_INTERESTS = 3;
-const MAX_INTERESTS = 10;
+const MAX_PER_CATEGORY = 3;
 
 const INTEREST_CATEGORIES = [
   {
@@ -67,12 +67,18 @@ const InterestsScreen = () => {
     updateOnboardingStep('interests');
   }, [updateOnboardingStep]);
 
-  const toggleInterest = (interest) => {
+  const getSelectedCountInCategory = (category) => {
+    return category.interests.filter(interest => selectedInterests.includes(interest)).length;
+  };
+
+  const toggleInterest = (interest, category) => {
     setSelectedInterests(prev => {
       if (prev.includes(interest)) {
         return prev.filter(i => i !== interest);
       }
-      if (prev.length >= MAX_INTERESTS) {
+      // Check if category limit reached
+      const categoryCount = category.interests.filter(i => prev.includes(i)).length;
+      if (categoryCount >= MAX_PER_CATEGORY) {
         return prev;
       }
       return [...prev, interest];
@@ -183,26 +189,42 @@ const InterestsScreen = () => {
                   sx={{
                     fontWeight: 600,
                     color: '#1a1a2e',
-                    mb: 1.5,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
+                    mb: 1.5,
                   }}
                 >
                   <span>{category.emoji}</span>
                   {category.name}
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                      color: getSelectedCountInCategory(category) > 0 ? '#6C5CE7' : '#94a3b8',
+                      backgroundColor: getSelectedCountInCategory(category) > 0 ? 'rgba(108,92,231,0.1)' : '#f1f5f9',
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: '8px',
+                      ml: 0.5,
+                    }}
+                  >
+                    {getSelectedCountInCategory(category)}/{MAX_PER_CATEGORY}
+                  </Typography>
                 </Typography>
                 
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                   {category.interests.map((interest) => {
                     const isSelected = selectedInterests.includes(interest);
-                    const isDisabled = !isSelected && selectedInterests.length >= MAX_INTERESTS;
+                    const categoryCount = category.interests.filter(i => selectedInterests.includes(i)).length;
+                    const isDisabled = !isSelected && categoryCount >= MAX_PER_CATEGORY;
                     
                     return (
                       <Chip
                         key={interest}
                         label={interest}
-                        onClick={() => !isDisabled && toggleInterest(interest)}
+                        onClick={() => !isDisabled && toggleInterest(interest, category)}
                         icon={isSelected ? <Check size={14} /> : undefined}
                         sx={{
                           borderRadius: '20px',
@@ -269,7 +291,7 @@ const InterestsScreen = () => {
               },
             }}
           >
-            Continue ({selectedInterests.length}/{MIN_INTERESTS} selected)
+            Continue
           </Button>
         </Box>
       </Box>

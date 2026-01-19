@@ -36,23 +36,33 @@ const PhotoVerificationScreen = () => {
 
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 },
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      
-      setStream(mediaStream);
-      
-      // Select random pose
+      // Select random pose first
       const randomPose = VERIFICATION_POSES[Math.floor(Math.random() * VERIFICATION_POSES.length)];
       setCurrentPose(randomPose);
       setStep('camera');
+      
+      // Small delay to ensure video element is rendered
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      });
+      
+      setStream(mediaStream);
+      
+      // Attach stream to video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().catch(err => console.error('Video play error:', err));
+        };
+        // Also try to play directly
+        videoRef.current.play().catch(() => {});
+      }
     } catch (error) {
       console.error('Camera access error:', error);
       alert('Unable to access camera. Please allow camera access and try again.');
+      setStep('intro');
     }
   };
 

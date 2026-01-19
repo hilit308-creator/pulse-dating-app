@@ -57,24 +57,38 @@ const LookingForScreen = () => {
   const navigate = useNavigate();
   const { updateUser, user, updateOnboardingStep, saveOnboardingData } = useAuth();
   
-  const [selected, setSelected] = useState(user?.lookingFor || null);
+  const [selected, setSelected] = useState(
+    Array.isArray(user?.lookingFor) ? user.lookingFor : 
+    user?.lookingFor ? [user.lookingFor] : []
+  );
 
   useEffect(() => {
     updateOnboardingStep('looking-for');
   }, [updateOnboardingStep]);
 
   const handleSelect = (id) => {
-    setSelected(id);
+    setSelected(prev => {
+      if (prev.includes(id)) {
+        // Remove if already selected (toggle off)
+        return prev.filter(item => item !== id);
+      } else {
+        // Add to selection (toggle on)
+        return [...prev, id];
+      }
+    });
   };
 
   const handleContinue = () => {
-    saveOnboardingData({ lookingFor: selected });
-    updateUser({ lookingFor: selected });
+    const valueToSave = selected.length > 0 ? selected : ['not_specified'];
+    saveOnboardingData({ lookingFor: valueToSave });
+    updateUser({ lookingFor: valueToSave });
     updateOnboardingStep('details');
     navigate('/auth/details');
   };
 
   const handleSkip = () => {
+    saveOnboardingData({ lookingFor: ['not_specified'] });
+    updateUser({ lookingFor: ['not_specified'] });
     updateOnboardingStep('details');
     navigate('/auth/details');
   };
@@ -159,7 +173,7 @@ const LookingForScreen = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {RELATIONSHIP_GOALS.map((goal, index) => {
               const Icon = goal.icon;
-              const isSelected = selected === goal.id;
+              const isSelected = selected.includes(goal.id);
               
               return (
                 <motion.div
@@ -275,7 +289,7 @@ const LookingForScreen = () => {
             variant="contained"
             size="large"
             onClick={handleContinue}
-            disabled={!selected}
+            disabled={false}
             sx={{
               py: 1.75,
               borderRadius: '14px',

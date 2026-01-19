@@ -493,24 +493,18 @@ function PicksCoverflow({ users = [], brand, onCardClick }) {
         Today's Picks
       </Typography>
 
-      {/* Horizontal scrollable cards - each moves independently */}
+      {/* Centered cards */}
       <Box
         ref={containerRef}
         sx={{
           display: "flex",
           alignItems: "flex-end",
-          justifyContent: "flex-start",
-          overflowX: "scroll",
-          overflowY: "visible",
+          justifyContent: "center",
+          flexWrap: "wrap",
           pb: 8,
           pt: 4,
-          pl: 3,
-          pr: 16,
+          px: 2,
           minHeight: 300,
-          scrollSnapType: "x mandatory",
-          WebkitOverflowScrolling: "touch",
-          "&::-webkit-scrollbar": { display: "none" },
-          scrollbarWidth: "none",
         }}
         onClick={() => setPulledCard(null)}
       >
@@ -534,7 +528,6 @@ function PicksCoverflow({ users = [], brand, onCardClick }) {
               style={{
                 flexShrink: 0,
                 marginRight: 16,
-                scrollSnapAlign: "start",
                 cursor: "pointer",
                 transformOrigin: "bottom center",
                 position: "relative",
