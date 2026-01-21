@@ -302,15 +302,58 @@ const HomeScreen = () => {
   // Load data on mount (no live refresh per spec)
   useEffect(() => {
     const loadData = async () => {
-      await new Promise(resolve => setTimeout(resolve, 600));
+      console.log('[HomeScreen] loadData called - fetching from API...');
+      try {
+        // Fetch nearby users from API
+        console.log('[HomeScreen] Calling /api/nearby-users...');
+        const response = await fetch('/api/nearby-users?limit=10');
+        console.log('[HomeScreen] API response status:', response.status);
+        if (response.ok) {
+          const data = await response.json();
+          // Transform API response to match expected format
+          const apiProfiles = data.users.map(user => ({
+            id: user.id,
+            firstName: user.firstName,
+            name: user.firstName,
+            age: user.age || 25,
+            primaryPhotoUrl: user.primaryPhotoUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
+            photo: user.primaryPhotoUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+            photos: user.photos?.length > 0 ? user.photos : [
+              'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80',
+            ],
+            vibeLine: user.bio || 'Looking for connection',
+            contextLine: `${Math.round((user.distanceMeters || 500) / 100) / 10}km away`,
+            distanceMeters: user.distanceMeters || 500,
+            chips: user.interests || [],
+            interests: user.interests || [],
+            gender: user.gender,
+            location: user.location,
+            lookingFor: user.lookingFor,
+          }));
+          
+          setNearbyProfiles(apiProfiles.slice(0, 2));
+          setTodaysPicks(apiProfiles.slice(0, 5).map((p, i) => ({
+            ...p,
+            isTodaysPick: true,
+            todaysPickReason: i === 0 ? 'high_chance' : 'nearby_tonight',
+          })));
+        } else {
+          // Fallback to mock data if API fails
+          console.warn('API failed, using mock data');
+          setNearbyProfiles(MOCK_NEARBY_PROFILES.slice(0, 2));
+          setTodaysPicks(MOCK_TODAYS_PICKS);
+        }
+      } catch (error) {
+        console.error('[HomeScreen] Error fetching nearby users:', error);
+        // Fallback to mock data
+        setNearbyProfiles(MOCK_NEARBY_PROFILES.slice(0, 2));
+        setTodaysPicks(MOCK_TODAYS_PICKS);
+      }
       
-      // Load all preview data
-      // In real app: fetch from API without triggering scans
-      setNearbyProfiles(MOCK_NEARBY_PROFILES.slice(0, 2));
+      // Load other preview data (still mock for now)
       setEvents(MOCK_EVENTS.slice(0, 2));
       setPlaces(MOCK_PLACES.slice(0, 2));
       setActiveChat(MOCK_ACTIVE_CHAT);
-      setTodaysPicks(MOCK_TODAYS_PICKS);
       
       setIsLoading(false);
     };
@@ -335,7 +378,8 @@ const HomeScreen = () => {
   }, [todaysPicks.length]);
   
   const handlePickClick = useCallback((userId) => {
-    navigate(`/profile/${userId}`);
+    sessionStorage.setItem('pulse_profile_source', 'todays_picks');
+    navigate(`/user/${userId}`, { state: { from: 'todays_picks' } });
   }, [navigate]);
   
   // Handle swipe action
@@ -1535,7 +1579,7 @@ function MatchScreen({ person, onStartChat, onKeepSwiping }) {
             textShadow: '0 4px 20px rgba(0,0,0,0.2)',
           }}
         >
-          It's a Pulse!
+          It's a Match!
         </Typography>
         <Typography
           variant="body1"

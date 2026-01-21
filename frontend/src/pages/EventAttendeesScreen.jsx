@@ -277,7 +277,7 @@ function MatchModal({ person, onStartChat, onKeepSwiping }) {
       </motion.div>
 
       <Typography variant="h3" sx={{ fontWeight: 900, color: '#fff', mt: 3, mb: 1 }}>
-        It's a Pulse!
+        It's a Match!
       </Typography>
       <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', mb: 4 }}>
         You and {person.firstName} both liked each other

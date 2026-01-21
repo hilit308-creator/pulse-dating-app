@@ -21,8 +21,6 @@ import {
   Search,
   Heart,
   X as CloseIcon,
-  Star,
-  RotateCcw,
   Info,
   Ruler,
   Wine,
@@ -374,15 +372,9 @@ function ResultsStage({ topUser, filtered, deckIndex, setDeckIndex, photoIdx, se
       )}
 
       {/* Bottom actions */}
-      <Stack direction="row" spacing={1.5} justifyContent="center" alignItems="center" sx={{ position: "fixed", left: 0, right: 0, bottom: `calc(${SAFE_BOTTOM} + 12px)`, zIndex: 1400, background: "rgba(255,255,255,0.88)", backdropFilter: "saturate(180%) blur(12px)", borderRadius: 9999, width: "max-content", mx: "auto", px: 1.25, py: 0.75, boxShadow: "0 10px 30px rgba(0,0,0,0.12)" }}>
-        <IconButton aria-label="Rewind last" onClick={() => setDeckIndex((i) => (i - 1 + Math.max(filtered.length, 1)) % Math.max(filtered.length, 1))} disableRipple sx={roundBtn("var(--btn-neutral,#A8A29E)")}>
-          <RotateCcw />
-        </IconButton>
+      <Stack direction="row" spacing={2} justifyContent="center" alignItems="center" sx={{ position: "fixed", left: 0, right: 0, bottom: `calc(${SAFE_BOTTOM} + 12px)`, zIndex: 1400, background: "rgba(255,255,255,0.88)", backdropFilter: "saturate(180%) blur(12px)", borderRadius: 9999, width: "max-content", mx: "auto", px: 2, py: 1, boxShadow: "0 10px 30px rgba(0,0,0,0.12)" }}>
         <IconButton aria-label="Nope" onClick={() => decide("left")} disabled={!topUser} disableRipple sx={roundBtn("var(--btn-nope,#ef4444)")}>
           <CloseIcon />
-        </IconButton>
-        <IconButton aria-label="Super Like" onClick={() => decide("super")} disabled={!topUser} disableRipple sx={roundBtn("var(--btn-super,#3b82f6)", true)}>
-          <Star />
         </IconButton>
         <IconButton aria-label="Like" onClick={() => decide("right")} disabled={!topUser} disableRipple sx={roundBtn("var(--btn-like,#22c55e)")}>
           <Heart />

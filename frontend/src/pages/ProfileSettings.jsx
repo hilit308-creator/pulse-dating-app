@@ -1045,7 +1045,7 @@ export default function ProfileSettings({ onBack }) {
               </Box>
             </Box>
 
-          <Grid container spacing={2}>
+          <Grid container spacing={1.5}>
             {photos.map((photo, idx) => (
               <Grid item xs={4} key={idx}>
                 <Box

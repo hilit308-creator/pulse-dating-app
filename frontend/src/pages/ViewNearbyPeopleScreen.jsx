@@ -14,7 +14,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
-import { ArrowLeft, MapPin, Sparkles, X, Heart, RotateCcw, Ruler, Wine, PawPrint, Baby, ShieldCheck, HeartHandshake, Sun, Smile, Radar, RefreshCw, MessageCircle, HelpCircle, Coffee } from "lucide-react";
+import { ArrowLeft, MapPin, Sparkles, X, Heart, Ruler, Wine, PawPrint, Baby, ShieldCheck, HeartHandshake, Sun, Smile, Radar, RefreshCw, MessageCircle, HelpCircle, Coffee } from "lucide-react";
 import { NearbyMatchMoment, InvitationModal } from "../components/nearby";
 
 /* ------------------------------ Constants --------------------------------- */
@@ -766,7 +766,7 @@ function MatchScreen({ person, onStartChat, onKeepSwiping, onSuggestMeeting }) {
             textShadow: '0 4px 20px rgba(0,0,0,0.2)',
           }}
         >
-          It's a Pulse!
+          It's a Match!
         </Typography>
         <Typography
           variant="body1"
@@ -1497,26 +1497,6 @@ export default function ViewNearbyPeopleScreen() {
             py: 3,
           }}
         >
-          {/* Undo button */}
-          <IconButton
-            onClick={handleUndo}
-            disabled={currentIndex === 0}
-            sx={{
-              width: 48,
-              height: 48,
-              backgroundColor: '#fff',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-              '&:hover': {
-                backgroundColor: '#f8fafc',
-              },
-              '&:disabled': {
-                opacity: 0.4,
-              },
-            }}
-          >
-            <RotateCcw size={22} color="#f59e0b" />
-          </IconButton>
-
           {/* Pass button */}
           <IconButton
             onClick={handlePass}
@@ -1598,7 +1578,7 @@ export default function ViewNearbyPeopleScreen() {
             <Box sx={{ mb: 3 }}>
               <Typography sx={{ fontSize: 32, mb: 1 }}>💚</Typography>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-                It's a Pulse!
+                It's a Match!
               </Typography>
               <Typography variant="body2" sx={{ color: '#64748b' }}>
                 When you both like each other, you can start chatting!

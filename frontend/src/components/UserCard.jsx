@@ -24,6 +24,7 @@
 
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 import { Box, Typography, Chip, IconButton, Dialog, DialogContent } from '@mui/material';
 import { Sparkles, RotateCcw, ChevronLeft, ChevronRight, X, User, Ruler, MapPin, Home, Briefcase, GraduationCap, Dumbbell, Wine, Cigarette, Baby, Star, Vote, Globe, Heart } from 'lucide-react';
@@ -202,11 +203,13 @@ export default function UserCard({
   hasLocationPermission = true,
 }) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
-  const [showFullProfile, setShowFullProfile] = useState(false);
   const [showPhotoGallery, setShowPhotoGallery] = useState(false); // Vertical scroll gallery
+  const [scrollPosition, setScrollPosition] = useState('top'); // 'top', 'middle', 'bottom'
+  const photoContainerRef = useRef(null);
   const tapStartRef = useRef({ x: 0, y: 0, time: 0 });
   const lastTapRef = useRef(0); // For double tap detection
 
@@ -342,8 +345,14 @@ export default function UserCard({
       const timeSinceLastTap = now - lastTapRef.current;
       
       if (timeSinceLastTap < 300) {
-        // Double tap - open full profile
-        setShowFullProfile(true);
+        // Double tap - navigate to user details page
+        const userId = user?.id ?? user?.userId ?? user?.user_id;
+        console.log('[DoubleTap] opening user:', userId, user?.firstName || user?.name);
+        if (userId) {
+          navigate(`/user/${userId}`, { state: { user } });
+        } else {
+          console.error('Cannot navigate to user details: missing user ID', user);
+        }
         lastTapRef.current = 0; // Reset to prevent triple tap
       } else {
         // Single tap - go to next photo (like Instagram)
@@ -356,7 +365,7 @@ export default function UserCard({
     
     // Reset swiping state
     setIsSwiping(false);
-  }, [photos.length]);
+  }, [photos.length, user, navigate]);
 
   // Navigate photos
   const handlePrevPhoto = useCallback((e) => {
@@ -368,6 +377,22 @@ export default function UserCard({
     e.stopPropagation();
     setPhotoIndex((prev) => (prev + 1) % photos.length);
   }, [photos.length]);
+
+  // Handle scroll position for adaptive arrows
+  const handlePhotoScroll = useCallback((e) => {
+    const container = e.target;
+    const scrollTop = container.scrollTop;
+    const scrollHeight = container.scrollHeight;
+    const clientHeight = container.clientHeight;
+    
+    if (scrollTop <= 10) {
+      setScrollPosition('top');
+    } else if (scrollTop + clientHeight >= scrollHeight - 10) {
+      setScrollPosition('bottom');
+    } else {
+      setScrollPosition('middle');
+    }
+  }, []);
 
   if (!user) return null;
 
@@ -393,7 +418,7 @@ export default function UserCard({
       <Box
         sx={{
           width: 'min(420px, 92vw)',
-          height: 'min(640px, 78vh)',
+          height: 'min(680px, 85vh)',
           borderRadius: '16px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.04)',
           backgroundColor: '#FFFFFF',
@@ -403,17 +428,139 @@ export default function UserCard({
           mx: 'auto', // Desktop: centered
           userSelect: 'none',
           cursor: 'pointer',
+          position: 'relative',
         }}
       >
-        {/* Section A - PhotoBlock (68% height) - Scrollable vertically */}
+        {/* Glowing NOPE label - Shows on left swipe - OUTSIDE scroll area */}
+        <motion.div
+          style={{
+            opacity: passOpacity,
+            position: 'absolute',
+            left: 16,
+            top: '25%',
+            transform: 'translateY(-50%) rotate(-15deg)',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            border: '3px solid #ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+            boxShadow: '0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3)',
+            pointerEvents: 'none',
+            zIndex: 100,
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: '#ef4444',
+              letterSpacing: 2,
+              textShadow: '0 0 10px rgba(239, 68, 68, 0.8)',
+            }}
+          >
+            NOPE
+          </Typography>
+        </motion.div>
+
+        {/* Glowing LIKE label - Shows on right swipe - OUTSIDE scroll area */}
+        <motion.div
+          style={{
+            opacity: likeOpacity,
+            position: 'absolute',
+            right: 16,
+            top: '25%',
+            transform: 'translateY(-50%) rotate(15deg)',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            border: '3px solid #22c55e',
+            backgroundColor: 'rgba(34, 197, 94, 0.15)',
+            boxShadow: '0 0 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.3)',
+            pointerEvents: 'none',
+            zIndex: 100,
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: '#22c55e',
+              letterSpacing: 2,
+              textShadow: '0 0 10px rgba(34, 197, 94, 0.8)',
+            }}
+          >
+            LIKE
+          </Typography>
+        </motion.div>
+
+        {/* Down arrow - shows when NOT at bottom (can still scroll down) */}
+        {photos.length > 1 && scrollPosition !== 'bottom' && (
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: '42%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              color: '#fff',
+              animation: 'blink 1.5s infinite',
+              zIndex: 50,
+              pointerEvents: 'none',
+              '@keyframes blink': {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.3 },
+              },
+            }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 500, mb: 0.25, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+              Scroll for more
+            </Typography>
+            <ChevronRight size={26} style={{ transform: 'rotate(90deg)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+          </Box>
+        )}
+
+        {/* Up arrow - shows ONLY when at bottom (can only go back up) */}
+        {photos.length > 1 && scrollPosition === 'bottom' && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 12,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              color: '#fff',
+              animation: 'blink 1.5s infinite',
+              zIndex: 50,
+              pointerEvents: 'none',
+              '@keyframes blink': {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.3 },
+              },
+            }}
+          >
+            <ChevronRight size={26} style={{ transform: 'rotate(-90deg)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+          </Box>
+        )}
+
+        {/* Section A - PhotoBlock (62% height) - Scrollable vertically */}
         <Box
+          ref={photoContainerRef}
+          onScroll={handlePhotoScroll}
           onDoubleClick={(e) => {
             e.stopPropagation();
-            setShowFullProfile(true);
+            const userId = user?.id ?? user?.userId ?? user?.user_id;
+            console.log('[DoubleTap onDoubleClick] opening user:', userId, user?.firstName || user?.name);
+            if (userId) {
+              navigate(`/user/${userId}`, { state: { user } });
+            } else {
+              console.error('Cannot navigate to user details: missing user ID', user);
+            }
           }}
           sx={{
             position: 'relative',
-            height: '68%',
+            height: '62%',
             flexShrink: 0,
             overflowY: 'scroll',
             overflowX: 'hidden',
@@ -482,94 +629,7 @@ export default function UserCard({
             </Box>
           )}
 
-          {/* Scroll hint animation - blinking arrow at bottom with text */}
-          {photos.length > 1 && (
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 8,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                color: '#fff',
-                animation: 'blink 1.5s infinite',
-                zIndex: 10,
-                pointerEvents: 'none',
-                '@keyframes blink': {
-                  '0%, 100%': { opacity: 1 },
-                  '50%': { opacity: 0.3 },
-                },
-              }}
-            >
-              <Typography sx={{ fontSize: 11, fontWeight: 500, mb: 0.25, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
-                Scroll for more
-              </Typography>
-              <ChevronRight size={22} style={{ transform: 'rotate(90deg)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
-            </Box>
-          )}
 
-
-          {/* Glowing NOPE label - Shows on left swipe */}
-          <motion.div
-            style={{
-              opacity: passOpacity,
-              position: 'absolute',
-              left: 16,
-              top: '40%',
-              transform: 'translateY(-50%) rotate(-15deg)',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: '3px solid #ef4444',
-              backgroundColor: 'rgba(239, 68, 68, 0.15)',
-              boxShadow: '0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3)',
-              pointerEvents: 'none',
-              zIndex: 20,
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: 24,
-                fontWeight: 800,
-                color: '#ef4444',
-                letterSpacing: 2,
-                textShadow: '0 0 10px rgba(239, 68, 68, 0.8)',
-              }}
-            >
-              NOPE
-            </Typography>
-          </motion.div>
-
-          {/* Glowing LIKE label - Shows on right swipe */}
-          <motion.div
-            style={{
-              opacity: likeOpacity,
-              position: 'absolute',
-              right: 16,
-              top: '40%',
-              transform: 'translateY(-50%) rotate(15deg)',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: '3px solid #22c55e',
-              backgroundColor: 'rgba(34, 197, 94, 0.15)',
-              boxShadow: '0 0 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.3)',
-              pointerEvents: 'none',
-              zIndex: 20,
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: 24,
-                fontWeight: 800,
-                color: '#22c55e',
-                letterSpacing: 2,
-                textShadow: '0 0 10px rgba(34, 197, 94, 0.8)',
-              }}
-            >
-              LIKE
-            </Typography>
-          </motion.div>
 
           {/* Gradient Overlay - Per spec: readability only, not decorative */}
           <Box
@@ -610,7 +670,7 @@ export default function UserCard({
             <RotateCcw size={18} color="#fff" strokeWidth={2.5} />
           </IconButton>
 
-          {/* Pulsed You Badge - Shows when they liked you (including potential matches) */}
+          {/* Likes You Badge - Shows when they liked you (including potential matches) */}
           {(user.likesYou || user.isMatch) && (
             <Box
               sx={{
@@ -618,31 +678,67 @@ export default function UserCard({
                 top: 12,
                 left: 12,
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: 'column',
                 gap: 0.5,
-                px: 1.5,
-                py: 0.75,
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                boxShadow: '0 2px 8px rgba(108,92,231,0.5)',
-                animation: 'pulseGlow 2s infinite',
-                '@keyframes pulseGlow': {
-                  '0%, 100%': { boxShadow: '0 2px 8px rgba(108,92,231,0.5)' },
-                  '50%': { boxShadow: '0 4px 16px rgba(108,92,231,0.8)' },
-                },
               }}
             >
-              <Heart size={14} color="white" fill="white" />
-              <Typography
+              {/* Main badge */}
+              <Box
                 sx={{
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  color: '#FFFFFF',
-                  letterSpacing: '0.02em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  px: 1.5,
+                  py: 0.75,
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                  boxShadow: '0 2px 8px rgba(108,92,231,0.5)',
+                  animation: 'pulseGlow 2s infinite',
+                  '@keyframes pulseGlow': {
+                    '0%, 100%': { boxShadow: '0 2px 8px rgba(108,92,231,0.5)' },
+                    '50%': { boxShadow: '0 4px 16px rgba(108,92,231,0.8)' },
+                  },
                 }}
               >
-                Pulsed you
-              </Typography>
+                <Heart size={14} color="white" fill="white" />
+                <Typography
+                  sx={{
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: '#FFFFFF',
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  Likes you
+                </Typography>
+              </Box>
+              {/* Shared interest hint */}
+              {user.interests?.length > 0 && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    px: 1.25,
+                    py: 0.5,
+                    borderRadius: '12px',
+                    bgcolor: 'rgba(255,255,255,0.9)',
+                    backdropFilter: 'blur(4px)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  <Sparkles size={12} color="#6C5CE7" />
+                  <Typography
+                    sx={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#6C5CE7',
+                    }}
+                  >
+                    You both like {user.interests[0]}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           )}
 
@@ -731,15 +827,24 @@ export default function UserCard({
 
         </Box>
 
-        {/* Section B - InfoBlock (32% height) - Enhanced per new spec */}
+        {/* Section B - InfoBlock (38% height) - Enhanced per new spec */}
         <Box
           sx={{
-            height: '32%',
+            height: '38%',
             p: 2,
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
-            overflow: 'hidden',
+            gap: '8px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            bgcolor: '#fff',
+            position: 'relative',
+            zIndex: 5,
+            '&::-webkit-scrollbar': { width: 4 },
+            '&::-webkit-scrollbar-thumb': { 
+              backgroundColor: 'rgba(0,0,0,0.1)', 
+              borderRadius: 2 
+            },
           }}
         >
           {/* B1 - Live Status (if exists) - Max 60 chars, optional emoji */}
@@ -749,9 +854,6 @@ export default function UserCard({
                 fontSize: '14px',
                 fontWeight: 500,
                 color: '#6C5CE7',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
                 lineHeight: 1.4,
               }}
             >
@@ -766,9 +868,6 @@ export default function UserCard({
                 fontSize: '15px',
                 fontWeight: 600,
                 color: '#1F2937',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
                 lineHeight: 1.3,
               }}
             >
@@ -781,9 +880,8 @@ export default function UserCard({
             <Box
               sx={{
                 display: 'flex',
-                gap: 1,
-                overflow: 'hidden',
-                flexWrap: 'nowrap',
+                gap: 0.75,
+                flexWrap: 'wrap',
               }}
             >
               {quickInfoChips.map((chip, index) => (
@@ -792,18 +890,13 @@ export default function UserCard({
                   label={chip.label || chip}
                   size="small"
                   sx={{
-                    height: '30px',
-                    borderRadius: '999px',
-                    px: '12px',
-                    fontSize: '13px',
+                    height: '26px',
+                    borderRadius: '13px',
+                    fontSize: '12px',
                     fontWeight: 500,
-                    backgroundColor: '#FFA726',
-                    color: '#FFFFFF',
+                    backgroundColor: '#f3f4f6',
+                    color: '#374151',
                     border: 'none',
-                    flexShrink: 0,
-                    '& .MuiChip-label': {
-                      px: 0,
-                    },
                   }}
                 />
               ))}
@@ -815,7 +908,7 @@ export default function UserCard({
             <Box
               sx={{
                 display: 'flex',
-                gap: 1.5,
+                gap: 1,
                 overflow: 'hidden',
                 flexWrap: 'nowrap',
                 mt: 0.5,
@@ -829,16 +922,21 @@ export default function UserCard({
                     alignItems: 'center',
                     gap: 0.5,
                     flexShrink: 0,
+                    px: 1.5,
+                    py: 0.75,
+                    borderRadius: '20px',
+                    bgcolor: '#f3f4f6',
+                    border: '1px solid #e5e7eb',
                   }}
                 >
-                  <Typography sx={{ fontSize: '16px', lineHeight: 1 }}>
+                  <Typography sx={{ fontSize: '14px', lineHeight: 1 }}>
                     {interest.icon}
                   </Typography>
                   <Typography
                     sx={{
-                      fontSize: '13px',
+                      fontSize: '12px',
                       fontWeight: 500,
-                      color: '#4B5563',
+                      color: '#374151',
                       whiteSpace: 'nowrap',
                     }}
                   >
@@ -850,19 +948,16 @@ export default function UserCard({
           )}
 
           {/* B5 - Action Hint (text only, no buttons) */}
-          <Box sx={{ mt: 'auto' }}>
+          <Box sx={{ mt: 'auto', pt: 0.5 }}>
             <Typography
               sx={{
-                fontSize: '12px',
+                fontSize: '11px',
                 fontWeight: 400,
                 color: '#9CA3AF',
                 textAlign: 'center',
               }}
             >
-              {isMobile 
-                ? `${t('swipeLeftPass')} | ${t('swipeRightLike')}`
-                : t('passLikeHint')
-              }
+              Swipe left – Pass | Swipe right – Like
             </Typography>
           </Box>
         </Box>
@@ -875,321 +970,6 @@ export default function UserCard({
           100% { background-position: 200% 0; }
         }
       `}</style>
-
-      {/* Full Profile Dialog */}
-      <Dialog
-        open={showFullProfile}
-        onClose={() => setShowFullProfile(false)}
-        fullScreen
-        PaperProps={{
-          sx: {
-            bgcolor: '#fff',
-          },
-        }}
-      >
-        <DialogContent sx={{ p: 0, position: 'relative' }}>
-          {/* Back button - top left */}
-          <IconButton
-            onClick={() => setShowFullProfile(false)}
-            sx={{
-              position: 'absolute',
-              top: 16,
-              left: 16,
-              zIndex: 100,
-              bgcolor: 'rgba(255,255,255,0.9)',
-              backdropFilter: 'blur(8px)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              '&:hover': { bgcolor: '#fff' },
-            }}
-          >
-            <ChevronLeft size={24} color="#1a1a2e" />
-          </IconButton>
-
-          {/* Photo gallery */}
-          <Box sx={{ position: 'relative', width: '100%', height: '50vh' }}>
-            <Box
-              component="img"
-              src={currentPhoto}
-              alt={user.firstName}
-              sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-            />
-            
-            {/* Photo indicators */}
-            {photos.length > 1 && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 12,
-                  left: 16,
-                  right: 16,
-                  display: 'flex',
-                  gap: 0.5,
-                }}
-              >
-                {photos.map((_, i) => (
-                  <Box
-                    key={i}
-                    onClick={() => setPhotoIndex(i)}
-                    sx={{
-                      flex: 1,
-                      height: 4,
-                      borderRadius: 2,
-                      bgcolor: i === photoIndex ? '#fff' : 'rgba(255,255,255,0.4)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                  />
-                ))}
-              </Box>
-            )}
-
-            {/* Photo navigation */}
-            {photos.length > 1 && (
-              <>
-                <IconButton
-                  onClick={() => setPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length)}
-                  sx={{
-                    position: 'absolute',
-                    left: 8,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    bgcolor: 'rgba(255,255,255,0.85)',
-                    '&:hover': { bgcolor: '#fff' },
-                  }}
-                >
-                  <ChevronLeft size={24} />
-                </IconButton>
-                <IconButton
-                  onClick={() => setPhotoIndex((prev) => (prev + 1) % photos.length)}
-                  sx={{
-                    position: 'absolute',
-                    right: 8,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    bgcolor: 'rgba(255,255,255,0.85)',
-                    '&:hover': { bgcolor: '#fff' },
-                  }}
-                >
-                  <ChevronRight size={24} />
-                </IconButton>
-              </>
-            )}
-          </Box>
-
-          {/* Profile details - Classic left-aligned list layout */}
-          <Box sx={{ p: 3, pb: 6 }}>
-            {/* Name and age */}
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
-              {user.firstName}{user.lastName ? ` ${user.lastName}` : ''}, {user.age}
-            </Typography>
-            {distanceText && (
-              <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
-                {distanceText} away
-              </Typography>
-            )}
-
-            {/* Bio */}
-            {user.bio && (
-              <Typography sx={{ fontSize: 14, color: '#4B5563', lineHeight: 1.7, mb: 3 }}>
-                {user.bio}
-              </Typography>
-            )}
-
-            {/* Looking For */}
-            {user.lookingFor && (
-              <Box sx={{ mb: 2.5, py: 1.5, borderBottom: '1px solid #e5e7eb' }}>
-                <Typography sx={{ fontSize: 12, color: '#64748b', mb: 0.5 }}>Looking for</Typography>
-                <Typography sx={{ fontSize: 14, fontWeight: 500 }}>
-                  {(Array.isArray(user.lookingFor) ? user.lookingFor : [user.lookingFor]).join(', ')}
-                </Typography>
-              </Box>
-            )}
-
-            {/* Interests */}
-            {(user.interests?.length > 0 || user.chips?.length > 0) && (
-              <Box sx={{ mb: 2.5, py: 1.5, borderBottom: '1px solid #e5e7eb' }}>
-                <Typography sx={{ fontSize: 12, color: '#64748b', mb: 1 }}>Interests</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                  {(user.interests || user.chips || []).map((item, i) => (
-                    <Chip key={i} label={item.label || item} size="small" sx={{ bgcolor: '#f3f4f6', color: '#374151', fontSize: 12 }} />
-                  ))}
-                </Box>
-              </Box>
-            )}
-
-            {/* Qualities I Value */}
-            {user.qualities?.length > 0 && (
-              <Box sx={{ mb: 2.5, py: 1.5, borderBottom: '1px solid #e5e7eb' }}>
-                <Typography sx={{ fontSize: 12, color: '#64748b', mb: 1 }}>Qualities I value</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                  {user.qualities.map((q, i) => (
-                    <Chip key={i} label={q} size="small" sx={{ bgcolor: '#f3f4f6', color: '#374151', fontSize: 12 }} />
-                  ))}
-                </Box>
-              </Box>
-            )}
-
-            {/* My Details */}
-            <Box sx={{ mb: 2.5 }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e', mb: 1.5 }}>My Details</Typography>
-              {user.gender && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <User size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Gender</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.gender}</Typography>
-                </Box>
-              )}
-              {user.height && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <Ruler size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Height</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.height} cm</Typography>
-                </Box>
-              )}
-              {user.location && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <MapPin size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Location</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.location}</Typography>
-                </Box>
-              )}
-              {user.hometown && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <Home size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Hometown</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.hometown}</Typography>
-                </Box>
-              )}
-              {user.occupation && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <Briefcase size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Work</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.occupation}</Typography>
-                </Box>
-              )}
-              {user.education && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <GraduationCap size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Education</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.education}</Typography>
-                </Box>
-              )}
-            </Box>
-
-            {/* Lifestyle */}
-            <Box sx={{ mb: 2.5 }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e', mb: 1.5 }}>Lifestyle</Typography>
-              {user.exercise && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <Dumbbell size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Exercise</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.exercise}</Typography>
-                </Box>
-              )}
-              {user.drinking && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <Wine size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Drinking</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.drinking}</Typography>
-                </Box>
-              )}
-              {user.smoking && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <Cigarette size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Smoking</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.smoking}</Typography>
-                </Box>
-              )}
-              {user.kids && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <Baby size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Kids</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.kids}</Typography>
-                </Box>
-              )}
-              {user.starSign && (
-                <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                  <Star size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                  <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Star sign</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.starSign}</Typography>
-                </Box>
-              )}
-            </Box>
-
-            {/* More Info */}
-            {(user.politics || user.languages?.length > 0) && (
-              <Box sx={{ mb: 2.5 }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e', mb: 1.5 }}>More</Typography>
-                {user.politics && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <Vote size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Politics</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.politics}</Typography>
-                  </Box>
-                )}
-                {user.languages?.length > 0 && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <Globe size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Languages</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{user.languages.join(', ')}</Typography>
-                  </Box>
-                )}
-              </Box>
-            )}
-
-            {/* Causes & Communities */}
-            {user.causes?.length > 0 && (
-              <Box sx={{ mb: 2.5, py: 1.5, borderBottom: '1px solid #e5e7eb' }}>
-                <Typography sx={{ fontSize: 12, color: '#64748b', mb: 1 }}>Causes & communities</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                  {user.causes.map((cause, i) => (
-                    <Chip key={i} label={cause} size="small" sx={{ bgcolor: '#f3f4f6', color: '#374151', fontSize: 12 }} />
-                  ))}
-                </Box>
-              </Box>
-            )}
-
-            {/* Spotify Playlists - Horizontal scroll */}
-            {user.spotifyPlaylists?.length > 0 && (
-              <Box sx={{ mb: 2.5 }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e', mb: 1.5 }}>My Music</Typography>
-                <Box sx={{ display: 'flex', gap: 1.5, overflowX: 'auto', pb: 1, mx: -3, px: 3, '&::-webkit-scrollbar': { display: 'none' } }}>
-                  {user.spotifyPlaylists.map((playlist, i) => (
-                    <Box key={i} sx={{ flexShrink: 0, width: 100, textAlign: 'center' }}>
-                      <Box
-                        sx={{
-                          width: 100,
-                          height: 100,
-                          borderRadius: 2,
-                          overflow: 'hidden',
-                          mb: 1,
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        }}
-                      >
-                        <img
-                          src={playlist.image || `https://picsum.photos/seed/${playlist.name}/200`}
-                          alt={playlist.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#1a1a2e', lineHeight: 1.3, mb: 0.25 }} noWrap>
-                        {playlist.name}
-                      </Typography>
-                      <Typography sx={{ fontSize: 10, color: '#64748b' }} noWrap>
-                        {playlist.artist}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
-          </Box>
-        </DialogContent>
-      </Dialog>
 
       {/* Vertical Photo Gallery Dialog */}
       <Dialog

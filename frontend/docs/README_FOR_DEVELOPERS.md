@@ -94,5 +94,20 @@ If implemented correctly:
 
 ---
 
+## 8. Home Navigation Restoration (HOME_RESTORE_LOCKED)
+
+> **LOCKED** – Do not modify without updating E2E tests.
+
+- **Restoration key**: `?user=<userId>` (primary), `?card=<index>` (fallback only)
+- **State persistence**: Home deck state persists via Zustand + sessionStorage
+- **Any change to Home navigation must update E2E** (`e2e/home-navigation.spec.js`)
+
+Key files:
+- `src/store/homeDeckStore.js` – Zustand store with sessionStorage
+- `src/components/Home.js` – URL user param and anchor restoration
+- `e2e/home-navigation.spec.js` – Required E2E tests (must run on every PR)
+
+---
+
 **Last Updated:** January 2026  
-**Version:** 1.0
+**Version:** 1.1

@@ -388,7 +388,7 @@ const translations = {
     noLikesYet: 'No likes yet',
     sessionEnded: 'Session ended',
     activeNow: 'Active now',
-    itsAMatch: "It's a Pulse!",
+    itsAMatch: "It's a Match!",
     activationFailed: 'Activation failed',
     
     // Undo

@@ -1,5 +1,5 @@
 /**
- * MatchPulseScreen - "It's a Pulse" Match Moment
+ * MatchPulseScreen - "It's a Match" Match Moment
  * 
  * Visual Language (from spec):
  * - Heartbeat animation
@@ -322,7 +322,7 @@ export default function MatchPulseScreen({
                   mb: 1,
                 }}
               >
-                It's a Pulse
+                It's a Match
               </Typography>
 
               {/* Subtitle */}

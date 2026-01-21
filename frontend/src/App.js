@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navig
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { Typography, Box, IconButton, Tooltip, Button } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Settings, CircleUser } from 'lucide-react';
+import { Settings, CircleUser, ArrowLeft } from 'lucide-react';
 
 // Auth
 import { AuthProvider, useAuth, ONBOARDING_STATE, PERMISSION_STATE } from './context/AuthContext';
@@ -95,6 +95,7 @@ import LikesYouScreen from './pages/LikesYouScreen';
 import AdminDashboard from './pages/AdminDashboard';
 import ReportProblemScreen from './pages/ReportProblemScreen';
 import MeetingsSafetyScreen from './pages/MeetingsSafetyScreen';
+import UserDetailsScreen from './pages/UserDetailsScreen';
 
 // Global components
 import { GlobalErrorProvider } from './components/GlobalErrorBanner';
@@ -689,9 +690,14 @@ function AppShell() {
   const isAuthPath = authPaths.some((prefix) => location.pathname.startsWith(prefix));
   const isProfilePath = location.pathname.startsWith('/profile/');
   
+  // Root tabs - no back button needed
+  const rootTabs = ['/', '/home', '/home1', '/home-swipe', '/home-pulse', '/chat', '/matches', '/nearby', '/events', '/explore'];
+  const isRootTab = rootTabs.includes(location.pathname);
+  
   // Show tab bar and header only when logged in and onboarding complete
   const showTabBar = isLoggedIn && isOnboardingComplete && !isAuthPath && !isProfilePath && !hideByFlag;
   const showHeader = isLoggedIn && isOnboardingComplete && !isAuthPath && !hideByFlag;
+  const showBackButton = showHeader && !isRootTab;
 
   return (
     <div style={{ paddingBottom: showTabBar ? 64 : 0, minHeight: '100vh' }}>
@@ -715,9 +721,27 @@ function AppShell() {
             boxShadow: '0 1px 6px rgba(0,0,0,0.04)'
           }}
         >
+          {/* Left: Back button (only on non-root screens) */}
+          <Box sx={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)' }}>
+            {showBackButton && (
+              <IconButton 
+                size="small" 
+                onClick={() => navigate(-1)}
+                sx={{ 
+                  width: 44, 
+                  height: 44,
+                  '&:hover': { bgcolor: '#f5f5f5' },
+                }}
+              >
+                <ArrowLeft size={22} />
+              </IconButton>
+            )}
+          </Box>
+          
           <Typography variant="h6" sx={{ fontWeight: 800, color: '#2e2e2e', letterSpacing: 1.5, userSelect: 'none' }}>
             Pulse
           </Typography>
+          
           {/* Right actions: Profile + Settings */}
           <Box sx={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: 0.5 }}>
             <Tooltip title="Profile">
@@ -820,6 +844,7 @@ function AppShell() {
             <Route path="/likes-you" element={<ProtectedRoute><LikesYouScreen /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/user/:id" element={<ProtectedRoute><UserDetailsScreen /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile-demo" element={<ProtectedRoute><ProfileCardDemo /></ProtectedRoute>} />
             

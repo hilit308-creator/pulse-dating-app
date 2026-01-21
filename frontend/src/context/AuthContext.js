@@ -1,5 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
+// E2E Test bypass - ONLY enabled via env flag, never in production
+const E2E_AUTH_BYPASS = process.env.REACT_APP_E2E_AUTH_BYPASS === 'true';
+
+// Test user for E2E bypass
+const E2E_TEST_USER = {
+  id: 999,
+  email: 'e2e-test@pulse.app',
+  firstName: 'E2E',
+  lastName: 'TestUser',
+  phone: '+1234567890',
+  onboardingStatus: 'COMPLETED',
+  role: 'user',
+};
+
 // Admin emails - these users get admin role automatically
 const ADMIN_EMAILS = [
   'lironi217@gmail.com',
@@ -90,6 +104,18 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const loadPersistedState = () => {
       try {
+        // E2E Auth Bypass - auto-login as test user
+        if (E2E_AUTH_BYPASS) {
+          console.log('[Auth] E2E_AUTH_BYPASS enabled - auto-login as test user');
+          setAccessToken('e2e-test-token');
+          setRefreshToken('e2e-test-refresh-token');
+          setUser(E2E_TEST_USER);
+          setAuthState(AUTH_STATE.LOGGED_IN);
+          setOnboardingState(ONBOARDING_STATE.COMPLETED);
+          setIsLoading(false);
+          return; // Skip normal auth flow
+        }
+
         const storedToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
         const storedRefreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
         const storedUser = localStorage.getItem(STORAGE_KEYS.USER);

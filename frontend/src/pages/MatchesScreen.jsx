@@ -922,7 +922,7 @@ function FullProfileCard({ profile, onLike, onPass, onClose }) {
   );
 }
 
-/* It's a Pulse! Match celebration - shown when Like creates match from Interested in You */
+/* It's a Match! Match celebration - shown when Like creates match from Interested in You */
 function MatchCelebration({ person, onStartChat, onKeepBrowsing }) {
   return (
     <motion.div
@@ -966,7 +966,7 @@ function MatchCelebration({ person, onStartChat, onKeepBrowsing }) {
             mb: 0.5,
           }}
         >
-          It's a Pulse!
+          It's a Match!
         </Typography>
         <Typography
           variant="body2"
@@ -1081,7 +1081,7 @@ export default function MatchesScreen() {
   // Interested in You - unlocked state per spec
   const [isSubscribed, setIsSubscribed] = useState(true); // Mock: user has subscription
   const [selectedLikeProfile, setSelectedLikeProfile] = useState(null); // Profile card open
-  const [matchCelebration, setMatchCelebration] = useState(null); // "It's a Pulse!" celebration
+  const [matchCelebration, setMatchCelebration] = useState(null); // "It's a Match!" celebration
 
   // Blocked profiles (per current user)
   const [blocked, setBlocked] = useState(() => loadBlocks());
@@ -1210,7 +1210,7 @@ export default function MatchesScreen() {
   const handleReport = (p) => openReportDialog(p);
 
   // Interested in You - Like/Pass handlers per spec
-  // Like: Immediate match creation, show "It's a Pulse", CTA: Start chat
+  // Like: Immediate match creation, show "It's a Match", CTA: Start chat
   // Pass: Profile removed permanently, no notification, no match created
   const handleLikeFromInterested = useCallback((profile) => {
     // Create match immediately
@@ -1603,7 +1603,7 @@ export default function MatchesScreen() {
         )}
       </AnimatePresence>
 
-      {/* Match Celebration - "It's a Pulse!" */}
+      {/* Match Celebration - "It's a Match!" */}
       <AnimatePresence>
         {matchCelebration && (
           <MatchCelebration

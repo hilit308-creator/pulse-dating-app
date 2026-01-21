@@ -612,7 +612,7 @@ const PhotoSlot = ({ photo, index, isUploading, onClick, onRemove, onSetMain }) 
       onClick={onClick}
       sx={{
         position: 'relative',
-        aspectRatio: '3/4',
+        aspectRatio: '1/1',
         borderRadius: '12px',
         overflow: 'hidden',
         cursor: 'pointer',

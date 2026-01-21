@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import useHomeDeckStore from "../store/homeDeckStore";
+import { resolvePrimaryPhoto } from "../utils/photoUtils";
 import {
   Box,
   Typography,
@@ -22,7 +24,7 @@ import {
   useTransform,
   useAnimation,
 } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   Search,
   Heart,
@@ -231,7 +233,7 @@ const baseUsers = [
     distance: 0.3,
     profession: "Photographer",
     education: "Bezalel Academy",
-    tagline: "It's a Pulse! 💕",
+    tagline: "It's a Match! 💕",
     bio: "Capturing moments and creating memories. Love spontaneous adventures and deep conversations.",
     interests: ["Photography", "Travel", "Art", "Coffee", "Music", "Nature"],
     matchDistance: 0.12,
@@ -267,12 +269,13 @@ const demoUsers = baseUsers.map((u) => {
 
 // Transform to UserCardModel format (per spec section 7)
 const transformToUserCardModel = (user) => ({
+  id: user.id, // Keep numeric ID for navigation
   userId: String(user.id),
   firstName: user.name,
   age: user.age,
   distanceMeters: user.distance * 1000, // Convert km to meters
-  primaryPhotoUrl: user.photoUrl,
-  photos: user.photos || [user.photoUrl], // Include all photos for scrolling
+  primaryPhotoUrl: user.primaryPhotoUrl || user.photoUrl || (user.photos && user.photos[0]) || '',
+  photos: user.photos || [user.primaryPhotoUrl || user.photoUrl].filter(Boolean), // Include all photos for scrolling
   // New spec fields
   liveStatus: user.liveStatus || user.tagline || null, // Max 60 chars, optional emoji
   primaryRole: user.profession && user.profession.length <= 40 ? user.profession : null, // Max 40 chars
@@ -282,7 +285,7 @@ const transformToUserCardModel = (user) => ({
   })) || null, // Max 3 interests for preview
   contextLine: user.tagline || user.profession || 'Looking for genuine connections',
   // Chip generation fields (auto-generated if chips not provided)
-  height: user.height || user.aboutMe?.find(a => a.includes('cm'))?.replace(' cm', ''),
+  height: user.height != null ? String(user.height) : user.aboutMe?.find(a => a.includes('cm'))?.replace(' cm', ''),
   drinking: user.drinking || user.aboutMe?.find(a => a.toLowerCase().includes('drink'))?.replace('Sometimes drinks', 'Sometimes drinks'),
   professionalField: user.professionalField || (user.interests?.find(i => ['Tech', 'Design', 'Art', 'Marketing', 'Finance'].includes(i))),
   chips: null, // Let UserCard auto-generate from height, drinking, professionalField
@@ -472,93 +475,217 @@ function TagPill({
 }
 
 /* ---------------------------------------
-   Picks carousel ("Today's Picks") - Diagonal stacked cards with horizontal swipe
+   Today's Picks - Per Product Spec v1 (Locked)
+   
+   Purpose: Focus mechanism to reduce choice overload
+   Rules:
+   - 3-5 picks max, fixed per day
+   - No pagination, no "see more", no refill
+   - No ranking badges, no FOMO mechanics
+   - Calm, intentional, trust-building tone
 --------------------------------------- */
-function PicksCoverflow({ users = [], brand, onCardClick }) {
-  const [pulledCard, setPulledCard] = useState(null);
+
+// Subtle subtitles (rotated daily, non-urgent)
+const PICKS_SUBTITLES = [
+  "Handpicked for today",
+  "Active around you today", 
+  "Relevant right now",
+];
+
+function TodaysPicks({ users = [], brand, onCardClick, onPickViewed }) {
   const containerRef = useRef(null);
+  
+  // Get today's subtitle (changes daily, not randomly)
+  const todaySubtitle = PICKS_SUBTITLES[new Date().getDate() % PICKS_SUBTITLES.length];
+  
+  // Limit to 3-5 picks max (spec: hard limit)
+  const picks = users.slice(0, 5);
+  
+  // Track view event on mount
+  useEffect(() => {
+    if (picks.length > 0 && onPickViewed) {
+      onPickViewed();
+    }
+  }, [picks.length, onPickViewed]);
 
   const handleCardClick = (e, user, index) => {
     e.stopPropagation();
-    // Open profile directly on click
-    if (onCardClick) onCardClick(user);
+    if (onCardClick) onCardClick(user, index);
   };
 
-  return (
-    <Box sx={{ mt: 2 }}>
-      <Typography
-        variant="subtitle2"
-        sx={{ fontWeight: 800, color: "#0f172a", mb: 1.5, pl: 2 }}
+  // Empty state per spec
+  if (picks.length === 0) {
+    return (
+      <Box 
+        sx={{ 
+          mt: 2, 
+          mx: 2,
+          p: 3,
+          textAlign: "center",
+          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+          borderRadius: 3,
+          border: '1px solid #e2e8f0',
+        }}
       >
-        Today's Picks
-      </Typography>
+        <Box sx={{ fontSize: 40, mb: 1 }}>✨</Box>
+        <Typography
+          variant="h6"
+          sx={{ fontWeight: 700, color: "#1e293b", mb: 0.5 }}
+        >
+          All caught up!
+        </Typography>
+        <Typography
+          sx={{ fontSize: 13, color: "#64748b", mb: 2, lineHeight: 1.5 }}
+        >
+          You've seen all your picks for today.<br />
+          New matches coming soon!
+        </Typography>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => {
+            // Scroll to Discover section
+            const discoverSection = document.querySelector('[data-section="discover"]');
+            if (discoverSection) {
+              discoverSection.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+          sx={{ 
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 600,
+            bgcolor: '#6366f1',
+            '&:hover': { bgcolor: '#4f46e5' },
+          }}
+        >
+          Keep exploring
+        </Button>
+      </Box>
+    );
+  }
 
-      {/* Centered cards */}
+  return (
+    <Box sx={{ mt: 2, mx: -2 }}> {/* Negative margin to extend beyond parent padding */}
+      {/* Section header */}
+      <Box sx={{ px: 4, mb: 1.5 }}> {/* Extra padding to compensate for negative margin */}
+        <Typography
+          variant="subtitle2"
+          sx={{ fontWeight: 800, color: "#0f172a" }}
+        >
+          Today's Picks
+        </Typography>
+        <Typography
+          sx={{ fontSize: 12, color: "#64748b", mt: 0.25 }}
+        >
+          {todaySubtitle}
+        </Typography>
+      </Box>
+
+      {/* Cards - horizontal scrolling (MANDATORY per spec) */}
       <Box
         ref={containerRef}
         sx={{
           display: "flex",
           alignItems: "flex-end",
-          justifyContent: "center",
-          flexWrap: "wrap",
-          pb: 8,
-          pt: 4,
-          px: 2,
-          minHeight: 300,
+          justifyContent: "flex-start",
+          overflowX: "auto",
+          overflowY: "visible",
+          pb: 3,
+          pt: 2,
+          px: 4, // Extra padding to compensate for negative margin
+          gap: 1.5,
+          // Smooth horizontal scroll, no snapping required per spec
+          WebkitOverflowScrolling: "touch",
+          scrollBehavior: "smooth",
+          "&::-webkit-scrollbar": { display: "none" },
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
+          // Ensure cards are partially visible at edges to indicate scrollability
+          maskImage: "linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)",
+          WebkitMaskImage: "linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)",
         }}
-        onClick={() => setPulledCard(null)}
       >
-        {users.map((u, i) => {
-          const isPulled = pulledCard === i;
-          // Each card has slight tilt
-          const baseRotation = -8 + (i * 4);
+        {picks.map((u, i) => {
+          // Subtle tilt for visual interest (not ranking)
+          const baseRotation = picks.length > 1 ? -4 + (i * (8 / (picks.length - 1 || 1))) : 0;
           
           return (
             <motion.div
               key={u.id}
-              initial={false}
-              animate={{
-                y: isPulled ? -70 : 0,
-                scale: isPulled ? 1.15 : 1,
-                rotate: isPulled ? 0 : baseRotation,
-              }}
-              whileHover={{ y: -15, scale: 1.03 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1, duration: 0.3 }}
+              whileHover={{ y: -8, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={(e) => handleCardClick(e, u, i)}
               style={{
                 flexShrink: 0,
-                marginRight: 16,
                 cursor: "pointer",
                 transformOrigin: "bottom center",
-                position: "relative",
-                zIndex: isPulled ? 100 : 1,
+                transform: `rotate(${baseRotation}deg)`,
+                scrollSnapAlign: "center",
               }}
             >
               <Box
                 sx={{
-                  width: 140,
-                  height: 200,
+                  width: 130,
+                  height: 180,
                   borderRadius: 3,
                   overflow: "hidden",
-                  boxShadow: isPulled 
-                    ? `0 30px 60px ${alpha("#000", 0.45)}, 0 0 0 3px ${brand.primary}`
-                    : `0 10px 30px ${alpha("#000", 0.3)}, -3px 3px 10px ${alpha("#000", 0.15)}`,
+                  boxShadow: `0 8px 24px ${alpha("#000", 0.15)}, 0 2px 8px ${alpha("#000", 0.1)}`,
                   background: "#fff",
-                  transition: "box-shadow 0.3s ease",
+                  transition: "box-shadow 0.2s ease",
+                  "&:hover": {
+                    boxShadow: `0 12px 32px ${alpha("#000", 0.2)}, 0 4px 12px ${alpha("#000", 0.12)}`,
+                  },
                 }}
               >
                 {/* Photo */}
                 <Box sx={{ height: "100%", position: "relative" }}>
                   <Box
                     component="img"
-                    src={u.photoUrl}
-                    alt={u.name}
+                    src={resolvePrimaryPhoto(u)}
+                    alt={u.name || u.firstName}
                     sx={{
                       width: "100%",
                       height: "100%",
                       objectFit: "cover",
                     }}
                   />
+                  {/* Status badge - LOCKED to "Worth a look" per spec */}
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 8,
+                      left: 8,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 2,
+                      bgcolor: 'rgba(100, 116, 139, 0.85)',
+                      backdropFilter: "blur(4px)",
+                    }}
+                  >
+                    <Box
+                      component="span"
+                      sx={{ fontSize: 10 }}
+                    >
+                      ✨
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontSize: 9,
+                        fontWeight: 600,
+                        color: "#fff",
+                        textTransform: "none",
+                        letterSpacing: 0.2,
+                      }}
+                    >
+                      Worth a look
+                    </Typography>
+                  </Box>
                   {/* Gradient overlay */}
                   <Box
                     sx={{
@@ -566,85 +693,48 @@ function PicksCoverflow({ users = [], brand, onCardClick }) {
                       bottom: 0,
                       left: 0,
                       right: 0,
-                      height: "55%",
-                      background: "linear-gradient(transparent, rgba(0,0,0,0.85))",
+                      height: "50%",
+                      background: "linear-gradient(transparent, rgba(0,0,0,0.75))",
                     }}
                   />
-                  {/* Name overlay */}
+                  {/* Name + age + distance */}
                   <Box
                     sx={{
                       position: "absolute",
-                      bottom: 10,
-                      left: 10,
-                      right: 10,
+                      bottom: 8,
+                      left: 8,
+                      right: 8,
                     }}
                   >
                     <Typography
                       sx={{
                         fontWeight: 700,
                         color: "#fff",
-                        fontSize: 14,
-                        textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+                        fontSize: 13,
+                        textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+                        lineHeight: 1.2,
                       }}
                     >
-                      {u.name}, {u.age}
+                      {u.name || u.firstName}, {u.age}
                     </Typography>
+                    {u.distance != null && (
+                      <Typography
+                        sx={{
+                          fontSize: 11,
+                          color: "rgba(255,255,255,0.85)",
+                          mt: 0.25,
+                        }}
+                      >
+                        {u.distance < 1 ? `${Math.round(u.distance * 1000)}m` : `${u.distance.toFixed(1)}km`} away
+                      </Typography>
+                    )}
                   </Box>
-                  {/* Match percentage badge */}
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      px: 0.75,
-                      py: 0.25,
-                      borderRadius: 999,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      bgcolor: brand.primary,
-                      color: "#fff",
-                    }}
-                  >
-                    {Math.round((1 - (u.matchDistance ?? 0.3)) * 100)}%
-                  </Box>
-                  
-                  {/* Tap hint when pulled */}
-                  {isPulled && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        top: 8,
-                        left: 8,
-                        px: 0.75,
-                        py: 0.25,
-                        borderRadius: 999,
-                        fontSize: 9,
-                        fontWeight: 600,
-                        bgcolor: "rgba(255,255,255,0.95)",
-                        color: "#1a1a2e",
-                      }}
-                    >
-                      Tap to view
-                    </Box>
-                  )}
                 </Box>
               </Box>
             </motion.div>
           );
         })}
       </Box>
-      
-      {/* Swipe hint */}
-      <Typography
-        sx={{
-          textAlign: "center",
-          fontSize: 11,
-          color: "#94a3b8",
-          mt: -3,
-        }}
-      >
-        ← Swipe to browse • Tap to pull • Tap again to view →
-      </Typography>
     </Box>
   );
 }
@@ -654,21 +744,207 @@ function PicksCoverflow({ users = [], brand, onCardClick }) {
 --------------------------------------- */
 export default function Home({ onOpenTutorial }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // data
-  const [users] = useState(demoUsers);
+  // Track if we've initialized from URL (only do it once per mount)
+  const initializedFromUrlRef = useRef(false);
+  
+  // Read initial card index from URL (single source of truth)
+  const getUrlCardIndex = () => parseInt(searchParams.get('card') || '0', 10);
+  
+  // Read userId from URL for anchor-based restoration
+  const getUrlUserId = () => {
+    const userParam = searchParams.get('user');
+    return userParam ? parseInt(userParam, 10) : null;
+  };
+  
+  // Logging will be added after state initialization
+
+  // === GLOBAL STORE FOR STATE PERSISTENCE ACROSS ROUTE TRANSITIONS ===
+  const {
+    users: cachedUsers,
+    isUsersLoaded: isCachedUsersLoaded,
+    setUsers: setCachedUsers,
+    likedUsers,
+    passedUsers,
+    swipeHistory,
+    anchorUserId,
+    setLikedUsers,
+    setPassedUsers,
+    setSwipeHistory,
+    addLikedUser,
+    addPassedUser,
+    removeLikedUser,
+    removePassedUser,
+    addSwipeHistory,
+    popSwipeHistory,
+    getLastSwipeHistory,
+    setAnchor,
+    clearAnchor,
+    resetDeck,
+  } = useHomeDeckStore();
+
+  // Use cached users if available, otherwise local state for loading
+  const [localUsers, setLocalUsers] = useState([]);
+  const users = isCachedUsersLoaded ? cachedUsers : localUsers;
+  const setUsers = isCachedUsersLoaded ? setCachedUsers : setLocalUsers;
+  
+  const [isLoadingUsers, setIsLoadingUsers] = useState(!isCachedUsersLoaded);
+
+  // Fetch users from API on mount (only if not already cached)
+  useEffect(() => {
+    console.log(`[Home] MOUNT: isCachedUsersLoaded=${isCachedUsersLoaded} cachedUsersCount=${cachedUsers.length} likedUsersCount=${likedUsers.length} passedUsersCount=${passedUsers.length} anchorUserId=${anchorUserId}`);
+    
+    if (isCachedUsersLoaded && cachedUsers.length > 0) {
+      console.log(`[Home] Using cached users: count=${cachedUsers.length} likedCount=${likedUsers.length} passedCount=${passedUsers.length}`);
+      setIsLoadingUsers(false);
+      return;
+    }
+    
+    const fetchUsers = async () => {
+      console.log('[Home] Fetching users from API...');
+      try {
+        const response = await fetch('/api/nearby-users?limit=20');
+        console.log('[Home] API response status:', response.status);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[Home] Received', data.users?.length, 'users from API');
+          
+          // Transform API users to match expected format - use actual API data, not constant fallbacks
+          const apiUsers = data.users.map((user, index) => ({
+            id: user.id,
+            name: user.firstName,
+            firstName: user.firstName,
+            age: user.age,
+            gender: user.gender,
+            city: user.location,
+            distance: (user.distanceMeters || 500) / 1000,
+            distanceMeters: user.distanceMeters,
+            profession: '',
+            education: '',
+            tagline: user.bio,
+            bio: user.bio,
+            interests: user.interests || [],
+            matchDistance: 0.2,
+            likesYou: index % 3 === 0,
+            verified: true,
+            photos: user.photos || [],
+            primaryPhotoUrl: user.primaryPhotoUrl || user.photos?.[0] || '',
+            photoUrl: user.primaryPhotoUrl || user.photos?.[0] || '',
+            base: (user.photos?.[0] || '').split('?')[0],
+            aboutMe: [],
+            lookingFor: user.lookingFor ? [user.lookingFor] : [],
+            qualities: [],
+            height: user.height,
+            location: user.location,
+            hometown: user.hometown,
+            exercise: user.exercise,
+            drinking: user.drinking,
+            smoking: user.smoking,
+            kids: user.kids,
+            starSign: user.starSign,
+            politics: '',
+            languages: ['Hebrew', 'English'],
+            causes: [],
+            spotifyPlaylists: [],
+            favoriteMusic: user.favoriteMusic,
+            diet: user.diet,
+            pets: user.pets,
+          }));
+          
+          if (apiUsers.length > 0) {
+            console.log(`[Home] beforeSetUsers: deckIndex=${deckIndexRef.current} usersCount=0 apiUsersCount=${apiUsers.length}`);
+            setCachedUsers(apiUsers); // Store in global cache
+            setLocalUsers(apiUsers);
+            console.log(`[Home] afterSetUsers: deckIndex=${deckIndexRef.current} usersCount=${apiUsers.length}`);
+          }
+        } else {
+          console.warn('[Home] API failed, using demo users as fallback');
+          setCachedUsers(demoUsers);
+          setLocalUsers(demoUsers);
+        }
+      } catch (error) {
+        console.error('[Home] Error fetching users:', error);
+        // Fallback to demo users on error
+        setCachedUsers(demoUsers);
+        setLocalUsers(demoUsers);
+      } finally {
+        setIsLoadingUsers(false);
+        console.log(`[Home] loadingDone: deckIndex=${deckIndexRef.current} isLoading=false`);
+      }
+    };
+    
+    fetchUsers();
+  }, [isCachedUsersLoaded, cachedUsers.length, setCachedUsers]);
 
   // prefs
   const [prefs, setPrefs] = useState(loadPrefs());
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // swipe state
-  const [deckIndex, setDeckIndex] = useState(0);
-  const [likedUsers, setLikedUsers] = useState([]); // right swipes
-  const [passedUsers, setPassedUsers] = useState([]); // left swipes
+  // swipe state - restore from URL query param (single source of truth)
+  // Use ref to track the index so we don't lose it on re-renders
+  const deckIndexRef = useRef(getUrlCardIndex());
+  const [deckIndexRaw, setDeckIndexRaw] = useState(() => {
+    const initial = getUrlCardIndex();
+    initializedFromUrlRef.current = true;
+    return initial;
+  });
+  
+  // Track filtered length in a ref for safe access in callbacks
+  const filteredLengthRef = useRef(0);
+  
+  // Track previous filtered state for change detection
+  const prevFilteredRef = useRef({ count: 0, idsHash: '', reason: 'init' });
+  
+  // Safe setter that validates index before setting
+  const setDeckIndex = (valueOrUpdater, source = 'unknown') => {
+    setDeckIndexRaw(prev => {
+      const maxIndex = Math.max(0, filteredLengthRef.current - 1);
+      let next;
+      if (typeof valueOrUpdater === 'function') {
+        next = valueOrUpdater(prev);
+      } else {
+        next = valueOrUpdater;
+      }
+      // Clamp to valid range BEFORE setting
+      const clamped = Math.max(0, Math.min(next, maxIndex));
+      if (clamped !== next) {
+        console.log(`[Home] deckIndexChange: prev=${prev} next=${next} clamped=${clamped} source=${source} filteredCount=${filteredLengthRef.current}`);
+      } else if (clamped !== prev) {
+        console.log(`[Home] deckIndexChange: prev=${prev} next=${clamped} source=${source} filteredCount=${filteredLengthRef.current}`);
+      }
+      return clamped;
+    });
+  };
+  
+  // Alias for external access
+  const deckIndex = deckIndexRaw;
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    deckIndexRef.current = deckIndex;
+  }, [deckIndex]);
+  
+  // Sync deckIndex with URL ONLY on Back navigation (when URL changes externally)
+  // This should NOT run after our own setSearchParams calls
+  const lastUrlCardRef = useRef(searchParams.get('card'));
+  useEffect(() => {
+    const currentUrlCard = searchParams.get('card');
+    // Only sync if URL changed externally (not by our own setSearchParams)
+    if (currentUrlCard !== lastUrlCardRef.current) {
+      const urlIndex = parseInt(currentUrlCard || '0', 10);
+      console.log('[Home] URL changed externally:', lastUrlCardRef.current, '->', currentUrlCard);
+      lastUrlCardRef.current = currentUrlCard;
+      if (urlIndex !== deckIndex) {
+        setDeckIndex(urlIndex, 'urlSync');
+      }
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // likedUsers, passedUsers, swipeHistory now come from global store (useHomeDeckStore)
   const [photoIdx, setPhotoIdx] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [swipeHistory, setSwipeHistory] = useState([]); // For undo functionality
 
   // Admin panel state
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -679,7 +955,7 @@ export default function Home({ onOpenTutorial }) {
 
   // Reset all cards function
   const resetAllCards = () => {
-    setDeckIndex(0);
+    setDeckIndex(0, 'reset');
     setLikedUsers([]);
     setPassedUsers([]);
     setSwipeHistory([]);
@@ -755,28 +1031,99 @@ export default function Home({ onOpenTutorial }) {
 
   // Handle undo - go back to previous card
   const handleUndo = () => {
-    if (swipeHistory.length === 0) return;
-    
-    const lastAction = swipeHistory[swipeHistory.length - 1];
-    setSwipeHistory(prev => prev.slice(0, -1));
-    
-    // Remove from liked/passed arrays
-    if (lastAction.action === 'like') {
-      setLikedUsers(prev => prev.filter(id => id !== lastAction.userId));
-    } else {
-      setPassedUsers(prev => prev.filter(id => id !== lastAction.userId));
+    console.log('[Home] handleUndo called, swipeHistory.length=', swipeHistory.length);
+    if (swipeHistory.length === 0) {
+      console.log('[Home] handleUndo: No swipe history to undo');
+      return;
     }
     
-    // Go back to previous index
-    setDeckIndex(lastAction.index);
+    const lastAction = swipeHistory[swipeHistory.length - 1];
+    const currentlyShowingId = topUser?.id ?? 'none';
+    popSwipeHistory(); // Use store method to remove last entry
+    
+    // Remove from liked/passed arrays - this will re-add the user to filtered list
+    // Since we don't increment deckIndex on swipe, the current index will now
+    // point to the restored user (no need to change deckIndex)
+    if (lastAction.action === 'like') {
+      removeLikedUser(lastAction.userId); // Use store method
+    } else {
+      removePassedUser(lastAction.userId); // Use store method
+    }
+    
+    // Log for verification - nowShowingUserId will be the restored user after next render
+    console.log(`[Home] undo: restoredUserId=${lastAction.userId} previouslyShowingUserId=${currentlyShowingId}`);
   };
   
   // tutorial state
   const [showTutorial, setShowTutorial] = useState(false);
   
-  // Selected profile from Today's Picks
-  const [selectedPickUser, setSelectedPickUser] = useState(null);
-  const [pickPhotoIndex, setPickPhotoIndex] = useState(0);
+  // Today's Picks now navigates to full profile page (not popup) per spec
+  // selectedPickUser and pickPhotoIndex removed - profile opens via navigate()
+  
+  // Today's Picks state - SEPARATE from Discover
+  // Fetched from dedicated /api/todays-picks endpoint
+  // Picks are a locked daily set that shrinks on action, never refills
+  const [todaysPicksRaw, setTodaysPicksRaw] = useState([]);
+  const [picksLoading, setPicksLoading] = useState(true);
+  const todaysPicksFetchedRef = useRef(false);
+  
+  // todaysPicks filtering moved below where safeLikedUsers/safePassedUsers are defined
+  
+  // Fetch Today's Picks from dedicated endpoint (NOT from Discover)
+  useEffect(() => {
+    if (todaysPicksFetchedRef.current) return;
+    todaysPicksFetchedRef.current = true;
+    
+    const fetchTodaysPicks = async () => {
+      try {
+        setPicksLoading(true);
+        // Demo: no user_id means server generates picks for anonymous user
+        // Production: would include auth token
+        const response = await fetch('/api/todays-picks');
+        if (response.ok) {
+          const data = await response.json();
+          // Transform to match expected format
+          const picks = (data.picks || []).map(pick => ({
+            id: pick.id,
+            name: pick.firstName,
+            age: pick.age,
+            distance: pick.distanceMeters ? pick.distanceMeters / 1000 : null,
+            photoUrl: pick.primaryPhotoUrl,
+            photos: pick.photos || [pick.primaryPhotoUrl],
+            bio: pick.bio,
+            interests: pick.interests || [],
+            lookingFor: pick.lookingFor,
+            meetingContext: pick.meetingContext, // 'nearby_now', 'active_today', 'good_timing', null
+          }));
+          setTodaysPicksRaw(picks);
+          console.log('[TodaysPicks] Fetched from API:', picks.length, 'picks');
+        }
+      } catch (error) {
+        console.error('[TodaysPicks] Failed to fetch:', error);
+      } finally {
+        setPicksLoading(false);
+      }
+    };
+    
+    fetchTodaysPicks();
+  }, []);
+  
+  // Remove a pick when user acts on it (like/pass from pick dialog)
+  // Also calls backend to mark as dismissed
+  const dismissPick = useCallback(async (userId) => {
+    // Optimistically remove from local state
+    setTodaysPicksRaw(prev => prev.filter(p => p.id !== userId));
+    
+    // Notify backend (fire and forget for now)
+    try {
+      await fetch(`/api/todays-picks/${userId}/dismiss`, {
+        method: 'POST',
+      });
+      console.log('[TodaysPicks] Dismissed pick:', userId);
+    } catch (error) {
+      console.error('[TodaysPicks] Failed to dismiss:', error);
+    }
+  }, []);
   
   // Match popup state
   const [matchUser, setMatchUser] = useState(null);
@@ -822,6 +1169,10 @@ export default function Home({ onOpenTutorial }) {
   const bg2 = alpha(brand.accent || brand.primary, 0.1);
 
   /* filter users by prefs AND remove ones we've handled */
+  // Safety: ensure passedUsers and likedUsers are arrays (sessionStorage may have corrupted data)
+  const safePassedUsers = Array.isArray(passedUsers) ? passedUsers : [];
+  const safeLikedUsers = Array.isArray(likedUsers) ? likedUsers : [];
+  
   const filtered = useMemo(() => {
     const { maxDistanceKm, genders, ageRange } = prefs;
     return users
@@ -832,9 +1183,53 @@ export default function Home({ onOpenTutorial }) {
           u.age >= ageRange[0] &&
           u.age <= ageRange[1]
       )
-      .filter((u) => !passedUsers.includes(u.id))
-      .filter((u) => !likedUsers.includes(u.id));
-  }, [users, prefs, passedUsers, likedUsers]);
+      .filter((u) => !safePassedUsers.includes(u.id))
+      .filter((u) => !safeLikedUsers.includes(u.id));
+  }, [users, prefs, safePassedUsers, safeLikedUsers]);
+
+  // Filter out liked/passed users from Today's Picks
+  // This ensures picks disappear when user returns from profile page after like/pass
+  const todaysPicks = useMemo(() => {
+    return todaysPicksRaw.filter(p => 
+      !safeLikedUsers.includes(p.id) && !safePassedUsers.includes(p.id)
+    );
+  }, [todaysPicksRaw, safeLikedUsers, safePassedUsers]);
+
+  // Keep filteredLengthRef in sync for safe clamping in setDeckIndex
+  // This runs synchronously during render, not in an effect, to ensure it's always up-to-date
+  filteredLengthRef.current = filtered.length;
+
+  // === ANCHOR-BASED RESTORATION ON BACK NAVIGATION ===
+  // Priority: 1) anchorUserId from store, 2) user param from URL, 3) card param from URL
+  const anchorRestoredRef = useRef(false);
+  useEffect(() => {
+    if (filtered.length === 0 || anchorRestoredRef.current) return;
+    
+    // Try store anchor first, then URL user param
+    const targetUserId = anchorUserId || getUrlUserId();
+    
+    if (targetUserId) {
+      const anchorIndex = filtered.findIndex(u => u.id === targetUserId);
+      if (anchorIndex !== -1) {
+        console.log(`[Home] anchorRestore: targetUserId=${targetUserId} (source=${anchorUserId ? 'store' : 'url'}) foundAtIndex=${anchorIndex} currentDeckIndex=${deckIndex}`);
+        if (anchorIndex !== deckIndex) {
+          setDeckIndex(anchorIndex, 'anchorRestore');
+        }
+        anchorRestoredRef.current = true;
+        if (anchorUserId) clearAnchor(); // Clear store anchor after restoration
+      } else {
+        console.log(`[Home] anchorRestore: targetUserId=${targetUserId} NOT FOUND in filtered, falling back to card index`);
+        if (anchorUserId) clearAnchor();
+      }
+    }
+  }, [anchorUserId, filtered, deckIndex, clearAnchor, searchParams]);
+
+  // Reset anchor restored flag when anchor changes
+  useEffect(() => {
+    if (!anchorUserId) {
+      anchorRestoredRef.current = false;
+    }
+  }, [anchorUserId]);
 
   /* pick current / next cards without looping */
   const topUser =
@@ -847,11 +1242,55 @@ export default function Home({ onOpenTutorial }) {
       ? filtered[deckIndex + 1]
       : null;
 
-  /* reset photo index when card changes */
+  // === COMPREHENSIVE LOGGING FOR STABILITY VERIFICATION ===
+  // Compute stable hash of filtered IDs for change detection
+  const filteredIdsHash = filtered.map(u => u.id).join(',');
+  const hasPhoto = topUser ? Boolean(topUser.primaryPhotoUrl || topUser.photoUrl || (topUser.photos && topUser.photos[0])) : false;
+  
+  // Log filtered snapshot on every render for determinism verification
+  console.log(`[Home] filteredSnapshot: count=${filtered.length} idsHash=${filteredIdsHash.slice(0, 30)}... currentIndex=${deckIndex} currentUserId=${topUser?.id ?? 'none'} hasPhoto=${hasPhoto}`);
+  
+  // Detect unexpected filtered changes
+  const prevFiltered = prevFilteredRef.current;
+  if (prevFiltered.idsHash && filteredIdsHash !== prevFiltered.idsHash) {
+    // Determine reason for change
+    let reason = 'unknown';
+    if (filtered.length === prevFiltered.count - 1) {
+      reason = 'swipeRemoval'; // Expected: user was swiped
+    } else if (filtered.length === prevFiltered.count + 1) {
+      reason = 'undoRestore'; // Expected: user was restored via undo
+    } else if (filtered.length > prevFiltered.count + 1) {
+      reason = 'apiLoad'; // API loaded more users
+    } else if (filtered.length === 0 && prevFiltered.count > 0) {
+      reason = 'filtersCleared'; // All users filtered out
+    } else {
+      reason = 'unexpected'; // This should NOT happen during normal operation
+    }
+    console.log(`[Home] filteredChanged: prevCount=${prevFiltered.count} nextCount=${filtered.length} prevHash=${prevFiltered.idsHash.slice(0, 20)}... nextHash=${filteredIdsHash.slice(0, 20)}... reason=${reason}`);
+  }
+  // Update ref for next render
+  prevFilteredRef.current = { count: filtered.length, idsHash: filteredIdsHash, reason: 'render' };
+
+  /* reset photo index when card changes + persist deckIndex AND userId to URL */
   useEffect(() => {
     setPhotoIdx(0);
     setImageLoaded(false);
-  }, [deckIndex]);
+    // Persist both deck index AND userId to URL for robust restoration
+    // userId is the primary restoration key, card is fallback
+    const currentCard = searchParams.get('card');
+    const currentUser = searchParams.get('user');
+    const newCard = String(deckIndex);
+    const newUser = topUser?.id ? String(topUser.id) : null;
+    
+    if (newCard !== currentCard || (newUser && newUser !== currentUser)) {
+      console.log(`[Home] URL_WRITE: prevCard=${currentCard} nextCard=${newCard} prevUser=${currentUser} nextUser=${newUser} source=deckIndexEffect`);
+      // Update our ref BEFORE calling setSearchParams to prevent sync loop
+      lastUrlCardRef.current = newCard;
+      const params = { card: newCard };
+      if (newUser) params.user = newUser;
+      setSearchParams(params, { replace: true });
+    }
+  }, [deckIndex, searchParams, setSearchParams, topUser?.id]);
 
   /* ---------- swipe physics / visuals ---------- */
   const x = useMotionValue(0);
@@ -1039,7 +1478,13 @@ export default function Home({ onOpenTutorial }) {
         <Stack direction="row" spacing={1.25} sx={{ mb: 1.5 }}>
           <QuickAction
             brand={brand}
-            onClick={() => navigate("/nearby")}
+            onClick={() => {
+              // Scroll to Discover section on Home page
+              const discoverSection = document.querySelector('[data-section="discover"]');
+              if (discoverSection) {
+                discoverSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
             icon={<Compass size={18} />}
             label="Discover"
           />
@@ -1155,6 +1600,7 @@ export default function Home({ onOpenTutorial }) {
 
         {/* Card stack - UserCard v2 per spec */}
         <Box
+          data-section="discover"
           sx={{
             position: "relative",
             width: "100%",
@@ -1207,58 +1653,120 @@ export default function Home({ onOpenTutorial }) {
                 variant="contained"
                 color="primary"
                 onClick={() => {
-                  setDeckIndex(0);
-                  setLikedUsers([]);
-                  setPassedUsers([]);
-                  setSwipeHistory([]);
+                  setDeckIndex(0, 'startOver');
+                  resetDeck(); // Use global store method to reset liked/passed/swipeHistory
                 }}
               >
                 Start over
               </Button>
             </Box>
           ) : (
-            <UserCard
-              user={transformToUserCardModel(topUser)}
-              onLike={(user) => {
-                // Record like and move to next
+            <>
+              {/* Hidden element for E2E tests to read current user state */}
+              <div
+                data-testid="current-user-state"
+                data-user-id={topUser.id}
+                data-deck-index={deckIndex}
+                data-filtered-count={filtered.length}
+                style={{ display: 'none' }}
+              />
+              <UserCard
+                key={topUser.id}
+                user={transformToUserCardModel(topUser)}
+                onLike={async (user) => {
+                // Record like - NO need to increment deckIndex because the user
+                // is removed from filtered list, so current index now points to next user
                 if (topUser?.id != null) {
-                  setSwipeHistory(prev => [...prev, { userId: topUser.id, action: 'like', index: deckIndex }]);
-                  setLikedUsers((arr) =>
-                    arr.includes(topUser.id) ? arr : [...arr, topUser.id]
-                  );
-                  // Check if it's a match (they already liked you)
-                  if (topUser.likesYou || topUser.isMatch) {
-                    setMatchUser(topUser);
+                  // Capture current state before any changes
+                  const currentFilteredLen = filtered.length;
+                  const isLastCard = deckIndex >= currentFilteredLen - 1;
+                  
+                  // Check if this will be a match (they already liked us)
+                  const willBeMatch = topUser.likesYou || topUser.isMatch;
+                  
+                  addSwipeHistory({ userId: topUser.id, action: 'like', index: deckIndex });
+                  addLikedUser(topUser.id);
+                  
+                  // Send like to server for persistence and match creation
+                  const currentUserId = localStorage.getItem('pulse_user_id');
+                  try {
+                    const response = await fetch('/api/likes', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        liker_id: currentUserId ? parseInt(currentUserId) : 1,
+                        liked_id: topUser.id,
+                        source: 'discover',
+                      }),
+                    });
+                    const data = await response.json();
+                    // Show match if API says it's a match OR if local data indicates they liked us
+                    if (data.isMatch || willBeMatch) {
+                      setMatchUser(topUser);
+                    }
+                  } catch (err) {
+                    console.error('[Home] Failed to send like:', err);
+                    // Still show match if local data indicates it
+                    if (willBeMatch) {
+                      setMatchUser(topUser);
+                    }
+                  }
+                  
+                  // If this was the last card, decrement index to stay in bounds
+                  if (isLastCard && deckIndex > 0) {
+                    setDeckIndex(deckIndex - 1, 'swipeLikeLastCard');
                   }
                 }
-                setDeckIndex((i) => i + 1);
               }}
               onPass={(user) => {
-                // Record pass and move to next
+                // Record pass - NO need to increment deckIndex because the user
+                // is removed from filtered list, so current index now points to next user
                 if (topUser?.id != null) {
-                  setSwipeHistory(prev => [...prev, { userId: topUser.id, action: 'pass', index: deckIndex }]);
-                  setPassedUsers((arr) =>
-                    arr.includes(topUser.id) ? arr : [...arr, topUser.id]
-                  );
+                  // Capture current state before any changes
+                  const currentFilteredLen = filtered.length;
+                  const isLastCard = deckIndex >= currentFilteredLen - 1;
+                  
+                  addSwipeHistory({ userId: topUser.id, action: 'pass', index: deckIndex });
+                  addPassedUser(topUser.id);
+                  
+                  // If this was the last card, decrement index to stay in bounds
+                  if (isLastCard && deckIndex > 0) {
+                    setDeckIndex(deckIndex - 1, 'swipePassLastCard');
+                  }
                 }
-                setDeckIndex((i) => i + 1);
               }}
               onTap={(user) => {
-                // Navigate to expanded profile
-                navigate(`/profile/${user.userId}`);
+                // Set anchor before navigating so we can restore on Back
+                setAnchor(topUser.id, filteredIdsHash);
+                console.log(`[Home] setAnchor: userId=${topUser.id} before navigating to profile`);
+                // Navigate to Full Profile Card (UserDetailsScreen) - same as Today's Picks
+                sessionStorage.setItem('pulse_profile_source', 'discover');
+                navigate(`/user/${topUser.id}`, { state: { from: 'discover', user: topUser } });
               }}
               onUndo={handleUndo}
-              canUndo={swipeHistory.length > 0}
-              hasLocationPermission={true}
-            />
+                canUndo={swipeHistory.length > 0}
+                hasLocationPermission={true}
+              />
+            </>
           )}
         </Box>
 
-        {/* Picks carousel */}
-        <PicksCoverflow 
-          users={filtered} 
+        {/* Today's Picks - per product spec v1 */}
+        <TodaysPicks 
+          users={todaysPicks} 
           brand={brand} 
-          onCardClick={(user) => setSelectedPickUser(user)}
+          onCardClick={(user) => {
+            // Analytics: todays_picks_card_opened
+            console.log('[Analytics] todays_picks_card_opened', { userId: user.id });
+            // Navigate to full profile page (NOT popup) per spec
+            // Store source so profile page knows where to return
+            sessionStorage.setItem('pulse_profile_source', 'todays_picks');
+            navigate(`/user/${user.id}`, { state: { from: 'todays_picks', user } });
+          }}
+          onPickViewed={() => {
+            // Analytics: todays_picks_viewed
+            console.log('[Analytics] todays_picks_viewed', { count: todaysPicks.length });
+          }}
         />
 
         {/* Filters dialog */}
@@ -1349,332 +1857,7 @@ export default function Home({ onOpenTutorial }) {
         </DialogContent>
       </Dialog>
 
-      {/* Profile from Today's Picks */}
-      <Dialog
-        open={!!selectedPickUser}
-        onClose={() => { setSelectedPickUser(null); setPickPhotoIndex(0); }}
-        fullScreen
-        PaperProps={{ sx: { bgcolor: '#fff' } }}
-      >
-        {selectedPickUser && (
-          <DialogContent sx={{ p: 0, position: 'relative', overflowY: 'auto' }}>
-            {/* Back button */}
-            <IconButton
-              onClick={() => { setSelectedPickUser(null); setPickPhotoIndex(0); }}
-              sx={{
-                position: 'absolute',
-                top: 16,
-                left: 16,
-                zIndex: 100,
-                bgcolor: 'rgba(255,255,255,0.9)',
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                '&:hover': { bgcolor: '#fff' },
-              }}
-            >
-              <ChevronLeft size={24} color="#1a1a2e" />
-            </IconButton>
-
-            {/* Photo Gallery with navigation */}
-            <Box sx={{ height: '50vh', position: 'relative' }}>
-              {/* Photo indicators */}
-              {selectedPickUser.photos?.length > 1 && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 12,
-                    left: 16,
-                    right: 16,
-                    display: 'flex',
-                    gap: 0.5,
-                    zIndex: 10,
-                  }}
-                >
-                  {selectedPickUser.photos.map((_, i) => (
-                    <Box
-                      key={i}
-                      onClick={() => setPickPhotoIndex(i)}
-                      sx={{
-                        flex: 1,
-                        height: 4,
-                        borderRadius: 2,
-                        bgcolor: i === pickPhotoIndex ? '#fff' : 'rgba(255,255,255,0.4)',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s',
-                      }}
-                    />
-                  ))}
-                </Box>
-              )}
-              
-              <Box
-                component="img"
-                src={selectedPickUser.photos?.[pickPhotoIndex] || selectedPickUser.photoUrl}
-                alt={selectedPickUser.name}
-                sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              
-              {/* Left/Right navigation arrows */}
-              {selectedPickUser.photos?.length > 1 && (
-                <>
-                  <IconButton
-                    onClick={() => setPickPhotoIndex(prev => Math.max(0, prev - 1))}
-                    sx={{
-                      position: 'absolute',
-                      left: 8,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      bgcolor: 'rgba(0,0,0,0.3)',
-                      color: '#fff',
-                      '&:hover': { bgcolor: 'rgba(0,0,0,0.5)' },
-                      opacity: pickPhotoIndex === 0 ? 0.3 : 1,
-                    }}
-                    disabled={pickPhotoIndex === 0}
-                  >
-                    <ChevronLeft size={24} />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => setPickPhotoIndex(prev => Math.min(selectedPickUser.photos.length - 1, prev + 1))}
-                    sx={{
-                      position: 'absolute',
-                      right: 8,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      bgcolor: 'rgba(0,0,0,0.3)',
-                      color: '#fff',
-                      '&:hover': { bgcolor: 'rgba(0,0,0,0.5)' },
-                      opacity: pickPhotoIndex === selectedPickUser.photos.length - 1 ? 0.3 : 1,
-                    }}
-                    disabled={pickPhotoIndex === selectedPickUser.photos.length - 1}
-                  >
-                    <ChevronRight size={24} />
-                  </IconButton>
-                </>
-              )}
-            </Box>
-            
-            {/* Like/Nope buttons */}
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: 4,
-                py: 2,
-                borderBottom: '1px solid #f3f4f6',
-              }}
-            >
-              <IconButton
-                onClick={() => {
-                  setPassedUsers(prev => [...prev, selectedPickUser.id]);
-                  setSelectedPickUser(null);
-                  setPickPhotoIndex(0);
-                }}
-                sx={{
-                  width: 60,
-                  height: 60,
-                  bgcolor: '#fff',
-                  border: '2px solid #ef4444',
-                  color: '#ef4444',
-                  boxShadow: '0 4px 12px rgba(239,68,68,0.2)',
-                  '&:hover': { bgcolor: '#fef2f2' },
-                }}
-              >
-                <X size={28} />
-              </IconButton>
-              <IconButton
-                onClick={() => {
-                  setLikedUsers(prev => [...prev, selectedPickUser.id]);
-                  setSelectedPickUser(null);
-                  setPickPhotoIndex(0);
-                }}
-                sx={{
-                  width: 60,
-                  height: 60,
-                  bgcolor: '#fff',
-                  border: '2px solid #22c55e',
-                  color: '#22c55e',
-                  boxShadow: '0 4px 12px rgba(34,197,94,0.2)',
-                  '&:hover': { bgcolor: '#f0fdf4' },
-                }}
-              >
-                <Heart size={28} />
-              </IconButton>
-            </Box>
-
-            {/* Profile info */}
-            <Box sx={{ p: 3 }}>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
-                {selectedPickUser.name}, {selectedPickUser.age}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
-                {selectedPickUser.distance ? `${selectedPickUser.distance}km away` : selectedPickUser.city}
-              </Typography>
-              
-              {selectedPickUser.bio && (
-                <Typography sx={{ mb: 2, color: '#374151' }}>
-                  {selectedPickUser.bio}
-                </Typography>
-              )}
-
-              {/* Looking for */}
-              {selectedPickUser.lookingFor && (
-                <Box sx={{ mb: 2.5, py: 1.5, borderBottom: '1px solid #e5e7eb' }}>
-                  <Typography sx={{ fontSize: 12, color: '#64748b', mb: 0.5 }}>Looking for</Typography>
-                  <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{selectedPickUser.lookingFor}</Typography>
-                </Box>
-              )}
-
-              {/* Interests */}
-              {selectedPickUser.interests?.length > 0 && (
-                <Box sx={{ mb: 2.5 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, mb: 1 }}>Interests</Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                    {selectedPickUser.interests.map((interest, i) => (
-                      <Chip key={i} label={interest} size="small" sx={{ bgcolor: '#f3f4f6', color: '#374151' }} />
-                    ))}
-                  </Box>
-                </Box>
-              )}
-
-              {/* My Details */}
-              <Box sx={{ mb: 2.5 }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e', mb: 1.5 }}>My Details</Typography>
-                {selectedPickUser.gender && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <User size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Gender</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.gender}</Typography>
-                  </Box>
-                )}
-                {selectedPickUser.height && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <Ruler size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Height</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.height} cm</Typography>
-                  </Box>
-                )}
-                {selectedPickUser.hometown && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <HomeIcon size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Hometown</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.hometown}</Typography>
-                  </Box>
-                )}
-                {selectedPickUser.profession && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <Briefcase size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Work</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.profession}</Typography>
-                  </Box>
-                )}
-                {selectedPickUser.education && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <GraduationCap size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Education</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.education}</Typography>
-                  </Box>
-                )}
-              </Box>
-
-              {/* Lifestyle */}
-              <Box sx={{ mb: 2.5 }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e', mb: 1.5 }}>Lifestyle</Typography>
-                {selectedPickUser.exercise && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <Dumbbell size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Exercise</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.exercise}</Typography>
-                  </Box>
-                )}
-                {selectedPickUser.drinking && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <Wine size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Drinking</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.drinking}</Typography>
-                  </Box>
-                )}
-                {selectedPickUser.smoking && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <Cigarette size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Smoking</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.smoking}</Typography>
-                  </Box>
-                )}
-                {selectedPickUser.kids && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <Baby size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Kids</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.kids}</Typography>
-                  </Box>
-                )}
-                {selectedPickUser.starSign && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                    <Star size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                    <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Star sign</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.starSign}</Typography>
-                  </Box>
-                )}
-              </Box>
-
-              {/* More */}
-              {(selectedPickUser.politics || selectedPickUser.languages?.length > 0) && (
-                <Box sx={{ mb: 2.5 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e', mb: 1.5 }}>More</Typography>
-                  {selectedPickUser.politics && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                      <Vote size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                      <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Politics</Typography>
-                      <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.politics}</Typography>
-                    </Box>
-                  )}
-                  {selectedPickUser.languages?.length > 0 && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid #f3f4f6' }}>
-                      <Globe size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-                      <Typography sx={{ fontSize: 13, color: '#64748b', width: 80, flexShrink: 0 }}>Languages</Typography>
-                      <Typography sx={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{selectedPickUser.languages.join(', ')}</Typography>
-                    </Box>
-                  )}
-                </Box>
-              )}
-
-              {/* Spotify Playlists */}
-              {selectedPickUser.spotifyPlaylists?.length > 0 && (
-                <Box sx={{ mb: 2.5 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e', mb: 1.5 }}>My Music</Typography>
-                  <Box sx={{ display: 'flex', gap: 1.5, overflowX: 'auto', pb: 1 }}>
-                    {selectedPickUser.spotifyPlaylists.map((playlist, i) => (
-                      <Box key={i} sx={{ flexShrink: 0, width: 100, textAlign: 'center' }}>
-                        <Box
-                          sx={{
-                            width: 100,
-                            height: 100,
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            mb: 1,
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                          }}
-                        >
-                          <img
-                            src={playlist.image || `https://picsum.photos/seed/${playlist.name}/200`}
-                            alt={playlist.name}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        </Box>
-                        <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#1a1a2e' }} noWrap>
-                          {playlist.name}
-                        </Typography>
-                        <Typography sx={{ fontSize: 10, color: '#64748b' }} noWrap>
-                          {playlist.artist}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              )}
-            </Box>
-          </DialogContent>
-        )}
-      </Dialog>
+      {/* Today's Picks profile now opens as full page via navigate() - dialog removed per spec */}
 
       {/* It's a Match! Dialog */}
       <Dialog
@@ -1682,33 +1865,34 @@ export default function Home({ onOpenTutorial }) {
         onClose={() => setMatchUser(null)}
         PaperProps={{
           sx: {
-            borderRadius: '24px',
+            borderRadius: '20px',
             p: 0,
-            maxWidth: 360,
-            width: '100%',
+            maxWidth: 320,
+            width: '90%',
             overflow: 'hidden',
             background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 50%, #6C5CE7 100%)',
+            m: 2,
           },
         }}
       >
         <DialogContent sx={{ p: 0, textAlign: 'center' }}>
-          <Box sx={{ p: 4, pb: 3 }}>
+          <Box sx={{ p: 3, pb: 2.5 }}>
             {/* Hearts animation */}
-            <Box sx={{ fontSize: 48, mb: 2 }}>💕</Box>
+            <Box sx={{ fontSize: 36, mb: 1.5 }}>💕</Box>
             
             {/* Title */}
             <Typography
-              variant="h4"
+              variant="h5"
               sx={{
                 fontWeight: 800,
                 color: '#fff',
-                mb: 1,
+                mb: 0.5,
                 textShadow: '0 2px 10px rgba(0,0,0,0.2)',
               }}
             >
-              It's a Pulse!
+              It's a Match!
             </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.9)', mb: 3 }}>
+            <Typography sx={{ color: 'rgba(255,255,255,0.9)', mb: 2, fontSize: 14 }}>
               You and {matchUser?.name} liked each other
             </Typography>
             
@@ -1716,14 +1900,14 @@ export default function Home({ onOpenTutorial }) {
             {matchUser && (
               <Box
                 sx={{
-                  width: 120,
-                  height: 120,
+                  width: 90,
+                  height: 90,
                   borderRadius: '50%',
                   overflow: 'hidden',
                   mx: 'auto',
-                  mb: 3,
-                  border: '4px solid #fff',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                  mb: 2,
+                  border: '3px solid #fff',
+                  boxShadow: '0 6px 24px rgba(0,0,0,0.3)',
                 }}
               >
                 <Box
@@ -1736,7 +1920,7 @@ export default function Home({ onOpenTutorial }) {
             )}
             
             {/* Buttons */}
-            <Stack spacing={1.5}>
+            <Stack spacing={1}>
               <Button
                 variant="contained"
                 onClick={() => {
@@ -1747,8 +1931,9 @@ export default function Home({ onOpenTutorial }) {
                   bgcolor: '#fff',
                   color: '#ec4899',
                   fontWeight: 700,
-                  py: 1.5,
-                  borderRadius: '12px',
+                  py: 1.25,
+                  borderRadius: '10px',
+                  fontSize: 14,
                   '&:hover': { bgcolor: '#f8f8f8' },
                 }}
               >
@@ -1804,7 +1989,7 @@ export default function Home({ onOpenTutorial }) {
                 Match & Chat
               </Typography>
               <Typography variant="body2" sx={{ color: '#64748b' }}>
-                When you both like each other, it's a Pulse!
+                When you both like each other, it's a Match!
               </Typography>
             </Box>
 
