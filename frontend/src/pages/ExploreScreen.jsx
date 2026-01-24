@@ -678,6 +678,7 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
           </Box>
 
           {/* Vibe Icons */}
+          {place.vibes && place.vibes.length > 0 && (
           <Box sx={{ display: 'flex', gap: 0.75, mb: 1.5, flexWrap: 'wrap' }}>
             {place.vibes.map((vibe) => (
               <Box
@@ -701,6 +702,7 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
               </Box>
             ))}
           </Box>
+          )}
 
           {/* Dual Rating System */}
           {(place.googleRating || place.pulseRating) && (
