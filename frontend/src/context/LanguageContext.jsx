@@ -248,9 +248,9 @@ const translations = {
     bars: 'Bars',
     cafes: 'Cafes',
     liveMusic: 'Live Music',
+    nature: 'Nature & Parks',
+    workshops: 'Workshops',
     chill: 'Chill',
-    dance: 'Dance',
-    social: 'Social',
     nearMe: 'Near me',
     
     // Connected Accounts
@@ -724,9 +724,9 @@ const translations = {
     bars: 'ברים',
     cafes: 'בתי קפה',
     liveMusic: 'מוזיקה חיה',
+    nature: 'טבע ופארקים',
+    workshops: 'סדנאות',
     chill: 'רגוע',
-    dance: 'ריקודים',
-    social: 'חברתי',
     nearMe: 'קרוב אליי',
     
     // Connected Accounts

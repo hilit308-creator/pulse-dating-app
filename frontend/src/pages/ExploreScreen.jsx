@@ -45,6 +45,8 @@ import {
   Send,
   Flower2,
   Check,
+  TreePine,
+  Palette,
 } from "lucide-react";
 import { useLanguage } from '../context/LanguageContext';
 import PageHelpButton from '../components/PageHelpButton';
@@ -66,9 +68,9 @@ const FILTER_CATEGORIES_ROW2 = [
   { id: 'bar', labelKey: 'bars', icon: Wine },
   { id: 'cafe', labelKey: 'cafes', icon: Coffee },
   { id: 'live-music', labelKey: 'liveMusic', icon: Music },
+  { id: 'nature', labelKey: 'nature', icon: TreePine },
+  { id: 'workshops', labelKey: 'workshops', icon: Palette },
   { id: 'chill', labelKey: 'chill', icon: Star },
-  { id: 'dance', labelKey: 'dance', icon: Zap },
-  { id: 'social', labelKey: 'social', icon: Users },
 ];
 
 // Vibe icons mapping
@@ -322,6 +324,253 @@ const MOCK_PLACES = [
     benefit: null,
     isNew: true,
   },
+  // Nature & Parks - Real curated places
+  {
+    id: 11,
+    name: "Yarkon Park",
+    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80",
+    category: "nature",
+    vibes: ['chill', 'romantic'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "22:00",
+    hasActiveBenefit: true,
+    hasEvents: false,
+    benefit: {
+      title: "Boat Rental Discount",
+      description: "20% off paddle boats for couples",
+      expiresAt: "18:00",
+    },
+    isNew: false,
+    googleRating: 4.5,
+    pulseRating: 4.8,
+    pulseReviews: 127,
+  },
+  {
+    id: 12,
+    name: "Carmel Beach Promenade",
+    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+    category: "nature",
+    vibes: ['romantic', 'chill'],
+    location: "Haifa",
+    openNow: true,
+    closingTime: "00:00",
+    hasActiveBenefit: false,
+    hasEvents: false,
+    benefit: null,
+    isNew: false,
+    googleRating: 4.7,
+    pulseRating: 4.9,
+    pulseReviews: 89,
+  },
+  {
+    id: 13,
+    name: "Ein Gedi Nature Reserve",
+    image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80",
+    category: "nature",
+    vibes: ['romantic', 'chill'],
+    location: "Dead Sea",
+    openNow: true,
+    closingTime: "17:00",
+    hasActiveBenefit: true,
+    hasEvents: false,
+    benefit: {
+      title: "Couples Entry",
+      description: "2 for 1 entry with Pulse app",
+      expiresAt: "15:00",
+    },
+    isNew: true,
+    googleRating: 4.8,
+    pulseRating: 4.7,
+    pulseReviews: 203,
+  },
+  {
+    id: 14,
+    name: "Rothschild Boulevard Gardens",
+    image: "https://images.unsplash.com/photo-1476673160081-cf065607f449?auto=format&fit=crop&w=800&q=80",
+    category: "nature",
+    vibes: ['social', 'chill'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "23:00",
+    hasActiveBenefit: false,
+    hasEvents: true,
+    benefit: null,
+    isNew: false,
+    googleRating: 4.4,
+    pulseRating: 4.6,
+    pulseReviews: 156,
+  },
+  {
+    id: 15,
+    name: "Gan Meir Park",
+    image: "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=800&q=80",
+    category: "nature",
+    vibes: ['chill', 'social'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "22:00",
+    hasActiveBenefit: false,
+    hasEvents: false,
+    benefit: null,
+    isNew: false,
+    googleRating: 4.3,
+    pulseRating: 4.5,
+    pulseReviews: 78,
+  },
+  // Couples Workshops
+  {
+    id: 16,
+    name: "Pottery Together",
+    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=800&q=80",
+    category: "workshops",
+    vibes: ['romantic', 'chill'],
+    location: "Tel Aviv",
+    openNow: false,
+    opensAt: "18:00",
+    closingTime: "21:00",
+    hasActiveBenefit: true,
+    hasEvents: true,
+    benefit: {
+      title: "Date Night Special",
+      description: "15% off couples pottery class",
+      expiresAt: "20:00",
+    },
+    isNew: true,
+    isWorkshop: true,
+    workshopDetails: {
+      date: "2026-01-26",
+      time: "18:00",
+      duration: "2.5 hours",
+      price: 280,
+      spotsLeft: 4,
+      maxCouples: 8,
+      includes: ["All materials", "Wine & snacks", "Take home your creation"],
+    },
+    googleRating: 4.9,
+    pulseRating: 4.9,
+    pulseReviews: 67,
+  },
+  {
+    id: 17,
+    name: "Cooking Class for Two",
+    image: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=800&q=80",
+    category: "workshops",
+    vibes: ['social', 'romantic'],
+    location: "Tel Aviv",
+    openNow: false,
+    opensAt: "19:00",
+    closingTime: "22:00",
+    hasActiveBenefit: false,
+    hasEvents: true,
+    benefit: null,
+    isNew: false,
+    isWorkshop: true,
+    workshopDetails: {
+      date: "2026-01-27",
+      time: "19:00",
+      duration: "3 hours",
+      price: 350,
+      spotsLeft: 2,
+      maxCouples: 6,
+      includes: ["Italian cuisine", "Wine pairing", "Recipe booklet"],
+    },
+    googleRating: 4.8,
+    pulseRating: 4.7,
+    pulseReviews: 94,
+  },
+  {
+    id: 18,
+    name: "Wine & Paint Night",
+    image: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=800&q=80",
+    category: "workshops",
+    vibes: ['romantic', 'chill'],
+    location: "Herzliya",
+    openNow: false,
+    opensAt: "20:00",
+    closingTime: "23:00",
+    hasActiveBenefit: true,
+    hasEvents: true,
+    benefit: {
+      title: "Pulse Exclusive",
+      description: "Free bottle of wine for Pulse couples",
+      expiresAt: "21:00",
+    },
+    isNew: true,
+    isWorkshop: true,
+    workshopDetails: {
+      date: "2026-01-28",
+      time: "20:00",
+      duration: "2 hours",
+      price: 220,
+      spotsLeft: 6,
+      maxCouples: 10,
+      includes: ["Canvas & paints", "2 glasses of wine", "Light snacks"],
+    },
+    googleRating: 4.6,
+    pulseRating: 4.8,
+    pulseReviews: 52,
+  },
+  {
+    id: 19,
+    name: "Couples Yoga Retreat",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80",
+    category: "workshops",
+    vibes: ['chill', 'romantic'],
+    location: "Jaffa",
+    openNow: false,
+    opensAt: "07:00",
+    closingTime: "09:00",
+    hasActiveBenefit: false,
+    hasEvents: true,
+    benefit: null,
+    isNew: false,
+    isWorkshop: true,
+    workshopDetails: {
+      date: "2026-01-29",
+      time: "07:00",
+      duration: "2 hours",
+      price: 180,
+      spotsLeft: 8,
+      maxCouples: 12,
+      includes: ["Yoga mats", "Healthy breakfast", "Beach view"],
+    },
+    googleRating: 4.7,
+    pulseRating: 4.6,
+    pulseReviews: 41,
+  },
+  {
+    id: 20,
+    name: "Chocolate Making Workshop",
+    image: "https://images.unsplash.com/photo-1481391319762-47dff72954d9?auto=format&fit=crop&w=800&q=80",
+    category: "workshops",
+    vibes: ['romantic', 'social'],
+    location: "Tel Aviv",
+    openNow: false,
+    opensAt: "17:00",
+    closingTime: "20:00",
+    hasActiveBenefit: true,
+    hasEvents: true,
+    benefit: {
+      title: "Sweet Deal",
+      description: "Extra chocolate box to take home",
+      expiresAt: "18:00",
+    },
+    isNew: false,
+    isWorkshop: true,
+    workshopDetails: {
+      date: "2026-01-30",
+      time: "17:00",
+      duration: "2.5 hours",
+      price: 260,
+      spotsLeft: 3,
+      maxCouples: 8,
+      includes: ["Premium chocolate", "Champagne toast", "Gift box"],
+    },
+    googleRating: 4.9,
+    pulseRating: 5.0,
+    pulseReviews: 38,
+  },
 ];
 
 /* =========================
@@ -446,6 +695,68 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
               </Box>
             ))}
           </Box>
+
+          {/* Dual Rating System */}
+          {(place.googleRating || place.pulseRating) && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              {place.googleRating && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#64748b' }}>Google</Typography>
+                  <Star size={12} fill="#facc15" color="#facc15" />
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a2e' }}>
+                    {place.googleRating}
+                  </Typography>
+                </Box>
+              )}
+              {place.pulseRating && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#6C5CE7' }}>Pulse</Typography>
+                  <Heart size={12} fill="#6C5CE7" color="#6C5CE7" />
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#6C5CE7' }}>
+                    {place.pulseRating}
+                  </Typography>
+                  {place.pulseReviews && (
+                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                      ({place.pulseReviews})
+                    </Typography>
+                  )}
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {/* Workshop Details */}
+          {place.isWorkshop && place.workshopDetails && (
+            <Box sx={{ 
+              mb: 1.5, 
+              p: 1.5, 
+              bgcolor: 'rgba(168,85,247,0.08)', 
+              borderRadius: '12px',
+              border: '1px solid rgba(168,85,247,0.2)',
+            }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#a855f7' }}>
+                  {new Date(place.workshopDetails.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {place.workshopDetails.time}
+                </Typography>
+                <Chip 
+                  label={`${place.workshopDetails.spotsLeft} spots left`}
+                  size="small"
+                  sx={{ 
+                    bgcolor: place.workshopDetails.spotsLeft <= 3 ? '#fef2f2' : '#f0fdf4',
+                    color: place.workshopDetails.spotsLeft <= 3 ? '#ef4444' : '#22c55e',
+                    fontWeight: 600,
+                    fontSize: '0.7rem',
+                  }}
+                />
+              </Box>
+              <Typography variant="body2" sx={{ color: '#64748b', mb: 0.5 }}>
+                {place.workshopDetails.duration} · ₪{place.workshopDetails.price}/couple
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                Includes: {place.workshopDetails.includes.join(' • ')}
+              </Typography>
+            </Box>
+          )}
 
           {/* Location & Hours */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -2039,6 +2350,815 @@ function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
 
 
 /* =========================
+   Add Date Spot Dialog (UGC)
+   ========================= */
+function AddDateSpotDialog({ open, onClose, onSubmit }) {
+  const [step, setStep] = React.useState(1); // 1: Basic Info, 2: Details, 3: Photos, 4: Success
+  const [formData, setFormData] = React.useState({
+    name: '',
+    category: '',
+    location: '',
+    description: '',
+    vibes: [],
+    photos: [],
+  });
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const categories = [
+    { id: 'cafe', label: 'Cafe', icon: '☕' },
+    { id: 'bar', label: 'Bar', icon: '🍷' },
+    { id: 'nature', label: 'Nature & Parks', icon: '🌳' },
+    { id: 'live-music', label: 'Live Music', icon: '🎵' },
+    { id: 'restaurant', label: 'Restaurant', icon: '🍽️' },
+    { id: 'activity', label: 'Activity', icon: '🎯' },
+  ];
+
+  const vibeOptions = [
+    { id: 'romantic', label: 'Romantic', icon: '🕯️' },
+    { id: 'chill', label: 'Chill', icon: '🌙' },
+    { id: 'social', label: 'Social', icon: '👥' },
+    { id: 'energetic', label: 'Energetic', icon: '⚡' },
+    { id: 'live', label: 'Live Music', icon: '🎵' },
+  ];
+
+  const handleClose = () => {
+    setStep(1);
+    setFormData({ name: '', category: '', location: '', description: '', vibes: [], photos: [] });
+    onClose();
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setIsSubmitting(false);
+    setStep(4);
+    onSubmit?.(formData);
+  };
+
+  const toggleVibe = (vibeId) => {
+    setFormData(prev => ({
+      ...prev,
+      vibes: prev.vibes.includes(vibeId)
+        ? prev.vibes.filter(v => v !== vibeId)
+        : [...prev.vibes, vibeId],
+    }));
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          borderRadius: '24px',
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {/* Step 1: Basic Info */}
+      {step === 1 && (
+        <>
+          <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
+            <Box sx={{ 
+              width: 60, 
+              height: 60, 
+              borderRadius: '50%', 
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 1.5,
+            }}>
+              <MapPin size={28} color="#fff" />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Add a Date Spot 📍
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+              Share your favorite place and earn <strong style={{ color: '#6C5CE7' }}>50 points!</strong>
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block' }}>
+                Place Name *
+              </Typography>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Cafe Nordoy"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  border: '2px solid #e2e8f0',
+                  fontSize: '1rem',
+                  outline: 'none',
+                }}
+              />
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 1, display: 'block' }}>
+                Category *
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+                {categories.map((cat) => (
+                  <Box
+                    key={cat.id}
+                    onClick={() => setFormData(prev => ({ ...prev, category: cat.id }))}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: '12px',
+                      border: formData.category === cat.id ? '2px solid #6C5CE7' : '2px solid #e2e8f0',
+                      bgcolor: formData.category === cat.id ? 'rgba(108,92,231,0.08)' : 'transparent',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <Typography sx={{ fontSize: '1.5rem', mb: 0.5 }}>{cat.icon}</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>{cat.label}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block' }}>
+                Location *
+              </Typography>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                placeholder="e.g., Tel Aviv, Rothschild Blvd"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  border: '2px solid #e2e8f0',
+                  fontSize: '1rem',
+                  outline: 'none',
+                }}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={handleClose}
+              sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b' }}
+            >
+              Cancel
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              disabled={!formData.name || !formData.category || !formData.location}
+              onClick={() => setStep(2)}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                '&:disabled': { background: '#e2e8f0' },
+              }}
+            >
+              Continue
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 2: Details & Vibes */}
+      {step === 2 && (
+        <>
+          <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Tell us more ✨
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+              What makes this place special for dates?
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block' }}>
+                Why is it great for dates?
+              </Typography>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Tell us what makes this place special..."
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  border: '2px solid #e2e8f0',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  minHeight: '100px',
+                  resize: 'none',
+                  fontFamily: 'inherit',
+                }}
+              />
+            </Box>
+
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 1, display: 'block' }}>
+                Vibes (select all that apply)
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {vibeOptions.map((vibe) => (
+                  <Chip
+                    key={vibe.id}
+                    label={`${vibe.icon} ${vibe.label}`}
+                    onClick={() => toggleVibe(vibe.id)}
+                    sx={{
+                      bgcolor: formData.vibes.includes(vibe.id) ? 'rgba(108,92,231,0.15)' : '#f1f5f9',
+                      color: formData.vibes.includes(vibe.id) ? '#6C5CE7' : '#64748b',
+                      fontWeight: 600,
+                      border: formData.vibes.includes(vibe.id) ? '1px solid #6C5CE7' : '1px solid transparent',
+                      '&:hover': { bgcolor: 'rgba(108,92,231,0.1)' },
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => setStep(1)}
+              sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b' }}
+            >
+              Back
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => setStep(3)}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              }}
+            >
+              Continue
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 3: Photo Upload */}
+      {step === 3 && (
+        <>
+          <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Add a Photo 📸
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+              Optional, but helps others discover this place
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            <Box
+              sx={{
+                border: '2px dashed #e2e8f0',
+                borderRadius: '16px',
+                p: 4,
+                textAlign: 'center',
+                cursor: 'pointer',
+                '&:hover': { borderColor: '#6C5CE7', bgcolor: 'rgba(108,92,231,0.04)' },
+              }}
+            >
+              <Box sx={{ fontSize: '3rem', mb: 1 }}>📷</Box>
+              <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 600 }}>
+                Tap to upload a photo
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                JPG, PNG up to 5MB
+              </Typography>
+            </Box>
+
+            <Box sx={{ mt: 3, p: 2, bgcolor: '#f0fdf4', borderRadius: '12px' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ fontSize: '1.5rem' }}>🎁</Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#166534' }}>
+                    Earn 50 Points!
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#15803d' }}>
+                    You'll receive points once your spot is approved
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => setStep(2)}
+              sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b' }}
+            >
+              Back
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+              }}
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit for Review'}
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 4: Success */}
+      {step === 4 && (
+        <>
+          <DialogContent sx={{ textAlign: 'center', py: 4 }}>
+            <Box sx={{ 
+              width: 80, 
+              height: 80, 
+              borderRadius: '50%', 
+              bgcolor: '#dcfce7', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2,
+            }}>
+              <Check size={40} color="#22c55e" />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 1 }}>
+              Thanks for sharing! 🎉
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#64748b', mb: 2 }}>
+              Your date spot is under review
+            </Typography>
+            
+            <Box sx={{ 
+              bgcolor: '#f0fdf4', 
+              borderRadius: '12px', 
+              p: 2, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1.5,
+              textAlign: 'left',
+            }}>
+              <Box sx={{ fontSize: '1.5rem' }}>🎁</Box>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#166534' }}>
+                  50 Points Pending
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#15803d' }}>
+                  You'll receive them once approved (usually within 24h)
+                </Typography>
+              </Box>
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleClose}
+              sx={{
+                py: 1.5,
+                borderRadius: '14px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              }}
+            >
+              Done
+            </Button>
+          </DialogActions>
+        </>
+      )}
+    </Dialog>
+  );
+}
+
+/* =========================
+   Workshop Booking Dialog
+   ========================= */
+function WorkshopBookingDialog({ open, onClose, workshop, onBook }) {
+  const [step, setStep] = React.useState(1); // 1: Details, 2: Invite +1, 3: Payment, 4: Confirmation
+  const [inviteMethod, setInviteMethod] = React.useState(null); // 'match', 'contact', 'solo'
+  const [selectedMatch, setSelectedMatch] = React.useState(null);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+
+  // Mock matches for invite
+  const mockMatches = [
+    { id: 1, name: 'Sarah', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80' },
+    { id: 2, name: 'Maya', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80' },
+    { id: 3, name: 'Noa', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80' },
+  ];
+
+  const handleClose = () => {
+    setStep(1);
+    setInviteMethod(null);
+    setSelectedMatch(null);
+    onClose();
+  };
+
+  const handleBook = async () => {
+    setIsProcessing(true);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setIsProcessing(false);
+    setStep(4);
+    onBook?.({
+      workshop,
+      inviteMethod,
+      invitedPerson: selectedMatch,
+    });
+  };
+
+  if (!workshop) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          borderRadius: '24px',
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {/* Step 1: Workshop Details */}
+      {step === 1 && (
+        <>
+          <Box sx={{ position: 'relative' }}>
+            <Box
+              component="img"
+              src={workshop.image}
+              alt={workshop.name}
+              sx={{ width: '100%', height: 180, objectFit: 'cover' }}
+            />
+            <IconButton
+              onClick={handleClose}
+              sx={{ position: 'absolute', top: 8, right: 8, bgcolor: 'rgba(255,255,255,0.9)' }}
+            >
+              <X size={20} />
+            </IconButton>
+          </Box>
+          <DialogContent sx={{ pt: 2 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5 }}>
+              {workshop.name}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
+              {workshop.location}
+            </Typography>
+
+            {workshop.workshopDetails && (
+              <Box sx={{ bgcolor: '#f8fafc', borderRadius: '16px', p: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                  <Box>
+                    <Typography variant="caption" sx={{ color: '#64748b' }}>Date & Time</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      {new Date(workshop.workshopDetails.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 600 }}>
+                      {workshop.workshopDetails.time} · {workshop.workshopDetails.duration}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography variant="caption" sx={{ color: '#64748b' }}>Price</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#6C5CE7' }}>
+                      ₪{workshop.workshopDetails.price}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#64748b' }}>per couple</Typography>
+                  </Box>
+                </Box>
+                
+                <Box sx={{ borderTop: '1px solid #e2e8f0', pt: 1.5 }}>
+                  <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 0.5 }}>
+                    What's included:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {workshop.workshopDetails.includes.map((item, i) => (
+                      <Chip
+                        key={i}
+                        label={item}
+                        size="small"
+                        sx={{ bgcolor: 'rgba(108,92,231,0.1)', color: '#6C5CE7', fontWeight: 500 }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5, pt: 1.5, borderTop: '1px solid #e2e8f0' }}>
+                  <Users size={16} color="#64748b" />
+                  <Typography variant="body2" sx={{ color: workshop.workshopDetails.spotsLeft <= 3 ? '#ef4444' : '#64748b', fontWeight: 600 }}>
+                    {workshop.workshopDetails.spotsLeft} spots left out of {workshop.workshopDetails.maxCouples}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => setStep(2)}
+              sx={{
+                py: 1.5,
+                borderRadius: '14px',
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '1rem',
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              }}
+            >
+              Book This Workshop
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 2: Invite +1 */}
+      {step === 2 && (
+        <>
+          <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Invite Your +1 💕
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+              Who would you like to join you?
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            {/* Invite from matches */}
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#1a1a2e' }}>
+              From your matches
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1.5, mb: 3, overflowX: 'auto', pb: 1 }}>
+              {mockMatches.map((match) => (
+                <Box
+                  key={match.id}
+                  onClick={() => { setSelectedMatch(match); setInviteMethod('match'); }}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    p: 1,
+                    borderRadius: '12px',
+                    border: selectedMatch?.id === match.id ? '2px solid #6C5CE7' : '2px solid transparent',
+                    bgcolor: selectedMatch?.id === match.id ? 'rgba(108,92,231,0.08)' : 'transparent',
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={match.avatar}
+                    alt={match.name}
+                    sx={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', mb: 0.5 }}
+                  />
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>{match.name}</Typography>
+                </Box>
+              ))}
+            </Box>
+
+            {/* Other options */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Button
+                fullWidth
+                variant={inviteMethod === 'contact' ? 'contained' : 'outlined'}
+                onClick={() => { setInviteMethod('contact'); setSelectedMatch(null); }}
+                sx={{
+                  py: 1.5,
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  justifyContent: 'flex-start',
+                  px: 2,
+                  ...(inviteMethod === 'contact' ? {
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                  } : {
+                    borderColor: '#e2e8f0',
+                    color: '#64748b',
+                  }),
+                }}
+              >
+                📱 Invite via WhatsApp/SMS
+              </Button>
+              <Button
+                fullWidth
+                variant={inviteMethod === 'solo' ? 'contained' : 'outlined'}
+                onClick={() => { setInviteMethod('solo'); setSelectedMatch(null); }}
+                sx={{
+                  py: 1.5,
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  justifyContent: 'flex-start',
+                  px: 2,
+                  ...(inviteMethod === 'solo' ? {
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                  } : {
+                    borderColor: '#e2e8f0',
+                    color: '#64748b',
+                  }),
+                }}
+              >
+                🙋 I'll decide later
+              </Button>
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => setStep(1)}
+              sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b' }}
+            >
+              Back
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              disabled={!inviteMethod}
+              onClick={() => setStep(3)}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                '&:disabled': { background: '#e2e8f0' },
+              }}
+            >
+              Continue
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 3: Payment */}
+      {step === 3 && (
+        <>
+          <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Confirm Booking 💳
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ bgcolor: '#f8fafc', borderRadius: '16px', p: 2, mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>{workshop.name}</Typography>
+              <Typography variant="body2" sx={{ color: '#64748b' }}>
+                {workshop.workshopDetails && new Date(workshop.workshopDetails.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} · {workshop.workshopDetails?.time}
+              </Typography>
+              {selectedMatch && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5, pt: 1.5, borderTop: '1px solid #e2e8f0' }}>
+                  <Box
+                    component="img"
+                    src={selectedMatch.avatar}
+                    alt={selectedMatch.name}
+                    sx={{ width: 32, height: 32, borderRadius: '50%' }}
+                  />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    With {selectedMatch.name}
+                  </Typography>
+                  <Chip label="Invite pending" size="small" sx={{ ml: 'auto', bgcolor: '#fef3c7', color: '#d97706', fontWeight: 600 }} />
+                </Box>
+              )}
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>Total</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: '#6C5CE7' }}>
+                ₪{workshop.workshopDetails?.price}
+              </Typography>
+            </Box>
+
+            {/* Mock payment methods */}
+            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1 }}>Payment method</Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Chip label="Apple Pay" sx={{ flex: 1, py: 2, fontWeight: 600 }} />
+              <Chip label="Credit Card" variant="outlined" sx={{ flex: 1, py: 2, fontWeight: 600 }} />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => setStep(2)}
+              sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b' }}
+            >
+              Back
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleBook}
+              disabled={isProcessing}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+              }}
+            >
+              {isProcessing ? 'Processing...' : 'Pay Now'}
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 4: Confirmation */}
+      {step === 4 && (
+        <>
+          <DialogContent sx={{ textAlign: 'center', py: 4 }}>
+            <Box sx={{ 
+              width: 80, 
+              height: 80, 
+              borderRadius: '50%', 
+              bgcolor: '#dcfce7', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2,
+            }}>
+              <Check size={40} color="#22c55e" />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 1 }}>
+              Booking Confirmed! 🎉
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#64748b', mb: 2 }}>
+              You're all set for {workshop.name}
+            </Typography>
+            
+            {selectedMatch && (
+              <Box sx={{ 
+                bgcolor: '#fef3c7', 
+                borderRadius: '12px', 
+                p: 2, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1.5,
+                textAlign: 'left',
+              }}>
+                <Box sx={{ fontSize: '1.5rem' }}>⏳</Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#92400e' }}>
+                    Waiting for {selectedMatch.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#a16207' }}>
+                    We'll notify you when they respond
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleClose}
+              sx={{
+                py: 1.5,
+                borderRadius: '14px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              }}
+            >
+              Done
+            </Button>
+          </DialogActions>
+        </>
+      )}
+    </Dialog>
+  );
+}
+
+/* =========================
    Say Hi Message Dialog
    ========================= */
 function SayHiDialog({ open, onClose, person, onConfirm }) {
@@ -2732,6 +3852,13 @@ export default function ExploreScreen() {
   // sentGestures is now managed by the store for persistence
   const sentGestures = useGestureMessagesStore((state) => state.sentGestures);
   const markGestureSent = useGestureMessagesStore((state) => state.markGestureSent);
+  
+  // Workshop booking state
+  const [showWorkshopBookingDialog, setShowWorkshopBookingDialog] = useState(false);
+  const [selectedWorkshop, setSelectedWorkshop] = useState(null);
+  
+  // Add Date Spot (UGC) state
+  const [showAddDateSpotDialog, setShowAddDateSpotDialog] = useState(false);
 
   // Simulate loading
   React.useEffect(() => {
@@ -2749,10 +3876,25 @@ export default function ExploreScreen() {
       );
     }
     if (activeFilter === 'near-me') {
-      // Would use geolocation in real app
-      return MOCK_PLACES.slice(0, 5);
+      // Near Me: minimum 3 results rule with radius expansion
+      // Simulate distance-based filtering with expanding radius
+      const nearbyPlaces = MOCK_PLACES.filter(p => p.location === 'Tel Aviv');
+      if (nearbyPlaces.length >= 3) {
+        return nearbyPlaces;
+      }
+      // Expand radius to include more locations
+      const expandedPlaces = MOCK_PLACES.filter(p => 
+        ['Tel Aviv', 'Jaffa', 'Herzliya'].includes(p.location)
+      );
+      if (expandedPlaces.length >= 3) {
+        return expandedPlaces;
+      }
+      // Further expand to ensure minimum 3 results
+      return MOCK_PLACES.slice(0, Math.max(3, expandedPlaces.length));
     }
-    return MOCK_PLACES.filter(place => place.category === activeFilter);
+    // Category filter with cumulative AND logic
+    const categoryPlaces = MOCK_PLACES.filter(place => place.category === activeFilter);
+    return categoryPlaces;
   }, [activeFilter, savedPlaces]);
 
   // Sort: Open now first, then with benefits, then new, then others
@@ -2774,6 +3916,12 @@ export default function ExploreScreen() {
   // Handlers
   const handleViewPlace = useCallback((place) => {
     setSelectedPlace(place);
+    // If it's a workshop, open booking dialog instead of navigating
+    if (place.isWorkshop) {
+      setSelectedWorkshop(place);
+      setShowWorkshopBookingDialog(true);
+      return;
+    }
     // Navigate to business page (place detail)
     window.scrollTo(0, 0);
     navigate(`/business/${place.id}`, { state: { place } });
@@ -3105,10 +4253,26 @@ export default function ExploreScreen() {
       <Box sx={{ flex: 1, overflowY: 'auto' }}>
         {/* Places Feed */}
         <Box sx={{ px: 3, py: 2 }}>
-        {/* Results count */}
-        <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
-          {sortedPlaces.length} places {activeFilter !== 'all' && `in ${activeFilter.replace('-', ' ')}`}
-        </Typography>
+        {/* Add Date Spot Button + Results count */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="body2" sx={{ color: '#64748b' }}>
+            {sortedPlaces.length} places {activeFilter !== 'all' && `in ${activeFilter.replace('-', ' ')}`}
+          </Typography>
+          <Button
+            size="small"
+            startIcon={<MapPin size={14} />}
+            onClick={() => setShowAddDateSpotDialog(true)}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              color: '#6C5CE7',
+              fontSize: '0.8rem',
+              '&:hover': { bgcolor: 'rgba(108,92,231,0.08)' },
+            }}
+          >
+            Add a Spot +50pts
+          </Button>
+        </Box>
 
         {/* Place Cards - No infinite scroll */}
         <AnimatePresence mode="popLayout">
@@ -3227,6 +4391,25 @@ export default function ExploreScreen() {
         person={selectedPerson}
         gesture={selectedGesture}
         coffeeDetails={coffeeDetails}
+      />
+
+      {/* Workshop Booking Dialog */}
+      <WorkshopBookingDialog
+        open={showWorkshopBookingDialog}
+        onClose={() => setShowWorkshopBookingDialog(false)}
+        workshop={selectedWorkshop}
+        onBook={(bookingData) => {
+          setToast({ open: true, message: 'Workshop booked successfully! 🎉', severity: 'success' });
+        }}
+      />
+
+      {/* Add Date Spot Dialog (UGC) */}
+      <AddDateSpotDialog
+        open={showAddDateSpotDialog}
+        onClose={() => setShowAddDateSpotDialog(false)}
+        onSubmit={(spotData) => {
+          setToast({ open: true, message: 'Date spot submitted! 50 points pending approval 🎉', severity: 'success' });
+        }}
       />
 
       {/* Gesture Limit Reached Dialog */}
