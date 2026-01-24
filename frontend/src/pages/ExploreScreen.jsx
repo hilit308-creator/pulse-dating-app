@@ -2412,38 +2412,40 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
       maxWidth="sm"
       PaperProps={{
         sx: {
-          borderRadius: '24px',
+          borderRadius: '16px',
           overflow: 'hidden',
+          maxHeight: '75vh',
+          m: 2,
         },
       }}
     >
       {/* Step 1: Basic Info */}
       {step === 1 && (
         <>
-          <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
+          <DialogTitle sx={{ textAlign: 'center', pt: 2, pb: 1 }}>
             <Box sx={{ 
-              width: 60, 
-              height: 60, 
+              width: 44, 
+              height: 44, 
               borderRadius: '50%', 
               background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               mx: 'auto',
-              mb: 1.5,
+              mb: 1,
             }}>
-              <MapPin size={28} color="#fff" />
+              <MapPin size={22} color="#fff" />
             </Box>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
               Add a Date Spot 📍
             </Typography>
-            <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+            <Typography variant="caption" sx={{ color: '#64748b' }}>
               Share your favorite place and earn <strong style={{ color: '#6C5CE7' }}>50 points!</strong>
             </Typography>
           </DialogTitle>
-          <DialogContent>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block' }}>
+          <DialogContent sx={{ pt: 1 }}>
+            <Box sx={{ mb: 1.5 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block', fontSize: '0.7rem' }}>
                 Place Name *
               </Typography>
               <input
@@ -2453,17 +2455,17 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
                 placeholder="e.g., Cafe Nordoy"
                 style={{
                   width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: '2px solid #e2e8f0',
-                  fontSize: '1rem',
+                  padding: '8px 12px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '0.9rem',
                   outline: 'none',
                 }}
               />
             </Box>
 
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 1, display: 'block' }}>
+            <Box sx={{ mb: 1.5 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block', fontSize: '0.7rem' }}>
                 Category *
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
@@ -2474,7 +2476,7 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
                     sx={{
                       p: 1.5,
                       borderRadius: '12px',
-                      border: formData.category === cat.id ? '2px solid #6C5CE7' : '2px solid #e2e8f0',
+                      border: formData.category === cat.id ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
                       bgcolor: formData.category === cat.id ? 'rgba(108,92,231,0.08)' : 'transparent',
                       cursor: 'pointer',
                       textAlign: 'center',
@@ -2489,7 +2491,7 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
             </Box>
 
             <Box>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block' }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block', fontSize: '0.7rem' }}>
                 Location *
               </Typography>
               <input
@@ -2499,21 +2501,21 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
                 placeholder="e.g., Tel Aviv, Rothschild Blvd"
                 style={{
                   width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: '2px solid #e2e8f0',
-                  fontSize: '1rem',
+                  padding: '8px 12px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '0.9rem',
                   outline: 'none',
                 }}
               />
             </Box>
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+          <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
             <Button
               fullWidth
               variant="outlined"
               onClick={handleClose}
-              sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b' }}
+              sx={{ py: 1, borderRadius: '10px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b', fontSize: '0.85rem' }}
             >
               Cancel
             </Button>
@@ -2523,9 +2525,10 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
               disabled={!formData.name || !formData.category || !formData.location}
               onClick={() => setStep(2)}
               sx={{
-                py: 1.25,
-                borderRadius: '12px',
+                py: 1,
+                borderRadius: '10px',
                 textTransform: 'none',
+                fontSize: '0.85rem',
                 fontWeight: 700,
                 background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
                 '&:disabled': { background: '#e2e8f0' },
