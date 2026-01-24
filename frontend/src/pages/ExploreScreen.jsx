@@ -49,9 +49,10 @@ import {
   Palette,
 } from "lucide-react";
 import { useLanguage } from '../context/LanguageContext';
-import PageHelpButton from '../components/PageHelpButton';
 import useGestureMessagesStore from '../store/gestureMessagesStore';
+import { demoMatches } from './MatchesScreen';
 import { getPageHelpContent } from '../config/pageHelpContent';
+import PageHelpButton from '../components/PageHelpButton';
 
 /* =========================
    Constants
@@ -2765,18 +2766,43 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
 /* =========================
    Workshop Booking Dialog
    ========================= */
-function WorkshopBookingDialog({ open, onClose, workshop, onBook }) {
+function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = [] }) {
   const [step, setStep] = React.useState(1); // 1: Details, 2: Invite +1, 3: Payment, 4: Confirmation
   const [inviteMethod, setInviteMethod] = React.useState(null); // 'match', 'contact', 'solo'
   const [selectedMatch, setSelectedMatch] = React.useState(null);
   const [isProcessing, setIsProcessing] = React.useState(false);
 
-  // Mock matches for invite
-  const mockMatches = [
-    { id: 1, name: 'Sarah', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80' },
-    { id: 2, name: 'Maya', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80' },
-    { id: 3, name: 'Noa', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80' },
-  ];
+  // Use real matches from props, map to simpler format
+  const availableMatches = userMatches.map(m => ({
+    id: m.id,
+    name: m.name,
+    avatar: m.photoUrl,
+  }));
+
+  // Handle WhatsApp invite
+  const handleWhatsAppInvite = () => {
+    if (!workshop) return;
+    const message = encodeURIComponent(
+      `Hey! 💕 I just booked a couples workshop and thought of you!\n\n` +
+      `📍 ${workshop.name}\n` +
+      `📅 ${workshop.workshopDetails?.date ? new Date(workshop.workshopDetails.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : ''}\n` +
+      `⏰ ${workshop.workshopDetails?.time || ''}\n` +
+      `📍 ${workshop.location}\n\n` +
+      `Would you like to join me? 🎨`
+    );
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+    setInviteMethod('contact');
+  };
+
+  // Handle SMS invite
+  const handleSMSInvite = () => {
+    if (!workshop) return;
+    const message = encodeURIComponent(
+      `Hey! I booked ${workshop.name} workshop on ${workshop.workshopDetails?.date ? new Date(workshop.workshopDetails.date).toLocaleDateString() : ''}. Want to join me?`
+    );
+    window.open(`sms:?body=${message}`, '_blank');
+    setInviteMethod('contact');
+  };
 
   const handleClose = () => {
     setStep(1);
@@ -2807,8 +2833,10 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook }) {
       maxWidth="sm"
       PaperProps={{
         sx: {
-          borderRadius: '24px',
+          borderRadius: '20px',
           overflow: 'hidden',
+          maxHeight: '75vh',
+          m: 2,
         },
       }}
     >
@@ -2820,7 +2848,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook }) {
               component="img"
               src={workshop.image}
               alt={workshop.name}
-              sx={{ width: '100%', height: 180, objectFit: 'cover' }}
+              sx={{ width: '100%', height: 140, objectFit: 'cover' }}
             />
             <IconButton
               onClick={handleClose}
@@ -2829,21 +2857,21 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook }) {
               <X size={20} />
             </IconButton>
           </Box>
-          <DialogContent sx={{ pt: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5 }}>
+          <DialogContent sx={{ pt: 1.5, pb: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5 }}>
               {workshop.name}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 1.5 }}>
               {workshop.location}
             </Typography>
 
             {workshop.workshopDetails && (
-              <Box sx={{ bgcolor: '#f8fafc', borderRadius: '16px', p: 2, mb: 2 }}>
+              <Box sx={{ bgcolor: '#f8fafc', borderRadius: '12px', p: 2, mb: 1.5 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
                   <Box>
                     <Typography variant="caption" sx={{ color: '#64748b' }}>Date & Time</Typography>
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                      {new Date(workshop.workshopDetails.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                      {new Date(workshop.workshopDetails.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 600 }}>
                       {workshop.workshopDetails.time} · {workshop.workshopDetails.duration}
@@ -2859,41 +2887,31 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook }) {
                 </Box>
                 
                 <Box sx={{ borderTop: '1px solid #e2e8f0', pt: 1.5 }}>
-                  <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 0.5 }}>
-                    What's included:
+                  <Typography variant="body2" sx={{ color: '#64748b' }}>
+                    Includes: {workshop.workshopDetails.includes.join(' • ')}
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {workshop.workshopDetails.includes.map((item, i) => (
-                      <Chip
-                        key={i}
-                        label={item}
-                        size="small"
-                        sx={{ bgcolor: 'rgba(108,92,231,0.1)', color: '#6C5CE7', fontWeight: 500 }}
-                      />
-                    ))}
-                  </Box>
                 </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5, pt: 1.5, borderTop: '1px solid #e2e8f0' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1.5, pt: 1.5, borderTop: '1px solid #e2e8f0' }}>
                   <Users size={16} color="#64748b" />
                   <Typography variant="body2" sx={{ color: workshop.workshopDetails.spotsLeft <= 3 ? '#ef4444' : '#64748b', fontWeight: 600 }}>
-                    {workshop.workshopDetails.spotsLeft} spots left out of {workshop.workshopDetails.maxCouples}
+                    {workshop.workshopDetails.spotsLeft} spots left
                   </Typography>
                 </Box>
               </Box>
             )}
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3 }}>
+          <DialogActions sx={{ px: 2, pb: 2 }}>
             <Button
               fullWidth
               variant="contained"
               onClick={() => setStep(2)}
               sx={{
-                py: 1.5,
-                borderRadius: '14px',
+                py: 1,
+                borderRadius: '12px',
                 textTransform: 'none',
                 fontWeight: 700,
-                fontSize: '1rem',
+                fontSize: '0.9rem',
                 background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
               }}
             >
@@ -2916,11 +2934,13 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook }) {
           </DialogTitle>
           <DialogContent>
             {/* Invite from matches */}
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#1a1a2e' }}>
-              From your matches
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1.5, mb: 3, overflowX: 'auto', pb: 1 }}>
-              {mockMatches.map((match) => (
+            {availableMatches.length > 0 ? (
+              <>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#1a1a2e' }}>
+                  From your matches
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1.5, mb: 3, overflowX: 'auto', pb: 1 }}>
+                  {availableMatches.map((match) => (
                 <Box
                   key={match.id}
                   onClick={() => { setSelectedMatch(match); setInviteMethod('match'); }}
@@ -2942,16 +2962,22 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook }) {
                     sx={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', mb: 0.5 }}
                   />
                   <Typography variant="caption" sx={{ fontWeight: 600 }}>{match.name}</Typography>
+                  </Box>
+                ))}
                 </Box>
-              ))}
-            </Box>
+              </>
+            ) : (
+              <Typography variant="body2" sx={{ color: '#64748b', mb: 2, textAlign: 'center' }}>
+                No matches yet. Invite someone via WhatsApp!
+              </Typography>
+            )}
 
             {/* Other options */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Button
                 fullWidth
                 variant={inviteMethod === 'contact' ? 'contained' : 'outlined'}
-                onClick={() => { setInviteMethod('contact'); setSelectedMatch(null); }}
+                onClick={handleWhatsAppInvite}
                 sx={{
                   py: 1.5,
                   borderRadius: '12px',
@@ -2967,7 +2993,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook }) {
                   }),
                 }}
               >
-                📱 Invite via WhatsApp/SMS
+                📱 Invite via WhatsApp
               </Button>
               <Button
                 fullWidth
@@ -4401,6 +4427,7 @@ export default function ExploreScreen() {
         open={showWorkshopBookingDialog}
         onClose={() => setShowWorkshopBookingDialog(false)}
         workshop={selectedWorkshop}
+        userMatches={demoMatches}
         onBook={(bookingData) => {
           setToast({ open: true, message: 'Workshop booked successfully! 🎉', severity: 'success' });
         }}

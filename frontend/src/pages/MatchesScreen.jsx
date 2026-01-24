@@ -64,7 +64,7 @@ import {
 /* =============================
    Demo Data
 ============================= */
-const demoMatches = [
+export const demoMatches = [
   {
     id: 6,
     name: "Shani",
