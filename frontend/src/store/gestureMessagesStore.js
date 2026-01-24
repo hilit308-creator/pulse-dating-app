@@ -226,4 +226,5 @@ const useGestureMessagesStore = create(
   )
 );
 
+export { useGestureMessagesStore };
 export default useGestureMessagesStore;

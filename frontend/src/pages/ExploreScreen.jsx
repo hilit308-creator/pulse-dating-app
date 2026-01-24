@@ -47,6 +47,9 @@ import {
   Check,
   TreePine,
   Palette,
+  Calendar,
+  CreditCard,
+  Trash2,
 } from "lucide-react";
 import { useLanguage } from '../context/LanguageContext';
 import useGestureMessagesStore from '../store/gestureMessagesStore';
@@ -64,6 +67,7 @@ const FILTER_CATEGORIES_ROW1 = [
   { id: 'all', labelKey: 'allPlaces', icon: Sparkles },
   { id: 'saved', labelKey: 'saved', icon: Bookmark },
   { id: 'near-me', labelKey: 'nearMe', icon: MapPin },
+  { id: 'my-workshops', labelKey: 'myWorkshops', icon: Calendar },
 ];
 const FILTER_CATEGORIES_ROW2 = [
   { id: 'bar', labelKey: 'bars', icon: Wine },
@@ -2771,6 +2775,10 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
   const [inviteMethod, setInviteMethod] = React.useState(null); // 'match', 'contact', 'solo'
   const [selectedMatch, setSelectedMatch] = React.useState(null);
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const [paymentMethod, setPaymentMethod] = React.useState(null); // 'apple', 'card'
+  const [cardNumber, setCardNumber] = React.useState('');
+  const [cardExpiry, setCardExpiry] = React.useState('');
+  const [cardCvv, setCardCvv] = React.useState('');
 
   // Use real matches from props, map to simpler format
   const availableMatches = userMatches.map(m => ({
@@ -2808,6 +2816,10 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
     setStep(1);
     setInviteMethod(null);
     setSelectedMatch(null);
+    setPaymentMethod(null);
+    setCardNumber('');
+    setCardExpiry('');
+    setCardCvv('');
     onClose();
   };
 
@@ -3084,12 +3096,91 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               </Typography>
             </Box>
 
-            {/* Mock payment methods */}
+            {/* Payment methods */}
             <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1 }}>Payment method</Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Chip label="Apple Pay" sx={{ flex: 1, py: 2, fontWeight: 600 }} />
-              <Chip label="Credit Card" variant="outlined" sx={{ flex: 1, py: 2, fontWeight: 600 }} />
+              <Chip 
+                label="Apple Pay" 
+                icon={<Box component="span" sx={{ fontSize: '16px' }}></Box>}
+                onClick={() => setPaymentMethod('apple')}
+                sx={{ 
+                  flex: 1, 
+                  py: 2, 
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  bgcolor: paymentMethod === 'apple' ? '#6C5CE7' : '#f1f5f9',
+                  color: paymentMethod === 'apple' ? 'white' : '#1a1a2e',
+                  '&:hover': { bgcolor: paymentMethod === 'apple' ? '#5b4cdb' : '#e2e8f0' },
+                }} 
+              />
+              <Chip 
+                label="Credit Card" 
+                icon={<CreditCard size={16} />}
+                onClick={() => setPaymentMethod('card')}
+                sx={{ 
+                  flex: 1, 
+                  py: 2, 
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  bgcolor: paymentMethod === 'card' ? '#6C5CE7' : '#f1f5f9',
+                  color: paymentMethod === 'card' ? 'white' : '#1a1a2e',
+                  '&:hover': { bgcolor: paymentMethod === 'card' ? '#5b4cdb' : '#e2e8f0' },
+                }} 
+              />
             </Box>
+
+            {/* Credit Card Form */}
+            {paymentMethod === 'card' && (
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box
+                  component="input"
+                  placeholder="Card Number"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
+                  sx={{
+                    width: '100%',
+                    p: 1.5,
+                    borderRadius: '10px',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '14px',
+                    outline: 'none',
+                    '&:focus': { borderColor: '#6C5CE7' },
+                  }}
+                />
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Box
+                    component="input"
+                    placeholder="MM/YY"
+                    value={cardExpiry}
+                    onChange={(e) => setCardExpiry(e.target.value.slice(0, 5))}
+                    sx={{
+                      flex: 1,
+                      p: 1.5,
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      fontSize: '14px',
+                      outline: 'none',
+                      '&:focus': { borderColor: '#6C5CE7' },
+                    }}
+                  />
+                  <Box
+                    component="input"
+                    placeholder="CVV"
+                    value={cardCvv}
+                    onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    sx={{
+                      flex: 1,
+                      p: 1.5,
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      fontSize: '14px',
+                      outline: 'none',
+                      '&:focus': { borderColor: '#6C5CE7' },
+                    }}
+                  />
+                </Box>
+              </Box>
+            )}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
             <Button
@@ -3104,16 +3195,17 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               fullWidth
               variant="contained"
               onClick={handleBook}
-              disabled={isProcessing}
+              disabled={isProcessing || !paymentMethod || (paymentMethod === 'card' && (!cardNumber || !cardExpiry || !cardCvv))}
               sx={{
                 py: 1.25,
                 borderRadius: '12px',
                 textTransform: 'none',
                 fontWeight: 700,
                 background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                '&:disabled': { background: '#e2e8f0', color: '#94a3b8' },
               }}
             >
-              {isProcessing ? 'Processing...' : 'Pay Now'}
+              {isProcessing ? 'Processing...' : `Pay ₪${workshop.workshopDetails?.price || 0}`}
             </Button>
           </DialogActions>
         </>
@@ -3152,6 +3244,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
                 alignItems: 'center', 
                 gap: 1.5,
                 textAlign: 'left',
+                mb: 2,
               }}>
                 <Box sx={{ fontSize: '1.5rem' }}>⏳</Box>
                 <Box>
@@ -3164,6 +3257,35 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
                 </Box>
               </Box>
             )}
+
+            {/* Add to Calendar button */}
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<Calendar size={18} />}
+              onClick={() => {
+                const date = workshop.workshopDetails?.date ? new Date(workshop.workshopDetails.date) : new Date();
+                const endDate = new Date(date.getTime() + 2 * 60 * 60 * 1000); // 2 hours duration
+                const title = encodeURIComponent(workshop.name);
+                const details = encodeURIComponent(`Couples Workshop at ${workshop.location}`);
+                const location = encodeURIComponent(workshop.location);
+                const startStr = date.toISOString().replace(/-|:|\.\d+/g, '');
+                const endStr = endDate.toISOString().replace(/-|:|\.\d+/g, '');
+                const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startStr}/${endStr}&details=${details}&location=${location}`;
+                window.open(calendarUrl, '_blank');
+              }}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: '#6C5CE7',
+                color: '#6C5CE7',
+                '&:hover': { bgcolor: 'rgba(108,92,231,0.08)' },
+              }}
+            >
+              Add to Calendar
+            </Button>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3 }}>
             <Button
@@ -3183,6 +3305,154 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
           </DialogActions>
         </>
       )}
+    </Dialog>
+  );
+}
+
+/* =========================
+   Workshop Rating Dialog
+   ========================= */
+function WorkshopRatingDialog({ open, onClose, workshop, onSubmit, onRemove }) {
+  const [rating, setRating] = React.useState(0);
+  const [review, setReview] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const handleSubmit = async () => {
+    if (rating === 0) return;
+    setIsSubmitting(true);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    setIsSubmitting(false);
+    onSubmit?.({ rating, review });
+    setRating(0);
+    setReview('');
+  };
+
+  const handleRemove = () => {
+    onRemove?.();
+    onClose();
+  };
+
+  if (!workshop) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      PaperProps={{
+        sx: {
+          borderRadius: '20px',
+          overflow: 'hidden',
+          m: 2,
+        },
+      }}
+    >
+      <DialogTitle sx={{ textAlign: 'center', pt: 3, pb: 1 }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>
+          How was your experience? ⭐
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#64748b' }}>
+          Rate {workshop.name}
+        </Typography>
+      </DialogTitle>
+      <DialogContent>
+        {/* Workshop image */}
+        <Box
+          component="img"
+          src={workshop.image}
+          alt={workshop.name}
+          sx={{
+            width: '100%',
+            height: 120,
+            objectFit: 'cover',
+            borderRadius: '12px',
+            mb: 2,
+          }}
+        />
+
+        {/* Star Rating */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 2 }}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <IconButton
+              key={star}
+              onClick={() => setRating(star)}
+              sx={{
+                p: 0.5,
+                color: star <= rating ? '#fbbf24' : '#e2e8f0',
+                transition: 'transform 0.2s',
+                '&:hover': { transform: 'scale(1.2)' },
+              }}
+            >
+              <Star size={32} fill={star <= rating ? '#fbbf24' : 'none'} />
+            </IconButton>
+          ))}
+        </Box>
+
+        {/* Review text */}
+        <Box
+          component="textarea"
+          placeholder="Share your experience (optional)..."
+          value={review}
+          onChange={(e) => setReview(e.target.value)}
+          sx={{
+            width: '100%',
+            minHeight: 80,
+            p: 1.5,
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0',
+            fontSize: '14px',
+            fontFamily: 'inherit',
+            resize: 'none',
+            outline: 'none',
+            '&:focus': { borderColor: '#6C5CE7' },
+          }}
+        />
+
+        {/* Remove workshop option */}
+        <Button
+          fullWidth
+          variant="text"
+          startIcon={<Trash2 size={16} />}
+          onClick={handleRemove}
+          sx={{
+            mt: 2,
+            py: 1,
+            color: '#ef4444',
+            textTransform: 'none',
+            fontWeight: 500,
+            '&:hover': { bgcolor: 'rgba(239,68,68,0.08)' },
+          }}
+        >
+          Remove from My Workshops
+        </Button>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={onClose}
+          sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b' }}
+        >
+          Later
+        </Button>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={rating === 0 || isSubmitting}
+          sx={{
+            py: 1.25,
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            '&:disabled': { background: '#e2e8f0', color: '#94a3b8' },
+          }}
+        >
+          {isSubmitting ? 'Submitting...' : 'Submit Review'}
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }
@@ -3886,6 +4156,41 @@ export default function ExploreScreen() {
   const [showWorkshopBookingDialog, setShowWorkshopBookingDialog] = useState(false);
   const [selectedWorkshop, setSelectedWorkshop] = useState(null);
   
+  // Purchased workshops state (persisted in localStorage) - includes demo completed workshop
+  const [purchasedWorkshops, setPurchasedWorkshops] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("purchased_workshops") || "[]");
+      // Add demo completed workshop if not already present
+      const demoCompletedWorkshop = {
+        id: 'demo-completed-1',
+        name: "Wine & Paint Night",
+        image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80",
+        category: "workshops",
+        isWorkshop: true,
+        location: "Tel Aviv",
+        workshopDetails: {
+          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+          time: "19:00",
+          duration: "2.5 hours",
+          price: 180,
+          includes: ["Wine tasting", "Art supplies", "Light snacks"],
+          spotsLeft: 0,
+        },
+        purchaseDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'completed',
+        needsRating: true,
+      };
+      if (!saved.find(w => w.id === 'demo-completed-1')) {
+        return [demoCompletedWorkshop, ...saved];
+      }
+      return saved;
+    } catch { return []; }
+  });
+  
+  // Workshop rating dialog state
+  const [showRatingDialog, setShowRatingDialog] = useState(false);
+  const [workshopToRate, setWorkshopToRate] = useState(null);
+  
   // Add Date Spot (UGC) state
   const [showAddDateSpotDialog, setShowAddDateSpotDialog] = useState(false);
 
@@ -3894,6 +4199,17 @@ export default function ExploreScreen() {
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
+
+  // Show rating dialog when entering My Workshops if there are completed workshops needing rating
+  React.useEffect(() => {
+    if (activeFilter === 'my-workshops') {
+      const workshopNeedingRating = purchasedWorkshops.find(w => w.status === 'completed' && w.needsRating);
+      if (workshopNeedingRating) {
+        setWorkshopToRate(workshopNeedingRating);
+        setShowRatingDialog(true);
+      }
+    }
+  }, [activeFilter, purchasedWorkshops]);
 
   // Filter places based on active filter
   const filteredPlaces = useMemo(() => {
@@ -3921,10 +4237,14 @@ export default function ExploreScreen() {
       // Further expand to ensure minimum 3 results
       return MOCK_PLACES.slice(0, Math.max(3, expandedPlaces.length));
     }
+    if (activeFilter === 'my-workshops') {
+      // Show purchased workshops
+      return purchasedWorkshops;
+    }
     // Category filter with cumulative AND logic
     const categoryPlaces = MOCK_PLACES.filter(place => place.category === activeFilter);
     return categoryPlaces;
-  }, [activeFilter, savedPlaces]);
+  }, [activeFilter, savedPlaces, purchasedWorkshops]);
 
   // Sort: Open now first, then with benefits, then new, then others
   const sortedPlaces = useMemo(() => {
@@ -4429,6 +4749,16 @@ export default function ExploreScreen() {
         workshop={selectedWorkshop}
         userMatches={demoMatches}
         onBook={(bookingData) => {
+          // Save purchased workshop to localStorage
+          const purchaseData = {
+            ...bookingData.workshop,
+            purchaseDate: new Date().toISOString(),
+            status: 'upcoming', // 'upcoming', 'completed'
+            invitedPerson: bookingData.invitedPerson,
+          };
+          const updated = [...purchasedWorkshops, purchaseData];
+          setPurchasedWorkshops(updated);
+          localStorage.setItem("purchased_workshops", JSON.stringify(updated));
           setToast({ open: true, message: 'Workshop booked successfully! 🎉', severity: 'success' });
         }}
       />
@@ -4439,6 +4769,37 @@ export default function ExploreScreen() {
         onClose={() => setShowAddDateSpotDialog(false)}
         onSubmit={(spotData) => {
           setToast({ open: true, message: 'Date spot submitted! 50 points pending approval 🎉', severity: 'success' });
+        }}
+      />
+
+      {/* Workshop Rating Dialog */}
+      <WorkshopRatingDialog
+        open={showRatingDialog}
+        onClose={() => {
+          setShowRatingDialog(false);
+          setWorkshopToRate(null);
+        }}
+        workshop={workshopToRate}
+        onSubmit={(ratingData) => {
+          // Update workshop to mark as rated
+          const updated = purchasedWorkshops.map(w => 
+            w.id === workshopToRate?.id 
+              ? { ...w, needsRating: false, userRating: ratingData.rating, userReview: ratingData.review }
+              : w
+          );
+          setPurchasedWorkshops(updated);
+          localStorage.setItem("purchased_workshops", JSON.stringify(updated));
+          setShowRatingDialog(false);
+          setWorkshopToRate(null);
+          setToast({ open: true, message: 'Thanks for your review! ⭐', severity: 'success' });
+        }}
+        onRemove={() => {
+          // Remove workshop from purchased list
+          const updated = purchasedWorkshops.filter(w => w.id !== workshopToRate?.id);
+          setPurchasedWorkshops(updated);
+          localStorage.setItem("purchased_workshops", JSON.stringify(updated));
+          setWorkshopToRate(null);
+          setToast({ open: true, message: 'Workshop removed from your list', severity: 'info' });
         }}
       />
 
