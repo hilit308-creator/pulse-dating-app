@@ -69,6 +69,10 @@ import {
 // AI First Message - Per spec section 9
 import AiFirstMessage from "../components/AiFirstMessage";
 
+// Gesture messages store
+import useGestureMessagesStore from '../store/gestureMessagesStore';
+import useChatStore from '../store/chatStore';
+
 /* ----------------- helpers ----------------- */
 const fmtHM = (ts) =>
   new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -1111,6 +1115,112 @@ export default function ChatScreen() {
     () => chats.find((c) => c.matchId === openChat),
     [chats, openChat]
   );
+  
+  // Gesture messages from Explore screen
+  const gestureMessages = useGestureMessagesStore((state) => state.gestureMessages);
+  const recipientUsers = useGestureMessagesStore((state) => state.recipientUsers);
+  const clearMessagesForUser = useGestureMessagesStore((state) => state.clearMessagesForUser);
+  
+  // Persisted gesture chats
+  const gestureChats = useChatStore((state) => state.gestureChats);
+  const addGestureChat = useChatStore((state) => state.addGestureChat);
+  
+  // Load persisted gesture chats on mount
+  useEffect(() => {
+    const persistedChats = Object.values(gestureChats);
+    if (persistedChats.length > 0) {
+      setChats(prevChats => {
+        // Add persisted chats that don't already exist
+        const newChats = persistedChats.filter(
+          pc => !prevChats.some(c => c.matchId === pc.matchId)
+        );
+        if (newChats.length > 0) {
+          return [...newChats, ...prevChats];
+        }
+        return prevChats;
+      });
+    }
+  }, []); // Only run on mount
+  
+  // Load gesture messages into chats when they arrive
+  useEffect(() => {
+    const recipientIds = Object.keys(gestureMessages);
+    if (recipientIds.length === 0) return;
+    
+    // Track chats to persist and messages to clear
+    const chatsToPersist = [];
+    const messagesToClear = [];
+    
+    setChats(prevChats => {
+      let updatedChats = [...prevChats];
+      
+      recipientIds.forEach(recipientId => {
+        const messages = gestureMessages[recipientId];
+        if (!messages || messages.length === 0) return;
+        
+        const chatIndex = updatedChats.findIndex(c => String(c.user?.id) === String(recipientId));
+        
+        if (chatIndex !== -1) {
+          // Add messages to existing chat
+          const existingChat = updatedChats[chatIndex];
+          const newMessages = messages.filter(
+            gm => !existingChat.messages.some(m => m.id === gm.id)
+          );
+          if (newMessages.length > 0) {
+            const updatedChat = {
+              ...existingChat,
+              messages: [...existingChat.messages, ...newMessages],
+              lastSentAt: Math.max(existingChat.lastSentAt || 0, ...newMessages.map(m => m.timestamp)),
+            };
+            updatedChats[chatIndex] = updatedChat;
+            if (updatedChat.matchId && typeof updatedChat.matchId === 'string' && updatedChat.matchId.startsWith('gesture_')) {
+              chatsToPersist.push(updatedChat);
+            }
+            messagesToClear.push(recipientId);
+          }
+        } else {
+          // Create new chat for this person
+          const userInfo = recipientUsers[recipientId];
+          if (userInfo) {
+            const newChat = {
+              matchId: `gesture_${recipientId}`,
+              user: {
+                id: userInfo.id,
+                name: userInfo.name,
+                age: userInfo.age || '',
+                photoUrl: userInfo.photoUrl || 'https://via.placeholder.com/150',
+              },
+              user24hPhoto: null,
+              connectionSource: 'nearby',
+              quickVibe: 'Sweet Gesture sent',
+              unreadCount: 0,
+              blocked: false,
+              messages: messages,
+              lastSentAt: Math.max(...messages.map(m => m.timestamp)),
+              status: 'active',
+              pinned: false,
+              muted: false,
+              themeColor: '#ECE5DD',
+              disappearingSeconds: 7200,
+            };
+            updatedChats = [newChat, ...updatedChats];
+            chatsToPersist.push(newChat);
+            messagesToClear.push(recipientId);
+          }
+        }
+      });
+      
+      return updatedChats;
+    });
+    
+    // Persist chats and clear messages after state update (in next tick)
+    if (chatsToPersist.length > 0 || messagesToClear.length > 0) {
+      setTimeout(() => {
+        chatsToPersist.forEach(chat => addGestureChat(chat));
+        messagesToClear.forEach(id => clearMessagesForUser(id));
+      }, 0);
+    }
+  }, [gestureMessages, recipientUsers, clearMessagesForUser, addGestureChat]);
 
   // Pulse spec: Sort tabs state
   const [chatListSort, setChatListSort] = useState('active');

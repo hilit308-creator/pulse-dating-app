@@ -150,6 +150,60 @@ class TodaysPicks(db.Model):
     pick_user = db.relationship('User', foreign_keys=[pick_user_id])
 
 
+# Gesture Model - Sweet Gestures (coffee, flowers, gifts)
+class Gesture(db.Model):
+    __tablename__ = 'gestures'
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    gesture_type = db.Column(db.String(20), nullable=False)  # 'coffee', 'flower', 'gift'
+    
+    # Item details
+    vendor_name = db.Column(db.String(100))  # Cafe name, flower shop, etc.
+    vendor_id = db.Column(db.String(50))  # External vendor ID if applicable
+    item_name = db.Column(db.String(100))  # Latte, Rose bouquet, Chocolate, etc.
+    item_id = db.Column(db.String(50))  # Item identifier
+    price = db.Column(db.Float, default=0.0)  # Price in local currency
+    currency = db.Column(db.String(10), default='ILS')
+    
+    # Message
+    message = db.Column(db.Text)  # Custom or default message
+    
+    # Payment info (stored securely - in production use payment provider tokens)
+    payment_token = db.Column(db.String(255))  # Payment method token from Stripe/etc
+    payment_status = db.Column(db.String(20), default='pending')  # pending, charged, refunded
+    
+    # Status
+    status = db.Column(db.String(20), default='pending')  # pending, accepted, declined, expired
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    responded_at = db.Column(db.DateTime)  # When recipient accepted/declined
+    expires_at = db.Column(db.DateTime)  # Auto-expire after X days
+    
+    # Relationships
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='gestures_sent')
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='gestures_received')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sender_id': self.sender_id,
+            'recipient_id': self.recipient_id,
+            'gesture_type': self.gesture_type,
+            'vendor_name': self.vendor_name,
+            'item_name': self.item_name,
+            'price': self.price,
+            'currency': self.currency,
+            'message': self.message,
+            'status': self.status,
+            'payment_status': self.payment_status,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'responded_at': self.responded_at.isoformat() if self.responded_at else None,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+        }
+
+
 # Create database tables
 with app.app_context():
     db.create_all()
@@ -1211,6 +1265,220 @@ def update_location():
         return jsonify({'message': 'Location updated'}), 200
     
     return jsonify({'error': 'User not found'}), 404
+
+
+# =========================
+# Sweet Gestures API
+# =========================
+
+@app.route('/api/gestures', methods=['POST'])
+def create_gesture():
+    """
+    Create a new gesture (coffee, flower, gift).
+    Payment is collected but NOT charged until recipient accepts.
+    """
+    try:
+        data = request.json
+        sender_id = data.get('sender_id')
+        recipient_id = data.get('recipient_id')
+        gesture_type = data.get('gesture_type')  # coffee, flower, gift
+        
+        if not sender_id or not recipient_id or not gesture_type:
+            return jsonify({'error': 'sender_id, recipient_id, and gesture_type required'}), 400
+        
+        if gesture_type not in ['coffee', 'flower', 'gift']:
+            return jsonify({'error': 'Invalid gesture_type. Must be coffee, flower, or gift'}), 400
+        
+        # Check for existing pending gesture of same type to same recipient
+        existing = Gesture.query.filter_by(
+            sender_id=sender_id,
+            recipient_id=recipient_id,
+            gesture_type=gesture_type,
+            status='pending'
+        ).first()
+        
+        if existing:
+            return jsonify({'error': 'You already have a pending gesture of this type to this person'}), 400
+        
+        # Create gesture with 7-day expiration
+        gesture = Gesture(
+            sender_id=sender_id,
+            recipient_id=recipient_id,
+            gesture_type=gesture_type,
+            vendor_name=data.get('vendor_name'),
+            vendor_id=data.get('vendor_id'),
+            item_name=data.get('item_name'),
+            item_id=data.get('item_id'),
+            price=data.get('price', 0.0),
+            currency=data.get('currency', 'ILS'),
+            message=data.get('message'),
+            payment_token=data.get('payment_token'),  # From payment provider
+            expires_at=datetime.utcnow() + timedelta(days=7)
+        )
+        
+        db.session.add(gesture)
+        db.session.commit()
+        
+        # TODO: Send push notification to recipient
+        # TODO: Create chat message for recipient
+        
+        print(f'[Gesture] User {sender_id} sent {gesture_type} to user {recipient_id}')
+        return jsonify({'success': True, 'gesture': gesture.to_dict()}), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f'[Gesture] Error creating gesture: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/gestures', methods=['GET'])
+def get_gestures():
+    """
+    Get gestures for a user (sent or received).
+    Query params: user_id, direction (sent/received/all), status (pending/accepted/declined/expired/all)
+    """
+    try:
+        user_id = request.args.get('user_id', type=int)
+        direction = request.args.get('direction', 'all')  # sent, received, all
+        status = request.args.get('status', 'all')  # pending, accepted, declined, expired, all
+        
+        if not user_id:
+            return jsonify({'error': 'user_id required'}), 400
+        
+        query = Gesture.query
+        
+        # Filter by direction
+        if direction == 'sent':
+            query = query.filter_by(sender_id=user_id)
+        elif direction == 'received':
+            query = query.filter_by(recipient_id=user_id)
+        else:
+            query = query.filter(
+                db.or_(Gesture.sender_id == user_id, Gesture.recipient_id == user_id)
+            )
+        
+        # Filter by status
+        if status != 'all':
+            query = query.filter_by(status=status)
+        
+        gestures = query.order_by(Gesture.created_at.desc()).all()
+        
+        return jsonify({'gestures': [g.to_dict() for g in gestures]}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/gestures/<int:gesture_id>/accept', methods=['PATCH'])
+def accept_gesture(gesture_id):
+    """
+    Recipient accepts a gesture.
+    This triggers the payment charge to the sender.
+    """
+    try:
+        data = request.json
+        user_id = data.get('user_id')  # Must be the recipient
+        
+        gesture = Gesture.query.get(gesture_id)
+        if not gesture:
+            return jsonify({'error': 'Gesture not found'}), 404
+        
+        if gesture.recipient_id != user_id:
+            return jsonify({'error': 'Only the recipient can accept this gesture'}), 403
+        
+        if gesture.status != 'pending':
+            return jsonify({'error': f'Gesture is already {gesture.status}'}), 400
+        
+        # Check if expired
+        if gesture.expires_at and datetime.utcnow() > gesture.expires_at:
+            gesture.status = 'expired'
+            db.session.commit()
+            return jsonify({'error': 'Gesture has expired'}), 400
+        
+        # TODO: Charge the sender's payment method
+        # In production: Use Stripe/payment provider to charge the payment_token
+        # For now, we simulate success
+        gesture.payment_status = 'charged'
+        
+        gesture.status = 'accepted'
+        gesture.responded_at = datetime.utcnow()
+        db.session.commit()
+        
+        # TODO: Send notification to sender
+        # TODO: Create chat message confirming acceptance
+        
+        print(f'[Gesture] Gesture {gesture_id} accepted by user {user_id}')
+        return jsonify({'success': True, 'gesture': gesture.to_dict()}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f'[Gesture] Error accepting gesture: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/gestures/<int:gesture_id>/decline', methods=['PATCH'])
+def decline_gesture(gesture_id):
+    """
+    Recipient declines a gesture.
+    No charge is made to the sender.
+    """
+    try:
+        data = request.json
+        user_id = data.get('user_id')  # Must be the recipient
+        
+        gesture = Gesture.query.get(gesture_id)
+        if not gesture:
+            return jsonify({'error': 'Gesture not found'}), 404
+        
+        if gesture.recipient_id != user_id:
+            return jsonify({'error': 'Only the recipient can decline this gesture'}), 403
+        
+        if gesture.status != 'pending':
+            return jsonify({'error': f'Gesture is already {gesture.status}'}), 400
+        
+        gesture.status = 'declined'
+        gesture.responded_at = datetime.utcnow()
+        db.session.commit()
+        
+        # TODO: Send polite notification to sender
+        # TODO: Create chat message (non-embarrassing)
+        
+        print(f'[Gesture] Gesture {gesture_id} declined by user {user_id}')
+        return jsonify({'success': True, 'gesture': gesture.to_dict()}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f'[Gesture] Error declining gesture: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/gestures/pending-to-user', methods=['GET'])
+def get_pending_gestures_to_user():
+    """
+    Check if current user has any pending gestures to a specific recipient.
+    Used to show "already sent" state in UI.
+    """
+    try:
+        sender_id = request.args.get('sender_id', type=int)
+        recipient_id = request.args.get('recipient_id', type=int)
+        
+        if not sender_id or not recipient_id:
+            return jsonify({'error': 'sender_id and recipient_id required'}), 400
+        
+        pending = Gesture.query.filter_by(
+            sender_id=sender_id,
+            recipient_id=recipient_id,
+            status='pending'
+        ).all()
+        
+        # Return dict of gesture_type -> True for pending gestures
+        pending_types = {g.gesture_type: True for g in pending}
+        
+        return jsonify({'pending': pending_types}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)

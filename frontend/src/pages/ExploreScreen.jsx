@@ -2,7 +2,7 @@
 // "לאן שווה לצאת עכשיו?"
 // Places worth stepping into - real-time discovery
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -21,6 +21,7 @@ import {
   Alert,
   CardMedia,
   Skeleton,
+  Tooltip,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -43,9 +44,11 @@ import {
   MessageCircle,
   Send,
   Flower2,
+  Check,
 } from "lucide-react";
 import { useLanguage } from '../context/LanguageContext';
 import PageHelpButton from '../components/PageHelpButton';
+import useGestureMessagesStore from '../store/gestureMessagesStore';
 import { getPageHelpContent } from '../config/pageHelpContent';
 
 /* =========================
@@ -53,16 +56,19 @@ import { getPageHelpContent } from '../config/pageHelpContent';
    ========================= */
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
 
-// Filter categories - using translation keys
-const FILTER_CATEGORIES = [
+// Filter categories - organized in two rows
+const FILTER_CATEGORIES_ROW1 = [
   { id: 'all', labelKey: 'allPlaces', icon: Sparkles },
+  { id: 'saved', labelKey: 'saved', icon: Bookmark },
+  { id: 'near-me', labelKey: 'nearMe', icon: MapPin },
+];
+const FILTER_CATEGORIES_ROW2 = [
   { id: 'bar', labelKey: 'bars', icon: Wine },
   { id: 'cafe', labelKey: 'cafes', icon: Coffee },
   { id: 'live-music', labelKey: 'liveMusic', icon: Music },
   { id: 'chill', labelKey: 'chill', icon: Star },
   { id: 'dance', labelKey: 'dance', icon: Zap },
   { id: 'social', labelKey: 'social', icon: Users },
-  { id: 'near-me', labelKey: 'nearMe', icon: MapPin },
 ];
 
 // Vibe icons mapping
@@ -152,6 +158,7 @@ const GESTURE_TYPES = [
 ];
 
 // Mock places data (10-20 places only)
+// hasEvents indicates if place has upcoming events (matches MOCK_BUSINESSES in BusinessPage.jsx)
 const MOCK_PLACES = [
   {
     id: 1,
@@ -163,6 +170,7 @@ const MOCK_PLACES = [
     openNow: true,
     closingTime: "03:00",
     hasActiveBenefit: true,
+    hasEvents: true,
     benefit: {
       title: "Happy Hour Extended",
       description: "1+1 on all cocktails until midnight",
@@ -180,6 +188,7 @@ const MOCK_PLACES = [
     openNow: true,
     closingTime: "01:00",
     hasActiveBenefit: false,
+    hasEvents: false,
     benefit: null,
     isNew: true,
   },
@@ -193,6 +202,7 @@ const MOCK_PLACES = [
     openNow: true,
     closingTime: "05:00",
     hasActiveBenefit: true,
+    hasEvents: true,
     benefit: {
       title: "Free Entry",
       description: "Show your Pulse app for free entry before 23:00",
@@ -210,6 +220,7 @@ const MOCK_PLACES = [
     openNow: true,
     closingTime: "00:00",
     hasActiveBenefit: true,
+    hasEvents: false,
     benefit: {
       title: "Drink on the house",
       description: "Free espresso with any pastry",
@@ -227,6 +238,7 @@ const MOCK_PLACES = [
     openNow: true,
     closingTime: "02:00",
     hasActiveBenefit: false,
+    hasEvents: true,
     benefit: null,
     isNew: false,
   },
@@ -241,6 +253,7 @@ const MOCK_PLACES = [
     opensAt: "20:00",
     closingTime: "02:00",
     hasActiveBenefit: false,
+    hasEvents: true,
     benefit: null,
     isNew: true,
   },
@@ -254,6 +267,7 @@ const MOCK_PLACES = [
     openNow: true,
     closingTime: "04:00",
     hasActiveBenefit: true,
+    hasEvents: true,
     benefit: {
       title: "1+1 Drinks",
       description: "Buy one get one free on all beers",
@@ -271,6 +285,7 @@ const MOCK_PLACES = [
     openNow: true,
     closingTime: "03:00",
     hasActiveBenefit: false,
+    hasEvents: true,
     benefit: null,
     isNew: false,
   },
@@ -285,6 +300,7 @@ const MOCK_PLACES = [
     opensAt: "19:00",
     closingTime: "02:00",
     hasActiveBenefit: true,
+    hasEvents: true,
     benefit: {
       title: "Welcome Drink",
       description: "Free welcome shot for Pulse users",
@@ -302,6 +318,7 @@ const MOCK_PLACES = [
     openNow: true,
     closingTime: "23:00",
     hasActiveBenefit: false,
+    hasEvents: true,
     benefit: null,
     isNew: true,
   },
@@ -533,62 +550,169 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
    QR Scan Dialog
    ========================= */
 function QRScanDialog({ open, onClose, place }) {
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const [stream, setStream] = useState(null);
+  const videoRef = useRef(null);
+
+  const startCamera = async () => {
+    try {
+      setCameraError(null);
+      setCameraActive(true);
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: { ideal: 'environment' } }
+      });
+      setStream(mediaStream);
+    } catch (err) {
+      console.error('Camera access error:', err);
+      setCameraActive(false);
+      setCameraError(err.name === 'NotAllowedError' 
+        ? 'Camera permission denied. Please allow camera access.'
+        : 'Could not access camera. Please try again.');
+    }
+  };
+
+  // Auto-start camera when dialog opens
+  useEffect(() => {
+    if (open && !cameraActive && !stream) {
+      startCamera();
+    }
+  }, [open]);
+
+  // Connect stream to video element when stream is ready
+  useEffect(() => {
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(err => console.error('Video play error:', err));
+    }
+  }, [stream]);
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  };
+
+  const handleClose = () => {
+    stopCamera();
+    onClose();
+  };
+
+  // Cleanup on unmount or dialog close
+  useEffect(() => {
+    if (!open && stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+      setCameraActive(false);
+    }
+  }, [open, stream]);
+
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
+
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       PaperProps={{
         sx: {
-          borderRadius: '24px',
-          maxWidth: 360,
-          width: '100%',
-          p: 1,
+          borderRadius: '16px',
+          maxHeight: '75vh',
+          width: '340px',
+          m: 'auto',
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
         },
       }}
     >
-      <DialogTitle sx={{ textAlign: 'center', fontWeight: 700, pb: 1 }}>
+      <DialogTitle sx={{ textAlign: 'center', fontWeight: 700, pb: 1, pt: 2, fontSize: '1rem' }}>
         Scan QR at {place?.name}
       </DialogTitle>
       <DialogContent>
-        <Box sx={{ textAlign: 'center', py: 3 }}>
-          <Box
-            sx={{
-              width: 200,
-              height: 200,
-              mx: 'auto',
-              bgcolor: '#f1f5f9',
-              borderRadius: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '2px dashed #cbd5e1',
-              mb: 3,
-            }}
-          >
-            <QrCode size={80} color="#94a3b8" />
-          </Box>
-          <Typography variant="body1" sx={{ color: '#1a1a2e', fontWeight: 600, mb: 1 }}>
-            Point your camera at the QR code
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#64748b' }}>
-            Look for the Pulse QR code displayed at the venue to unlock benefits
-          </Typography>
+        <Box sx={{ textAlign: 'center', py: 2 }}>
+          {cameraActive ? (
+            <Box
+              sx={{
+                width: '100%',
+                maxWidth: 280,
+                mx: 'auto',
+                borderRadius: '14px',
+                overflow: 'hidden',
+                bgcolor: '#000',
+                mb: 2,
+              }}
+            >
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ width: '100%', height: 'auto', display: 'block' }}
+              />
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                width: 140,
+                height: 140,
+                mx: 'auto',
+                bgcolor: '#f1f5f9',
+                borderRadius: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px dashed #cbd5e1',
+                mb: 2,
+              }}
+            >
+              <QrCode size={60} color="#94a3b8" />
+            </Box>
+          )}
+          {cameraError ? (
+            <Typography variant="body2" sx={{ color: '#ef4444', mb: 0.5, fontSize: '0.85rem' }}>
+              {cameraError}
+            </Typography>
+          ) : (
+            <>
+              <Typography variant="body1" sx={{ color: '#1a1a2e', fontWeight: 600, mb: 0.5, fontSize: '0.95rem' }}>
+                {cameraActive ? 'Scanning for QR code...' : 'Point your camera at the QR code'}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b' }}>
+                {cameraActive ? 'Hold steady over the QR code' : 'Look for the Pulse QR code at the venue'}
+              </Typography>
+            </>
+          )}
         </Box>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'center' }}>
+      <DialogActions sx={{ px: 2.5, pb: 2.5, justifyContent: 'center' }}>
         <Button
           fullWidth
           variant="contained"
-          onClick={onClose}
+          onClick={cameraActive ? handleClose : startCamera}
           sx={{
-            py: 1.5,
+            py: 1.25,
             borderRadius: '12px',
             textTransform: 'none',
             fontWeight: 700,
-            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            fontSize: '0.9rem',
+            background: cameraActive 
+              ? 'linear-gradient(135deg, #64748b 0%, #475569 100%)'
+              : 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
           }}
         >
-          Open Camera
+          {cameraActive ? 'Close Camera' : 'Open Camera'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -599,18 +723,84 @@ function QRScanDialog({ open, onClose, place }) {
    Benefits Dialog
    ========================= */
 function BenefitsDialog({ open, onClose, place }) {
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const [stream, setStream] = useState(null);
+  const videoRef = useRef(null);
+
+  const startCamera = async () => {
+    try {
+      setCameraError(null);
+      setCameraActive(true);
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: { ideal: 'environment' } }
+      });
+      setStream(mediaStream);
+    } catch (err) {
+      console.error('Camera access error:', err);
+      setCameraActive(false);
+      setCameraError(err.name === 'NotAllowedError' 
+        ? 'Camera permission denied. Please allow camera access.'
+        : 'Could not access camera. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(err => console.error('Video play error:', err));
+    }
+  }, [stream]);
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  };
+
+  const handleClose = () => {
+    stopCamera();
+    onClose();
+  };
+
+  useEffect(() => {
+    if (!open && stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+      setCameraActive(false);
+    }
+  }, [open, stream]);
+
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
+
   if (!place?.benefit) return null;
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       PaperProps={{
         sx: {
-          borderRadius: '24px',
-          maxWidth: 400,
-          width: '100%',
+          borderRadius: '16px',
+          maxHeight: '80vh',
+          width: '360px',
+          m: 'auto',
           overflow: 'hidden',
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
         },
       }}
     >
@@ -618,13 +808,13 @@ function BenefitsDialog({ open, onClose, place }) {
       <Box
         sx={{
           background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-          p: 3,
+          p: 2.5,
           textAlign: 'center',
           color: '#fff',
         }}
       >
-        <Gift size={48} style={{ marginBottom: 8 }} />
-        <Typography variant="h5" sx={{ fontWeight: 800 }}>
+        <Gift size={36} style={{ marginBottom: 6 }} />
+        <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
           Pulse Perk
         </Typography>
         <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -632,74 +822,125 @@ function BenefitsDialog({ open, onClose, place }) {
         </Typography>
       </Box>
 
-      <DialogContent sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1 }}>
-          {place?.benefit?.title}
-        </Typography>
-        <Typography variant="body1" sx={{ color: '#64748b', mb: 3 }}>
-          {place?.benefit?.description}
-        </Typography>
+      <DialogContent sx={{ p: 2.5 }}>
+        {cameraActive ? (
+          /* Camera View */
+          <Box sx={{ textAlign: 'center' }}>
+            <Box
+              sx={{
+                width: '100%',
+                maxWidth: 280,
+                mx: 'auto',
+                borderRadius: '14px',
+                overflow: 'hidden',
+                bgcolor: '#000',
+                mb: 2,
+              }}
+            >
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ width: '100%', height: 'auto', display: 'block' }}
+              />
+            </Box>
+            {cameraError ? (
+              <Typography variant="body2" sx={{ color: '#ef4444', fontSize: '0.85rem' }}>
+                {cameraError}
+              </Typography>
+            ) : (
+              <>
+                <Typography variant="body1" sx={{ color: '#1a1a2e', fontWeight: 600, mb: 0.5, fontSize: '0.95rem' }}>
+                  Scanning for QR code...
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                  Hold steady over the QR code
+                </Typography>
+              </>
+            )}
+          </Box>
+        ) : (
+          /* Benefits Info */
+          <>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>
+              {place?.benefit?.title}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 2, fontSize: '0.9rem' }}>
+              {place?.benefit?.description}
+            </Typography>
 
-        {/* Terms */}
-        <Box
-          sx={{
-            p: 2,
-            bgcolor: '#f8fafc',
-            borderRadius: '12px',
-            mb: 2,
-          }}
-        >
-          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-            Terms:
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
-            • Valid only when physically present at the venue
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#64748b' }}>
-            • Must scan QR code to redeem
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#64748b' }}>
-            • Expires at {place?.benefit?.expiresAt}
-          </Typography>
-        </Box>
+            {/* Terms */}
+            <Box
+              sx={{
+                p: 1.5,
+                bgcolor: '#f8fafc',
+                borderRadius: '10px',
+                mb: 1.5,
+              }}
+            >
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.75rem' }}>
+                Terms:
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#64748b', mt: 0.25, display: 'block', fontSize: '0.75rem' }}>
+                • Valid only when physically present
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.75rem' }}>
+                • Must scan QR code to redeem
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.75rem' }}>
+                • Expires at {place?.benefit?.expiresAt}
+              </Typography>
+            </Box>
 
-        {/* Expiry */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#f59e0b' }}>
-          <Clock size={16} />
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            Valid until {place?.benefit?.expiresAt} today
-          </Typography>
-        </Box>
+            {/* Expiry */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#f59e0b' }}>
+              <Clock size={16} />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                Valid until {place?.benefit?.expiresAt} today
+              </Typography>
+            </Box>
+          </>
+        )}
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+      <DialogActions sx={{ px: 2.5, pb: 2.5, gap: 1 }}>
         <Button
           variant="outlined"
-          onClick={onClose}
+          onClick={handleClose}
           sx={{
-            py: 1.25,
-            px: 3,
-            borderRadius: '12px',
+            py: 1,
+            px: 2.5,
+            borderRadius: '10px',
             textTransform: 'none',
             fontWeight: 600,
+            fontSize: '0.85rem',
           }}
         >
-          Close
+          {cameraActive ? 'Back' : 'Close'}
         </Button>
         <Button
           variant="contained"
-          startIcon={<QrCode size={18} />}
+          startIcon={<QrCode size={16} />}
+          onClick={cameraActive ? stopCamera : startCamera}
           sx={{
-            py: 1.25,
-            px: 3,
-            borderRadius: '12px',
+            py: 1,
+            px: 2.5,
+            borderRadius: '10px',
             textTransform: 'none',
             fontWeight: 700,
-            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-            '&:hover': { background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)' },
+            fontSize: '0.85rem',
+            background: cameraActive 
+              ? 'linear-gradient(135deg, #64748b 0%, #475569 100%)'
+              : 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            '&:hover': { 
+              background: cameraActive 
+                ? 'linear-gradient(135deg, #475569 0%, #334155 100%)'
+                : 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)' 
+            },
           }}
         >
-          Scan to Redeem
+          {cameraActive ? 'Stop Camera' : 'Scan to Redeem'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -710,7 +951,7 @@ function BenefitsDialog({ open, onClose, place }) {
 /* =========================
    Sweet Gestures Section
    ========================= */
-function SweetGesturesSection({ people, onSendGesture, onSeeMore }) {
+function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures = {} }) {
   const [showAll, setShowAll] = React.useState(false);
   const displayedPeople = showAll ? people : people.slice(0, 3);
   
@@ -842,33 +1083,52 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore }) {
                 {GESTURE_TYPES.map((gesture) => {
                   const Icon = gesture.icon;
                   const isMain = gesture.id === 'coffee';
+                  const isSent = Boolean(sentGestures[person.id]?.[gesture.id]);
                   return (
                     <motion.div
                       key={gesture.id}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: isSent ? 1 : 1.1 }}
+                      whileTap={{ scale: isSent ? 1 : 0.95 }}
                     >
-                      <IconButton
-                        onClick={() => onSendGesture(person, gesture)}
-                        sx={{
-                          width: isMain ? 52 : 40,
-                          height: isMain ? 52 : 40,
-                          borderRadius: isMain ? '16px' : '12px',
-                          background: isMain ? gesture.gradient : 'transparent',
-                          border: isMain ? 'none' : '1.5px solid #e2e8f0',
-                          boxShadow: isMain ? `0 4px 16px ${gesture.shadowColor}` : 'none',
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            background: isMain ? gesture.gradient : 'rgba(108,92,231,0.08)',
-                            borderColor: isMain ? 'transparent' : '#6C5CE7',
-                          },
-                        }}
+                      <Tooltip 
+                        title={isSent ? "Already sent to this person" : gesture.label}
+                        arrow
+                        placement="top"
                       >
-                        <Icon 
-                          size={isMain ? 22 : 18} 
-                          color={isMain ? '#fff' : '#64748b'} 
-                        />
-                      </IconButton>
+                        <span>
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isSent) onSendGesture(person, gesture);
+                            }}
+                            disabled={isSent}
+                            sx={{
+                              width: isMain ? 52 : 40,
+                              height: isMain ? 52 : 40,
+                              borderRadius: isMain ? '16px' : '12px',
+                              background: isMain ? gesture.gradient : 'transparent',
+                              border: isMain ? 'none' : '1.5px solid #e2e8f0',
+                              boxShadow: isMain ? `0 4px 16px ${gesture.shadowColor}` : 'none',
+                              opacity: isSent ? 0.5 : 1,
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                background: isMain ? gesture.gradient : 'rgba(108,92,231,0.08)',
+                                borderColor: isMain ? 'transparent' : '#6C5CE7',
+                              },
+                              '&.Mui-disabled': {
+                                background: isMain ? gesture.gradient : 'transparent',
+                                border: isMain ? 'none' : '1.5px solid #e2e8f0',
+                                opacity: 0.5,
+                              },
+                            }}
+                          >
+                            <Icon 
+                              size={isMain ? 22 : 18} 
+                              color={isMain ? '#fff' : '#64748b'} 
+                            />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
                     </motion.div>
                   );
                 })}
@@ -910,6 +1170,15 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore }) {
 function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
   const [selectedCafe, setSelectedCafe] = React.useState(null);
   const [selectedDrink, setSelectedDrink] = React.useState(null);
+  const [message, setMessage] = React.useState('');
+  const [useCustomMessage, setUseCustomMessage] = React.useState(false);
+
+  // Default messages for coffee
+  const defaultMessages = [
+    "Coffee's on me! ☕ Enjoy!",
+    "Thought you might need a pick-me-up! ☕",
+    "Let's grab coffee together sometime? ☕",
+  ];
 
   // Nearby cafes
   const nearbyCafes = [
@@ -929,16 +1198,20 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
   ];
 
   const handleConfirm = () => {
-    if (selectedCafe && selectedDrink) {
-      onConfirm({ cafe: selectedCafe, drink: selectedDrink });
+    if (selectedCafe && selectedDrink && message) {
+      onConfirm({ cafe: selectedCafe, drink: selectedDrink, message });
       setSelectedCafe(null);
       setSelectedDrink(null);
+      setMessage('');
+      setUseCustomMessage(false);
     }
   };
 
   const handleClose = () => {
     setSelectedCafe(null);
     setSelectedDrink(null);
+    setMessage('');
+    setUseCustomMessage(false);
     onClose();
   };
 
@@ -950,43 +1223,43 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
       onClose={handleClose}
       PaperProps={{
         sx: {
-          borderRadius: '28px',
-          maxWidth: 420,
+          borderRadius: '20px',
+          maxWidth: 400,
           width: '100%',
-          maxHeight: '85vh',
+          maxHeight: '72vh',
         },
       }}
     >
-      <DialogTitle sx={{ pb: 1 }}>
+      <DialogTitle sx={{ pb: 1, pt: 2, px: 2.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             sx={{
-              width: 48,
-              height: 48,
-              borderRadius: '14px',
+              width: 44,
+              height: 44,
+              borderRadius: '12px',
               background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Coffee size={24} color="#fff" />
+            <Coffee size={22} color="#fff" />
           </Box>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e', fontSize: '1.15rem' }}>
               Send Coffee to {person.name}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.9rem' }}>
               Choose a cafe and drink
             </Typography>
           </Box>
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ px: 3 }}>
+      <DialogContent sx={{ px: 2.5, py: 1.5 }}>
         {/* Select Cafe */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1.5 }}>
+        <Box sx={{ mb: 2.5 }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
             Choose a nearby cafe
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -999,53 +1272,34 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
                   alignItems: 'center',
                   gap: 1.5,
                   p: 1.5,
-                  borderRadius: '16px',
+                  borderRadius: '12px',
                   border: '2px solid',
                   borderColor: selectedCafe?.id === cafe.id ? '#6C5CE7' : 'rgba(0,0,0,0.08)',
                   bgcolor: selectedCafe?.id === cafe.id ? 'rgba(108,92,231,0.05)' : '#fff',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  '&:hover': {
-                    borderColor: selectedCafe?.id === cafe.id ? '#6C5CE7' : 'rgba(0,0,0,0.15)',
-                    bgcolor: selectedCafe?.id === cafe.id ? 'rgba(108,92,231,0.08)' : 'rgba(0,0,0,0.02)',
-                  },
                 }}
               >
                 <Box
                   component="img"
                   src={cafe.image}
                   alt={cafe.name}
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '12px',
-                    objectFit: 'cover',
-                  }}
+                  sx={{ width: 48, height: 48, borderRadius: '10px', objectFit: 'cover' }}
                 />
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem', display: 'block' }}>
                     {cafe.name}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <MapPin size={12} color="#64748b" />
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>
-                      {cafe.distance} away
+                    <MapPin size={14} color="#64748b" />
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.85rem' }}>
+                      {cafe.distance}
                     </Typography>
                   </Box>
                 </Box>
                 {selectedCafe?.id === cafe.id && (
-                  <Box
-                    sx={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      bgcolor: '#6C5CE7',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Typography sx={{ color: '#fff', fontSize: '14px' }}>✓</Typography>
+                  <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: '#6C5CE7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={14} color="#fff" />
                   </Box>
                 )}
               </Box>
@@ -1054,8 +1308,8 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
         </Box>
 
         {/* Select Drink */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1.5 }}>
+        <Box sx={{ mb: 2.5 }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
             Choose a drink
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
@@ -1065,49 +1319,93 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
                 onClick={() => setSelectedDrink(drink)}
                 sx={{
                   p: 1.5,
-                  borderRadius: '14px',
+                  borderRadius: '12px',
                   border: '2px solid',
                   borderColor: selectedDrink?.id === drink.id ? '#6C5CE7' : 'rgba(0,0,0,0.08)',
                   bgcolor: selectedDrink?.id === drink.id ? 'rgba(108,92,231,0.05)' : '#fff',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
                   textAlign: 'center',
-                  '&:hover': {
-                    borderColor: selectedDrink?.id === drink.id ? '#6C5CE7' : 'rgba(0,0,0,0.15)',
-                    bgcolor: selectedDrink?.id === drink.id ? 'rgba(108,92,231,0.08)' : 'rgba(0,0,0,0.02)',
-                  },
                 }}
               >
                 <Typography sx={{ fontSize: '28px', mb: 0.5 }}>{drink.icon}</Typography>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', fontSize: '0.9rem' }}>
                   {drink.name}
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>
+                <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
                   {drink.price}
                 </Typography>
               </Box>
             ))}
           </Box>
         </Box>
+
+        {/* Message */}
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+            Add a message
+          </Typography>
+          {!useCustomMessage ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {defaultMessages.map((msg, idx) => (
+                <Box
+                  key={idx}
+                  onClick={() => setMessage(msg)}
+                  sx={{
+                    p: 1.25,
+                    borderRadius: '10px',
+                    border: '2px solid',
+                    borderColor: message === msg ? '#6C5CE7' : 'rgba(0,0,0,0.08)',
+                    bgcolor: message === msg ? 'rgba(108,92,231,0.05)' : '#fff',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  {msg}
+                </Box>
+              ))}
+              <Button
+                size="small"
+                onClick={() => setUseCustomMessage(true)}
+                sx={{ textTransform: 'none', color: '#6C5CE7', fontSize: '0.95rem' }}
+              >
+                Write custom message...
+              </Button>
+            </Box>
+          ) : (
+            <Box>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Write your message..."
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: '2px solid rgba(0,0,0,0.12)',
+                  fontSize: '0.95rem',
+                  resize: 'none',
+                  minHeight: '70px',
+                  fontFamily: 'inherit',
+                }}
+              />
+              <Button
+                size="small"
+                onClick={() => setUseCustomMessage(false)}
+                sx={{ textTransform: 'none', color: '#64748b', fontSize: '0.95rem', mt: 0.5 }}
+              >
+                Use suggested message
+              </Button>
+            </Box>
+          )}
+        </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 1 }}>
+      <DialogActions sx={{ px: 2.5, pb: 2.5, pt: 1.5, gap: 1.5 }}>
         <Button
           fullWidth
           variant="outlined"
           onClick={handleClose}
-          sx={{
-            py: 1.5,
-            borderRadius: '14px',
-            textTransform: 'none',
-            fontWeight: 600,
-            borderColor: 'rgba(0,0,0,0.12)',
-            color: '#64748b',
-            '&:hover': {
-              borderColor: 'rgba(0,0,0,0.2)',
-              bgcolor: 'rgba(0,0,0,0.02)',
-            },
-          }}
+          sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: '#64748b', fontSize: '0.95rem' }}
         >
           Cancel
         </Button>
@@ -1115,18 +1413,16 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
           fullWidth
           variant="contained"
           onClick={handleConfirm}
-          disabled={!selectedCafe || !selectedDrink}
+          disabled={!selectedCafe || !selectedDrink || !message.trim()}
           sx={{
-            py: 1.5,
-            borderRadius: '14px',
+            py: 1.25,
+            borderRadius: '12px',
             textTransform: 'none',
             fontWeight: 700,
+            fontSize: '0.95rem',
             background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
             boxShadow: '0 4px 16px rgba(108, 92, 231, 0.4)',
-            '&:disabled': {
-              background: 'rgba(0,0,0,0.12)',
-              color: 'rgba(0,0,0,0.26)',
-            },
+            '&:disabled': { background: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.26)' },
           }}
         >
           Send Coffee ☕
@@ -1135,6 +1431,1087 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
     </Dialog>
   );
 }
+
+/* =========================
+   Flower Selection Dialog
+   ========================= */
+function FlowerSelectionDialog({ open, onClose, person, onConfirm }) {
+  const [selectedShop, setSelectedShop] = React.useState(null);
+  const [selectedFlower, setSelectedFlower] = React.useState(null);
+  const [message, setMessage] = React.useState('');
+  const [useCustomMessage, setUseCustomMessage] = React.useState(false);
+
+  // Nearby flower shops
+  const nearbyShops = [
+    { id: 1, name: 'Bloom & Wild', distance: '200m', image: 'https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=200&q=80' },
+    { id: 2, name: 'Flower Market', distance: '350m', image: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=200&q=80' },
+    { id: 3, name: 'Rose Garden', distance: '500m', image: 'https://images.unsplash.com/photo-1518882605630-8eb699b8a9c0?auto=format&fit=crop&w=200&q=80' },
+  ];
+
+  // Flower options
+  const flowers = [
+    { id: 1, name: 'Single Rose', icon: '🌹', price: '₪25', priceNum: 25 },
+    { id: 2, name: 'Small Bouquet', icon: '💐', price: '₪65', priceNum: 65 },
+    { id: 3, name: 'Mixed Flowers', icon: '🌸', price: '₪85', priceNum: 85 },
+    { id: 4, name: 'Sunflower', icon: '🌻', price: '₪30', priceNum: 30 },
+  ];
+
+  // Default messages
+  const defaultMessages = [
+    "Thinking of you 💐",
+    "Hope this brightens your day!",
+    "You deserve something beautiful",
+    "Just because... 🌸",
+  ];
+
+  const handleConfirm = () => {
+    if (selectedShop && selectedFlower) {
+      onConfirm({
+        shop: selectedShop,
+        flower: selectedFlower,
+        message: message || defaultMessages[0],
+      });
+      setSelectedShop(null);
+      setSelectedFlower(null);
+      setMessage('');
+      setUseCustomMessage(false);
+    }
+  };
+
+  const handleClose = () => {
+    setSelectedShop(null);
+    setSelectedFlower(null);
+    setMessage('');
+    setUseCustomMessage(false);
+    onClose();
+  };
+
+  if (!person) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      PaperProps={{
+        sx: {
+          borderRadius: '20px',
+          maxWidth: 400,
+          width: '100%',
+          maxHeight: '72vh',
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, pt: 2, px: 2.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Flower2 size={22} color="#fff" />
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e', fontSize: '1.15rem' }}>
+              Send Flowers to {person.name}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.9rem' }}>
+              Choose flowers and add a message
+            </Typography>
+          </Box>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent sx={{ px: 2.5, py: 1.5 }}>
+        {/* Select Shop */}
+        <Box sx={{ mb: 2.5 }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+            Choose a flower shop
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {nearbyShops.map((shop) => (
+              <Box
+                key={shop.id}
+                onClick={() => setSelectedShop(shop)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  p: 1.5,
+                  borderRadius: '12px',
+                  border: '2px solid',
+                  borderColor: selectedShop?.id === shop.id ? '#ec4899' : 'rgba(0,0,0,0.08)',
+                  bgcolor: selectedShop?.id === shop.id ? 'rgba(236,72,153,0.05)' : '#fff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Box
+                  component="img"
+                  src={shop.image}
+                  alt={shop.name}
+                  sx={{ width: 48, height: 48, borderRadius: '10px', objectFit: 'cover' }}
+                />
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem', display: 'block' }}>
+                    {shop.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <MapPin size={14} color="#64748b" />
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.85rem' }}>
+                      {shop.distance}
+                    </Typography>
+                  </Box>
+                </Box>
+                {selectedShop?.id === shop.id && (
+                  <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={14} color="#fff" />
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Select Flower */}
+        <Box sx={{ mb: 2.5 }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+            Choose flowers
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+            {flowers.map((flower) => (
+              <Box
+                key={flower.id}
+                onClick={() => setSelectedFlower(flower)}
+                sx={{
+                  p: 1.5,
+                  borderRadius: '12px',
+                  border: '1.5px solid',
+                  borderColor: selectedFlower?.id === flower.id ? '#ec4899' : 'rgba(0,0,0,0.08)',
+                  bgcolor: selectedFlower?.id === flower.id ? 'rgba(236,72,153,0.05)' : '#fff',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                }}
+              >
+                <Typography sx={{ fontSize: '28px', mb: 0.5 }}>{flower.icon}</Typography>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', fontSize: '0.9rem' }}>
+                  {flower.name}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+                  {flower.price}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Message */}
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+            Add a message
+          </Typography>
+          {!useCustomMessage ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {defaultMessages.map((msg, idx) => (
+                <Box
+                  key={idx}
+                  onClick={() => setMessage(msg)}
+                  sx={{
+                    p: 1.25,
+                    borderRadius: '10px',
+                    border: '2px solid',
+                    borderColor: message === msg ? '#ec4899' : 'rgba(0,0,0,0.08)',
+                    bgcolor: message === msg ? 'rgba(236,72,153,0.05)' : '#fff',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  {msg}
+                </Box>
+              ))}
+              <Button
+                size="small"
+                onClick={() => setUseCustomMessage(true)}
+                sx={{ textTransform: 'none', color: '#ec4899', fontSize: '0.95rem' }}
+              >
+                Write custom message...
+              </Button>
+            </Box>
+          ) : (
+            <Box>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Write your message..."
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: '2px solid rgba(0,0,0,0.12)',
+                  fontSize: '0.95rem',
+                  resize: 'none',
+                  minHeight: '70px',
+                  fontFamily: 'inherit',
+                }}
+              />
+              <Button
+                size="small"
+                onClick={() => setUseCustomMessage(false)}
+                sx={{ textTransform: 'none', color: '#64748b', fontSize: '0.95rem', mt: 0.5 }}
+              >
+                Use suggested message
+              </Button>
+            </Box>
+          )}
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ px: 2.5, pb: 2.5, pt: 1.5, gap: 1.5 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={handleClose}
+          sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: '#64748b', fontSize: '0.95rem' }}
+        >
+          Cancel
+        </Button>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleConfirm}
+          disabled={!selectedShop || !selectedFlower || !message.trim()}
+          sx={{
+            py: 1.25,
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+            boxShadow: '0 4px 16px rgba(236, 72, 153, 0.4)',
+            '&:disabled': { background: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.26)' },
+          }}
+        >
+          Continue 🌸
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+
+/* =========================
+   Gift Selection Dialog
+   ========================= */
+function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
+  const [selectedCategory, setSelectedCategory] = React.useState(null);
+  const [selectedVendor, setSelectedVendor] = React.useState(null);
+  const [selectedGift, setSelectedGift] = React.useState(null);
+  const [message, setMessage] = React.useState('');
+  const [useCustomMessage, setUseCustomMessage] = React.useState(false);
+
+  // Gift categories
+  const giftCategories = [
+    { id: 'chocolate', name: 'Chocolate', icon: '🍫' },
+    { id: 'icecream', name: 'Ice Cream', icon: '🍦' },
+    { id: 'dessert', name: 'Dessert', icon: '🧁' },
+    { id: 'digital', name: 'Digital', icon: '🎁' },
+  ];
+
+  // Vendors by category
+  const vendorsByCategory = {
+    chocolate: [
+      { id: 1, name: 'Max Brenner', distance: '250m', image: 'https://images.unsplash.com/photo-1481391319762-47dff72954d9?auto=format&fit=crop&w=200&q=80' },
+      { id: 2, name: 'Godiva', distance: '400m', image: 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=200&q=80' },
+    ],
+    icecream: [
+      { id: 3, name: 'Golda', distance: '180m', image: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=200&q=80' },
+      { id: 4, name: 'Anita', distance: '350m', image: 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?auto=format&fit=crop&w=200&q=80' },
+    ],
+    dessert: [
+      { id: 5, name: 'Roladin', distance: '200m', image: 'https://images.unsplash.com/photo-1486427944544-d2c6e7e4d18a?auto=format&fit=crop&w=200&q=80' },
+      { id: 6, name: 'Paul', distance: '300m', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=200&q=80' },
+    ],
+    digital: [
+      { id: 7, name: 'Buy Me', distance: 'Online', image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=200&q=80' },
+      { id: 8, name: 'Bit', distance: 'Online', image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=200&q=80' },
+    ],
+  };
+
+  // Gifts by vendor
+  const giftsByVendor = {
+    1: [{ id: 1, name: 'Chocolate Box', price: '₪45', priceNum: 45, icon: '🍫' }, { id: 2, name: 'Truffle Set', price: '₪65', priceNum: 65, icon: '🍬' }],
+    2: [{ id: 3, name: 'Premium Box', price: '₪85', priceNum: 85, icon: '🍫' }],
+    3: [{ id: 4, name: 'Ice Cream Cup', price: '₪28', priceNum: 28, icon: '🍨' }],
+    4: [{ id: 5, name: 'Gelato', price: '₪32', priceNum: 32, icon: '🍦' }],
+    5: [{ id: 6, name: 'Cupcake', price: '₪22', priceNum: 22, icon: '🧁' }, { id: 7, name: 'Croissant', price: '₪18', priceNum: 18, icon: '🥐' }],
+    6: [{ id: 8, name: 'Pain au Chocolat', price: '₪24', priceNum: 24, icon: '🥐' }],
+    7: [{ id: 9, name: 'Coffee Gift', price: '₪25', priceNum: 25, icon: '☕' }],
+    8: [{ id: 10, name: 'Gift Card ₪50', price: '₪50', priceNum: 50, icon: '💳' }, { id: 11, name: 'Gift Card ₪100', price: '₪100', priceNum: 100, icon: '💳' }],
+  };
+
+  const defaultMessages = [
+    "A little something for you 🎁",
+    "Sweet treat coming your way!",
+    "Hope this makes you smile 😊",
+    "Just because... 💝",
+  ];
+
+  const handleConfirm = () => {
+    if (selectedGift && selectedVendor) {
+      onConfirm({
+        category: selectedCategory,
+        vendor: selectedVendor,
+        gift: selectedGift,
+        message: message || defaultMessages[0],
+      });
+      setSelectedCategory(null);
+      setSelectedVendor(null);
+      setSelectedGift(null);
+      setMessage('');
+      setUseCustomMessage(false);
+    }
+  };
+
+  const handleClose = () => {
+    setSelectedCategory(null);
+    setSelectedVendor(null);
+    setSelectedGift(null);
+    setMessage('');
+    setUseCustomMessage(false);
+    onClose();
+  };
+
+  if (!person) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      PaperProps={{
+        sx: {
+          borderRadius: '20px',
+          maxWidth: 400,
+          width: '100%',
+          maxHeight: '72vh',
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, pt: 2, px: 2.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Gift size={22} color="#fff" />
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e', fontSize: '1.15rem' }}>
+              Send Gift to {person.name}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.9rem' }}>
+              Choose a sweet surprise
+            </Typography>
+          </Box>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent sx={{ px: 2.5, py: 1.5 }}>
+        {/* Category Selection */}
+        <Box sx={{ mb: 2.5 }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+            What would you like to send?
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.75 }}>
+            {giftCategories.map((cat) => (
+              <Box
+                key={cat.id}
+                onClick={() => { setSelectedCategory(cat.id); setSelectedVendor(null); setSelectedGift(null); }}
+                sx={{
+                  p: 1,
+                  borderRadius: '12px',
+                  border: '2px solid',
+                  borderColor: selectedCategory === cat.id ? '#f59e0b' : 'rgba(0,0,0,0.08)',
+                  bgcolor: selectedCategory === cat.id ? 'rgba(245,158,11,0.08)' : '#fff',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                }}
+              >
+                <Typography sx={{ fontSize: '24px' }}>{cat.icon}</Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1a1a2e', fontSize: '0.8rem' }}>
+                  {cat.name}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Vendor Selection */}
+        {selectedCategory && (
+          <Box sx={{ mb: 2.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+              Choose where to order from
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {vendorsByCategory[selectedCategory]?.map((vendor) => (
+                <Box
+                  key={vendor.id}
+                  onClick={() => { setSelectedVendor(vendor); setSelectedGift(null); }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    p: 1.5,
+                    borderRadius: '12px',
+                    border: '2px solid',
+                    borderColor: selectedVendor?.id === vendor.id ? '#f59e0b' : 'rgba(0,0,0,0.08)',
+                    bgcolor: selectedVendor?.id === vendor.id ? 'rgba(245,158,11,0.05)' : '#fff',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={vendor.image}
+                    alt={vendor.name}
+                    sx={{ width: 48, height: 48, borderRadius: '10px', objectFit: 'cover' }}
+                  />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem', display: 'block' }}>
+                      {vendor.name}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <MapPin size={12} color="#64748b" />
+                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.85rem' }}>
+                        {vendor.distance}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  {selectedVendor?.id === vendor.id && (
+                    <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Check size={14} color="#fff" />
+                    </Box>
+                  )}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {/* Gift Options */}
+        {selectedVendor && (
+          <Box sx={{ mb: 2.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+              Choose an item
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+              {giftsByVendor[selectedVendor.id]?.map((gift) => (
+                <Box
+                  key={gift.id}
+                  onClick={() => setSelectedGift(gift)}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: '12px',
+                    border: '2px solid',
+                    borderColor: selectedGift?.id === gift.id ? '#f59e0b' : 'rgba(0,0,0,0.08)',
+                    bgcolor: selectedGift?.id === gift.id ? 'rgba(245,158,11,0.05)' : '#fff',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '28px', mb: 0.5 }}>{gift.icon}</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', fontSize: '0.9rem' }}>
+                    {gift.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+                    {gift.price}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {/* Message */}
+        {selectedGift && (
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+              Add a message
+            </Typography>
+            {!useCustomMessage ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {defaultMessages.map((msg, idx) => (
+                  <Box
+                    key={idx}
+                    onClick={() => setMessage(msg)}
+                    sx={{
+                      p: 1.25,
+                      borderRadius: '10px',
+                      border: '2px solid',
+                      borderColor: message === msg ? '#f59e0b' : 'rgba(0,0,0,0.08)',
+                      bgcolor: message === msg ? 'rgba(245,158,11,0.05)' : '#fff',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    {msg}
+                  </Box>
+                ))}
+                <Button
+                  size="small"
+                  onClick={() => setUseCustomMessage(true)}
+                  sx={{ textTransform: 'none', color: '#f59e0b', fontSize: '0.95rem', p: 0.5 }}
+                >
+                  Write custom message...
+                </Button>
+              </Box>
+            ) : (
+              <Box>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Write your message..."
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: '2px solid rgba(0,0,0,0.12)',
+                    fontSize: '0.95rem',
+                    resize: 'none',
+                    minHeight: '70px',
+                    fontFamily: 'inherit',
+                  }}
+                />
+                <Button
+                  size="small"
+                  onClick={() => setUseCustomMessage(false)}
+                  sx={{ textTransform: 'none', color: '#64748b', fontSize: '0.95rem', p: 0.5 }}
+                >
+                  Use suggested message
+                </Button>
+              </Box>
+            )}
+          </Box>
+        )}
+      </DialogContent>
+
+      <DialogActions sx={{ px: 2.5, pb: 2.5, pt: 1.5, gap: 1.5 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={handleClose}
+          sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: '#64748b', fontSize: '0.95rem' }}
+        >
+          Cancel
+        </Button>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleConfirm}
+          disabled={!selectedGift || !message.trim()}
+          sx={{
+            py: 1.25,
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+            boxShadow: '0 4px 16px rgba(245, 158, 11, 0.4)',
+            '&:disabled': { background: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.26)' },
+          }}
+        >
+          Continue 🎁
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+
+/* =========================
+   Say Hi Message Dialog
+   ========================= */
+function SayHiDialog({ open, onClose, person, onConfirm }) {
+  const [message, setMessage] = React.useState('');
+  const [useCustomMessage, setUseCustomMessage] = React.useState(false);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+
+  // AI-suggested messages based on context
+  const aiSuggestions = [
+    `Hey ${person?.name}! I noticed we're both nearby - would love to chat! 👋`,
+    `Hi ${person?.name}! Your profile caught my eye. How's your day going? 😊`,
+    `Hey! I'm ${person?.name ? 'curious about you' : 'here'} - want to grab a coffee sometime? ☕`,
+    `Hi there! Something tells me we'd have great conversations 💬`,
+  ];
+
+  // Quick casual openers
+  const quickOpeners = [
+    "Hey! 👋",
+    "Hi there! 😊",
+    "Hello! How's it going?",
+  ];
+
+  const handleGenerateAI = async () => {
+    setIsGenerating(true);
+    // Simulate AI generation
+    await new Promise(resolve => setTimeout(resolve, 800));
+    const randomSuggestion = aiSuggestions[Math.floor(Math.random() * aiSuggestions.length)];
+    setMessage(randomSuggestion);
+    setIsGenerating(false);
+  };
+
+  const handleConfirm = () => {
+    if (message) {
+      onConfirm({ message });
+      setMessage('');
+      setUseCustomMessage(false);
+    }
+  };
+
+  const handleClose = () => {
+    setMessage('');
+    setUseCustomMessage(false);
+    onClose();
+  };
+
+  if (!person) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      PaperProps={{
+        sx: {
+          borderRadius: '20px',
+          maxWidth: 400,
+          width: '100%',
+          maxHeight: '72vh',
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, pt: 2, px: 2.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MessageCircle size={22} color="#fff" />
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e', fontSize: '1.15rem' }}>
+              Say Hi to {person.name}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.9rem' }}>
+              Start a conversation
+            </Typography>
+          </Box>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent sx={{ px: 2.5, py: 1.5 }}>
+        {/* AI Suggestions */}
+        <Box sx={{ mb: 2.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem' }}>
+              ✨ AI Suggestions
+            </Typography>
+            <Button
+              size="small"
+              onClick={handleGenerateAI}
+              disabled={isGenerating}
+              sx={{ textTransform: 'none', color: '#8b5cf6', fontSize: '0.85rem', p: 0.5, minWidth: 'auto' }}
+            >
+              {isGenerating ? '...' : '🔄 New'}
+            </Button>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {aiSuggestions.slice(0, 3).map((msg, idx) => (
+              <Box
+                key={idx}
+                onClick={() => setMessage(msg)}
+                sx={{
+                  p: 1.25,
+                  borderRadius: '10px',
+                  border: '2px solid',
+                  borderColor: message === msg ? '#8b5cf6' : 'rgba(0,0,0,0.08)',
+                  bgcolor: message === msg ? 'rgba(139,92,246,0.05)' : '#fff',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  color: '#1a1a2e',
+                }}
+              >
+                {msg}
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Quick Openers */}
+        <Box sx={{ mb: 2.5 }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+            Quick openers
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+            {quickOpeners.map((msg, idx) => (
+              <Chip
+                key={idx}
+                label={msg}
+                onClick={() => setMessage(msg)}
+                size="small"
+                sx={{
+                  bgcolor: message === msg ? 'rgba(139,92,246,0.15)' : 'rgba(0,0,0,0.04)',
+                  border: message === msg ? '2px solid #8b5cf6' : '2px solid transparent',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  height: '32px',
+                }}
+              />
+            ))}
+          </Box>
+        </Box>
+
+        {/* Custom Message */}
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+            Or write your own
+          </Typography>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={`Say something nice to ${person.name}...`}
+            style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: '12px',
+              border: '2px solid rgba(0,0,0,0.12)',
+              fontSize: '0.95rem',
+              resize: 'none',
+              minHeight: '70px',
+              fontFamily: 'inherit',
+            }}
+          />
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ px: 2.5, pb: 2.5, pt: 1.5, gap: 1.5 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={handleClose}
+          sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: '#64748b', fontSize: '0.95rem' }}
+        >
+          Cancel
+        </Button>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleConfirm}
+          disabled={!message.trim()}
+          sx={{
+            py: 1.25,
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+            boxShadow: '0 4px 16px rgba(139, 92, 246, 0.4)',
+            '&:disabled': { background: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.26)' },
+          }}
+        >
+          Send 💬
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+
+/* =========================
+   Payment Flow Dialog
+   ========================= */
+function PaymentFlowDialog({ open, onClose, person, gestureType, gestureDetails, onConfirmPayment }) {
+  const [cardNumber, setCardNumber] = React.useState('');
+  const [expiry, setExpiry] = React.useState('');
+  const [cvv, setCvv] = React.useState('');
+  const [isProcessing, setIsProcessing] = React.useState(false);
+
+  // Get gesture info based on type
+  const getGestureInfo = () => {
+    switch (gestureType) {
+      case 'coffee':
+        return {
+          icon: Coffee,
+          color: '#6C5CE7',
+          gradient: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+          itemName: gestureDetails?.drink?.name || 'Coffee',
+          vendorName: gestureDetails?.cafe?.name || 'Cafe',
+          price: gestureDetails?.drink?.price || '₪0',
+        };
+      case 'flower':
+        return {
+          icon: Flower2,
+          color: '#ec4899',
+          gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+          itemName: gestureDetails?.flower?.name || 'Flowers',
+          vendorName: gestureDetails?.shop?.name || 'Flower Shop',
+          price: gestureDetails?.flower?.price || '₪0',
+        };
+      case 'gift':
+        return {
+          icon: Gift,
+          color: '#f59e0b',
+          gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+          itemName: gestureDetails?.gift?.name || 'Gift',
+          vendorName: gestureDetails?.gift?.vendor || 'Vendor',
+          price: gestureDetails?.gift?.price || '₪0',
+        };
+      default:
+        return { icon: Gift, color: '#6C5CE7', gradient: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)', itemName: 'Item', vendorName: 'Vendor', price: '₪0' };
+    }
+  };
+
+  const info = getGestureInfo();
+  const Icon = info.icon;
+
+  const handleSubmit = async () => {
+    if (!cardNumber || !expiry || !cvv) return;
+    
+    setIsProcessing(true);
+    // Simulate payment token generation
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // In production: Use Stripe/payment provider to create payment token
+    const paymentToken = `tok_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    onConfirmPayment({
+      paymentToken,
+      gestureType,
+      gestureDetails,
+    });
+    
+    setIsProcessing(false);
+    setCardNumber('');
+    setExpiry('');
+    setCvv('');
+  };
+
+  const handleClose = () => {
+    setCardNumber('');
+    setExpiry('');
+    setCvv('');
+    onClose();
+  };
+
+  if (!person) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      PaperProps={{
+        sx: {
+          borderRadius: '20px',
+          maxWidth: 400,
+          width: '100%',
+          maxHeight: '72vh',
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, pt: 2, px: 2.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: '12px',
+              background: info.gradient,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon size={22} color="#fff" />
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e', fontSize: '1.15rem' }}>
+              Confirm Payment
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.9rem' }}>
+              Sending to {person.name}
+            </Typography>
+          </Box>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent sx={{ px: 2.5, py: 1.5 }}>
+        {/* Order Summary */}
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: '12px',
+            bgcolor: 'rgba(0,0,0,0.02)',
+            border: '1.5px solid rgba(0,0,0,0.06)',
+            mb: 2.5,
+          }}
+        >
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5, display: 'block', fontSize: '0.95rem' }}>
+            Order Summary
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.9rem' }}>
+              {info.itemName}
+            </Typography>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: '#1a1a2e', fontSize: '0.95rem' }}>
+              {info.price}
+            </Typography>
+          </Box>
+          <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+            From {info.vendorName}
+          </Typography>
+        </Box>
+
+        {/* Important Notice */}
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: '12px',
+            bgcolor: 'rgba(34, 197, 94, 0.08)',
+            border: '1.5px solid rgba(34, 197, 94, 0.2)',
+            mb: 2.5,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+            <Check size={16} color="#22c55e" style={{ marginTop: 2 }} />
+            <Box>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#22c55e', display: 'block', fontSize: '0.9rem' }}>
+                You will only be charged if {person.name} accepts
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+                If declined or expired, no charge will be made.
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Card Details */}
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
+            Payment Details
+          </Typography>
+          
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="caption" sx={{ color: '#64748b', mb: 0.5, display: 'block', fontSize: '0.85rem' }}>
+              Card Number
+            </Typography>
+            <input
+              type="text"
+              value={cardNumber}
+              onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
+              placeholder="1234 5678 9012 3456"
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '10px',
+                border: '2px solid rgba(0,0,0,0.12)',
+                fontSize: '0.95rem',
+                fontFamily: 'inherit',
+              }}
+            />
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', mb: 0.5, display: 'block', fontSize: '0.85rem' }}>
+                Expiry
+              </Typography>
+              <input
+                type="text"
+                value={expiry}
+                onChange={(e) => setExpiry(e.target.value.slice(0, 5))}
+                placeholder="MM/YY"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  border: '2px solid rgba(0,0,0,0.12)',
+                  fontSize: '0.95rem',
+                  fontFamily: 'inherit',
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', mb: 0.5, display: 'block', fontSize: '0.85rem' }}>
+                CVV
+              </Typography>
+              <input
+                type="text"
+                value={cvv}
+                onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                placeholder="123"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  border: '2px solid rgba(0,0,0,0.12)',
+                  fontSize: '0.95rem',
+                  fontFamily: 'inherit',
+                }}
+              />
+            </Box>
+          </Box>
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ px: 2.5, pb: 2.5, pt: 1.5, gap: 1.5 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={handleClose}
+          disabled={isProcessing}
+          sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: '#64748b', fontSize: '0.95rem' }}
+        >
+          Cancel
+        </Button>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={!cardNumber || !expiry || !cvv || isProcessing}
+          sx={{
+            py: 1.25,
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            background: info.gradient,
+            boxShadow: `0 4px 16px ${info.color}66`,
+            '&:disabled': { background: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.26)' },
+          }}
+        >
+          {isProcessing ? '...' : 'Send'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 
 /* =========================
    Gesture Sent Dialog
@@ -1150,10 +2527,11 @@ function GestureSentDialog({ open, onClose, person, gesture, coffeeDetails }) {
       onClose={onClose}
       PaperProps={{
         sx: {
-          borderRadius: '28px',
-          maxWidth: 340,
-          width: '100%',
+          borderRadius: '14px',
+          maxWidth: 280,
+          width: '280px',
           overflow: 'hidden',
+          m: 'auto',
         },
       }}
     >
@@ -1161,7 +2539,7 @@ function GestureSentDialog({ open, onClose, person, gesture, coffeeDetails }) {
       <Box
         sx={{
           background: gesture.gradient,
-          p: 4,
+          p: 2,
           textAlign: 'center',
           position: 'relative',
           overflow: 'hidden',
@@ -1200,19 +2578,19 @@ function GestureSentDialog({ open, onClose, person, gesture, coffeeDetails }) {
         >
           <Box
             sx={{
-              width: 80,
-              height: 80,
-              borderRadius: '24px',
+              width: 50,
+              height: 50,
+              borderRadius: '14px',
               bgcolor: 'rgba(255,255,255,0.25)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               mx: 'auto',
-              mb: 2,
+              mb: 1,
               backdropFilter: 'blur(10px)',
             }}
           >
-            <Icon size={40} color="#fff" />
+            <Icon size={26} color="#fff" />
           </Box>
         </motion.div>
         
@@ -1221,34 +2599,34 @@ function GestureSentDialog({ open, onClose, person, gesture, coffeeDetails }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Typography variant="h5" sx={{ fontWeight: 800, color: '#fff', mb: 0.5 }}>
+          <Typography variant="body1" sx={{ fontWeight: 800, color: '#fff', mb: 0.25, fontSize: '0.95rem' }}>
             Gesture Sent! 💫
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.95)', fontSize: '0.75rem' }}>
             {gesture.label} to {person.name}
           </Typography>
         </motion.div>
       </Box>
 
-      <DialogContent sx={{ p: 3, textAlign: 'center' }}>
+      <DialogContent sx={{ p: 1.5, pt: 1, textAlign: 'center' }}>
         {/* Person Info */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
           <Box
             component="img"
             src={person.avatar}
             alt={person.name}
             sx={{
-              width: 48,
-              height: 48,
-              borderRadius: '14px',
+              width: 36,
+              height: 36,
+              borderRadius: '10px',
               objectFit: 'cover',
             }}
           />
           <Box sx={{ textAlign: 'left' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.8rem' }}>
               {person.name}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>
               Will be notified soon
             </Typography>
           </Box>
@@ -1257,39 +2635,40 @@ function GestureSentDialog({ open, onClose, person, gesture, coffeeDetails }) {
         {coffeeDetails && (
           <Box
             sx={{
-              p: 2,
-              borderRadius: '16px',
+              p: 1,
+              borderRadius: '10px',
               bgcolor: 'rgba(108,92,231,0.08)',
               border: '1px solid rgba(108,92,231,0.15)',
-              mb: 2,
+              mb: 1,
             }}
           >
-            <Typography variant="caption" sx={{ color: '#6C5CE7', fontWeight: 700, display: 'block', mb: 0.5 }}>
+            <Typography variant="caption" sx={{ color: '#6C5CE7', fontWeight: 700, display: 'block', mb: 0.25, fontSize: '0.65rem' }}>
               Your Coffee Invitation
             </Typography>
-            <Typography variant="body2" sx={{ color: '#1a1a2e', fontWeight: 600 }}>
+            <Typography variant="body2" sx={{ color: '#1a1a2e', fontWeight: 600, fontSize: '0.75rem' }}>
               {coffeeDetails.drink.name} at {coffeeDetails.cafe.name}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>
               {coffeeDetails.cafe.distance} away
             </Typography>
           </Box>
         )}
-        <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>
-          {person.name} will receive your sweet gesture and can choose to respond. Keep your fingers crossed! 🤞
+        <Typography variant="caption" sx={{ color: '#64748b', mb: 0.5, fontSize: '0.7rem', lineHeight: 1.3, display: 'block' }}>
+          {person.name} will receive your gesture and can respond. 🤞
         </Typography>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'center' }}>
+      <DialogActions sx={{ px: 1.5, pb: 1.5, pt: 0, justifyContent: 'center' }}>
         <Button
           fullWidth
           variant="contained"
           onClick={onClose}
           sx={{
-            py: 1.5,
-            borderRadius: '14px',
+            py: 0.75,
+            borderRadius: '8px',
             textTransform: 'none',
             fontWeight: 700,
+            fontSize: '0.8rem',
             background: gesture.gradient,
             boxShadow: `0 4px 16px ${gesture.shadowColor}`,
           }}
@@ -1311,7 +2690,13 @@ export default function ExploreScreen() {
   
   // State
   const [activeFilter, setActiveFilter] = useState('all');
-  const [savedPlaces, setSavedPlaces] = useState([]);
+  const [savedPlaces, setSavedPlaces] = useState(() => {
+    // Load saved place IDs from localStorage on init
+    try {
+      const saved = JSON.parse(localStorage.getItem("saved_places") || "[]");
+      return saved.map(p => p.id);
+    } catch { return []; }
+  });
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [showBenefitsDialog, setShowBenefitsDialog] = useState(false);
@@ -1322,8 +2707,31 @@ export default function ExploreScreen() {
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [selectedGesture, setSelectedGesture] = useState(null);
   const [showGestureDialog, setShowGestureDialog] = useState(false);
+  
+  // Gesture messages store
+  const addGestureMessage = useGestureMessagesStore((state) => state.addGestureMessage);
+  const canSendGesture = useGestureMessagesStore((state) => state.canSendGesture);
+  const consumeGesture = useGestureMessagesStore((state) => state.useGesture);
+  const startGestureProcess = useGestureMessagesStore((state) => state.startGestureProcess);
+  const cancelGestureProcess = useGestureMessagesStore((state) => state.cancelGestureProcess);
+  const gestureInProgress = useGestureMessagesStore((state) => state.gestureInProgress);
+  const isPulsePro = useGestureMessagesStore((state) => state.isPulsePro);
+  const pointsBalance = useGestureMessagesStore((state) => state.pointsBalance);
+  const monthlyGestureUsage = useGestureMessagesStore((state) => state.monthlyGestureUsage);
+  const [showGestureLimitDialog, setShowGestureLimitDialog] = useState(false);
   const [showCoffeeDialog, setShowCoffeeDialog] = useState(false);
+  const [showFlowerDialog, setShowFlowerDialog] = useState(false);
+  const [showGiftDialog, setShowGiftDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showSayHiDialog, setShowSayHiDialog] = useState(false);
   const [coffeeDetails, setCoffeeDetails] = useState(null);
+  const [flowerDetails, setFlowerDetails] = useState(null);
+  const [giftDetails, setGiftDetails] = useState(null);
+  const [currentGestureType, setCurrentGestureType] = useState(null);
+  const [currentGestureDetails, setCurrentGestureDetails] = useState(null);
+  // sentGestures is now managed by the store for persistence
+  const sentGestures = useGestureMessagesStore((state) => state.sentGestures);
+  const markGestureSent = useGestureMessagesStore((state) => state.markGestureSent);
 
   // Simulate loading
   React.useEffect(() => {
@@ -1334,12 +2742,18 @@ export default function ExploreScreen() {
   // Filter places based on active filter
   const filteredPlaces = useMemo(() => {
     if (activeFilter === 'all') return MOCK_PLACES;
+    if (activeFilter === 'saved') {
+      // Show saved places based on savedPlaces state (synced with localStorage)
+      return MOCK_PLACES.filter(place => 
+        savedPlaces.includes(place.id) || savedPlaces.includes(String(place.id))
+      );
+    }
     if (activeFilter === 'near-me') {
       // Would use geolocation in real app
       return MOCK_PLACES.slice(0, 5);
     }
     return MOCK_PLACES.filter(place => place.category === activeFilter);
-  }, [activeFilter]);
+  }, [activeFilter, savedPlaces]);
 
   // Sort: Open now first, then with benefits, then new, then others
   const sortedPlaces = useMemo(() => {
@@ -1361,20 +2775,51 @@ export default function ExploreScreen() {
   const handleViewPlace = useCallback((place) => {
     setSelectedPlace(place);
     // Navigate to business page (place detail)
+    window.scrollTo(0, 0);
     navigate(`/business/${place.id}`, { state: { place } });
   }, [navigate]);
 
   const handleSave = useCallback((placeId) => {
-    setSavedPlaces(prev => {
-      if (prev.includes(placeId)) {
-        setToast({ open: true, message: 'Removed from saved', severity: 'info' });
-        return prev.filter(id => id !== placeId);
-      } else {
-        setToast({ open: true, message: 'Saved!', severity: 'success' });
-        return [...prev, placeId];
-      }
-    });
-  }, []);
+    // Normalize to number for consistent comparison
+    const normalizedId = typeof placeId === 'string' ? parseInt(placeId) : placeId;
+    const isCurrentlySaved = savedPlaces.some(id => id === normalizedId || id === placeId || String(id) === String(placeId));
+    const place = MOCK_PLACES.find(p => p.id === placeId || p.id === normalizedId);
+    
+    if (isCurrentlySaved) {
+      // Remove from state - filter out any matching ID
+      setSavedPlaces(prev => prev.filter(id => id !== normalizedId && id !== placeId && String(id) !== String(placeId)));
+      setToast({ open: true, message: 'Removed from saved', severity: 'info' });
+      // Remove from localStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem("saved_places") || "[]");
+        const updated = saved.filter(p => p.id !== placeId && p.id !== normalizedId && String(p.id) !== String(placeId));
+        localStorage.setItem("saved_places", JSON.stringify(updated));
+      } catch (e) { console.error("Error removing saved place:", e); }
+    } else {
+      // Add to state
+      setSavedPlaces(prev => [...prev, normalizedId]);
+      setToast({ open: true, message: 'Saved!', severity: 'success' });
+      // Save to localStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem("saved_places") || "[]");
+        if (!saved.find(p => p.id === placeId || p.id === normalizedId || String(p.id) === String(placeId))) {
+          saved.push({
+            id: normalizedId,
+            name: place?.name || "Unknown Place",
+            category: place?.category || "Place",
+            address: place?.address || "",
+            coverImage: place?.image || "",
+          });
+          localStorage.setItem("saved_places", JSON.stringify(saved));
+        }
+      } catch (e) { console.error("Error saving place:", e); }
+    }
+    
+    // Auto-hide toast after 2 seconds
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, open: false }));
+    }, 2000);
+  }, [savedPlaces]);
 
   const handleScanQR = useCallback((place) => {
     setSelectedPlace(place);
@@ -1388,24 +2833,141 @@ export default function ExploreScreen() {
 
   // Sweet Gestures handler
   const handleSendGesture = useCallback((person, gesture) => {
+    // Check if user can send gesture (limits)
+    const gestureStatus = canSendGesture();
+    
+    // If free gesture is available, consume it immediately
+    if (gestureStatus.canSend && gestureStatus.reason === 'free') {
+      const result = consumeGesture();
+      if (!result.success) {
+        setSelectedPerson(person);
+        setSelectedGesture(gesture);
+        setShowGestureLimitDialog(true);
+        return;
+      }
+      // Free gesture consumed, open dialog
+      setSelectedPerson(person);
+      setSelectedGesture(gesture);
+      openGestureDialog(gesture);
+      return;
+    }
+    
+    // If no free gesture, show limit dialog (user must explicitly choose to use points)
     setSelectedPerson(person);
     setSelectedGesture(gesture);
-    
-    // If it's coffee gesture, show coffee selection dialog first
+    setShowGestureLimitDialog(true);
+  }, [canSendGesture, consumeGesture]);
+  
+  // Helper to open the appropriate gesture dialog
+  const openGestureDialog = useCallback((gesture) => {
     if (gesture.id === 'coffee') {
       setShowCoffeeDialog(true);
-    } else {
-      // For other gestures, show sent dialog directly
-      setShowGestureDialog(true);
+    } else if (gesture.id === 'flower') {
+      setShowFlowerDialog(true);
+    } else if (gesture.id === 'note') {
+      setShowGiftDialog(true);
+    } else if (gesture.id === 'hi') {
+      setShowSayHiDialog(true);
     }
   }, []);
 
-  // Handle coffee selection confirmation
+  // Handle coffee selection confirmation - go to payment
   const handleCoffeeConfirm = useCallback((details) => {
     setCoffeeDetails(details);
     setShowCoffeeDialog(false);
-    setShowGestureDialog(true);
+    setCurrentGestureType('coffee');
+    setCurrentGestureDetails({ cafe: details.cafe, drink: details.drink, message: details.message });
+    setShowPaymentDialog(true);
   }, []);
+
+  // Handle flower selection confirmation - go to payment
+  const handleFlowerConfirm = useCallback((details) => {
+    setFlowerDetails(details);
+    setShowFlowerDialog(false);
+    setCurrentGestureType('flower');
+    setCurrentGestureDetails({ shop: details.shop, flower: details.flower, message: details.message });
+    setShowPaymentDialog(true);
+  }, []);
+
+  // Handle gift selection confirmation - go to payment
+  const handleGiftConfirm = useCallback((details) => {
+    setGiftDetails(details);
+    setShowGiftDialog(false);
+    setCurrentGestureType('gift');
+    setCurrentGestureDetails({ category: details.category, gift: details.gift, message: details.message });
+    setShowPaymentDialog(true);
+  }, []);
+
+  // Handle payment confirmation - send gesture to backend
+  const handlePaymentConfirm = useCallback(async (paymentData) => {
+    setShowPaymentDialog(false);
+    
+    // Get the message from current gesture details
+    const gestureMessage = currentGestureDetails?.message || '';
+    
+    // Save gesture message to store (will appear in chat)
+    if (selectedPerson && gestureMessage) {
+      addGestureMessage(selectedPerson.id, {
+        gestureType: paymentData.gestureType,
+        message: gestureMessage,
+        details: currentGestureDetails,
+      }, {
+        id: selectedPerson.id,
+        name: selectedPerson.name,
+        age: selectedPerson.age || '',
+        photoUrl: selectedPerson.avatar || selectedPerson.photoUrl || selectedPerson.image,
+      });
+    }
+    
+    // Mark gesture as sent for this person (persisted in store)
+    // Note: gesture was already consumed when dialog opened
+    markGestureSent(selectedPerson.id, paymentData.gestureType);
+    
+    // Update selected gesture for the sent dialog
+    const gestureInfo = GESTURE_TYPES.find(g => g.id === paymentData.gestureType);
+    setSelectedGesture(gestureInfo);
+    
+    // Show success dialog
+    setShowGestureDialog(true);
+    
+    // Navigate to chat after a short delay
+    setTimeout(() => {
+      navigate('/chat');
+    }, 1500);
+  }, [selectedPerson, currentGestureDetails, addGestureMessage, markGestureSent, navigate]);
+
+  // Handle Say Hi confirmation - send message
+  const handleSayHiConfirm = useCallback((details) => {
+    setShowSayHiDialog(false);
+    
+    // Save message to store (will appear in chat)
+    if (selectedPerson && details.message) {
+      addGestureMessage(selectedPerson.id, {
+        gestureType: 'sayhi',
+        message: details.message,
+        details: {},
+      }, {
+        id: selectedPerson.id,
+        name: selectedPerson.name,
+        age: selectedPerson.age || '',
+        photoUrl: selectedPerson.avatar || selectedPerson.photoUrl || selectedPerson.image,
+      });
+    }
+    
+    // Mark hi gesture as sent for this person (persisted in store)
+    // Note: gesture was already consumed when dialog opened
+    markGestureSent(selectedPerson.id, 'hi');
+    
+    // Show success dialog
+    const gestureInfo = GESTURE_TYPES.find(g => g.id === 'hi');
+    setSelectedGesture(gestureInfo);
+    setShowGestureDialog(true);
+    
+    // Navigate to chat after a short delay
+    setTimeout(() => {
+      navigate('/chat');
+    }, 1500);
+  }, [selectedPerson, addGestureMessage, markGestureSent, navigate]);
 
   // Loading skeleton
   if (isLoading) {
@@ -1427,6 +2989,9 @@ export default function ExploreScreen() {
     );
   }
 
+  // Fixed header height: pt:3 (24px) + h4 (~40px) + body1 (~24px) + pb:2 (16px) = ~104px + safe area
+  const FIXED_HEADER_HEIGHT = 110;
+
   return (
     <Box
       sx={{
@@ -1438,65 +3003,108 @@ export default function ExploreScreen() {
         position: 'relative',
       }}
     >
-      {/* Header */}
-      <Box sx={{ px: 3, pt: 3, pb: 2, backgroundColor: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 0.5 }}>
-            {t('explore')}
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#64748b' }}>
-            Places worth stepping into
-          </Typography>
-        </Box>
-        <PageHelpButton {...getPageHelpContent('explore')} />
-      </Box>
-
-      {/* Filter Chips - Sticky */}
+      {/* Fixed Header Area - Title + Filters (does NOT scroll) */}
       <Box
         sx={{
-          px: 3,
-          py: 1.5,
           backgroundColor: '#fff',
           borderBottom: '1px solid rgba(0,0,0,0.06)',
-          position: 'sticky',
-          top: 76,
-          zIndex: 9,
-          overflowX: 'auto',
-          display: 'flex',
-          gap: 1,
-          '&::-webkit-scrollbar': { display: 'none' },
-          scrollbarWidth: 'none',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
         }}
       >
-        {FILTER_CATEGORIES.map((cat) => {
-          const Icon = cat.icon;
-          const isActive = activeFilter === cat.id;
-          return (
-            <Chip
-              key={cat.id}
-              icon={<Icon size={16} />}
-              label={t(cat.labelKey)}
-              onClick={() => setActiveFilter(cat.id)}
-              sx={{
-                flexShrink: 0,
-                fontWeight: 600,
-                borderRadius: '18px',
-                bgcolor: isActive ? '#6C5CE7' : '#f1f5f9',
-                color: isActive ? '#fff' : '#64748b',
-                '& .MuiChip-icon': {
-                  color: isActive ? '#fff' : '#64748b',
-                },
-                '&:hover': {
-                  bgcolor: isActive ? '#5b4cdb' : '#e2e8f0',
-                },
-              }}
-            />
-          );
-        })}
+        {/* Page Title */}
+        <Box sx={{ px: 3, pt: 3, pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 0.5 }}>
+              {t('explore')}
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#64748b' }}>
+              Places worth stepping into
+            </Typography>
+          </Box>
+          <PageHelpButton {...getPageHelpContent('explore')} />
+        </Box>
+
+        {/* Filter Chips - Fixed, stays in place */}
+        <Box
+          sx={{
+            px: 3,
+            py: 1.5,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1,
+          }}
+        >
+          {/* Row 1: Main filters */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {FILTER_CATEGORIES_ROW1.map((cat) => {
+              const Icon = cat.icon;
+              const isActive = activeFilter === cat.id;
+              return (
+                <Chip
+                  key={cat.id}
+                  icon={<Icon size={16} />}
+                  label={t(cat.labelKey)}
+                  onClick={() => setActiveFilter(cat.id)}
+                  sx={{
+                    fontWeight: 600,
+                    borderRadius: '18px',
+                    bgcolor: isActive ? '#6C5CE7' : '#f1f5f9',
+                    color: isActive ? '#fff' : '#64748b',
+                    '& .MuiChip-icon': {
+                      color: isActive ? '#fff' : '#64748b',
+                    },
+                    '&:hover': {
+                      bgcolor: isActive ? '#5b4cdb' : '#e2e8f0',
+                    },
+                  }}
+                />
+              );
+            })}
+          </Box>
+          {/* Row 2: Category filters */}
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              gap: 1,
+              overflowX: 'auto',
+              '&::-webkit-scrollbar': { display: 'none' },
+              scrollbarWidth: 'none',
+            }}
+          >
+            {FILTER_CATEGORIES_ROW2.map((cat) => {
+              const Icon = cat.icon;
+              const isActive = activeFilter === cat.id;
+              return (
+                <Chip
+                  key={cat.id}
+                  icon={<Icon size={14} />}
+                  label={t(cat.labelKey)}
+                  onClick={() => setActiveFilter(cat.id)}
+                  size="small"
+                  sx={{
+                    flexShrink: 0,
+                    fontWeight: 500,
+                    borderRadius: '14px',
+                    bgcolor: isActive ? '#6C5CE7' : '#f8fafc',
+                    color: isActive ? '#fff' : '#94a3b8',
+                    '& .MuiChip-icon': {
+                      color: isActive ? '#fff' : '#94a3b8',
+                    },
+                    '&:hover': {
+                      bgcolor: isActive ? '#5b4cdb' : '#f1f5f9',
+                    },
+                  }}
+                />
+              );
+            })}
+          </Box>
+        </Box>
       </Box>
 
-      {/* Places Feed */}
-      <Box sx={{ flex: 1, px: 3, py: 2 }}>
+      {/* Scrollable Content Area - only places scroll */}
+      <Box sx={{ flex: 1, overflowY: 'auto' }}>
+        {/* Places Feed */}
+        <Box sx={{ px: 3, py: 2 }}>
         {/* Results count */}
         <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
           {sortedPlaces.length} places {activeFilter !== 'all' && `in ${activeFilter.replace('-', ' ')}`}
@@ -1512,13 +3120,14 @@ export default function ExploreScreen() {
                 onSave={handleSave}
                 onScanQR={handleScanQR}
                 onSeeBenefits={handleSeeBenefits}
-                isSaved={savedPlaces.includes(place.id)}
+                isSaved={savedPlaces.some(id => id === place.id || String(id) === String(place.id))}
               />
               {/* Sweet Gestures Section - appears after 3rd place */}
               {index === 2 && (
                 <SweetGesturesSection 
                   people={NEARBY_PEOPLE} 
-                  onSendGesture={handleSendGesture} 
+                  onSendGesture={handleSendGesture}
+                  sentGestures={sentGestures}
                 />
               )}
             </React.Fragment>
@@ -1549,6 +3158,7 @@ export default function ExploreScreen() {
             </Typography>
           </Box>
         )}
+        </Box>
       </Box>
 
       {/* QR Scan Dialog */}
@@ -1568,9 +3178,43 @@ export default function ExploreScreen() {
       {/* Coffee Selection Dialog */}
       <CoffeeSelectionDialog
         open={showCoffeeDialog}
-        onClose={() => setShowCoffeeDialog(false)}
+        onClose={() => { setShowCoffeeDialog(false); cancelGestureProcess(); }}
         person={selectedPerson}
         onConfirm={handleCoffeeConfirm}
+      />
+
+      {/* Flower Selection Dialog */}
+      <FlowerSelectionDialog
+        open={showFlowerDialog}
+        onClose={() => { setShowFlowerDialog(false); cancelGestureProcess(); }}
+        person={selectedPerson}
+        onConfirm={handleFlowerConfirm}
+      />
+
+      {/* Gift Selection Dialog */}
+      <GiftSelectionDialog
+        open={showGiftDialog}
+        onClose={() => { setShowGiftDialog(false); cancelGestureProcess(); }}
+        person={selectedPerson}
+        onConfirm={handleGiftConfirm}
+      />
+
+      {/* Payment Flow Dialog */}
+      <PaymentFlowDialog
+        open={showPaymentDialog}
+        onClose={() => { setShowPaymentDialog(false); cancelGestureProcess(); }}
+        person={selectedPerson}
+        gestureType={currentGestureType}
+        gestureDetails={currentGestureDetails}
+        onConfirmPayment={handlePaymentConfirm}
+      />
+
+      {/* Say Hi Dialog */}
+      <SayHiDialog
+        open={showSayHiDialog}
+        onClose={() => { setShowSayHiDialog(false); cancelGestureProcess(); }}
+        person={selectedPerson}
+        onConfirm={handleSayHiConfirm}
       />
 
       {/* Gesture Sent Dialog */}
@@ -1585,21 +3229,133 @@ export default function ExploreScreen() {
         coffeeDetails={coffeeDetails}
       />
 
-      {/* Toast */}
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={2000}
-        onClose={() => setToast(prev => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      {/* Gesture Limit Reached Dialog */}
+      <Dialog
+        open={showGestureLimitDialog}
+        onClose={() => setShowGestureLimitDialog(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            maxWidth: 340,
+            width: '100%',
+            p: 0,
+          },
+        }}
       >
-        <Alert
-          severity={toast.severity}
-          variant="filled"
-          sx={{ borderRadius: '12px' }}
+        <DialogContent sx={{ textAlign: 'center', p: 3 }}>
+          <Box
+            sx={{
+              width: 60,
+              height: 60,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2,
+            }}
+          >
+            <Gift size={28} color="#fff" />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 1 }}>
+            Monthly Gesture Used
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b', mb: 3 }}>
+            You've used your free gesture this month. Use points or upgrade to Pulse Pro for unlimited gestures.
+          </Typography>
+          
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {pointsBalance >= 60 && (
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => {
+                  // Consume points explicitly when user clicks
+                  const result = consumeGesture();
+                  if (result.success) {
+                    setShowGestureLimitDialog(false);
+                    // Open the gesture dialog - user chose to use points
+                    openGestureDialog(selectedGesture);
+                  }
+                }}
+                sx={{
+                  py: 1.25,
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                }}
+              >
+                Use 60 Points ({pointsBalance} available)
+              </Button>
+            )}
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => {
+                setShowGestureLimitDialog(false);
+                navigate('/subscriptions');
+              }}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: '#6C5CE7',
+                color: '#6C5CE7',
+              }}
+            >
+              Upgrade to Pulse Pro ✨
+            </Button>
+            <Button
+              fullWidth
+              onClick={() => setShowGestureLimitDialog(false)}
+              sx={{
+                py: 1,
+                textTransform: 'none',
+                color: '#64748b',
+              }}
+            >
+              Maybe Later
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* Toast - Center of screen */}
+      {toast.open && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            pointerEvents: 'none',
+          }}
         >
-          {toast.message}
-        </Alert>
-      </Snackbar>
+          <Alert
+            severity={toast.severity}
+            variant="filled"
+            onClose={() => setToast(prev => ({ ...prev, open: false }))}
+            sx={{ 
+              borderRadius: '12px', 
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)', 
+              fontSize: '1rem', 
+              px: 3, 
+              py: 1.5,
+              pointerEvents: 'auto',
+            }}
+          >
+            {toast.message}
+          </Alert>
+        </Box>
+      )}
     </Box>
   );
 }
