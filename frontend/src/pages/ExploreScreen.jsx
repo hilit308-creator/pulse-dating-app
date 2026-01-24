@@ -22,6 +22,7 @@ import {
   CardMedia,
   Skeleton,
   Tooltip,
+  TextField,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -2845,9 +2846,9 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
       maxWidth="sm"
       PaperProps={{
         sx: {
-          borderRadius: '20px',
+          borderRadius: '16px',
           overflow: 'hidden',
-          maxHeight: '75vh',
+          maxHeight: '70vh',
           m: 2,
         },
       }}
@@ -2860,70 +2861,70 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               component="img"
               src={workshop.image}
               alt={workshop.name}
-              sx={{ width: '100%', height: 140, objectFit: 'cover' }}
+              sx={{ width: '100%', height: 100, objectFit: 'cover' }}
             />
             <IconButton
               onClick={handleClose}
-              sx={{ position: 'absolute', top: 8, right: 8, bgcolor: 'rgba(255,255,255,0.9)' }}
+              sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'rgba(255,255,255,0.9)', p: 0.5 }}
             >
-              <X size={20} />
+              <X size={18} />
             </IconButton>
           </Box>
-          <DialogContent sx={{ pt: 1.5, pb: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5 }}>
+          <DialogContent sx={{ pt: 1, pb: 0.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.25 }}>
               {workshop.name}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#64748b', mb: 1.5 }}>
+            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1 }}>
               {workshop.location}
             </Typography>
 
             {workshop.workshopDetails && (
-              <Box sx={{ bgcolor: '#f8fafc', borderRadius: '12px', p: 2, mb: 1.5 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+              <Box sx={{ bgcolor: '#f8fafc', borderRadius: '10px', p: 1.5, mb: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Box>
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>Date & Time</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>Date & Time</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
                       {new Date(workshop.workshopDetails.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 600 }}>
+                    <Typography variant="caption" sx={{ color: '#6C5CE7', fontWeight: 600 }}>
                       {workshop.workshopDetails.time} · {workshop.workshopDetails.duration}
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>Price</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#6C5CE7' }}>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>Price</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 800, color: '#6C5CE7' }}>
                       ₪{workshop.workshopDetails.price}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>per couple</Typography>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>per couple</Typography>
                   </Box>
                 </Box>
                 
-                <Box sx={{ borderTop: '1px solid #e2e8f0', pt: 1.5 }}>
-                  <Typography variant="body2" sx={{ color: '#64748b' }}>
+                <Box sx={{ borderTop: '1px solid #e2e8f0', pt: 1 }}>
+                  <Typography variant="caption" sx={{ color: '#64748b' }}>
                     Includes: {workshop.workshopDetails.includes.join(' • ')}
                   </Typography>
                 </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1.5, pt: 1.5, borderTop: '1px solid #e2e8f0' }}>
-                  <Users size={16} color="#64748b" />
-                  <Typography variant="body2" sx={{ color: workshop.workshopDetails.spotsLeft <= 3 ? '#ef4444' : '#64748b', fontWeight: 600 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1, pt: 1, borderTop: '1px solid #e2e8f0' }}>
+                  <Users size={14} color="#64748b" />
+                  <Typography variant="caption" sx={{ color: workshop.workshopDetails.spotsLeft <= 3 ? '#ef4444' : '#64748b', fontWeight: 600 }}>
                     {workshop.workshopDetails.spotsLeft} spots left
                   </Typography>
                 </Box>
               </Box>
             )}
           </DialogContent>
-          <DialogActions sx={{ px: 2, pb: 2 }}>
+          <DialogActions sx={{ px: 2, pb: 1.5 }}>
             <Button
               fullWidth
               variant="contained"
               onClick={() => setStep(2)}
               sx={{
-                py: 1,
-                borderRadius: '12px',
+                py: 0.75,
+                borderRadius: '10px',
                 textTransform: 'none',
                 fontWeight: 700,
-                fontSize: '0.9rem',
+                fontSize: '0.85rem',
                 background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
               }}
             >
@@ -3062,12 +3063,12 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
       {/* Step 3: Payment */}
       {step === 3 && (
         <>
-          <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
+          <DialogTitle sx={{ textAlign: 'center', pt: 3, pb: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 800 }}>
               Confirm Booking 💳
             </Typography>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ overflow: 'auto' }}>
             <Box sx={{ bgcolor: '#f8fafc', borderRadius: '16px', p: 2, mb: 2 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>{workshop.name}</Typography>
               <Typography variant="body2" sx={{ color: '#64748b' }}>
@@ -3132,50 +3133,47 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
             {/* Credit Card Form */}
             {paymentMethod === 'card' && (
               <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box
-                  component="input"
+                <TextField
+                  fullWidth
                   placeholder="Card Number"
                   value={cardNumber}
                   onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
+                  size="small"
                   sx={{
-                    width: '100%',
-                    p: 1.5,
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    fontSize: '14px',
-                    outline: 'none',
-                    '&:focus': { borderColor: '#6C5CE7' },
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '10px',
+                      '&:hover fieldset': { borderColor: '#6C5CE7' },
+                      '&.Mui-focused fieldset': { borderColor: '#6C5CE7' },
+                    },
                   }}
                 />
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Box
-                    component="input"
+                  <TextField
                     placeholder="MM/YY"
                     value={cardExpiry}
                     onChange={(e) => setCardExpiry(e.target.value.slice(0, 5))}
+                    size="small"
                     sx={{
                       flex: 1,
-                      p: 1.5,
-                      borderRadius: '10px',
-                      border: '1px solid #e2e8f0',
-                      fontSize: '14px',
-                      outline: 'none',
-                      '&:focus': { borderColor: '#6C5CE7' },
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&:hover fieldset': { borderColor: '#6C5CE7' },
+                        '&.Mui-focused fieldset': { borderColor: '#6C5CE7' },
+                      },
                     }}
                   />
-                  <Box
-                    component="input"
+                  <TextField
                     placeholder="CVV"
                     value={cardCvv}
                     onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    size="small"
                     sx={{
                       flex: 1,
-                      p: 1.5,
-                      borderRadius: '10px',
-                      border: '1px solid #e2e8f0',
-                      fontSize: '14px',
-                      outline: 'none',
-                      '&:focus': { borderColor: '#6C5CE7' },
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&:hover fieldset': { borderColor: '#6C5CE7' },
+                        '&.Mui-focused fieldset': { borderColor: '#6C5CE7' },
+                      },
                     }}
                   />
                 </Box>
@@ -3214,44 +3212,44 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
       {/* Step 4: Confirmation */}
       {step === 4 && (
         <>
-          <DialogContent sx={{ textAlign: 'center', py: 4 }}>
+          <DialogContent sx={{ textAlign: 'center', py: 2.5 }}>
             <Box sx={{ 
-              width: 80, 
-              height: 80, 
+              width: 60, 
+              height: 60, 
               borderRadius: '50%', 
               bgcolor: '#dcfce7', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
               mx: 'auto',
-              mb: 2,
+              mb: 1.5,
             }}>
-              <Check size={40} color="#22c55e" />
+              <Check size={32} color="#22c55e" />
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5 }}>
               Booking Confirmed! 🎉
             </Typography>
-            <Typography variant="body1" sx={{ color: '#64748b', mb: 2 }}>
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 1.5 }}>
               You're all set for {workshop.name}
             </Typography>
             
             {selectedMatch && (
               <Box sx={{ 
                 bgcolor: '#fef3c7', 
-                borderRadius: '12px', 
-                p: 2, 
+                borderRadius: '10px', 
+                p: 1.5, 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: 1.5,
+                gap: 1,
                 textAlign: 'left',
-                mb: 2,
+                mb: 1.5,
               }}>
-                <Box sx={{ fontSize: '1.5rem' }}>⏳</Box>
+                <Box sx={{ fontSize: '1.2rem' }}>⏳</Box>
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#92400e' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#92400e', fontSize: '0.8rem' }}>
                     Waiting for {selectedMatch.name}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#a16207' }}>
+                  <Typography variant="caption" sx={{ color: '#a16207', fontSize: '0.7rem' }}>
                     We'll notify you when they respond
                   </Typography>
                 </Box>
@@ -3262,7 +3260,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
             <Button
               fullWidth
               variant="outlined"
-              startIcon={<Calendar size={18} />}
+              startIcon={<Calendar size={16} />}
               onClick={() => {
                 const date = workshop.workshopDetails?.date ? new Date(workshop.workshopDetails.date) : new Date();
                 const endDate = new Date(date.getTime() + 2 * 60 * 60 * 1000); // 2 hours duration
@@ -3275,10 +3273,11 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
                 window.open(calendarUrl, '_blank');
               }}
               sx={{
-                py: 1.25,
-                borderRadius: '12px',
+                py: 1,
+                borderRadius: '10px',
                 textTransform: 'none',
                 fontWeight: 600,
+                fontSize: '0.85rem',
                 borderColor: '#6C5CE7',
                 color: '#6C5CE7',
                 '&:hover': { bgcolor: 'rgba(108,92,231,0.08)' },
@@ -3287,14 +3286,14 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               Add to Calendar
             </Button>
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3 }}>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button
               fullWidth
               variant="contained"
               onClick={handleClose}
               sx={{
-                py: 1.5,
-                borderRadius: '14px',
+                py: 1.25,
+                borderRadius: '12px',
                 textTransform: 'none',
                 fontWeight: 700,
                 background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
