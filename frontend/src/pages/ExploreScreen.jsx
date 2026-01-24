@@ -582,7 +582,7 @@ const MOCK_PLACES = [
 /* =========================
    PlaceCard Component
    ========================= */
-function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSaved }) {
+function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSaved, onRemove, showRemoveButton }) {
   const openStatus = place.openNow 
     ? `Open now · until ${place.closingTime}`
     : `Opens at ${place.opensAt}`;
@@ -635,24 +635,40 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
           )}
         </Box>
 
-        {/* Save Button */}
-        <IconButton
-          onClick={() => onSave(place.id)}
-          sx={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            zIndex: 2,
-            bgcolor: 'rgba(255,255,255,0.9)',
-            '&:hover': { bgcolor: '#fff' },
-          }}
-        >
-          {isSaved ? (
-            <BookmarkCheck size={20} color="#6C5CE7" />
-          ) : (
-            <Bookmark size={20} color="#64748b" />
-          )}
-        </IconButton>
+        {/* Save Button or Remove Button */}
+        {showRemoveButton ? (
+          <IconButton
+            onClick={(e) => { e.stopPropagation(); onRemove?.(place.id); }}
+            sx={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              zIndex: 2,
+              bgcolor: 'rgba(239,68,68,0.9)',
+              '&:hover': { bgcolor: '#ef4444' },
+            }}
+          >
+            <Trash2 size={18} color="#fff" />
+          </IconButton>
+        ) : (
+          <IconButton
+            onClick={() => onSave(place.id)}
+            sx={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              zIndex: 2,
+              bgcolor: 'rgba(255,255,255,0.9)',
+              '&:hover': { bgcolor: '#fff' },
+            }}
+          >
+            {isSaved ? (
+              <BookmarkCheck size={20} color="#6C5CE7" />
+            ) : (
+              <Bookmark size={20} color="#64748b" />
+            )}
+          </IconButton>
+        )}
 
         {/* Image */}
         <CardMedia
@@ -4637,6 +4653,13 @@ export default function ExploreScreen() {
                 onScanQR={handleScanQR}
                 onSeeBenefits={handleSeeBenefits}
                 isSaved={savedPlaces.some(id => id === place.id || String(id) === String(place.id))}
+                showRemoveButton={activeFilter === 'my-workshops'}
+                onRemove={(id) => {
+                  const updated = purchasedWorkshops.filter(w => w.id !== id);
+                  setPurchasedWorkshops(updated);
+                  localStorage.setItem("purchased_workshops", JSON.stringify(updated));
+                  setToast({ open: true, message: 'Workshop removed', severity: 'info' });
+                }}
               />
               {/* Sweet Gestures Section - appears after 3rd place */}
               {index === 2 && (
