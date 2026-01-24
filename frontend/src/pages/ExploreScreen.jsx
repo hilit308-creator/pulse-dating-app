@@ -3349,15 +3349,15 @@ function WorkshopRatingDialog({ open, onClose, workshop, onSubmit, onRemove }) {
         },
       }}
     >
-      <DialogTitle sx={{ textAlign: 'center', pt: 3, pb: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>
-          How was your experience? ⭐
+      <DialogTitle sx={{ textAlign: 'center', pt: 2, pb: 0.5 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.25 }}>
+          How was your experience? 💜
         </Typography>
-        <Typography variant="body2" sx={{ color: '#64748b' }}>
+        <Typography variant="caption" sx={{ color: '#64748b' }}>
           Rate {workshop.name}
         </Typography>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ pt: 1 }}>
         {/* Workshop image */}
         <Box
           component="img"
@@ -3365,27 +3365,27 @@ function WorkshopRatingDialog({ open, onClose, workshop, onSubmit, onRemove }) {
           alt={workshop.name}
           sx={{
             width: '100%',
-            height: 120,
+            height: 80,
             objectFit: 'cover',
-            borderRadius: '12px',
-            mb: 2,
+            borderRadius: '10px',
+            mb: 1.5,
           }}
         />
 
         {/* Star Rating */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5, mb: 1.5 }}>
           {[1, 2, 3, 4, 5].map((star) => (
             <IconButton
               key={star}
               onClick={() => setRating(star)}
               sx={{
-                p: 0.5,
-                color: star <= rating ? '#fbbf24' : '#e2e8f0',
+                p: 0.25,
+                color: star <= rating ? '#6C5CE7' : '#e2e8f0',
                 transition: 'transform 0.2s',
-                '&:hover': { transform: 'scale(1.2)' },
+                '&:hover': { transform: 'scale(1.15)' },
               }}
             >
-              <Star size={32} fill={star <= rating ? '#fbbf24' : 'none'} />
+              <Star size={28} fill={star <= rating ? '#6C5CE7' : 'none'} />
             </IconButton>
           ))}
         </Box>
@@ -3398,11 +3398,11 @@ function WorkshopRatingDialog({ open, onClose, workshop, onSubmit, onRemove }) {
           onChange={(e) => setReview(e.target.value)}
           sx={{
             width: '100%',
-            minHeight: 80,
-            p: 1.5,
-            borderRadius: '12px',
+            minHeight: 60,
+            p: 1,
+            borderRadius: '10px',
             border: '1px solid #e2e8f0',
-            fontSize: '14px',
+            fontSize: '13px',
             fontFamily: 'inherit',
             resize: 'none',
             outline: 'none',
@@ -3414,26 +3414,27 @@ function WorkshopRatingDialog({ open, onClose, workshop, onSubmit, onRemove }) {
         <Button
           fullWidth
           variant="text"
-          startIcon={<Trash2 size={16} />}
+          startIcon={<Trash2 size={14} />}
           onClick={handleRemove}
           sx={{
-            mt: 2,
-            py: 1,
+            mt: 1.5,
+            py: 0.5,
             color: '#ef4444',
             textTransform: 'none',
             fontWeight: 500,
+            fontSize: '0.8rem',
             '&:hover': { bgcolor: 'rgba(239,68,68,0.08)' },
           }}
         >
           Remove from My Workshops
         </Button>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+      <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
         <Button
           fullWidth
           variant="outlined"
           onClick={onClose}
-          sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b' }}
+          sx={{ py: 0.75, borderRadius: '10px', textTransform: 'none', fontWeight: 600, fontSize: '0.85rem', borderColor: '#e2e8f0', color: '#64748b' }}
         >
           Later
         </Button>
@@ -3443,10 +3444,11 @@ function WorkshopRatingDialog({ open, onClose, workshop, onSubmit, onRemove }) {
           onClick={handleSubmit}
           disabled={rating === 0 || isSubmitting}
           sx={{
-            py: 1.25,
-            borderRadius: '12px',
+            py: 0.75,
+            borderRadius: '10px',
             textTransform: 'none',
             fontWeight: 700,
+            fontSize: '0.85rem',
             background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
             '&:disabled': { background: '#e2e8f0', color: '#94a3b8' },
           }}
