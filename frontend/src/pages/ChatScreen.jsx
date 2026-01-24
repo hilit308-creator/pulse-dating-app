@@ -1116,6 +1116,36 @@ export default function ChatScreen() {
     [chats, openChat]
   );
   
+  // Workshop reminders from localStorage
+  const [workshopReminders, setWorkshopReminders] = useState([]);
+  
+  // Load workshop reminders on mount
+  useEffect(() => {
+    const reminders = JSON.parse(localStorage.getItem("workshop_reminders") || "[]");
+    setWorkshopReminders(reminders);
+  }, []);
+  
+  // Get workshop reminder for current chat
+  const currentWorkshopReminder = useMemo(() => {
+    if (!chat || chat.matchId === AGENT_ID) return null;
+    return workshopReminders.find(r => r.matchId === chat.matchId || r.matchId === chat.user?.id);
+  }, [chat, workshopReminders]);
+  
+  // Calculate countdown for workshop
+  const getWorkshopCountdown = useCallback((dateStr) => {
+    if (!dateStr) return null;
+    const workshopDate = new Date(dateStr);
+    const now = new Date();
+    const diffMs = workshopDate - now;
+    if (diffMs < 0) return 'Already passed';
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h`;
+    const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${mins}m`;
+  }, []);
+  
   // Gesture messages from Explore screen
   const gestureMessages = useGestureMessagesStore((state) => state.gestureMessages);
   const recipientUsers = useGestureMessagesStore((state) => state.recipientUsers);
@@ -2830,6 +2860,26 @@ export default function ChatScreen() {
             }}
           />
         )}
+        {/* Workshop Countdown Capsule */}
+        {currentWorkshopReminder && (
+          <Chip
+            size="small"
+            icon={<Box sx={{ fontSize: '0.7rem', ml: 0.5 }}>🎨</Box>}
+            label={`${getWorkshopCountdown(currentWorkshopReminder.workshopDate)}`}
+            sx={{
+              height: 28,
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #a855f7 0%, #6C5CE7 100%)',
+              color: '#fff',
+              borderRadius: '14px',
+              px: 0.5,
+              boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              '& .MuiChip-label': { px: 1 },
+            }}
+          />
+        )}
         {chat.matchId !== AGENT_ID && (
           <>
             <IconButton 
@@ -2956,6 +3006,45 @@ export default function ChatScreen() {
         </IconButton>
       </Box>
       <Box sx={{ height: 56 }} />
+
+      {/* Workshop Reminder Banner */}
+      {currentWorkshopReminder && (
+        <Box
+          sx={{
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            top: 112, // Below header
+            zIndex: 1300,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            px: 2,
+            py: 1,
+            background: 'linear-gradient(135deg, rgba(168,85,247,0.95) 0%, rgba(108,92,231,0.95) 100%)',
+            color: '#fff',
+            boxShadow: '0 2px 8px rgba(108,92,231,0.3)',
+          }}
+        >
+          <Box sx={{ fontSize: '1.2rem' }}>🎨</Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, display: 'block', fontSize: '0.75rem' }}>
+              {currentWorkshopReminder.workshopName}
+            </Typography>
+            <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.65rem' }}>
+              {new Date(currentWorkshopReminder.workshopDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {currentWorkshopReminder.workshopTime} · {currentWorkshopReminder.workshopLocation}
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: 'center', bgcolor: 'rgba(255,255,255,0.2)', borderRadius: '8px', px: 1.5, py: 0.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 800, fontSize: '0.85rem', display: 'block' }}>
+              {getWorkshopCountdown(currentWorkshopReminder.workshopDate)}
+            </Typography>
+            <Typography variant="caption" sx={{ fontSize: '0.55rem', opacity: 0.8 }}>
+              until workshop
+            </Typography>
+          </Box>
+        </Box>
+      )}
 
       {/* ==================== Global Meeting Top Bar ==================== */}
       {meetingState === MEETING_STATE.ACTIVE && (

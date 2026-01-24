@@ -452,6 +452,12 @@ const MOCK_PLACES = [
       spotsLeft: 4,
       maxCouples: 8,
       includes: ["All materials", "Wine & snacks", "Take home your creation"],
+      availableDates: [
+        { date: "2026-01-26", time: "18:00", spotsLeft: 4 },
+        { date: "2026-01-28", time: "18:00", spotsLeft: 6 },
+        { date: "2026-02-02", time: "18:00", spotsLeft: 8 },
+        { date: "2026-02-05", time: "19:00", spotsLeft: 3 },
+      ],
     },
     googleRating: 4.9,
     pulseRating: 4.9,
@@ -480,6 +486,11 @@ const MOCK_PLACES = [
       spotsLeft: 2,
       maxCouples: 6,
       includes: ["Italian cuisine", "Wine pairing", "Recipe booklet"],
+      availableDates: [
+        { date: "2026-01-27", time: "19:00", spotsLeft: 2 },
+        { date: "2026-01-30", time: "19:00", spotsLeft: 5 },
+        { date: "2026-02-03", time: "19:00", spotsLeft: 6 },
+      ],
     },
     googleRating: 4.8,
     pulseRating: 4.7,
@@ -512,6 +523,12 @@ const MOCK_PLACES = [
       spotsLeft: 6,
       maxCouples: 10,
       includes: ["Canvas & paints", "2 glasses of wine", "Light snacks"],
+      availableDates: [
+        { date: "2026-01-28", time: "20:00", spotsLeft: 6 },
+        { date: "2026-01-31", time: "20:00", spotsLeft: 8 },
+        { date: "2026-02-04", time: "20:00", spotsLeft: 10 },
+        { date: "2026-02-07", time: "19:00", spotsLeft: 5 },
+      ],
     },
     googleRating: 4.6,
     pulseRating: 4.8,
@@ -540,6 +557,11 @@ const MOCK_PLACES = [
       spotsLeft: 8,
       maxCouples: 12,
       includes: ["Yoga mats", "Healthy breakfast", "Beach view"],
+      availableDates: [
+        { date: "2026-01-29", time: "07:00", spotsLeft: 8 },
+        { date: "2026-02-01", time: "07:00", spotsLeft: 10 },
+        { date: "2026-02-05", time: "07:00", spotsLeft: 12 },
+      ],
     },
     googleRating: 4.7,
     pulseRating: 4.6,
@@ -572,6 +594,11 @@ const MOCK_PLACES = [
       spotsLeft: 3,
       maxCouples: 8,
       includes: ["Premium chocolate", "Champagne toast", "Gift box"],
+      availableDates: [
+        { date: "2026-01-30", time: "17:00", spotsLeft: 3 },
+        { date: "2026-02-02", time: "17:00", spotsLeft: 6 },
+        { date: "2026-02-06", time: "17:00", spotsLeft: 8 },
+      ],
     },
     googleRating: 4.9,
     pulseRating: 5.0,
@@ -2790,7 +2817,8 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
    Workshop Booking Dialog
    ========================= */
 function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = [] }) {
-  const [step, setStep] = React.useState(1); // 1: Details, 2: Invite +1, 3: Payment, 4: Confirmation
+  const [step, setStep] = React.useState(1); // 1: Date Selection, 2: Invite +1, 3: Payment, 4: Confirmation
+  const [selectedDate, setSelectedDate] = React.useState(null); // Selected date object
   const [inviteMethod, setInviteMethod] = React.useState(null); // 'match', 'contact', 'solo'
   const [selectedMatch, setSelectedMatch] = React.useState(null);
   const [isProcessing, setIsProcessing] = React.useState(false);
@@ -2798,6 +2826,9 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
   const [cardNumber, setCardNumber] = React.useState('');
   const [cardExpiry, setCardExpiry] = React.useState('');
   const [cardCvv, setCardCvv] = React.useState('');
+
+  // Available dates for this workshop
+  const availableDates = workshop?.workshopDetails?.availableDates || [];
 
   // Use real matches from props, map to simpler format
   const availableMatches = userMatches.map(m => ({
@@ -2833,6 +2864,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
 
   const handleClose = () => {
     setStep(1);
+    setSelectedDate(null);
     setInviteMethod(null);
     setSelectedMatch(null);
     setPaymentMethod(null);
@@ -2851,6 +2883,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
       workshop,
       inviteMethod,
       invitedPerson: selectedMatch,
+      selectedDate, // Include selected date in booking
     });
   };
 
@@ -2871,7 +2904,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
         },
       }}
     >
-      {/* Step 1: Workshop Details */}
+      {/* Step 1: Select Date */}
       {step === 1 && (
         <>
           <Box sx={{ position: 'relative' }}>
@@ -2879,7 +2912,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               component="img"
               src={workshop.image}
               alt={workshop.name}
-              sx={{ width: '100%', height: 100, objectFit: 'cover' }}
+              sx={{ width: '100%', height: 80, objectFit: 'cover' }}
             />
             <IconButton
               onClick={handleClose}
@@ -2888,47 +2921,64 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               <X size={18} />
             </IconButton>
           </Box>
-          <DialogContent sx={{ pt: 1, pb: 0.5 }}>
+          <DialogContent sx={{ pt: 1, pb: 0.5, overflow: 'auto' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.25 }}>
               {workshop.name}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1 }}>
-              {workshop.location}
+            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 0.5 }}>
+              {workshop.location} · {workshop.workshopDetails?.duration} · ₪{workshop.workshopDetails?.price}/couple
             </Typography>
 
-            {workshop.workshopDetails && (
-              <Box sx={{ bgcolor: '#f8fafc', borderRadius: '10px', p: 1.5, mb: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            {/* Date Selection */}
+            <Typography variant="caption" sx={{ color: '#1a1a2e', fontWeight: 700, display: 'block', mt: 1, mb: 0.5 }}>
+              📅 Select a Date
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              {availableDates.map((dateOption, idx) => (
+                <Box
+                  key={idx}
+                  onClick={() => setSelectedDate(dateOption)}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    p: 1,
+                    borderRadius: '10px',
+                    border: selectedDate?.date === dateOption.date ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                    bgcolor: selectedDate?.date === dateOption.date ? 'rgba(108,92,231,0.08)' : '#fff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    '&:hover': { borderColor: '#6C5CE7', bgcolor: 'rgba(108,92,231,0.04)' },
+                  }}
+                >
                   <Box>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>Date & Time</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
-                      {new Date(workshop.workshopDetails.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {new Date(dateOption.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#6C5CE7', fontWeight: 600 }}>
-                      {workshop.workshopDetails.time} · {workshop.workshopDetails.duration}
+                    <Typography variant="caption" sx={{ color: '#6C5CE7' }}>
+                      {dateOption.time}
                     </Typography>
                   </Box>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>Price</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 800, color: '#6C5CE7' }}>
-                      ₪{workshop.workshopDetails.price}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>per couple</Typography>
-                  </Box>
+                  <Chip
+                    label={`${dateOption.spotsLeft} spots`}
+                    size="small"
+                    sx={{
+                      bgcolor: dateOption.spotsLeft <= 3 ? '#fef2f2' : '#f0fdf4',
+                      color: dateOption.spotsLeft <= 3 ? '#ef4444' : '#22c55e',
+                      fontWeight: 600,
+                      fontSize: '0.65rem',
+                    }}
+                  />
                 </Box>
-                
-                <Box sx={{ borderTop: '1px solid #e2e8f0', pt: 1 }}>
-                  <Typography variant="caption" sx={{ color: '#64748b' }}>
-                    Includes: {workshop.workshopDetails.includes.join(' • ')}
-                  </Typography>
-                </Box>
+              ))}
+            </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1, pt: 1, borderTop: '1px solid #e2e8f0' }}>
-                  <Users size={14} color="#64748b" />
-                  <Typography variant="caption" sx={{ color: workshop.workshopDetails.spotsLeft <= 3 ? '#ef4444' : '#64748b', fontWeight: 600 }}>
-                    {workshop.workshopDetails.spotsLeft} spots left
-                  </Typography>
-                </Box>
+            {/* Includes */}
+            {workshop.workshopDetails?.includes && (
+              <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid #e2e8f0' }}>
+                <Typography variant="caption" sx={{ color: '#64748b' }}>
+                  Includes: {workshop.workshopDetails.includes.join(' • ')}
+                </Typography>
               </Box>
             )}
           </DialogContent>
@@ -2937,6 +2987,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               fullWidth
               variant="contained"
               onClick={() => setStep(2)}
+              disabled={!selectedDate}
               sx={{
                 py: 0.75,
                 borderRadius: '10px',
@@ -2944,9 +2995,10 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
                 fontWeight: 700,
                 fontSize: '0.85rem',
                 background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                '&:disabled': { background: '#e2e8f0', color: '#94a3b8' },
               }}
             >
-              Book This Workshop
+              {selectedDate ? 'Continue' : 'Select a Date'}
             </Button>
           </DialogActions>
         </>
@@ -4775,16 +4827,38 @@ export default function ExploreScreen() {
         workshop={selectedWorkshop}
         userMatches={demoMatches}
         onBook={(bookingData) => {
-          // Save purchased workshop to localStorage
+          // Save purchased workshop to localStorage with selected date
           const purchaseData = {
             ...bookingData.workshop,
             purchaseDate: new Date().toISOString(),
             status: 'upcoming', // 'upcoming', 'completed'
             invitedPerson: bookingData.invitedPerson,
+            selectedDate: bookingData.selectedDate, // Store selected date
+            workshopDetails: {
+              ...bookingData.workshop.workshopDetails,
+              date: bookingData.selectedDate?.date || bookingData.workshop.workshopDetails?.date,
+              time: bookingData.selectedDate?.time || bookingData.workshop.workshopDetails?.time,
+            },
           };
           const updated = [...purchasedWorkshops, purchaseData];
           setPurchasedWorkshops(updated);
           localStorage.setItem("purchased_workshops", JSON.stringify(updated));
+          
+          // If invited a match, save workshop reminder for chat
+          if (bookingData.invitedPerson) {
+            const workshopReminders = JSON.parse(localStorage.getItem("workshop_reminders") || "[]");
+            workshopReminders.push({
+              matchId: bookingData.invitedPerson.id,
+              matchName: bookingData.invitedPerson.name,
+              workshopName: bookingData.workshop.name,
+              workshopDate: bookingData.selectedDate?.date || bookingData.workshop.workshopDetails?.date,
+              workshopTime: bookingData.selectedDate?.time || bookingData.workshop.workshopDetails?.time,
+              workshopLocation: bookingData.workshop.location,
+              createdAt: new Date().toISOString(),
+            });
+            localStorage.setItem("workshop_reminders", JSON.stringify(workshopReminders));
+          }
+          
           setToast({ open: true, message: 'Workshop booked successfully! 🎉', severity: 'success' });
         }}
       />
