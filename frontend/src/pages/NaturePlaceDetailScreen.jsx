@@ -265,21 +265,6 @@ export default function NaturePlaceDetailScreen() {
           background: 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%)',
         }} />
         
-        {/* Back Button */}
-        <IconButton
-          onClick={handleBack}
-          sx={{ 
-            position: 'absolute', 
-            top: 12, 
-            left: 12, 
-            bgcolor: 'rgba(255,255,255,0.9)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            '&:hover': { bgcolor: '#fff' },
-          }}
-        >
-          <ArrowLeft size={22} color="#1a1a2e" />
-        </IconButton>
-
         {/* Entry Fee Badge */}
         <Chip
           label={details.entryFee?.free ? '✅ Free Entry' : `₪${details.entryFee?.adult}/person`}
