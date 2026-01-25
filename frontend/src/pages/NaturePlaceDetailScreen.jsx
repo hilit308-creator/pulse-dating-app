@@ -26,13 +26,10 @@ import {
   Navigation,
 } from "lucide-react";
 import useGestureMessagesStore from '../store/gestureMessagesStore';
+import useChatStore from '../store/chatStore';
 
-// Demo matches for invite functionality
-const demoMatches = [
-  { id: 4, name: "Liza", photoUrl: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=256&q=80" },
-  { id: 5, name: "Maya", photoUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&q=80" },
-  { id: 6, name: "Noa", photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80" },
-];
+// Real matches from chat - these are the actual matches the user has
+const AGENT_ID = "pulse-agent";
 
 export default function NaturePlaceDetailScreen() {
   const navigate = useNavigate();
@@ -47,6 +44,44 @@ export default function NaturePlaceDetailScreen() {
   
   // Saved places state
   const [isSaved, setIsSaved] = useState(false);
+  
+  // Real matches from chat store
+  const [realMatches, setRealMatches] = useState([]);
+  
+  // Load real matches from localStorage (same as ChatScreen uses)
+  useEffect(() => {
+    try {
+      // Get chats from gesture chats store
+      const gestureChats = useChatStore.getState().gestureChats;
+      const gestureMatches = Object.values(gestureChats)
+        .filter(chat => chat.matchId !== AGENT_ID)
+        .map(chat => ({
+          id: chat.matchId,
+          name: chat.user?.name || 'Unknown',
+          photoUrl: chat.user?.photoUrl || '',
+        }));
+      
+      // Also include demo chats (hardcoded matches that exist in ChatScreen)
+      const demoMatches = [
+        { id: 4, name: "Liza", photoUrl: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=256&q=80" },
+        { id: 5, name: "Gali", photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80" },
+        { id: 6, name: "Shani", photoUrl: "/liza_1.jpg" },
+        { id: 7, name: "Noa", photoUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=256&q=80" },
+      ];
+      
+      // Combine and dedupe by id
+      const allMatches = [...demoMatches];
+      gestureMatches.forEach(gm => {
+        if (!allMatches.some(m => m.id === gm.id)) {
+          allMatches.push(gm);
+        }
+      });
+      
+      setRealMatches(allMatches);
+    } catch (e) {
+      console.error("Error loading matches:", e);
+    }
+  }, []);
   
   // Check if place is saved on mount
   useEffect(() => {
@@ -75,19 +110,28 @@ export default function NaturePlaceDetailScreen() {
 
   const handleInviteMatch = () => {
     if (selectedMatch && place) {
-      // Send invite message to chat
-      const message = `Hey! 🌿 Want to explore ${place.name} together? It looks amazing!\n\n📍 ${place.location}\n${place.natureDetails?.entryFee?.free ? '✅ Free entry!' : `💰 Entry: ₪${place.natureDetails?.entryFee?.adult}/person`}`;
-      
-      const gestureMessagesStore = useGestureMessagesStore.getState();
-      gestureMessagesStore.addGestureMessage(selectedMatch.id, {
+      // Create a place invite message for chat (matches ChatScreen's expected format)
+      const inviteMessage = {
         id: Date.now(),
         from: 'me',
-        type: 'text',
-        text: message,
+        type: 'place_invite',
+        text: `Hey ${selectedMatch.name}! 🌿 I found this amazing place and thought of you - want to check it out together?`,
         timestamp: Date.now(),
         status: 'sent',
         reactions: {},
-      }, {
+        place: {
+          id: place.id,
+          name: place.name,
+          image: place.image,
+          location: place.location,
+          type: 'Nature & Parks',
+          entryFee: place.natureDetails?.entryFee?.free ? 'Free entry' : `₪${place.natureDetails?.entryFee?.adult}/person`,
+          maps: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.location)}`,
+        },
+      };
+      
+      const gestureMessagesStore = useGestureMessagesStore.getState();
+      gestureMessagesStore.addGestureMessage(selectedMatch.id, inviteMessage, {
         id: selectedMatch.id,
         name: selectedMatch.name,
         photoUrl: selectedMatch.photoUrl,
@@ -517,7 +561,7 @@ export default function NaturePlaceDetailScreen() {
                 Invite a Pulse match to explore together
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-                {demoMatches.map((match) => (
+                {realMatches.map((match) => (
                   <Box
                     key={match.id}
                     onClick={() => setSelectedMatch(match)}
