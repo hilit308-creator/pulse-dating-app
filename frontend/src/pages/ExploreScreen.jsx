@@ -819,19 +819,27 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
             />
           )}
           {place.isCommunityAdded && (
-            <Chip
-              icon={<Heart size={12} />}
-              label="Pulse pick"
-              size="small"
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.95)',
-                color: '#6C5CE7',
-                fontWeight: 600,
-                fontSize: '0.65rem',
-                border: '1px solid rgba(108,92,231,0.3)',
-                '& .MuiChip-icon': { color: '#6C5CE7' },
-              }}
-            />
+            <Tooltip 
+              title="Recommended by the Pulse community as a great date spot."
+              arrow
+              enterTouchDelay={0}
+              leaveTouchDelay={3000}
+            >
+              <Chip
+                icon={<Heart size={12} />}
+                label="Pulse pick"
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.95)',
+                  color: '#6C5CE7',
+                  fontWeight: 600,
+                  fontSize: '0.65rem',
+                  border: '1px solid rgba(108,92,231,0.3)',
+                  '& .MuiChip-icon': { color: '#6C5CE7' },
+                  cursor: 'pointer',
+                }}
+              />
+            </Tooltip>
           )}
         </Box>
 
