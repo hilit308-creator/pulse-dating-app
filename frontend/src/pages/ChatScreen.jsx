@@ -7,6 +7,7 @@ import React, {
   Suspense,
   useCallback,
 } from "react";
+import { useParams } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -1107,12 +1108,25 @@ function genCoachReply(userText = "") {
 /* ================== Main ================== */
 export default function ChatScreen() {
   const { t } = useLanguage();
+  const { matchId: urlMatchId } = useParams(); // Get matchId from URL if navigating to /chat/:matchId
   const [chats, setChats] = useState([AGENT_ROW, ...demoChats]); // Single unified Agent
   const [openChat, setOpenChat] = useState(null);
   const chat = useMemo(
     () => chats.find((c) => c.matchId === openChat),
     [chats, openChat]
   );
+  
+  // Auto-open chat if matchId is in URL (e.g., from "Go to Chat" button)
+  useEffect(() => {
+    if (urlMatchId) {
+      const matchIdNum = parseInt(urlMatchId, 10);
+      // Check if this chat exists
+      const chatExists = chats.some(c => c.matchId === matchIdNum || c.matchId === urlMatchId);
+      if (chatExists) {
+        setOpenChat(matchIdNum || urlMatchId);
+      }
+    }
+  }, [urlMatchId, chats]);
   
   // Workshop reminders from localStorage
   const [workshopReminders, setWorkshopReminders] = useState([]);

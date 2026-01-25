@@ -891,6 +891,7 @@ function AppShell() {
             <Route path="/matches" element={<ProtectedRoute><MatchesScreen /></ProtectedRoute>} />
             <Route path="/match-pulse" element={<ProtectedRoute><MatchPulseScreen /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><ChatScreen /></ProtectedRoute>} />
+            <Route path="/chat/:matchId" element={<ProtectedRoute><ChatScreen /></ProtectedRoute>} />
             <Route path="/nearby" element={<ProtectedRoute><NearbyScreen /></ProtectedRoute>} />
             <Route path="/nearby/people" element={<ProtectedRoute><ViewNearbyPeopleScreen /></ProtectedRoute>} />
             <Route path="/nearby/event" element={<ProtectedRoute><EventPreviewScreen /></ProtectedRoute>} />
