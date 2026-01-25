@@ -365,7 +365,7 @@ const MOCK_PLACES = [
   {
     id: 11,
     name: "Yarkon Park",
-    image: "https://images.unsplash.com/photo-1587502537815-0c8b5c6e5b0b?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=800&q=80",
     category: "nature",
     vibes: ['chill', 'romantic'],
     location: "Tel Aviv",
