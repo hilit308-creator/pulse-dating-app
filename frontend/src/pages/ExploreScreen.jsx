@@ -4832,21 +4832,41 @@ export default function ExploreScreen() {
       }
     }
     if (activeFilter === 'near-me') {
-      // Near Me: minimum 3 results rule with radius expansion
-      // Simulate distance-based filtering with expanding radius
-      const nearbyPlaces = MOCK_PLACES.filter(p => p.location === 'Tel Aviv');
-      if (nearbyPlaces.length >= 3) {
-        return nearbyPlaces;
-      }
-      // Expand radius to include more locations
-      const expandedPlaces = MOCK_PLACES.filter(p => 
-        ['Tel Aviv', 'Jaffa', 'Herzliya'].includes(p.location)
+      // Near Me: Progressive distance tiers with minimum 3 results rule
+      // Quality constraints: only include places that passed moderation (pulseRating > 0 or no rating yet)
+      const qualityFilter = (p) => !p.pulseRating || p.pulseRating >= 3.0;
+      
+      // Tier 1: Very close (1.5km) - Walking distance, spontaneous dates
+      // Simulated by 'Tel Aviv' location
+      const tier1Places = MOCK_PLACES.filter(p => 
+        p.location === 'Tel Aviv' && qualityFilter(p)
       );
-      if (expandedPlaces.length >= 3) {
-        return expandedPlaces;
+      if (tier1Places.length >= 3) {
+        return tier1Places;
       }
-      // Further expand to ensure minimum 3 results
-      return MOCK_PLACES.slice(0, Math.max(3, expandedPlaces.length));
+      
+      // Tier 2: Close (3km) - Short rides, light planning
+      // Simulated by adding 'Jaffa' location
+      const tier2Places = MOCK_PLACES.filter(p => 
+        ['Tel Aviv', 'Jaffa'].includes(p.location) && qualityFilter(p)
+      );
+      if (tier2Places.length >= 3) {
+        return tier2Places;
+      }
+      
+      // Tier 3: Reasonable fallback (5km) - Still nearby and worth it
+      // Simulated by adding 'Herzliya', 'Ramat Gan' locations
+      const tier3Places = MOCK_PLACES.filter(p => 
+        ['Tel Aviv', 'Jaffa', 'Herzliya', 'Ramat Gan'].includes(p.location) && qualityFilter(p)
+      );
+      if (tier3Places.length >= 3) {
+        return tier3Places;
+      }
+      
+      // Fallback: Show closest curated alternatives (never empty)
+      // Include all quality places, sorted by simulated distance
+      const allQualityPlaces = MOCK_PLACES.filter(qualityFilter);
+      return allQualityPlaces.slice(0, Math.max(3, tier3Places.length));
     }
     if (activeFilter === 'my-workshops') {
       // Show purchased workshops
