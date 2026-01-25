@@ -446,7 +446,7 @@ const HomeScreen = () => {
   // Handle match screen actions
   const handleStartChat = useCallback(() => {
     if (matchPerson) {
-      navigate("/chat", { state: { matchPerson } });
+      navigate(`/chat/${matchPerson.id}`);
     }
   }, [navigate, matchPerson]);
 

@@ -1165,7 +1165,7 @@ export default function ViewNearbyPeopleScreen() {
   const handleStartChat = useCallback(() => {
     if (matchPerson) {
       trackEvent("match_start_chat", { personId: matchPerson.id });
-      navigate("/chat", { state: { matchPerson } });
+      navigate(`/chat/${matchPerson.id}`);
     }
   }, [navigate, matchPerson]);
 
@@ -1187,7 +1187,7 @@ export default function ViewNearbyPeopleScreen() {
   const handleNearbyMomentChat = useCallback(() => {
     if (nearbyMomentPerson) {
       trackEvent("nearby_moment_chat_started", { personId: nearbyMomentPerson.id });
-      navigate("/chat", { state: { matchPerson: nearbyMomentPerson } });
+      navigate(`/chat/${nearbyMomentPerson.id}`);
     }
     setShowNearbyMoment(false);
   }, [navigate, nearbyMomentPerson]);
@@ -1210,12 +1210,7 @@ export default function ViewNearbyPeopleScreen() {
       hasVenue: !!invitation.venue,
     });
     // Navigate to chat with invitation context
-    navigate("/chat", { 
-      state: { 
-        matchPerson: invitation.person,
-        invitation,
-      } 
-    });
+    navigate(`/chat/${invitation.person.id}`);
     setShowInvitationModal(false);
   }, [navigate]);
 
