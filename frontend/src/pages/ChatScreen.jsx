@@ -1172,6 +1172,46 @@ export default function ChatScreen() {
     }
   }, []); // Only run on mount
   
+  // Load pending place invites from localStorage
+  useEffect(() => {
+    try {
+      const pendingInvites = JSON.parse(localStorage.getItem("pending_place_invites") || "[]");
+      if (pendingInvites.length === 0) return;
+      
+      setChats(prevChats => {
+        let updatedChats = [...prevChats];
+        
+        pendingInvites.forEach(invite => {
+          const chatIndex = updatedChats.findIndex(c => 
+            c.matchId === invite.matchId || 
+            c.user?.id === invite.matchId || 
+            String(c.user?.id) === String(invite.matchId)
+          );
+          
+          if (chatIndex !== -1) {
+            // Add message to existing chat
+            const existingChat = updatedChats[chatIndex];
+            const messageExists = existingChat.messages.some(m => m.id === invite.message.id);
+            if (!messageExists) {
+              updatedChats[chatIndex] = {
+                ...existingChat,
+                messages: [...existingChat.messages, invite.message],
+                lastSentAt: invite.message.timestamp,
+              };
+            }
+          }
+        });
+        
+        return updatedChats;
+      });
+      
+      // Clear pending invites after processing
+      localStorage.setItem("pending_place_invites", "[]");
+    } catch (e) {
+      console.error("Error loading pending invites:", e);
+    }
+  }, []);
+  
   // Load gesture messages into chats when they arrive
   useEffect(() => {
     const recipientIds = Object.keys(gestureMessages);

@@ -130,12 +130,22 @@ export default function NaturePlaceDetailScreen() {
         },
       };
       
-      const gestureMessagesStore = useGestureMessagesStore.getState();
-      gestureMessagesStore.addGestureMessage(selectedMatch.id, inviteMessage, {
-        id: selectedMatch.id,
-        name: selectedMatch.name,
-        photoUrl: selectedMatch.photoUrl,
-      });
+      // Save to localStorage for ChatScreen to pick up
+      try {
+        const pendingInvites = JSON.parse(localStorage.getItem("pending_place_invites") || "[]");
+        pendingInvites.push({
+          matchId: selectedMatch.id,
+          message: inviteMessage,
+          userInfo: {
+            id: selectedMatch.id,
+            name: selectedMatch.name,
+            photoUrl: selectedMatch.photoUrl,
+          },
+        });
+        localStorage.setItem("pending_place_invites", JSON.stringify(pendingInvites));
+      } catch (e) {
+        console.error("Error saving invite:", e);
+      }
       
       setInviteSent(true);
     }
