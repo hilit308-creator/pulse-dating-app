@@ -4827,6 +4827,16 @@ export default function ExploreScreen() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Auto-hide toast after 1 second
+  React.useEffect(() => {
+    if (toast.open) {
+      const timer = setTimeout(() => {
+        setToast(prev => ({ ...prev, open: false }));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.open]);
+
   // Show rating dialog when entering My Workshops if there are completed workshops needing rating
   React.useEffect(() => {
     if (activeFilter === 'my-workshops') {
