@@ -235,6 +235,23 @@ export default function BusinessPage() {
     // First check if place data was passed via location state (from ExploreScreen)
     if (location.state?.place) {
       const placeData = location.state.place;
+      
+      // Map place IDs to real event IDs from EventsByCategory
+      const placeToEventMap = {
+        1: { id: 'tlv1', name: 'Underground Beats @ Kuli Alma', date: 'Jun 15', time: '23:00' },
+        3: { id: 'tlv2', name: 'Techno Warehouse @ The Block', date: 'Jun 20', time: '23:30' },
+        5: { id: 'tlv3', name: 'Chill Vibes @ Sputnik', date: 'Jun 14', time: '21:00' },
+        6: { id: 'tlv4', name: 'Live Jazz @ Pastel', date: 'Jun 19', time: '20:30' },
+        7: { id: 'tlv5', name: 'Rooftop Party @ Beit Maariv', date: 'Jun 21', time: '22:00' },
+        8: { id: 'tlv6', name: 'Open Mic @ Anna Loulou', date: 'Jun 17', time: '21:00' },
+        9: { id: 'tlv7', name: 'Sunset Sessions @ Teder.fm', date: 'Jun 16', time: '17:00' },
+        10: { id: 'tlv8', name: 'Levinsky Food Fest @ Spicehaus', date: 'Jun 22', time: '18:00' },
+      };
+      
+      // Get real event for this place if available
+      const realEvent = placeToEventMap[placeData.id];
+      const upcomingEvents = placeData.hasEvents && realEvent ? [realEvent] : [];
+      
       // Convert place data to business format
       const businessFromPlace = {
         id: placeData.id,
@@ -248,7 +265,7 @@ export default function BusinessPage() {
         address: `${placeData.location}, Israel`,
         description: placeData.description || `A great ${placeData.category || 'place'} in ${placeData.location}. ${placeData.vibes ? 'Vibes: ' + placeData.vibes.join(', ') : ''}`,
         mapPreview: `https://maps.googleapis.com/maps/api/staticmap?center=${placeData.location}&zoom=15&size=400x200&key=demo`,
-        upcomingEvents: placeData.hasEvents ? [{ id: `event-${placeData.id}`, name: `Event @ ${placeData.name}`, date: 'Coming soon', time: 'TBD' }] : [],
+        upcomingEvents: upcomingEvents,
         pulseRating: placeData.pulseRating,
         pulseReviews: placeData.pulseReviews,
         isCommunityAdded: placeData.isCommunityAdded,
@@ -306,28 +323,41 @@ export default function BusinessPage() {
 
   // Handle save/unsave place toggle
   const handleSavePlace = useCallback(() => {
+    const numericId = parseInt(businessId) || businessId;
+    
     if (isSaved) {
       trackEvent("business_unsaved", { businessId });
       setIsSaved(false);
       // Remove from localStorage
       try {
         const saved = JSON.parse(localStorage.getItem("saved_places") || "[]");
-        const updated = saved.filter(p => p.id !== businessId && p.id !== parseInt(businessId));
+        const updated = saved.filter(p => p.id !== numericId && p.id !== businessId && String(p.id) !== String(businessId));
         localStorage.setItem("saved_places", JSON.stringify(updated));
       } catch (e) { console.error("Error removing saved place:", e); }
     } else {
       trackEvent("business_saved", { businessId });
       setIsSaved(true);
-      // Save to localStorage
+      // Save to localStorage with full place data for Explore saved tab
       try {
         const saved = JSON.parse(localStorage.getItem("saved_places") || "[]");
-        if (!saved.find(p => p.id === businessId || p.id === parseInt(businessId))) {
+        if (!saved.find(p => p.id === numericId || p.id === businessId || String(p.id) === String(businessId))) {
+          // Save with all required fields for ExploreScreen display
           saved.push({
-            id: businessId,
+            id: numericId,
             name: business?.name || "Unknown Place",
-            category: business?.category || "Place",
-            address: business?.address || "",
-            coverImage: business?.coverImage || "",
+            category: business?.category?.toLowerCase() || "venue",
+            location: business?.address?.split(',')[0] || "Tel Aviv",
+            image: business?.coverImage || "",
+            description: business?.description || "",
+            vibes: [],
+            openNow: business?.openNow ?? true,
+            closingTime: business?.closingTime || "00:00",
+            hasActiveBenefit: !!business?.benefit,
+            hasEvents: business?.upcomingEvents?.length > 0,
+            benefit: business?.benefit || null,
+            pulseRating: business?.pulseRating || 0,
+            pulseReviews: business?.pulseReviews || 0,
+            isCommunityAdded: business?.isCommunityAdded || false,
           });
           localStorage.setItem("saved_places", JSON.stringify(saved));
         }
