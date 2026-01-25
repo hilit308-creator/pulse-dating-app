@@ -73,11 +73,11 @@ const FILTER_CATEGORIES_ROW1 = [
   { id: 'my-workshops', labelKey: 'myWorkshops', icon: Calendar },
 ];
 const FILTER_CATEGORIES_ROW2 = [
-  { id: 'bar', labelKey: 'bars', icon: Wine },
   { id: 'cafe', labelKey: 'cafes', icon: Coffee },
+  { id: 'bar', labelKey: 'bars', icon: Wine },
   { id: 'live-music', labelKey: 'liveMusic', icon: Music },
-  { id: 'nature', labelKey: 'nature', icon: TreePine },
   { id: 'dance', labelKey: 'dance', icon: Disc },
+  { id: 'nature', labelKey: 'nature', icon: TreePine },
   { id: 'workshops', labelKey: 'workshops', icon: Palette },
   { id: 'chill', labelKey: 'chill', icon: Star },
 ];
