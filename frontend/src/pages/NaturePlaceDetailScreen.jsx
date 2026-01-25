@@ -646,13 +646,30 @@ export default function NaturePlaceDetailScreen() {
           mt: 3,
           border: '1px solid #e9d5ff',
         }}>
-          {/* User Rating */}
+          {/* Pulse Members Rating - First */}
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 0.5 }}>
+              Pulse Members Rating
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
+              <Typography sx={{ fontSize: '2.5rem', color: '#6C5CE7', fontWeight: 800, lineHeight: 1 }}>
+                {place.pulseRating || 0}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b' }}>
+                / 5
+              </Typography>
+            </Box>
+            <Typography variant="caption" sx={{ color: '#64748b' }}>
+              Based on {place.pulseReviews || 0} reviews
+            </Typography>
+          </Box>
+          
+          {/* User Rating - Second */}
           <Box sx={{ 
             bgcolor: '#fff', 
             borderRadius: '12px', 
             p: 1.5,
             textAlign: 'center',
-            mb: 2,
           }}>
             <Typography variant="body2" sx={{ color: '#1a1a2e', fontWeight: 600, mb: 1 }}>
               {userRating > 0 ? 'Your Rating' : 'Rate this place'}
@@ -689,24 +706,6 @@ export default function NaturePlaceDetailScreen() {
                 Tap a star to rate
               </Typography>
             )}
-          </Box>
-          
-          {/* Pulse Members Rating */}
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: '#64748b', mb: 0.5 }}>
-              Pulse Members Rating
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
-              <Typography sx={{ fontSize: '2.5rem', color: '#6C5CE7', fontWeight: 800, lineHeight: 1 }}>
-                {place.pulseRating || 0}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748b' }}>
-                / 5
-              </Typography>
-            </Box>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>
-              Based on {place.pulseReviews || 0} reviews
-            </Typography>
           </Box>
         </Box>
       </Box>
