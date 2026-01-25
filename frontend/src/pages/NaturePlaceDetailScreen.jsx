@@ -333,7 +333,7 @@ export default function NaturePlaceDetailScreen() {
           </Typography>
         </Box>
         
-        {/* Pulse Rating Section */}
+        {/* User Rating Section - at top */}
         <Box sx={{ 
           bgcolor: '#faf5ff', 
           borderRadius: '16px', 
@@ -341,25 +341,6 @@ export default function NaturePlaceDetailScreen() {
           mb: 2,
           border: '1px solid #e9d5ff',
         }}>
-          {/* Overall Pulse Rating */}
-          <Box sx={{ textAlign: 'center', mb: 2 }}>
-            <Typography variant="body2" sx={{ color: '#64748b', mb: 0.5 }}>
-              Pulse Members Rating
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
-              <Typography sx={{ fontSize: '2.5rem', color: '#6C5CE7', fontWeight: 800, lineHeight: 1 }}>
-                {place.pulseRating || 0}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748b' }}>
-                / 5
-              </Typography>
-            </Box>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>
-              Based on {place.pulseReviews || 0} reviews
-            </Typography>
-          </Box>
-          
-          {/* User Rating Option */}
           <Box sx={{ 
             bgcolor: '#fff', 
             borderRadius: '12px', 
@@ -559,6 +540,31 @@ export default function NaturePlaceDetailScreen() {
           </Typography>
           <Typography variant="body2" sx={{ color: '#64748b', lineHeight: 1.7 }}>
             {details.facilities.join(' • ')}
+          </Typography>
+        </Box>
+
+        {/* Pulse Members Rating - at bottom */}
+        <Box sx={{ 
+          bgcolor: '#faf5ff', 
+          borderRadius: '16px', 
+          p: 2, 
+          mb: 3,
+          border: '1px solid #e9d5ff',
+          textAlign: 'center',
+        }}>
+          <Typography variant="body2" sx={{ color: '#64748b', mb: 0.5 }}>
+            Pulse Members Rating
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
+            <Typography sx={{ fontSize: '2.5rem', color: '#6C5CE7', fontWeight: 800, lineHeight: 1 }}>
+              {place.pulseRating || 0}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b' }}>
+              / 5
+            </Typography>
+          </Box>
+          <Typography variant="caption" sx={{ color: '#64748b' }}>
+            Based on {place.pulseReviews || 0} reviews
           </Typography>
         </Box>
 
