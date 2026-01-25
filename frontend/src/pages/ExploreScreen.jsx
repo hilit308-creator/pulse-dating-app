@@ -663,6 +663,77 @@ const MOCK_PLACES = [
     pulseRating: 5.0,
     pulseReviews: 38,
   },
+  // Community-added places (isCommunityAdded: true)
+  {
+    id: 21,
+    name: "Secret Garden Cafe",
+    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80",
+    category: "cafe",
+    vibes: ['romantic', 'chill'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "22:00",
+    hasActiveBenefit: false,
+    hasEvents: false,
+    benefit: null,
+    isNew: false,
+    isCommunityAdded: true,
+    pulseRating: 4.9,
+    pulseReviews: 23,
+  },
+  {
+    id: 22,
+    name: "Moonlight Dance Studio",
+    image: "https://images.unsplash.com/photo-1504609813442-a8924e83f76e?auto=format&fit=crop&w=800&q=80",
+    category: "dance",
+    vibes: ['romantic', 'social', 'dance'],
+    location: "Tel Aviv",
+    openNow: false,
+    opensAt: "18:00",
+    closingTime: "23:00",
+    hasActiveBenefit: false,
+    hasEvents: true,
+    benefit: null,
+    isNew: false,
+    isCommunityAdded: true,
+    pulseRating: 4.8,
+    pulseReviews: 45,
+  },
+  {
+    id: 23,
+    name: "Rooftop Sunset Bar",
+    image: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=800&q=80",
+    category: "bar",
+    vibes: ['romantic', 'chill'],
+    location: "Tel Aviv",
+    openNow: true,
+    closingTime: "02:00",
+    hasActiveBenefit: false,
+    hasEvents: false,
+    benefit: null,
+    isNew: false,
+    isCommunityAdded: true,
+    pulseRating: 4.7,
+    pulseReviews: 67,
+  },
+  {
+    id: 24,
+    name: "Hidden Jazz Club",
+    image: "https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?auto=format&fit=crop&w=800&q=80",
+    category: "live-music",
+    vibes: ['romantic', 'chill', 'live'],
+    location: "Jaffa",
+    openNow: false,
+    opensAt: "20:00",
+    closingTime: "01:00",
+    hasActiveBenefit: false,
+    hasEvents: true,
+    benefit: null,
+    isNew: false,
+    isCommunityAdded: true,
+    pulseRating: 4.6,
+    pulseReviews: 31,
+  },
 ];
 
 /* =========================
@@ -716,6 +787,21 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
                 color: '#fff',
                 fontWeight: 700,
                 fontSize: '0.7rem',
+              }}
+            />
+          )}
+          {place.isCommunityAdded && (
+            <Chip
+              icon={<Heart size={12} />}
+              label="Pulse pick"
+              size="small"
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.95)',
+                color: '#6C5CE7',
+                fontWeight: 600,
+                fontSize: '0.65rem',
+                border: '1px solid rgba(108,92,231,0.3)',
+                '& .MuiChip-icon': { color: '#6C5CE7' },
               }}
             />
           )}
@@ -4771,18 +4857,33 @@ export default function ExploreScreen() {
     return categoryPlaces;
   }, [activeFilter, savedPlaces, purchasedWorkshops]);
 
-  // Sort: Open now first, then with benefits, then new, then others
+  // Sort: Unified ranking based on Pulse Rating (quality > source)
+  // Community-added places are ranked TOGETHER with system places
+  // Ranking is NEVER based on who added the place
   const sortedPlaces = useMemo(() => {
     return [...filteredPlaces].sort((a, b) => {
-      // Open now first
+      // 1. Pulse Rating (highest priority) - higher rating first
+      const ratingA = a.pulseRating || 0;
+      const ratingB = b.pulseRating || 0;
+      if (ratingA !== ratingB) return ratingB - ratingA;
+      
+      // 2. Open now second
       if (a.openNow && !b.openNow) return -1;
       if (!a.openNow && b.openNow) return 1;
-      // Then with benefits
+      
+      // 3. Then with benefits (limited influence)
       if (a.hasActiveBenefit && !b.hasActiveBenefit) return -1;
       if (!a.hasActiveBenefit && b.hasActiveBenefit) return 1;
-      // Then new
+      
+      // 4. Quality of reviews (more reviews = more trust)
+      const reviewsA = a.pulseReviews || 0;
+      const reviewsB = b.pulseReviews || 0;
+      if (reviewsA !== reviewsB) return reviewsB - reviewsA;
+      
+      // 5. Then new
       if (a.isNew && !b.isNew) return -1;
       if (!a.isNew && b.isNew) return 1;
+      
       return 0;
     });
   }, [filteredPlaces]);
