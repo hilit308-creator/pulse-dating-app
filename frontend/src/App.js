@@ -742,21 +742,8 @@ function AppShell() {
             boxShadow: '0 1px 6px rgba(0,0,0,0.04)'
           }}
         >
-          {/* Left: Help button + Back button (only on non-root screens) */}
+          {/* Left: Back button (only on non-root screens) */}
           <Box sx={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Tooltip title="Help">
-              <IconButton 
-                size="small" 
-                onClick={() => setShowHelpDialog(true)}
-                sx={{ 
-                  width: 36, 
-                  height: 36,
-                  '&:hover': { bgcolor: '#f5f5f5' },
-                }}
-              >
-                <HelpCircle size={18} />
-              </IconButton>
-            </Tooltip>
             {showBackButton && (
               <IconButton 
                 size="small" 
@@ -776,8 +763,17 @@ function AppShell() {
             Pulse
           </Typography>
           
-          {/* Right actions: Profile + Settings */}
+          {/* Right actions: Help + Profile + Settings */}
           <Box sx={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: 0.5 }}>
+            <Tooltip title="Help">
+              <IconButton 
+                size="small" 
+                onClick={() => setShowHelpDialog(true)}
+                sx={{ '&:hover': { bgcolor: '#f5f5f5' } }}
+              >
+                <HelpCircle size={18} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Profile">
               <IconButton size="small" onClick={() => navigate('/profile')}>
                 <CircleUser size={18} />
