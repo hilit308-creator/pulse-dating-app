@@ -232,22 +232,49 @@ export default function BusinessPage() {
       return;
     }
 
-    // Load mock business (in real app, fetch from API)
-    const businessData = MOCK_BUSINESSES[businessId];
-    if (!businessData) {
-      navigate(-1);
-      return;
+    // First check if place data was passed via location state (from ExploreScreen)
+    if (location.state?.place) {
+      const placeData = location.state.place;
+      // Convert place data to business format
+      const businessFromPlace = {
+        id: placeData.id,
+        name: placeData.name,
+        category: placeData.category === 'cafe' ? 'Cafe' : 
+                  placeData.category === 'bar' ? 'Bar' :
+                  placeData.category === 'live-music' ? 'Live Music' :
+                  placeData.category === 'dance' ? 'Dance' :
+                  placeData.category || 'Venue',
+        coverImage: placeData.image,
+        address: `${placeData.location}, Israel`,
+        description: placeData.description || `A great ${placeData.category || 'place'} in ${placeData.location}. ${placeData.vibes ? 'Vibes: ' + placeData.vibes.join(', ') : ''}`,
+        mapPreview: `https://maps.googleapis.com/maps/api/staticmap?center=${placeData.location}&zoom=15&size=400x200&key=demo`,
+        upcomingEvents: placeData.hasEvents ? [{ id: `event-${placeData.id}`, name: `Event @ ${placeData.name}`, date: 'Coming soon', time: 'TBD' }] : [],
+        pulseRating: placeData.pulseRating,
+        pulseReviews: placeData.pulseReviews,
+        isCommunityAdded: placeData.isCommunityAdded,
+        benefit: placeData.benefit,
+        openNow: placeData.openNow,
+        closingTime: placeData.closingTime,
+      };
+      setBusiness(businessFromPlace);
+      trackEvent("business_page_viewed", { businessId, source: 'explore' });
+    } else {
+      // Fallback to mock business (in real app, fetch from API)
+      const businessData = MOCK_BUSINESSES[businessId];
+      if (!businessData) {
+        navigate(-1);
+        return;
+      }
+      setBusiness(businessData);
+      trackEvent("business_page_viewed", { businessId });
     }
-
-    setBusiness(businessData);
-    trackEvent("business_page_viewed", { businessId });
     
     // Check saved status
     try {
       const saved = JSON.parse(localStorage.getItem("saved_places") || "[]");
       setIsSaved(saved.some(p => p.id === businessId || p.id === parseInt(businessId)));
     } catch { /* ignore */ }
-  }, [businessId, navigate]);
+  }, [businessId, navigate, location.state]);
 
   // Handle back navigation
   const handleBack = useCallback(() => {
