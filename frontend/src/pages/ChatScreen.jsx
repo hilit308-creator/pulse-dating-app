@@ -1172,16 +1172,29 @@ export default function ChatScreen() {
     }
   }, []); // Only run on mount
   
-  // Load pending place invites from localStorage
+  // Load pending place invites from localStorage (runs once on mount)
   useEffect(() => {
     try {
-      const pendingInvites = JSON.parse(localStorage.getItem("pending_place_invites") || "[]");
-      if (pendingInvites.length === 0) return;
+      const pendingInvitesRaw = localStorage.getItem("pending_place_invites");
+      if (!pendingInvitesRaw) return;
+      
+      const pendingInvites = JSON.parse(pendingInvitesRaw);
+      if (!Array.isArray(pendingInvites) || pendingInvites.length === 0) return;
+      
+      // Clear immediately to prevent re-processing
+      localStorage.removeItem("pending_place_invites");
+      
+      // Filter valid invites only (must have message with text and place)
+      const validInvites = pendingInvites.filter(invite => 
+        invite?.message?.text && invite?.message?.place && invite?.matchId
+      );
+      
+      if (validInvites.length === 0) return;
       
       setChats(prevChats => {
         let updatedChats = [...prevChats];
         
-        pendingInvites.forEach(invite => {
+        validInvites.forEach(invite => {
           const chatIndex = updatedChats.findIndex(c => 
             c.matchId === invite.matchId || 
             c.user?.id === invite.matchId || 
@@ -1189,8 +1202,8 @@ export default function ChatScreen() {
           );
           
           if (chatIndex !== -1) {
-            // Add message to existing chat
             const existingChat = updatedChats[chatIndex];
+            // Check if message already exists by id
             const messageExists = existingChat.messages.some(m => m.id === invite.message.id);
             if (!messageExists) {
               updatedChats[chatIndex] = {
@@ -1204,11 +1217,9 @@ export default function ChatScreen() {
         
         return updatedChats;
       });
-      
-      // Clear pending invites after processing
-      localStorage.setItem("pending_place_invites", "[]");
     } catch (e) {
       console.error("Error loading pending invites:", e);
+      localStorage.removeItem("pending_place_invites");
     }
   }, []);
   
