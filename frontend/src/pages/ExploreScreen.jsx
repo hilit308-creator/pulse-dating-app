@@ -3597,7 +3597,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
       {/* Step 2: Invite +1 */}
       {step === 2 && (
         <>
-          <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
+          <DialogTitle sx={{ textAlign: 'center', pt: 3 }} component="div">
             <Typography variant="h6" sx={{ fontWeight: 800 }}>
               Invite Your +1 💕
             </Typography>
@@ -5153,9 +5153,9 @@ export default function ExploreScreen() {
     // Show success dialog
     setShowGestureDialog(true);
     
-    // Navigate to chat after a short delay
+    // Navigate to specific chat with this person after a short delay
     setTimeout(() => {
-      navigate('/chat');
+      navigate(`/chat/${selectedPerson?.id}`);
     }, 1500);
   }, [selectedPerson, currentGestureDetails, addGestureMessage, markGestureSent, navigate, canSendGesture, consumeGesture]);
 
@@ -5191,9 +5191,9 @@ export default function ExploreScreen() {
     setSelectedGesture(gestureInfo);
     setShowGestureDialog(true);
     
-    // Navigate to chat after a short delay
+    // Navigate to specific chat with this person after a short delay
     setTimeout(() => {
-      navigate('/chat');
+      navigate(`/chat/${selectedPerson?.id}`);
     }, 1500);
   }, [selectedPerson, addGestureMessage, markGestureSent, navigate, canSendGesture, consumeGesture]);
 

@@ -1924,8 +1924,9 @@ export default function Home({ onOpenTutorial }) {
               <Button
                 variant="contained"
                 onClick={() => {
+                  const matchId = matchUser?.id;
                   setMatchUser(null);
-                  navigate('/chat');
+                  navigate(`/chat/${matchId}`);
                 }}
                 sx={{
                   bgcolor: '#fff',

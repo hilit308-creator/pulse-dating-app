@@ -544,7 +544,7 @@ export default function NaturePlaceDetailScreen() {
               <Button
                 fullWidth
                 variant="outlined"
-                onClick={() => navigate('/chat')}
+                onClick={() => navigate(`/chat/${selectedMatch?.id}`)}
                 sx={{
                   borderRadius: '10px',
                   textTransform: 'none',
