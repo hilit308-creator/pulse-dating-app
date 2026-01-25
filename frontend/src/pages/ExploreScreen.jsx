@@ -2904,7 +2904,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
         },
       }}
     >
-      {/* Step 1: Select Date */}
+      {/* Step 1: Workshop Details */}
       {step === 1 && (
         <>
           <Box sx={{ position: 'relative' }}>
@@ -2912,7 +2912,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               component="img"
               src={workshop.image}
               alt={workshop.name}
-              sx={{ width: '100%', height: 80, objectFit: 'cover' }}
+              sx={{ width: '100%', height: 100, objectFit: 'cover' }}
             />
             <IconButton
               onClick={handleClose}
@@ -2921,64 +2921,47 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               <X size={18} />
             </IconButton>
           </Box>
-          <DialogContent sx={{ pt: 1, pb: 0.5, overflow: 'auto' }}>
+          <DialogContent sx={{ pt: 1, pb: 0.5 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.25 }}>
               {workshop.name}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 0.5 }}>
-              {workshop.location} · {workshop.workshopDetails?.duration} · ₪{workshop.workshopDetails?.price}/couple
+            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1 }}>
+              {workshop.location}
             </Typography>
 
-            {/* Date Selection */}
-            <Typography variant="caption" sx={{ color: '#1a1a2e', fontWeight: 700, display: 'block', mt: 1, mb: 0.5 }}>
-              📅 Select a Date
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-              {availableDates.map((dateOption, idx) => (
-                <Box
-                  key={idx}
-                  onClick={() => setSelectedDate(dateOption)}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    p: 1,
-                    borderRadius: '10px',
-                    border: selectedDate?.date === dateOption.date ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
-                    bgcolor: selectedDate?.date === dateOption.date ? 'rgba(108,92,231,0.08)' : '#fff',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    '&:hover': { borderColor: '#6C5CE7', bgcolor: 'rgba(108,92,231,0.04)' },
-                  }}
-                >
+            {workshop.workshopDetails && (
+              <Box sx={{ bgcolor: '#f8fafc', borderRadius: '10px', p: 1.5, mb: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Box>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>Date & Time</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
-                      {new Date(dateOption.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {new Date(workshop.workshopDetails.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#6C5CE7' }}>
-                      {dateOption.time}
+                    <Typography variant="caption" sx={{ color: '#6C5CE7', fontWeight: 600 }}>
+                      {workshop.workshopDetails.time} · {workshop.workshopDetails.duration}
                     </Typography>
                   </Box>
-                  <Chip
-                    label={`${dateOption.spotsLeft} spots`}
-                    size="small"
-                    sx={{
-                      bgcolor: dateOption.spotsLeft <= 3 ? '#fef2f2' : '#f0fdf4',
-                      color: dateOption.spotsLeft <= 3 ? '#ef4444' : '#22c55e',
-                      fontWeight: 600,
-                      fontSize: '0.65rem',
-                    }}
-                  />
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>Price</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 800, color: '#6C5CE7' }}>
+                      ₪{workshop.workshopDetails.price}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>per couple</Typography>
+                  </Box>
                 </Box>
-              ))}
-            </Box>
+                
+                <Box sx={{ borderTop: '1px solid #e2e8f0', pt: 1 }}>
+                  <Typography variant="caption" sx={{ color: '#64748b' }}>
+                    Includes: {workshop.workshopDetails.includes.join(' • ')}
+                  </Typography>
+                </Box>
 
-            {/* Includes */}
-            {workshop.workshopDetails?.includes && (
-              <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid #e2e8f0' }}>
-                <Typography variant="caption" sx={{ color: '#64748b' }}>
-                  Includes: {workshop.workshopDetails.includes.join(' • ')}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1, pt: 1, borderTop: '1px solid #e2e8f0' }}>
+                  <Users size={14} color="#64748b" />
+                  <Typography variant="caption" sx={{ color: workshop.workshopDetails.spotsLeft <= 3 ? '#ef4444' : '#64748b', fontWeight: 600 }}>
+                    {workshop.workshopDetails.spotsLeft} spots left
+                  </Typography>
+                </Box>
               </Box>
             )}
           </DialogContent>
@@ -2987,7 +2970,6 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               fullWidth
               variant="contained"
               onClick={() => setStep(2)}
-              disabled={!selectedDate}
               sx={{
                 py: 0.75,
                 borderRadius: '10px',
@@ -2995,10 +2977,9 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
                 fontWeight: 700,
                 fontSize: '0.85rem',
                 background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                '&:disabled': { background: '#e2e8f0', color: '#94a3b8' },
               }}
             >
-              {selectedDate ? 'Continue' : 'Select a Date'}
+              Book This Workshop
             </Button>
           </DialogActions>
         </>
