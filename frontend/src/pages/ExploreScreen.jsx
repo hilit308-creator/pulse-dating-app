@@ -4726,10 +4726,22 @@ export default function ExploreScreen() {
   const filteredPlaces = useMemo(() => {
     if (activeFilter === 'all') return MOCK_PLACES;
     if (activeFilter === 'saved') {
-      // Show saved places based on savedPlaces state (synced with localStorage)
-      return MOCK_PLACES.filter(place => 
+      // Show saved places - combine MOCK_PLACES that are saved + places saved directly from localStorage
+      const savedFromMock = MOCK_PLACES.filter(place => 
         savedPlaces.includes(place.id) || savedPlaces.includes(String(place.id))
       );
+      
+      // Get full saved places from localStorage (includes nature places saved from detail screen)
+      try {
+        const fullSavedPlaces = JSON.parse(localStorage.getItem("saved_places") || "[]");
+        // Add places that aren't in MOCK_PLACES (saved from detail screens)
+        const additionalSaved = fullSavedPlaces.filter(sp => 
+          !MOCK_PLACES.some(mp => mp.id === sp.id || String(mp.id) === String(sp.id))
+        );
+        return [...savedFromMock, ...additionalSaved];
+      } catch (e) {
+        return savedFromMock;
+      }
     }
     if (activeFilter === 'near-me') {
       // Near Me: minimum 3 results rule with radius expansion
