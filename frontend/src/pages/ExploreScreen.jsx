@@ -188,6 +188,9 @@ const MOCK_PLACES = [
       expiresAt: "23:59",
     },
     isNew: false,
+    description: "One of Tel Aviv's most iconic nightlife spots. Kuli Alma combines art, music, and nightlife in a unique underground space. Known for eclectic DJ sets, live performances, and a vibrant crowd.",
+    pulseRating: 4.7,
+    pulseReviews: 234,
   },
   {
     id: 2,
@@ -202,6 +205,9 @@ const MOCK_PLACES = [
     hasEvents: false,
     benefit: null,
     isNew: true,
+    description: "A charming neighborhood cafe with vintage vibes. Perfect for brunch, coffee dates, or working on your laptop. Known for excellent pastries and a cozy atmosphere.",
+    pulseRating: 4.6,
+    pulseReviews: 178,
   },
   {
     id: 3,
@@ -220,6 +226,9 @@ const MOCK_PLACES = [
       expiresAt: "23:00",
     },
     isNew: false,
+    description: "Tel Aviv's premier techno club. A massive warehouse space with world-class sound system and international DJs. The place to be for serious electronic music lovers.",
+    pulseRating: 4.8,
+    pulseReviews: 312,
   },
   {
     id: 4,
@@ -238,6 +247,9 @@ const MOCK_PLACES = [
       expiresAt: "18:00",
     },
     isNew: false,
+    description: "Specialty coffee roasters with a passion for quality. Try their signature cold brew or enjoy a freshly baked pastry. A favorite among local coffee enthusiasts.",
+    pulseRating: 4.5,
+    pulseReviews: 145,
   },
   {
     id: 5,
@@ -252,6 +264,9 @@ const MOCK_PLACES = [
     hasEvents: true,
     benefit: null,
     isNew: false,
+    description: "A laid-back neighborhood bar with a retro Soviet theme. Great cocktails, friendly atmosphere, and perfect for casual dates or catching up with friends.",
+    pulseRating: 4.4,
+    pulseReviews: 98,
   },
   {
     id: 6,
@@ -267,6 +282,9 @@ const MOCK_PLACES = [
     hasEvents: true,
     benefit: null,
     isNew: true,
+    description: "An intimate live music venue with a romantic atmosphere. Features jazz, acoustic sets, and singer-songwriters. Perfect for a cultured date night with great food and wine.",
+    pulseRating: 4.7,
+    pulseReviews: 167,
   },
   {
     id: 7,
@@ -285,6 +303,9 @@ const MOCK_PLACES = [
       expiresAt: "22:00",
     },
     isNew: false,
+    description: "A legendary Tel Aviv nightclub in a historic building. Multiple floors with different music styles, from house to hip-hop. Always packed with a fun, diverse crowd.",
+    pulseRating: 4.5,
+    pulseReviews: 289,
   },
   {
     id: 8,
@@ -299,6 +320,9 @@ const MOCK_PLACES = [
     hasEvents: true,
     benefit: null,
     isNew: false,
+    description: "A bohemian bar and live music venue in the heart of Jaffa. Eclectic performances from local and international artists. Great for discovering new music in an intimate setting.",
+    pulseRating: 4.6,
+    pulseReviews: 134,
   },
   {
     id: 9,
@@ -318,6 +342,9 @@ const MOCK_PLACES = [
       expiresAt: "21:00",
     },
     isNew: false,
+    description: "An outdoor urban garden bar with a radio station vibe. Live broadcasts, DJ sets, and a relaxed atmosphere under string lights. Perfect for summer evenings.",
+    pulseRating: 4.6,
+    pulseReviews: 201,
   },
   {
     id: 10,
@@ -332,6 +359,9 @@ const MOCK_PLACES = [
     hasEvents: true,
     benefit: null,
     isNew: true,
+    description: "A cozy cafe with Middle Eastern influences and aromatic spices. Known for their unique coffee blends and homemade pastries. Great for a quiet, romantic afternoon.",
+    pulseRating: 4.5,
+    pulseReviews: 87,
   },
   // Nature & Parks - Real curated places
   {
