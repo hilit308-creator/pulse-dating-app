@@ -46,6 +46,9 @@ export default function NaturePlaceDetailScreen() {
   // Saved places state
   const [isSaved, setIsSaved] = useState(false);
   
+  // User rating state
+  const [userRating, setUserRating] = useState(0);
+  
   // Real matches from chat store
   const [realMatches, setRealMatches] = useState([]);
   
@@ -333,72 +336,71 @@ export default function NaturePlaceDetailScreen() {
         {/* Pulse Rating Section */}
         <Box sx={{ 
           bgcolor: '#faf5ff', 
-          borderRadius: '12px', 
-          p: 1.5, 
+          borderRadius: '16px', 
+          p: 2, 
           mb: 2,
           border: '1px solid #e9d5ff',
         }}>
           {/* Overall Pulse Rating */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-            <Box>
-              <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
-                Pulse Members Rating
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 0.5 }}>
+              Pulse Members Rating
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
+              <Typography sx={{ fontSize: '2.5rem', color: '#6C5CE7', fontWeight: 800, lineHeight: 1 }}>
+                {place.pulseRating || 0}
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography variant="h5" sx={{ color: '#6C5CE7', fontWeight: 800 }}>
-                  {place.pulseRating || 0}
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#64748b' }}>
-                  / 5
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ textAlign: 'right' }}>
-              <Box sx={{ display: 'flex', gap: 0.25 }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    size={16}
-                    fill={star <= Math.round(place.pulseRating || 0) ? '#6C5CE7' : 'none'}
-                    color="#6C5CE7"
-                  />
-                ))}
-              </Box>
-              <Typography variant="caption" sx={{ color: '#64748b' }}>
-                {place.pulseReviews || 0} reviews
+              <Typography variant="body2" sx={{ color: '#64748b' }}>
+                / 5
               </Typography>
             </Box>
+            <Typography variant="caption" sx={{ color: '#64748b' }}>
+              Based on {place.pulseReviews || 0} reviews
+            </Typography>
           </Box>
           
           {/* User Rating Option */}
-          <Box sx={{ borderTop: '1px solid #e9d5ff', pt: 1.5 }}>
-            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 0.5 }}>
-              Rate this place
+          <Box sx={{ 
+            bgcolor: '#fff', 
+            borderRadius: '12px', 
+            p: 1.5,
+            textAlign: 'center',
+          }}>
+            <Typography variant="body2" sx={{ color: '#1a1a2e', fontWeight: 600, mb: 1 }}>
+              {userRating > 0 ? 'Your Rating' : 'Rate this place'}
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75 }}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <IconButton
                   key={star}
                   onClick={() => {
-                    setToast({ open: true, message: `You rated ${place.name} ${star} stars! ⭐`, severity: 'success' });
+                    setUserRating(star);
+                    setToast({ open: true, message: `Thanks for rating! ⭐`, severity: 'success' });
                     setTimeout(() => setToast(prev => ({ ...prev, open: false })), 2000);
                   }}
                   sx={{ 
                     p: 0.5,
-                    '&:hover': { bgcolor: 'rgba(108,92,231,0.1)' },
+                    transition: 'transform 0.15s',
+                    '&:hover': { 
+                      bgcolor: 'transparent',
+                      transform: 'scale(1.2)',
+                    },
                   }}
                 >
                   <Star
-                    size={24}
-                    fill="none"
+                    size={32}
+                    fill={star <= userRating ? '#6C5CE7' : 'none'}
                     color="#6C5CE7"
+                    strokeWidth={star <= userRating ? 0 : 1.5}
                   />
                 </IconButton>
               ))}
-              <Typography variant="caption" sx={{ color: '#64748b', ml: 1 }}>
-                Tap to rate
-              </Typography>
             </Box>
+            {userRating === 0 && (
+              <Typography variant="caption" sx={{ color: '#94a3b8', mt: 0.5, display: 'block' }}>
+                Tap a star to rate
+              </Typography>
+            )}
           </Box>
         </Box>
 
