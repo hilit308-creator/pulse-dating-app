@@ -1,0 +1,520 @@
+// NaturePlaceDetailScreen.jsx — Nature Place Detail Page
+// Full page view for nature places with trails, equipment, fees, and invite functionality
+
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import {
+  Box,
+  Typography,
+  Button,
+  IconButton,
+  Chip,
+  Avatar,
+  Snackbar,
+  Alert,
+} from "@mui/material";
+import {
+  ArrowLeft,
+  MapPin,
+  Clock,
+  Check,
+  MessageCircle,
+  Share2,
+  Heart,
+  Bookmark,
+  Navigation,
+} from "lucide-react";
+import useGestureMessagesStore from '../store/gestureMessagesStore';
+
+// Demo matches for invite functionality
+const demoMatches = [
+  { id: 4, name: "Liza", photoUrl: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=256&q=80" },
+  { id: 5, name: "Maya", photoUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&q=80" },
+  { id: 6, name: "Noa", photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80" },
+];
+
+export default function NaturePlaceDetailScreen() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { id } = useParams();
+  
+  const [place, setPlace] = useState(location.state?.place || null);
+  const [showInviteSection, setShowInviteSection] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState(null);
+  const [inviteSent, setInviteSent] = useState(false);
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+
+  // If no place in state, we could fetch it (for now just show error)
+  useEffect(() => {
+    if (!place && id) {
+      // In production, fetch place by ID
+      console.log('Place not found in state, ID:', id);
+    }
+  }, [place, id]);
+
+  const handleBack = () => {
+    navigate(-1);
+  };
+
+  const handleInviteMatch = () => {
+    if (selectedMatch && place) {
+      // Send invite message to chat
+      const message = `Hey! 🌿 Want to explore ${place.name} together? It looks amazing!\n\n📍 ${place.location}\n${place.natureDetails?.entryFee?.free ? '✅ Free entry!' : `💰 Entry: ₪${place.natureDetails?.entryFee?.adult}/person`}`;
+      
+      const gestureMessagesStore = useGestureMessagesStore.getState();
+      gestureMessagesStore.addGestureMessage(selectedMatch.id, {
+        id: Date.now(),
+        from: 'me',
+        type: 'text',
+        text: message,
+        timestamp: Date.now(),
+        status: 'sent',
+        reactions: {},
+      }, {
+        id: selectedMatch.id,
+        name: selectedMatch.name,
+        photoUrl: selectedMatch.photoUrl,
+      });
+      
+      setInviteSent(true);
+      setToast({ open: true, message: `Invite sent to ${selectedMatch.name}! 🌿`, severity: 'success' });
+    }
+  };
+
+  const handleWhatsAppInvite = () => {
+    if (!place) return;
+    const message = encodeURIComponent(
+      `Hey! 🌿 Want to explore ${place.name} together?\n\n` +
+      `📍 ${place.location}\n` +
+      `${place.natureDetails?.entryFee?.free ? '✅ Free entry!' : `💰 Entry: ₪${place.natureDetails?.entryFee?.adult}/person`}\n\n` +
+      `Let me know if you're interested! 🥾`
+    );
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
+
+  const handleNavigate = () => {
+    if (!place) return;
+    const query = encodeURIComponent(place.name + ' ' + place.location);
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+  };
+
+  const getDifficultyColor = (difficulty) => {
+    switch (difficulty) {
+      case 'Easy': return { bg: '#dcfce7', color: '#16a34a' };
+      case 'Moderate': return { bg: '#fef3c7', color: '#d97706' };
+      case 'Challenging': return { bg: '#fee2e2', color: '#dc2626' };
+      default: return { bg: '#f1f5f9', color: '#64748b' };
+    }
+  };
+
+  if (!place || !place.natureDetails) {
+    return (
+      <Box sx={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: 2,
+        p: 3,
+      }}>
+        <Typography variant="h6" sx={{ color: '#64748b' }}>Place not found</Typography>
+        <Button variant="contained" onClick={handleBack}>Go Back</Button>
+      </Box>
+    );
+  }
+
+  const details = place.natureDetails;
+
+  return (
+    <Box sx={{ 
+      minHeight: '100vh', 
+      bgcolor: '#fff',
+      pb: 12, // Space for bottom nav
+    }}>
+      {/* Hero Image with Back Button */}
+      <Box sx={{ position: 'relative' }}>
+        <Box
+          component="img"
+          src={place.image}
+          alt={place.name}
+          sx={{ 
+            width: '100%', 
+            height: 220, 
+            objectFit: 'cover',
+          }}
+        />
+        {/* Gradient Overlay */}
+        <Box sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 80,
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%)',
+        }} />
+        
+        {/* Back Button */}
+        <IconButton
+          onClick={handleBack}
+          sx={{ 
+            position: 'absolute', 
+            top: 12, 
+            left: 12, 
+            bgcolor: 'rgba(255,255,255,0.9)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            '&:hover': { bgcolor: '#fff' },
+          }}
+        >
+          <ArrowLeft size={22} color="#1a1a2e" />
+        </IconButton>
+
+        {/* Entry Fee Badge */}
+        <Chip
+          label={details.entryFee?.free ? '✅ Free Entry' : `₪${details.entryFee?.adult}/person`}
+          sx={{
+            position: 'absolute',
+            bottom: 12,
+            left: 12,
+            bgcolor: details.entryFee?.free ? 'rgba(34,197,94,0.95)' : 'rgba(108,92,231,0.95)',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: '0.8rem',
+            height: 32,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}
+        />
+
+        {/* Rating Badge */}
+        <Box sx={{
+          position: 'absolute',
+          bottom: 12,
+          right: 12,
+          bgcolor: 'rgba(255,255,255,0.95)',
+          borderRadius: '8px',
+          px: 1.5,
+          py: 0.5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        }}>
+          <Typography sx={{ fontSize: '1rem' }}>⭐</Typography>
+          <Typography sx={{ fontWeight: 700, color: '#1a1a2e' }}>{place.pulseRating}</Typography>
+        </Box>
+      </Box>
+
+      {/* Content */}
+      <Box sx={{ px: 2, pt: 2 }}>
+        {/* Title & Location */}
+        <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5 }}>
+          {place.name}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2 }}>
+          <MapPin size={16} color="#64748b" />
+          <Typography variant="body2" sx={{ color: '#64748b' }}>
+            {place.location}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b' }}>·</Typography>
+          <Clock size={16} color="#64748b" />
+          <Typography variant="body2" sx={{ color: '#64748b' }}>
+            Best time: {details.bestTime}
+          </Typography>
+        </Box>
+
+        {/* Quick Actions */}
+        <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+          <Button
+            variant="contained"
+            startIcon={<Navigation size={18} />}
+            onClick={handleNavigate}
+            sx={{
+              flex: 1,
+              py: 1.25,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            }}
+          >
+            Navigate
+          </Button>
+          <IconButton
+            sx={{ 
+              bgcolor: '#f1f5f9', 
+              borderRadius: '12px',
+              width: 48,
+              height: 48,
+            }}
+          >
+            <Bookmark size={22} color="#64748b" />
+          </IconButton>
+          <IconButton
+            onClick={handleWhatsAppInvite}
+            sx={{ 
+              bgcolor: '#f1f5f9', 
+              borderRadius: '12px',
+              width: 48,
+              height: 48,
+            }}
+          >
+            <Share2 size={22} color="#64748b" />
+          </IconButton>
+        </Box>
+
+        {/* About Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <span>📖</span> About
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b', lineHeight: 1.7 }}>
+            {details.about}
+          </Typography>
+        </Box>
+
+        {/* Trails Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <span>🥾</span> Trails & Routes
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {details.trails.map((trail, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  bgcolor: '#f8fafc',
+                  borderRadius: '14px',
+                  p: 2,
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                    {trail.name}
+                  </Typography>
+                  <Chip
+                    label={trail.difficulty}
+                    size="small"
+                    sx={{
+                      height: 24,
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      bgcolor: getDifficultyColor(trail.difficulty).bg,
+                      color: getDifficultyColor(trail.difficulty).color,
+                    }}
+                  />
+                </Box>
+                <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 600, mb: 0.5 }}>
+                  {trail.distance} · {trail.duration}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                  {trail.description}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Equipment Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <span>🎒</span> Don't Forget to Bring
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {details.equipment.map((item, idx) => (
+              <Chip
+                key={idx}
+                label={item}
+                sx={{
+                  bgcolor: '#fef3c7',
+                  color: '#92400e',
+                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  height: 32,
+                }}
+              />
+            ))}
+          </Box>
+        </Box>
+
+        {/* Entry Fee Details */}
+        <Box sx={{ 
+          mb: 3, 
+          bgcolor: details.entryFee?.free ? '#f0fdf4' : '#faf5ff', 
+          borderRadius: '14px', 
+          p: 2,
+          border: details.entryFee?.free ? '1px solid #bbf7d0' : '1px solid #e9d5ff',
+        }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <span>💰</span> Entry Fee
+          </Typography>
+          {details.entryFee?.free ? (
+            <Typography variant="body1" sx={{ color: '#16a34a', fontWeight: 600 }}>
+              Free entry! {details.entryFee.note}
+            </Typography>
+          ) : (
+            <>
+              <Typography variant="body1" sx={{ color: '#6C5CE7', fontWeight: 700, mb: 0.5 }}>
+                Adult: ₪{details.entryFee.adult} · Child: ₪{details.entryFee.child}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b' }}>
+                {details.entryFee.note}
+              </Typography>
+            </>
+          )}
+        </Box>
+
+        {/* Facilities */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <span>🏛️</span> Facilities
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b', lineHeight: 1.7 }}>
+            {details.facilities.join(' • ')}
+          </Typography>
+        </Box>
+
+        {/* Invite Section */}
+        <Box sx={{ 
+          bgcolor: '#f8fafc', 
+          borderRadius: '16px', 
+          p: 2,
+          border: '1px solid #e2e8f0',
+        }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <span>💜</span> Invite Someone to Join
+          </Typography>
+          
+          {!showInviteSection ? (
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => setShowInviteSection(true)}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              }}
+            >
+              🥾 Find a Hiking Partner
+            </Button>
+          ) : inviteSent ? (
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Box sx={{ 
+                width: 60, 
+                height: 60, 
+                borderRadius: '50%', 
+                bgcolor: '#dcfce7', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 1.5,
+              }}>
+                <Check size={30} color="#22c55e" />
+              </Box>
+              <Typography variant="body1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>
+                Invite Sent! 🌿
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b' }}>
+                Continue chatting to plan your adventure
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={() => navigate('/chat')}
+                sx={{
+                  mt: 2,
+                  borderRadius: '10px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                Go to Chat
+              </Button>
+            </Box>
+          ) : (
+            <>
+              <Typography variant="body2" sx={{ color: '#64748b', mb: 1.5 }}>
+                Invite a Pulse match to explore together
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                {demoMatches.map((match) => (
+                  <Box
+                    key={match.id}
+                    onClick={() => setSelectedMatch(match)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      p: 1.25,
+                      borderRadius: '12px',
+                      border: selectedMatch?.id === match.id ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                      bgcolor: selectedMatch?.id === match.id ? 'rgba(108,92,231,0.08)' : '#fff',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <Avatar src={match.photoUrl} sx={{ width: 44, height: 44 }} />
+                    <Typography variant="body1" sx={{ fontWeight: 600, flex: 1 }}>{match.name}</Typography>
+                    {selectedMatch?.id === match.id && (
+                      <Check size={20} color="#6C5CE7" />
+                    )}
+                  </Box>
+                ))}
+              </Box>
+              
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={handleWhatsAppInvite}
+                  startIcon={<MessageCircle size={18} />}
+                  sx={{
+                    py: 1,
+                    borderRadius: '10px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderColor: '#25D366',
+                    color: '#25D366',
+                  }}
+                >
+                  WhatsApp
+                </Button>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={handleInviteMatch}
+                  disabled={!selectedMatch}
+                  sx={{
+                    py: 1,
+                    borderRadius: '10px',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                    '&:disabled': { background: '#e2e8f0', color: '#94a3b8' },
+                  }}
+                >
+                  Send Invite
+                </Button>
+              </Box>
+            </>
+          )}
+        </Box>
+      </Box>
+
+      {/* Toast */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3000}
+        onClose={() => setToast({ ...toast, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={toast.severity} sx={{ borderRadius: '12px' }}>
+          {toast.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+}

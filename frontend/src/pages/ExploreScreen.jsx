@@ -4782,10 +4782,10 @@ export default function ExploreScreen() {
       setShowWorkshopBookingDialog(true);
       return;
     }
-    // If it's a nature place with details, open nature detail dialog
+    // If it's a nature place with details, navigate to nature detail page
     if (place.category === 'nature' && place.natureDetails) {
-      setSelectedNaturePlace(place);
-      setShowNaturePlaceDialog(true);
+      window.scrollTo(0, 0);
+      navigate(`/nature/${place.id}`, { state: { place } });
       return;
     }
     // Navigate to business page (place detail)

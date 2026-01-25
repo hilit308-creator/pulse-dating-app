@@ -61,6 +61,7 @@ import ChatScreen from './pages/ChatScreen';
 import MatchesScreen from './pages/MatchesScreen';
 import MatchPulseScreen from './components/MatchPulseScreen';
 import ExploreScreen from './pages/ExploreScreen';
+import NaturePlaceDetailScreen from './pages/NaturePlaceDetailScreen';
 import ProfileSettings from './pages/ProfileSettings';
 import EventsByCategory from './pages/EventsByCategory';
 import AddEvent from './pages/AddEvent';
@@ -804,6 +805,7 @@ function AppShell() {
             <Route path="/home-swipe" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/home-pulse" element={<ProtectedRoute><HomeScreen /></ProtectedRoute>} />
             <Route path="/explore" element={<ProtectedRoute><ExploreScreen /></ProtectedRoute>} />
+            <Route path="/nature/:id" element={<ProtectedRoute><NaturePlaceDetailScreen /></ProtectedRoute>} />
             <Route path="/matches" element={<ProtectedRoute><MatchesScreen /></ProtectedRoute>} />
             <Route path="/match-pulse" element={<ProtectedRoute><MatchPulseScreen /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><ChatScreen /></ProtectedRoute>} />
