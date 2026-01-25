@@ -77,9 +77,6 @@ export default function NaturePlaceDetailScreen() {
       });
       
       setInviteSent(true);
-      setToast({ open: true, message: `Invite sent to ${selectedMatch.name}! 🌿`, severity: 'success' });
-      // Auto-hide toast after 2 seconds
-      setTimeout(() => setToast(prev => ({ ...prev, open: false })), 2000);
     }
   };
 
@@ -420,14 +417,32 @@ export default function NaturePlaceDetailScreen() {
               <Typography variant="body1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>
                 Invite Sent! 🌿
               </Typography>
-              <Typography variant="body2" sx={{ color: '#64748b' }}>
+              <Typography variant="body2" sx={{ color: '#64748b', mb: 1.5 }}>
                 Continue chatting to plan your adventure
               </Typography>
+              {/* Success Toast Message */}
+              <Box
+                sx={{
+                  bgcolor: '#22c55e',
+                  color: '#fff',
+                  px: 2.5,
+                  py: 1,
+                  borderRadius: '10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  mb: 2,
+                }}
+              >
+                ✓ Invite sent to {selectedMatch?.name}!
+              </Box>
               <Button
+                fullWidth
                 variant="outlined"
                 onClick={() => navigate('/chat')}
                 sx={{
-                  mt: 2,
                   borderRadius: '10px',
                   textTransform: 'none',
                   fontWeight: 600,
