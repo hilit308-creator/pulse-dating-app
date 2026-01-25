@@ -24,6 +24,7 @@ import {
   Bookmark,
   BookmarkCheck,
   Navigation,
+  Star,
 } from "lucide-react";
 import useGestureMessagesStore from '../store/gestureMessagesStore';
 import useChatStore from '../store/chatStore';
@@ -317,7 +318,7 @@ export default function NaturePlaceDetailScreen() {
         <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5 }}>
           {place.name}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
           <MapPin size={16} color="#64748b" />
           <Typography variant="body2" sx={{ color: '#64748b' }}>
             {place.location}
@@ -327,6 +328,29 @@ export default function NaturePlaceDetailScreen() {
           <Typography variant="body2" sx={{ color: '#64748b' }}>
             Best time: {details.bestTime}
           </Typography>
+        </Box>
+        
+        {/* Pulse Rating - 5 Purple Stars */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2 }}>
+          <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 700, mr: 0.5 }}>
+            Pulse Rating
+          </Typography>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              size={18}
+              fill={star <= Math.round(place.pulseRating || 0) ? '#6C5CE7' : 'none'}
+              color="#6C5CE7"
+            />
+          ))}
+          <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 700, ml: 0.5 }}>
+            {place.pulseRating || 0}
+          </Typography>
+          {place.pulseReviews && (
+            <Typography variant="caption" sx={{ color: '#64748b', ml: 0.5 }}>
+              ({place.pulseReviews} reviews)
+            </Typography>
+          )}
         </Box>
 
         {/* Quick Actions */}
