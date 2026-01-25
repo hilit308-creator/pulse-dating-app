@@ -78,6 +78,8 @@ export default function NaturePlaceDetailScreen() {
       
       setInviteSent(true);
       setToast({ open: true, message: `Invite sent to ${selectedMatch.name}! 🌿`, severity: 'success' });
+      // Auto-hide toast after 2 seconds
+      setTimeout(() => setToast(prev => ({ ...prev, open: false })), 2000);
     }
   };
 
@@ -504,17 +506,41 @@ export default function NaturePlaceDetailScreen() {
         </Box>
       </Box>
 
-      {/* Toast */}
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={3000}
-        onClose={() => setToast({ ...toast, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity={toast.severity} sx={{ borderRadius: '12px' }}>
-          {toast.message}
-        </Alert>
-      </Snackbar>
+      {/* Toast - Centered */}
+      {toast.open && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            pointerEvents: 'none',
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: toast.severity === 'success' ? '#22c55e' : '#6C5CE7',
+              color: '#fff',
+              px: 3,
+              py: 1.5,
+              borderRadius: '12px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              fontWeight: 600,
+              fontSize: '0.95rem',
+            }}
+          >
+            {toast.message}
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 }
