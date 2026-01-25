@@ -5661,37 +5661,35 @@ export default function ExploreScreen() {
         </DialogContent>
       </Dialog>
 
-      {/* Toast - Center of screen */}
+      {/* Toast - Bottom of screen, modern style */}
       {toast.open && (
         <Box
           sx={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            bottom: 100,
+            left: '50%',
+            transform: 'translateX(-50%)',
             zIndex: 9999,
-            pointerEvents: 'none',
           }}
         >
-          <Alert
-            severity={toast.severity}
-            variant="filled"
-            onClose={() => setToast(prev => ({ ...prev, open: false }))}
+          <Box
             sx={{ 
-              borderRadius: '12px', 
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)', 
-              fontSize: '1rem', 
-              px: 3, 
-              py: 1.5,
-              pointerEvents: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              bgcolor: toast.severity === 'success' ? '#1a1a2e' : toast.severity === 'info' ? '#475569' : '#1a1a2e',
+              color: '#fff',
+              borderRadius: '24px', 
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              px: 2.5, 
+              py: 1,
             }}
           >
+            {toast.severity === 'success' && <Check size={16} color="#22c55e" />}
             {toast.message}
-          </Alert>
+          </Box>
         </Box>
       )}
     </Box>
