@@ -23,8 +23,6 @@ import {
 import { Plus, Trash2, ArrowLeft, Calendar, MapPin, Users, CreditCard, Target, Shield, Image as ImageIcon, Sparkles, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
 import { useEventForm } from '../store/eventForm';
 import { useNavigate } from 'react-router-dom';
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function Section({ title, subtitle, icon, children, isOpen, onToggle, isComplete, sectionNumber }) {
@@ -203,9 +201,6 @@ export default function AddEvent() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', pb: 'calc(88px + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Help Button */}
-      <PageHelpButton {...getPageHelpContent('events')} />
-      
       {/* Header */}
       <Box sx={{ 
         position: 'sticky', 

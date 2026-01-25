@@ -38,8 +38,6 @@ import {
   AlarmClock,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -108,8 +106,6 @@ const NotificationSettingsScreen = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#fff', pb: 4, position: 'relative' }}>
-      {/* Help Button */}
-      <PageHelpButton {...getPageHelpContent('settings')} />
       {/* Header */}
       <Box
         sx={{

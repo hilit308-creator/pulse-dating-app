@@ -31,8 +31,6 @@ import {
 } from "@mui/material";
 import { useLanguage } from '../context/LanguageContext';
 import { ChatPointsStickyBanner } from '../components/PointsPromoBanner';
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 import {
   ArrowLeft,
   Send,
@@ -2472,7 +2470,6 @@ export default function ChatScreen() {
             <Typography variant="h6" sx={{ fontWeight: 800 }}>
               {t('chats')}
             </Typography>
-            <PageHelpButton {...getPageHelpContent('chat')} />
           </Box>
           <Typography variant="body2" sx={{ color: "#6B7280" }}>
             {t('startConversation')}

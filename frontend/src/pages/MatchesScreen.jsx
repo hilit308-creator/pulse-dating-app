@@ -35,8 +35,6 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from "framer-motion";
 import { HomeInlinePromoBanner } from '../components/SubscriptionPromoBanner';
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 import {
   MessageCircle,
   ChevronLeft,
@@ -1289,7 +1287,6 @@ export default function MatchesScreen() {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PageHelpButton {...getPageHelpContent('matches')} />
             <IconButton
               onClick={() => setDrawerOpen(true)}
               sx={{ 

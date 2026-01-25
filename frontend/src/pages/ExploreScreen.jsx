@@ -57,8 +57,6 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import useGestureMessagesStore from '../store/gestureMessagesStore';
 import { demoMatches } from './MatchesScreen';
-import { getPageHelpContent } from '../config/pageHelpContent';
-import PageHelpButton from '../components/PageHelpButton';
 
 /* =========================
    Constants
@@ -5200,7 +5198,6 @@ export default function ExploreScreen() {
               Places worth stepping into
             </Typography>
           </Box>
-          <PageHelpButton {...getPageHelpContent('explore')} />
         </Box>
 
         {/* Filter Chips - Fixed, stays in place */}

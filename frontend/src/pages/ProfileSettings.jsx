@@ -30,8 +30,6 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 import {
   ArrowLeft,
   Camera,
@@ -817,7 +815,6 @@ export default function ProfileSettings({ onBack }) {
               Edit Profile
             </Typography>
           </Box>
-          <PageHelpButton {...getPageHelpContent('profile')} />
         </Box>
 
         {/* Profile Preview Card - shows how others see you */}

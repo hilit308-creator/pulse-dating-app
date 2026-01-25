@@ -50,8 +50,6 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import UserAvatarButton from '../components/UserAvatarButton';
 import { UserCardStack } from '../components/UserCard';
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 
 // Safe bottom padding for tab bar
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
@@ -490,8 +488,6 @@ const HomeScreen = () => {
         position: 'relative',
       }}
     >
-      {/* Help Button */}
-      <PageHelpButton {...getPageHelpContent('home')} />
       {/* Offline Banner */}
       <AnimatePresence>
         {!isOnline && (
@@ -563,7 +559,6 @@ const HomeScreen = () => {
           >
             גלה מי קרוב
           </Button>
-          <PageHelpButton {...getPageHelpContent('home')} />
           <UserAvatarButton photoUrl={user?.photoUrl} />
         </Box>
       </Box>

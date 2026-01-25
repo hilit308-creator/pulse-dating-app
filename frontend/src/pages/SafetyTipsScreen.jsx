@@ -2,8 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, IconButton } from '@mui/material';
 import { ArrowLeft, Shield, MapPin, Phone, Users, Eye, AlertTriangle, MessageCircle, Heart } from 'lucide-react';
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 
 const SafetyTipsScreen = () => {
   const navigate = useNavigate();
@@ -53,8 +51,6 @@ const SafetyTipsScreen = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#fff', position: 'relative' }}>
-      {/* Help Button */}
-      <PageHelpButton {...getPageHelpContent('safety')} />
       {/* Header */}
       <Box sx={{
         display: 'flex',

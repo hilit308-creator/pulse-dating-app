@@ -59,8 +59,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 
 /* ----------------------------- Mock data --------------------------------- */
 // Vibe types per Pulse spec
@@ -1435,7 +1433,6 @@ export default function EventsByCategory() {
           </motion.div>
 
           <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-            <PageHelpButton {...getPageHelpContent('events')} buttonSx={{ color: '#fff' }} />
             <Button 
               startIcon={<Plus size={18} />} 
               onClick={() => navigate("/events/new")} 

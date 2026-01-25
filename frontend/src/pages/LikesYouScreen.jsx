@@ -40,8 +40,6 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { CardSkeleton } from '../components/SkeletonLoading';
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 
 // Analytics helper
 const trackEvent = (event, data = {}) => {
@@ -472,7 +470,6 @@ const LikesYouScreen = () => {
               {t('likesYou') || 'Likes You'}
             </Typography>
           </Box>
-          <PageHelpButton {...getPageHelpContent('likes')} />
         </Box>
         {/* Grid Skeleton */}
         <Box sx={{ px: 2, pt: 2, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>

@@ -13,8 +13,6 @@ import { MapPin, WifiOff, HelpCircle, Settings, ChevronDown } from "lucide-react
 import { useAuth, PERMISSION_STATE } from "../context/AuthContext";
 import { useLanguage } from '../context/LanguageContext';
 import { NearbyStickyStickyBanner } from '../components/SubscriptionPromoBanner';
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 
 /* ------------------------------ Theme & tokens ----------------------------- */
 const APP_BG =
@@ -453,9 +451,6 @@ export default function NearbyScreen() {
                 </Typography>
                 <ChevronDown size={16} color="#6C5CE7" />
               </Box>
-              
-              {/* Help Button */}
-              <PageHelpButton {...getPageHelpContent('nearby')} />
             </Box>
 
             {/* Main Content */}

@@ -15,8 +15,6 @@ import {
   Button,
 } from '@mui/material';
 import { ArrowLeft, Calendar, MapPin, Users, Clock, Heart } from 'lucide-react';
-import PageHelpButton from '../components/PageHelpButton';
-import { getPageHelpContent } from '../config/pageHelpContent';
 
 // Mock data for registered events
 const MY_EVENTS = [
@@ -111,7 +109,6 @@ const MyEventsScreen = () => {
             My Events
           </Typography>
         </Box>
-        <PageHelpButton {...getPageHelpContent('events')} />
         <Typography variant="caption" sx={{ color: '#64748b' }}>
           {MY_EVENTS.length} events you're attending
         </Typography>
