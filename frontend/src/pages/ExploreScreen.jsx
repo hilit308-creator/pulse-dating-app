@@ -23,6 +23,7 @@ import {
   Skeleton,
   Tooltip,
   TextField,
+  Avatar,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -351,6 +352,17 @@ const MOCK_PLACES = [
     googleRating: 4.5,
     pulseRating: 4.8,
     pulseReviews: 127,
+    natureDetails: {
+      about: "Tel Aviv's largest urban park stretching along the Yarkon River. Perfect for romantic walks, picnics, and outdoor activities. Features beautiful gardens, a tropical garden, and rock garden.",
+      trails: [
+        { name: "River Walk", distance: "3.5 km", difficulty: "Easy", duration: "1 hour", description: "Scenic path along the Yarkon River with shaded areas" },
+        { name: "Botanical Loop", distance: "2 km", difficulty: "Easy", duration: "45 min", description: "Walk through the tropical and rock gardens" },
+      ],
+      equipment: ["Comfortable walking shoes", "Sunscreen", "Water bottle", "Picnic blanket"],
+      entryFee: { free: true, note: "Free entry. Boat rentals and activities cost extra." },
+      bestTime: "Morning or late afternoon",
+      facilities: ["Restrooms", "Cafes", "Boat rentals", "Bike rentals", "Playgrounds"],
+    },
   },
   {
     id: 12,
@@ -368,6 +380,17 @@ const MOCK_PLACES = [
     googleRating: 4.7,
     pulseRating: 4.9,
     pulseReviews: 89,
+    natureDetails: {
+      about: "Beautiful Mediterranean beach promenade with stunning sunset views. The perfect spot for a romantic evening walk along the sea with cafes and restaurants nearby.",
+      trails: [
+        { name: "Beach Promenade", distance: "2.5 km", difficulty: "Easy", duration: "45 min", description: "Flat coastal walk with sea views and beach access" },
+        { name: "Carmel Cliffs Path", distance: "4 km", difficulty: "Moderate", duration: "1.5 hours", description: "Scenic trail along the cliffs above the beach" },
+      ],
+      equipment: ["Comfortable sandals or walking shoes", "Swimsuit", "Towel", "Sunscreen", "Light jacket for evening"],
+      entryFee: { free: true, note: "Free access to beach and promenade" },
+      bestTime: "Sunset hours for the best views",
+      facilities: ["Restrooms", "Showers", "Beach chairs rental", "Restaurants", "Parking"],
+    },
   },
   {
     id: 13,
@@ -389,6 +412,19 @@ const MOCK_PLACES = [
     googleRating: 4.8,
     pulseRating: 4.7,
     pulseReviews: 203,
+    natureDetails: {
+      about: "A desert oasis with stunning waterfalls and natural pools. Home to ibex, hyrax, and diverse wildlife. One of Israel's most beautiful nature reserves, where King David once hid from Saul.",
+      trails: [
+        { name: "Nahal David Short Trail", distance: "1.5 km", difficulty: "Easy", duration: "1 hour", description: "To David's Waterfall - the most popular trail with a refreshing waterfall" },
+        { name: "Nahal David Full Trail", distance: "4 km", difficulty: "Moderate", duration: "2-3 hours", description: "Includes Dodim Cave and upper waterfalls" },
+        { name: "Nahal Arugot Trail", distance: "6 km", difficulty: "Moderate", duration: "3-4 hours", description: "Hidden waterfall trail, less crowded and more adventurous" },
+        { name: "Dry Canyon Trail", distance: "2 km", difficulty: "Challenging", duration: "2 hours", description: "Dramatic canyon with ladders and climbing sections" },
+      ],
+      equipment: ["Hiking shoes (water-resistant)", "Hat", "Sunscreen", "2+ liters of water per person", "Swimsuit for waterfalls", "Snacks"],
+      entryFee: { free: false, adult: 29, child: 15, note: "Entry fee required. Combo tickets available with nearby attractions." },
+      bestTime: "Early morning to avoid crowds and heat",
+      facilities: ["Visitor center", "Restrooms", "Snack bar", "Parking", "Lockers"],
+    },
   },
   {
     id: 14,
@@ -406,6 +442,17 @@ const MOCK_PLACES = [
     googleRating: 4.4,
     pulseRating: 4.6,
     pulseReviews: 156,
+    natureDetails: {
+      about: "Tel Aviv's most iconic boulevard, lined with Bauhaus buildings and shaded by ficus trees. Perfect for a cultural stroll with cafes, kiosks, and street performers along the way.",
+      trails: [
+        { name: "Boulevard Walk", distance: "2 km", difficulty: "Easy", duration: "30-45 min", description: "Flat walk along the tree-lined boulevard from Habima to Neve Tzedek" },
+        { name: "Bauhaus Architecture Tour", distance: "3 km", difficulty: "Easy", duration: "1.5 hours", description: "Self-guided tour of UNESCO World Heritage Bauhaus buildings" },
+      ],
+      equipment: ["Comfortable walking shoes", "Camera for architecture photos", "Water bottle"],
+      entryFee: { free: true, note: "Free public space, open 24/7" },
+      bestTime: "Late afternoon or evening for best atmosphere",
+      facilities: ["Cafes & kiosks", "Public benches", "Bike rental stations", "Restrooms in cafes"],
+    },
   },
   {
     id: 15,
@@ -423,6 +470,16 @@ const MOCK_PLACES = [
     googleRating: 4.3,
     pulseRating: 4.5,
     pulseReviews: 78,
+    natureDetails: {
+      about: "A charming urban park in the heart of Tel Aviv, known for its inclusive atmosphere and beautiful gardens. Features a dog park, playground, and is surrounded by cafes and restaurants.",
+      trails: [
+        { name: "Park Loop", distance: "0.8 km", difficulty: "Easy", duration: "15-20 min", description: "Relaxed walk around the park's paths and gardens" },
+      ],
+      equipment: ["Comfortable shoes", "Picnic supplies", "Book or games"],
+      entryFee: { free: true, note: "Free public park" },
+      bestTime: "Afternoon or early evening",
+      facilities: ["Dog park", "Playground", "Public restrooms", "Nearby cafes", "Shaded seating areas"],
+    },
   },
   // Couples Workshops
   {
@@ -2814,6 +2871,404 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
 }
 
 /* =========================
+   Nature Place Detail Dialog
+   ========================= */
+function NaturePlaceDetailDialog({ open, onClose, place, userMatches = [], onInviteMatch }) {
+  const [step, setStep] = React.useState(1); // 1: Details, 2: Invite
+  const [selectedMatch, setSelectedMatch] = React.useState(null);
+  const [inviteSent, setInviteSent] = React.useState(false);
+
+  const availableMatches = userMatches.map(m => ({
+    id: m.id,
+    name: m.name,
+    avatar: m.photoUrl,
+  }));
+
+  const handleClose = () => {
+    setStep(1);
+    setSelectedMatch(null);
+    setInviteSent(false);
+    onClose();
+  };
+
+  const handleInviteMatch = () => {
+    if (selectedMatch && place) {
+      onInviteMatch?.({
+        match: selectedMatch,
+        place: place,
+      });
+      setInviteSent(true);
+    }
+  };
+
+  const handleWhatsAppInvite = () => {
+    if (!place) return;
+    const message = encodeURIComponent(
+      `Hey! 🌿 Want to explore ${place.name} together?\n\n` +
+      `📍 ${place.location}\n` +
+      `${place.natureDetails?.entryFee?.free ? '✅ Free entry!' : `💰 Entry: ₪${place.natureDetails?.entryFee?.adult}/person`}\n\n` +
+      `Let me know if you're interested! 🥾`
+    );
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
+
+  if (!place || !place.natureDetails) return null;
+  const details = place.natureDetails;
+
+  const getDifficultyColor = (difficulty) => {
+    switch (difficulty) {
+      case 'Easy': return { bg: '#dcfce7', color: '#16a34a' };
+      case 'Moderate': return { bg: '#fef3c7', color: '#d97706' };
+      case 'Challenging': return { bg: '#fee2e2', color: '#dc2626' };
+      default: return { bg: '#f1f5f9', color: '#64748b' };
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          borderRadius: '16px',
+          overflow: 'hidden',
+          maxHeight: '85vh',
+          m: 2,
+        },
+      }}
+    >
+      {/* Step 1: Place Details */}
+      {step === 1 && (
+        <>
+          <Box sx={{ position: 'relative' }}>
+            <Box
+              component="img"
+              src={place.image}
+              alt={place.name}
+              sx={{ width: '100%', height: 140, objectFit: 'cover' }}
+            />
+            <IconButton
+              onClick={handleClose}
+              sx={{ position: 'absolute', top: 8, right: 8, bgcolor: 'rgba(255,255,255,0.9)', p: 0.5 }}
+            >
+              <X size={18} />
+            </IconButton>
+            {/* Entry Fee Badge */}
+            <Chip
+              label={details.entryFee?.free ? '✅ Free Entry' : `₪${details.entryFee?.adult}/person`}
+              size="small"
+              sx={{
+                position: 'absolute',
+                bottom: 8,
+                left: 8,
+                bgcolor: details.entryFee?.free ? 'rgba(34,197,94,0.9)' : 'rgba(108,92,231,0.9)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '0.7rem',
+              }}
+            />
+          </Box>
+          
+          <DialogContent sx={{ pt: 1.5, pb: 1, overflow: 'auto' }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.25 }}>
+              {place.name}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
+              <MapPin size={12} /> {place.location} · Best time: {details.bestTime}
+            </Typography>
+
+            {/* About Section */}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', mb: 0.5 }}>
+                📖 About
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.8rem', lineHeight: 1.5 }}>
+                {details.about}
+              </Typography>
+            </Box>
+
+            {/* Trails Section */}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', mb: 0.75 }}>
+                🥾 Trails & Routes
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {details.trails.map((trail, idx) => (
+                  <Box
+                    key={idx}
+                    sx={{
+                      bgcolor: '#f8fafc',
+                      borderRadius: '10px',
+                      p: 1.25,
+                      border: '1px solid #e2e8f0',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
+                        {trail.name}
+                      </Typography>
+                      <Chip
+                        label={trail.difficulty}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.6rem',
+                          fontWeight: 600,
+                          bgcolor: getDifficultyColor(trail.difficulty).bg,
+                          color: getDifficultyColor(trail.difficulty).color,
+                        }}
+                      />
+                    </Box>
+                    <Typography variant="caption" sx={{ color: '#6C5CE7', fontWeight: 600, display: 'block', mb: 0.25 }}>
+                      {trail.distance} · {trail.duration}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.7rem' }}>
+                      {trail.description}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Equipment Section */}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', mb: 0.5 }}>
+                🎒 Don't Forget to Bring
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {details.equipment.map((item, idx) => (
+                  <Chip
+                    key={idx}
+                    label={item}
+                    size="small"
+                    sx={{
+                      bgcolor: '#fef3c7',
+                      color: '#92400e',
+                      fontWeight: 600,
+                      fontSize: '0.65rem',
+                      height: 24,
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+
+            {/* Entry Fee Details */}
+            <Box sx={{ mb: 2, bgcolor: details.entryFee?.free ? '#f0fdf4' : '#faf5ff', borderRadius: '10px', p: 1.25 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', mb: 0.25 }}>
+                💰 Entry Fee
+              </Typography>
+              {details.entryFee?.free ? (
+                <Typography variant="body2" sx={{ color: '#16a34a', fontWeight: 600, fontSize: '0.8rem' }}>
+                  Free entry! {details.entryFee.note}
+                </Typography>
+              ) : (
+                <>
+                  <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 700, fontSize: '0.85rem' }}>
+                    Adult: ₪{details.entryFee.adult} · Child: ₪{details.entryFee.child}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.7rem' }}>
+                    {details.entryFee.note}
+                  </Typography>
+                </>
+              )}
+            </Box>
+
+            {/* Facilities */}
+            <Box>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', mb: 0.5 }}>
+                🏛️ Facilities
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#64748b' }}>
+                {details.facilities.join(' • ')}
+              </Typography>
+            </Box>
+          </DialogContent>
+
+          <DialogActions sx={{ px: 2, pb: 1.5, gap: 1 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => setStep(2)}
+              sx={{
+                py: 1,
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              }}
+            >
+              🥾 Invite Someone to Join
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 2: Invite */}
+      {step === 2 && !inviteSent && (
+        <>
+          <DialogTitle sx={{ textAlign: 'center', pt: 2.5, pb: 1 }}>
+            <Box sx={{ 
+              width: 50, 
+              height: 50, 
+              borderRadius: '50%', 
+              bgcolor: '#f0fdf4', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 1,
+            }}>
+              <span style={{ fontSize: '1.5rem' }}>🌿</span>
+            </Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+              Invite to {place.name}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b' }}>
+              Who would you like to explore with?
+            </Typography>
+          </DialogTitle>
+          <DialogContent sx={{ pt: 0 }}>
+            {/* Invite a Match */}
+            <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', mb: 1 }}>
+              💜 Invite a Pulse Match
+            </Typography>
+            {availableMatches.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mb: 2 }}>
+                {availableMatches.map((match) => (
+                  <Box
+                    key={match.id}
+                    onClick={() => setSelectedMatch(match)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      p: 1,
+                      borderRadius: '10px',
+                      border: selectedMatch?.id === match.id ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                      bgcolor: selectedMatch?.id === match.id ? 'rgba(108,92,231,0.08)' : '#fff',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <Avatar src={match.avatar} sx={{ width: 40, height: 40 }} />
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{match.name}</Typography>
+                    {selectedMatch?.id === match.id && (
+                      <Check size={18} color="#6C5CE7" style={{ marginLeft: 'auto' }} />
+                    )}
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 2 }}>
+                No matches yet. Start swiping to find someone!
+              </Typography>
+            )}
+
+            {/* Invite via WhatsApp */}
+            <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', mb: 1 }}>
+              📱 Or invite a friend
+            </Typography>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={handleWhatsAppInvite}
+              startIcon={<MessageCircle size={18} />}
+              sx={{
+                py: 1,
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: '#25D366',
+                color: '#25D366',
+                '&:hover': { bgcolor: 'rgba(37,211,102,0.08)', borderColor: '#25D366' },
+              }}
+            >
+              Share via WhatsApp
+            </Button>
+          </DialogContent>
+          <DialogActions sx={{ px: 2, pb: 1.5, gap: 1 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => setStep(1)}
+              sx={{ py: 0.75, borderRadius: '10px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b' }}
+            >
+              Back
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleInviteMatch}
+              disabled={!selectedMatch}
+              sx={{
+                py: 0.75,
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                '&:disabled': { background: '#e2e8f0', color: '#94a3b8' },
+              }}
+            >
+              Send Invite
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Invite Sent Confirmation */}
+      {step === 2 && inviteSent && (
+        <>
+          <DialogContent sx={{ textAlign: 'center', py: 4 }}>
+            <Box sx={{ 
+              width: 70, 
+              height: 70, 
+              borderRadius: '50%', 
+              bgcolor: '#dcfce7', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2,
+            }}>
+              <Check size={36} color="#22c55e" />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5 }}>
+              Invite Sent! 🌿
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>
+              {selectedMatch?.name} received your invite to explore {place.name}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#6C5CE7', fontWeight: 600 }}>
+              Continue chatting to plan your adventure!
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ px: 2, pb: 1.5 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleClose}
+              sx={{
+                py: 1,
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              }}
+            >
+              Done
+            </Button>
+          </DialogActions>
+        </>
+      )}
+    </Dialog>
+  );
+}
+
+/* =========================
    Workshop Booking Dialog
    ========================= */
 function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = [] }) {
@@ -4208,6 +4663,10 @@ export default function ExploreScreen() {
   const [showWorkshopBookingDialog, setShowWorkshopBookingDialog] = useState(false);
   const [selectedWorkshop, setSelectedWorkshop] = useState(null);
   
+  // Nature place detail state
+  const [showNaturePlaceDialog, setShowNaturePlaceDialog] = useState(false);
+  const [selectedNaturePlace, setSelectedNaturePlace] = useState(null);
+  
   // Purchased workshops state (persisted in localStorage) - includes demo completed workshop
   const [purchasedWorkshops, setPurchasedWorkshops] = useState(() => {
     try {
@@ -4321,6 +4780,12 @@ export default function ExploreScreen() {
     if (place.isWorkshop) {
       setSelectedWorkshop(place);
       setShowWorkshopBookingDialog(true);
+      return;
+    }
+    // If it's a nature place with details, open nature detail dialog
+    if (place.category === 'nature' && place.natureDetails) {
+      setSelectedNaturePlace(place);
+      setShowNaturePlaceDialog(true);
       return;
     }
     // Navigate to business page (place detail)
@@ -4850,6 +5315,39 @@ export default function ExploreScreen() {
         onClose={() => setShowAddDateSpotDialog(false)}
         onSubmit={(spotData) => {
           setToast({ open: true, message: 'Date spot submitted! 50 points pending approval 🎉', severity: 'success' });
+        }}
+      />
+
+      {/* Nature Place Detail Dialog */}
+      <NaturePlaceDetailDialog
+        open={showNaturePlaceDialog}
+        onClose={() => {
+          setShowNaturePlaceDialog(false);
+          setSelectedNaturePlace(null);
+        }}
+        place={selectedNaturePlace}
+        userMatches={demoMatches}
+        onInviteMatch={(inviteData) => {
+          // Send invite message to chat
+          const message = `Hey! 🌿 Want to explore ${inviteData.place.name} together? It looks amazing!\n\n📍 ${inviteData.place.location}\n${inviteData.place.natureDetails?.entryFee?.free ? '✅ Free entry!' : `💰 Entry: ₪${inviteData.place.natureDetails?.entryFee?.adult}/person`}`;
+          
+          // Save to gesture messages store to appear in chat
+          const gestureMessagesStore = useGestureMessagesStore.getState();
+          gestureMessagesStore.addGestureMessage(inviteData.match.id, {
+            id: Date.now(),
+            from: 'me',
+            type: 'text',
+            text: message,
+            timestamp: Date.now(),
+            status: 'sent',
+            reactions: {},
+          }, {
+            id: inviteData.match.id,
+            name: inviteData.match.name,
+            photoUrl: inviteData.match.avatar,
+          });
+          
+          setToast({ open: true, message: `Invite sent to ${inviteData.match.name}! 🌿`, severity: 'success' });
         }}
       />
 
