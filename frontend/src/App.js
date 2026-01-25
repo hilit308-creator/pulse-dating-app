@@ -3,9 +3,9 @@ import './index.css';
 import './pages/global-theme.css';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { Typography, Box, IconButton, Tooltip, Button } from '@mui/material';
+import { Typography, Box, IconButton, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Settings, CircleUser, ArrowLeft } from 'lucide-react';
+import { Settings, CircleUser, ArrowLeft, HelpCircle } from 'lucide-react';
 
 // Auth
 import { AuthProvider, useAuth, ONBOARDING_STATE, PERMISSION_STATE } from './context/AuthContext';
@@ -101,6 +101,7 @@ import UserDetailsScreen from './pages/UserDetailsScreen';
 // Global components
 import { GlobalErrorProvider } from './components/GlobalErrorBanner';
 import SessionExpiredModal from './components/SessionExpiredModal';
+import { getPageHelpContent } from './config/pageHelpContent';
 
 const theme = createTheme({
   palette: {
@@ -677,6 +678,7 @@ function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, isOnboardingComplete } = useAuth();
+  const [showHelpDialog, setShowHelpDialog] = React.useState(false);
   
   // Paths where we hide tab bar and header (auth flow)
   const authPaths = [
@@ -699,6 +701,24 @@ function AppShell() {
   const showTabBar = isLoggedIn && isOnboardingComplete && !isAuthPath && !isProfilePath && !hideByFlag;
   const showHeader = isLoggedIn && isOnboardingComplete && !isAuthPath && !hideByFlag;
   const showBackButton = showHeader && !isRootTab;
+  
+  // Get help content based on current route
+  const getHelpKeyFromPath = (pathname) => {
+    if (pathname === '/' || pathname === '/home' || pathname === '/home1' || pathname === '/home-swipe' || pathname === '/home-pulse') return 'home';
+    if (pathname === '/nearby') return 'nearby';
+    if (pathname === '/explore') return 'explore';
+    if (pathname === '/matches') return 'matches';
+    if (pathname === '/chat' || pathname.startsWith('/chat/')) return 'chat';
+    if (pathname === '/events' || pathname.startsWith('/events/')) return 'events';
+    if (pathname === '/profile' || pathname.startsWith('/profile')) return 'profile';
+    if (pathname === '/account-settings' || pathname.startsWith('/settings')) return 'settings';
+    if (pathname === '/subscriptions') return 'subscription';
+    if (pathname === '/safety-tips' || pathname === '/meetings-safety') return 'safety';
+    if (pathname === '/likes-you') return 'likes';
+    return 'home'; // default
+  };
+  
+  const helpContent = getPageHelpContent(getHelpKeyFromPath(location.pathname));
 
   return (
     <div style={{ paddingBottom: showTabBar ? 64 : 0, minHeight: '100vh' }}>
@@ -722,19 +742,32 @@ function AppShell() {
             boxShadow: '0 1px 6px rgba(0,0,0,0.04)'
           }}
         >
-          {/* Left: Back button (only on non-root screens) */}
-          <Box sx={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)' }}>
+          {/* Left: Help button + Back button (only on non-root screens) */}
+          <Box sx={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Tooltip title="Help">
+              <IconButton 
+                size="small" 
+                onClick={() => setShowHelpDialog(true)}
+                sx={{ 
+                  width: 36, 
+                  height: 36,
+                  '&:hover': { bgcolor: '#f5f5f5' },
+                }}
+              >
+                <HelpCircle size={18} />
+              </IconButton>
+            </Tooltip>
             {showBackButton && (
               <IconButton 
                 size="small" 
                 onClick={() => navigate(-1)}
                 sx={{ 
-                  width: 44, 
-                  height: 44,
+                  width: 36, 
+                  height: 36,
                   '&:hover': { bgcolor: '#f5f5f5' },
                 }}
               >
-                <ArrowLeft size={22} />
+                <ArrowLeft size={20} />
               </IconButton>
             )}
           </Box>
@@ -760,6 +793,59 @@ function AppShell() {
       )}
       {/* Spacer equal to header height to prevent overlap */}
       {showHeader && <Box sx={{ height: 56 }} />}
+      
+      {/* Global Help Dialog - content changes based on current page */}
+      <Dialog
+        open={showHelpDialog}
+        onClose={() => setShowHelpDialog(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            p: 1,
+            maxWidth: 360,
+            width: '100%',
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, pb: 1, textAlign: 'center' }}>
+          {helpContent.title}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ textAlign: 'center' }}>
+            {helpContent.steps.map((step, index) => (
+              <Box key={index} sx={{ mb: index === helpContent.steps.length - 1 ? 2 : 3 }}>
+                {step.emoji && (
+                  <Typography sx={{ fontSize: 32, mb: 1 }}>
+                    {step.emoji}
+                  </Typography>
+                )}
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                  {step.title}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                  {step.description}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => setShowHelpDialog(false)}
+            sx={{
+              py: 1.5,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            }}
+          >
+            Got it!
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Box>
         <ErrorBoundary>
           <Routes>
