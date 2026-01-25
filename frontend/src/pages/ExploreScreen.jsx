@@ -52,6 +52,7 @@ import {
   Calendar,
   CreditCard,
   Trash2,
+  Disc,
 } from "lucide-react";
 import { useLanguage } from '../context/LanguageContext';
 import useGestureMessagesStore from '../store/gestureMessagesStore';
@@ -76,6 +77,7 @@ const FILTER_CATEGORIES_ROW2 = [
   { id: 'cafe', labelKey: 'cafes', icon: Coffee },
   { id: 'live-music', labelKey: 'liveMusic', icon: Music },
   { id: 'nature', labelKey: 'nature', icon: TreePine },
+  { id: 'dance', labelKey: 'dance', icon: Disc },
   { id: 'workshops', labelKey: 'workshops', icon: Palette },
   { id: 'chill', labelKey: 'chill', icon: Star },
 ];
