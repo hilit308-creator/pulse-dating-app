@@ -22,6 +22,7 @@ import {
   Share2,
   Heart,
   Bookmark,
+  BookmarkCheck,
   Navigation,
 } from "lucide-react";
 import useGestureMessagesStore from '../store/gestureMessagesStore';
@@ -43,6 +44,22 @@ export default function NaturePlaceDetailScreen() {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [inviteSent, setInviteSent] = useState(false);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Saved places state
+  const [isSaved, setIsSaved] = useState(false);
+  
+  // Check if place is saved on mount
+  useEffect(() => {
+    if (place) {
+      try {
+        const savedPlaces = JSON.parse(localStorage.getItem("saved_places") || "[]");
+        const saved = savedPlaces.some(p => p.id === place.id || String(p.id) === String(place.id));
+        setIsSaved(saved);
+      } catch (e) {
+        console.error("Error checking saved places:", e);
+      }
+    }
+  }, [place]);
 
   // If no place in state, we could fetch it (for now just show error)
   useEffect(() => {
@@ -95,6 +112,43 @@ export default function NaturePlaceDetailScreen() {
     if (!place) return;
     const query = encodeURIComponent(place.name + ' ' + place.location);
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+  };
+
+  const handleSaveToggle = () => {
+    if (!place) return;
+    
+    try {
+      const savedPlaces = JSON.parse(localStorage.getItem("saved_places") || "[]");
+      
+      if (isSaved) {
+        // Remove from saved
+        const updated = savedPlaces.filter(p => p.id !== place.id && String(p.id) !== String(place.id));
+        localStorage.setItem("saved_places", JSON.stringify(updated));
+        setIsSaved(false);
+        setToast({ open: true, message: 'Removed from saved', severity: 'info' });
+      } else {
+        // Add to saved
+        const newSavedPlace = {
+          id: place.id,
+          name: place.name,
+          category: place.category,
+          location: place.location,
+          image: place.image,
+          natureDetails: place.natureDetails,
+          pulseRating: place.pulseRating,
+          vibes: place.vibes,
+        };
+        savedPlaces.push(newSavedPlace);
+        localStorage.setItem("saved_places", JSON.stringify(savedPlaces));
+        setIsSaved(true);
+        setToast({ open: true, message: 'Saved! ✓', severity: 'success' });
+      }
+      
+      // Auto-hide toast
+      setTimeout(() => setToast(prev => ({ ...prev, open: false })), 2000);
+    } catch (e) {
+      console.error("Error saving place:", e);
+    }
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -239,14 +293,20 @@ export default function NaturePlaceDetailScreen() {
             Navigate
           </Button>
           <IconButton
+            onClick={handleSaveToggle}
             sx={{ 
-              bgcolor: '#f1f5f9', 
+              bgcolor: isSaved ? 'rgba(108,92,231,0.1)' : '#f1f5f9', 
               borderRadius: '12px',
               width: 48,
               height: 48,
+              transition: 'all 0.2s',
             }}
           >
-            <Bookmark size={22} color="#64748b" />
+            {isSaved ? (
+              <BookmarkCheck size={22} color="#6C5CE7" />
+            ) : (
+              <Bookmark size={22} color="#64748b" />
+            )}
           </IconButton>
           <IconButton
             onClick={handleWhatsAppInvite}
