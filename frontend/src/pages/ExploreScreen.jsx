@@ -172,7 +172,7 @@ const MOCK_PLACES = [
   {
     id: 1,
     name: "Kuli Alma",
-    image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1598653222000-6b7b7a552625?auto=format&fit=crop&w=800&q=80",
     category: "bar",
     vibes: ['social', 'dance', 'live'],
     location: "Tel Aviv",
@@ -193,7 +193,7 @@ const MOCK_PLACES = [
   {
     id: 2,
     name: "Cafe Nordoy",
-    image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?auto=format&fit=crop&w=800&q=80",
     category: "cafe",
     vibes: ['chill', 'romantic'],
     location: "Tel Aviv",
@@ -210,7 +210,7 @@ const MOCK_PLACES = [
   {
     id: 3,
     name: "The Block",
-    image: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?auto=format&fit=crop&w=800&q=80",
     category: "bar",
     vibes: ['dance', 'energetic', 'live'],
     location: "Tel Aviv",
@@ -231,7 +231,7 @@ const MOCK_PLACES = [
   {
     id: 4,
     name: "Cafelix",
-    image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80",
     category: "cafe",
     vibes: ['chill', 'social'],
     location: "Tel Aviv",
@@ -252,7 +252,7 @@ const MOCK_PLACES = [
   {
     id: 5,
     name: "Sputnik",
-    image: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1575037614876-c38a4c44f5bd?auto=format&fit=crop&w=800&q=80",
     category: "bar",
     vibes: ['social', 'chill'],
     location: "Tel Aviv",
@@ -269,7 +269,7 @@ const MOCK_PLACES = [
   {
     id: 6,
     name: "Pastel",
-    image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?auto=format&fit=crop&w=800&q=80",
     category: "live-music",
     vibes: ['live', 'romantic', 'chill'],
     location: "Tel Aviv",
@@ -287,7 +287,7 @@ const MOCK_PLACES = [
   {
     id: 7,
     name: "Beit Maariv",
-    image: "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?auto=format&fit=crop&w=800&q=80",
     category: "bar",
     vibes: ['dance', 'social', 'energetic'],
     location: "Tel Aviv",
@@ -308,7 +308,7 @@ const MOCK_PLACES = [
   {
     id: 8,
     name: "Anna Loulou",
-    image: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1508854710579-5cecc3a9ff17?auto=format&fit=crop&w=800&q=80",
     category: "live-music",
     vibes: ['live', 'social', 'chill'],
     location: "Jaffa",
@@ -325,7 +325,7 @@ const MOCK_PLACES = [
   {
     id: 9,
     name: "Teder.fm",
-    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=800&q=80",
     category: "bar",
     vibes: ['social', 'chill', 'live'],
     location: "Tel Aviv",
@@ -347,7 +347,7 @@ const MOCK_PLACES = [
   {
     id: 10,
     name: "Spicehaus",
-    image: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=800&q=80",
     category: "cafe",
     vibes: ['chill', 'romantic'],
     location: "Tel Aviv",
@@ -365,7 +365,7 @@ const MOCK_PLACES = [
   {
     id: 11,
     name: "Yarkon Park",
-    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1587502537815-0c8b5c6e5b0b?auto=format&fit=crop&w=800&q=80",
     category: "nature",
     vibes: ['chill', 'romantic'],
     location: "Tel Aviv",
@@ -397,7 +397,7 @@ const MOCK_PLACES = [
   {
     id: 12,
     name: "Carmel Beach Promenade",
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80",
     category: "nature",
     vibes: ['romantic', 'chill'],
     location: "Haifa",
@@ -425,7 +425,7 @@ const MOCK_PLACES = [
   {
     id: 13,
     name: "Ein Gedi Nature Reserve",
-    image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?auto=format&fit=crop&w=800&q=80",
     category: "nature",
     vibes: ['romantic', 'chill'],
     location: "Dead Sea",
@@ -459,7 +459,7 @@ const MOCK_PLACES = [
   {
     id: 14,
     name: "Rothschild Boulevard Gardens",
-    image: "https://images.unsplash.com/photo-1476673160081-cf065607f449?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80",
     category: "nature",
     vibes: ['social', 'chill'],
     location: "Tel Aviv",
@@ -487,7 +487,7 @@ const MOCK_PLACES = [
   {
     id: 15,
     name: "Gan Meir Park",
-    image: "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=800&q=80",
     category: "nature",
     vibes: ['chill', 'social'],
     location: "Tel Aviv",
