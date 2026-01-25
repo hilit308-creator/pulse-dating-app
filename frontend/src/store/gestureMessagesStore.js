@@ -131,16 +131,10 @@ const useGestureMessagesStore = create(
       },
       
       // Check if user can send gesture (free or has points)
+      // TRIAL PERIOD: Unlimited gestures for now - will add limits later
       canSendGesture: () => {
-        const state = get();
-        // Reset monthly usage if new month
-        state.checkAndResetMonthlyUsage?.();
-        // Re-get state after potential reset
-        const currentState = get();
-        if (currentState.isPulsePro) return { canSend: true, reason: 'pro' };
-        if (currentState.monthlyGestureUsage.count < 1) return { canSend: true, reason: 'free' };
-        if (currentState.pointsBalance >= 60) return { canSend: true, reason: 'points', cost: 60 };
-        return { canSend: false, reason: 'limit_reached' };
+        // Trial period - always allow sending
+        return { canSend: true, reason: 'trial' };
       },
       
       // Start gesture process (when dialog opens)
@@ -154,38 +148,13 @@ const useGestureMessagesStore = create(
       },
       
       // Use a gesture (increment count or deduct points)
+      // TRIAL PERIOD: No counting or deducting - unlimited for now
       useGesture: () => {
-        const state = get();
-        state.checkAndResetMonthlyUsage?.();
-        
         // Reset gestureInProgress flag
         set({ gestureInProgress: false });
         
-        if (state.isPulsePro) {
-          // Pro users - no limit
-          return { success: true, method: 'pro' };
-        }
-        
-        if (state.monthlyGestureUsage.count < 1) {
-          // Use free monthly gesture
-          set({
-            monthlyGestureUsage: {
-              ...state.monthlyGestureUsage,
-              count: state.monthlyGestureUsage.count + 1,
-            },
-          });
-          return { success: true, method: 'free' };
-        }
-        
-        if (state.pointsBalance >= 60) {
-          // Deduct points
-          set({
-            pointsBalance: state.pointsBalance - 60,
-          });
-          return { success: true, method: 'points', pointsUsed: 60 };
-        }
-        
-        return { success: false, reason: 'insufficient_resources' };
+        // Trial period - always succeed, no counting
+        return { success: true, method: 'trial' };
       },
       
       // Set Pro status (mock - would come from backend)
