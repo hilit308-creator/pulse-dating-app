@@ -820,10 +820,36 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
           )}
           {place.isCommunityAdded && (
             <Tooltip 
-              title="Recommended by the Pulse community as a great date spot."
+              title={
+                <Box sx={{ p: 0.5, textAlign: 'center' }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', mb: 0.5, color: '#fff' }}>
+                    💜 Pulse Pick
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', lineHeight: 1.3 }}>
+                    Recommended by the Pulse community as a great date spot.
+                  </Typography>
+                </Box>
+              }
               arrow
               enterTouchDelay={0}
               leaveTouchDelay={3000}
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    bgcolor: '#1a1a2e',
+                    borderRadius: '12px',
+                    px: 1.5,
+                    py: 1,
+                    maxWidth: 200,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+                  },
+                },
+                arrow: {
+                  sx: {
+                    color: '#1a1a2e',
+                  },
+                },
+              }}
             >
               <Chip
                 icon={<Heart size={12} />}
