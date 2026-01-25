@@ -5148,7 +5148,7 @@ export default function ExploreScreen() {
               '&:hover': { bgcolor: 'rgba(108,92,231,0.08)' },
             }}
           >
-            Add a Spot +50pts
+            Share a great date idea
           </Button>
         </Box>
 
