@@ -5063,7 +5063,16 @@ export default function ExploreScreen() {
           }}
         >
           {/* Row 1: Main filters */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              gap: 1,
+              overflowX: 'auto',
+              '&::-webkit-scrollbar': { display: 'none' },
+              scrollbarWidth: 'none',
+              pb: 0.5,
+            }}
+          >
             {FILTER_CATEGORIES_ROW1.map((cat) => {
               const Icon = cat.icon;
               const isActive = activeFilter === cat.id;
@@ -5074,6 +5083,7 @@ export default function ExploreScreen() {
                   label={t(cat.labelKey)}
                   onClick={() => setActiveFilter(cat.id)}
                   sx={{
+                    flexShrink: 0,
                     fontWeight: 600,
                     borderRadius: '18px',
                     bgcolor: isActive ? '#6C5CE7' : '#f1f5f9',
