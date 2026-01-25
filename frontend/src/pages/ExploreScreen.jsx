@@ -5008,32 +5008,25 @@ export default function ExploreScreen() {
     setShowBenefitsDialog(true);
   }, []);
 
-  // Sweet Gestures handler
+  // Sweet Gestures handler - opens dialog, does NOT consume free gesture yet
   const handleSendGesture = useCallback((person, gesture) => {
     // Check if user can send gesture (limits)
     const gestureStatus = canSendGesture();
     
-    // If free gesture is available, consume it immediately
-    if (gestureStatus.canSend && gestureStatus.reason === 'free') {
-      const result = consumeGesture();
-      if (!result.success) {
-        setSelectedPerson(person);
-        setSelectedGesture(gesture);
-        setShowGestureLimitDialog(true);
-        return;
-      }
-      // Free gesture consumed, open dialog
+    // If free gesture is available OR user has points, open the dialog
+    // Free gesture will only be consumed when user actually SENDS
+    if (gestureStatus.canSend) {
       setSelectedPerson(person);
       setSelectedGesture(gesture);
       openGestureDialog(gesture);
       return;
     }
     
-    // If no free gesture, show limit dialog (user must explicitly choose to use points)
+    // If no free gesture and no points, show limit dialog
     setSelectedPerson(person);
     setSelectedGesture(gesture);
     setShowGestureLimitDialog(true);
-  }, [canSendGesture, consumeGesture]);
+  }, [canSendGesture]);
   
   // Helper to open the appropriate gesture dialog
   const openGestureDialog = useCallback((gesture) => {
@@ -5079,6 +5072,12 @@ export default function ExploreScreen() {
   const handlePaymentConfirm = useCallback(async (paymentData) => {
     setShowPaymentDialog(false);
     
+    // Consume free gesture NOW (only when user actually sends)
+    const gestureStatus = canSendGesture();
+    if (gestureStatus.canSend && gestureStatus.reason === 'free') {
+      consumeGesture();
+    }
+    
     // Get the message from current gesture details
     const gestureMessage = currentGestureDetails?.message || '';
     
@@ -5097,7 +5096,6 @@ export default function ExploreScreen() {
     }
     
     // Mark gesture as sent for this person (persisted in store)
-    // Note: gesture was already consumed when dialog opened
     markGestureSent(selectedPerson.id, paymentData.gestureType);
     
     // Update selected gesture for the sent dialog
@@ -5111,11 +5109,17 @@ export default function ExploreScreen() {
     setTimeout(() => {
       navigate('/chat');
     }, 1500);
-  }, [selectedPerson, currentGestureDetails, addGestureMessage, markGestureSent, navigate]);
+  }, [selectedPerson, currentGestureDetails, addGestureMessage, markGestureSent, navigate, canSendGesture, consumeGesture]);
 
   // Handle Say Hi confirmation - send message
   const handleSayHiConfirm = useCallback((details) => {
     setShowSayHiDialog(false);
+    
+    // Consume free gesture NOW (only when user actually sends)
+    const gestureStatus = canSendGesture();
+    if (gestureStatus.canSend && gestureStatus.reason === 'free') {
+      consumeGesture();
+    }
     
     // Save message to store (will appear in chat)
     if (selectedPerson && details.message) {
@@ -5132,7 +5136,6 @@ export default function ExploreScreen() {
     }
     
     // Mark hi gesture as sent for this person (persisted in store)
-    // Note: gesture was already consumed when dialog opened
     markGestureSent(selectedPerson.id, 'hi');
     
     // Show success dialog
@@ -5144,7 +5147,7 @@ export default function ExploreScreen() {
     setTimeout(() => {
       navigate('/chat');
     }, 1500);
-  }, [selectedPerson, addGestureMessage, markGestureSent, navigate]);
+  }, [selectedPerson, addGestureMessage, markGestureSent, navigate, canSendGesture, consumeGesture]);
 
   // Loading skeleton
   if (isLoading) {
