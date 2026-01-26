@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { demoMatches } from "./MatchesScreen";
 
 /* ----------------------------- Mock data --------------------------------- */
 // Vibe types per Pulse spec
@@ -807,10 +808,15 @@ function PlusOneInviteDialog({ open, onClose, event, matches = [], purchased }) 
                   gap: 1,
                 }}
               >
-                <Box sx={{ width: 32, height: 32, borderRadius: "50%", bgcolor: "#e5e7eb", flexShrink: 0 }} />
+                <Box 
+                  component="img"
+                  src={m.photoUrl}
+                  alt={m.name}
+                  sx={{ width: 32, height: 32, borderRadius: "50%", bgcolor: "#e5e7eb", flexShrink: 0, objectFit: 'cover' }} 
+                />
                 <Box sx={{ minWidth: 0 }}>
                   <Typography sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{m.name}</Typography>
-                  <Typography variant="caption" sx={{ color: "text.secondary", fontSize: '0.7rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.bio}</Typography>
+                  <Typography variant="caption" sx={{ color: "text.secondary", fontSize: '0.7rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.interests?.slice(0, 3).join(', ') || m.tagline}</Typography>
                 </Box>
               </Box>
             ))}
@@ -1855,7 +1861,7 @@ export default function EventsByCategory() {
           if (result?.sent) setSnack("Invite sent!");
         }} 
         event={plusOneEvent}
-        matches={DEMO_USERS}
+        matches={demoMatches}
         purchased={purchased}
       />
 
