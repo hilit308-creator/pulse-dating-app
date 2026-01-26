@@ -1173,10 +1173,16 @@ export default function ChatScreen() {
   useEffect(() => {
     if (urlMatchId) {
       const matchIdNum = parseInt(urlMatchId, 10);
-      // Check if this chat exists
-      const chatExists = chats.some(c => c.matchId === matchIdNum || c.matchId === urlMatchId);
-      if (chatExists) {
-        setOpenChat(matchIdNum || urlMatchId);
+      // Check if this chat exists - look for exact matchId, numeric matchId, or gesture_matchId
+      const foundChat = chats.find(c => 
+        c.matchId === matchIdNum || 
+        c.matchId === urlMatchId ||
+        c.matchId === `gesture_${urlMatchId}` ||
+        c.user?.id === matchIdNum ||
+        String(c.user?.id) === urlMatchId
+      );
+      if (foundChat) {
+        setOpenChat(foundChat.matchId);
       }
     }
   }, [urlMatchId, chats]);
