@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Container,
@@ -65,6 +65,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { demoMatches } from "./MatchesScreen";
 import useGestureMessagesStore from "../store/gestureMessagesStore";
 import useEventInvitesStore from "../store/eventInvitesStore";
+import { useAuth } from "../context/AuthContext";
 
 const resolvePublicImageUrl = (url) => {
   if (!url) return url;
@@ -1202,8 +1203,25 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
 export default function EventsByCategory() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const pairsByEventId = useEventInvitesStore((s) => s.pairsByEventId);
+
+  const resolvePlusOnePartner = useCallback(
+    (eventId) => {
+      const pair = pairsByEventId?.[String(eventId)];
+      if (!pair) return null;
+      if (pair.name) return { name: pair.name };
+
+      const meId = user?.id;
+      const aId = pair.me?.id;
+      const bId = pair.other?.id;
+      if (meId != null && aId != null && String(meId) === String(aId)) return pair.other;
+      if (meId != null && bId != null && String(meId) === String(bId)) return pair.me;
+      return pair.other || pair.me || null;
+    },
+    [pairsByEventId, user]
+  );
   
   const [tab, setTab] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -1795,7 +1813,7 @@ export default function EventsByCategory() {
                       onOpenMaps={openMapsForEvent}
                       onInvitePlus1={(e) => setPlusOneEvent(e)}
                       onViewDetails={(e) => setEventDetailsOpen(e)}
-                      plusOnePartner={pairsByEventId?.[String(ev.id)]}
+                      plusOnePartner={resolvePlusOnePartner(ev.id)}
                     />
                   </Grid>
                 ))}
@@ -1853,7 +1871,7 @@ export default function EventsByCategory() {
                       onOpenMaps={openMapsForEvent}
                       onInvitePlus1={(e) => setPlusOneEvent(e)}
                       onViewDetails={(e) => setEventDetailsOpen(e)}
-                      plusOnePartner={purchased.has(ev.id) ? pairsByEventId?.[String(ev.id)] : null}
+                      plusOnePartner={purchased.has(ev.id) ? resolvePlusOnePartner(ev.id) : null}
                     />
                   </Grid>
                 ))}

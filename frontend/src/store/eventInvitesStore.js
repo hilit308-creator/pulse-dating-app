@@ -28,7 +28,7 @@ const useEventInvitesStore = create(
         return get().invites.find((i) => i.status === 'pending') || null;
       },
 
-      acceptInvite: (inviteId) => {
+      acceptInvite: (inviteId, currentUser) => {
         set((state) => ({
           invites: state.invites.map((i) => {
             if (i.id !== inviteId) return i;
@@ -41,11 +41,19 @@ const useEventInvitesStore = create(
             const inv = state.invites.find((x) => x.id === inviteId);
             const eventId = inv?.event?.id;
             if (!eventId) return state.pairsByEventId;
+
+            const me = currentUser?.id != null
+              ? { id: currentUser.id, name: currentUser.name || currentUser.firstName || 'You' }
+              : { id: 'me', name: 'You' };
+            const other = {
+              id: inv?.matchId,
+              name: inv?.inviter?.name || 'Match',
+            };
             return {
               ...state.pairsByEventId,
               [String(eventId)]: {
-                matchId: inv?.matchId,
-                name: inv?.inviter?.name,
+                me,
+                other,
               },
             };
           })(),
@@ -58,18 +66,26 @@ const useEventInvitesStore = create(
         }));
       },
 
-      acceptGift: (inviteId) => {
+      acceptGift: (inviteId, currentUser) => {
         set((state) => ({
           invites: state.invites.map((i) => (i.id === inviteId ? { ...i, status: 'gift_accepted' } : i)),
           pairsByEventId: (() => {
             const inv = state.invites.find((x) => x.id === inviteId);
             const eventId = inv?.event?.id;
             if (!eventId) return state.pairsByEventId;
+
+            const me = currentUser?.id != null
+              ? { id: currentUser.id, name: currentUser.name || currentUser.firstName || 'You' }
+              : { id: 'me', name: 'You' };
+            const other = {
+              id: inv?.matchId,
+              name: inv?.inviter?.name || 'Match',
+            };
             return {
               ...state.pairsByEventId,
               [String(eventId)]: {
-                matchId: inv?.matchId,
-                name: inv?.inviter?.name,
+                me,
+                other,
               },
             };
           })(),

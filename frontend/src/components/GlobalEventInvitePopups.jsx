@@ -24,6 +24,17 @@ const demoChargeInviter = () => {
   return { before: cur, after: next };
 };
 
+const getCurrentUserForDemo = () => {
+  try {
+    const raw = localStorage.getItem('pulse_user');
+    if (!raw) return null;
+    const u = JSON.parse(raw);
+    return { id: u.id, name: u.firstName || u.username || u.email };
+  } catch {
+    return null;
+  }
+};
+
 export default function GlobalEventInvitePopups() {
   const navigate = useNavigate();
   const invites = useEventInvitesStore((s) => s.invites);
@@ -90,7 +101,12 @@ export default function GlobalEventInvitePopups() {
           <Button color="inherit" onClick={() => pendingInvite && declineInvite(pendingInvite.id)}>Decline</Button>
           <Button variant="outlined" onClick={() => openEventDetails(pendingInvite?.event?.id)}>View details</Button>
           <Button variant="outlined" onClick={() => openChat(pendingInvite?.matchId)}>Open chat</Button>
-          <Button variant="contained" onClick={() => pendingInvite && acceptInvite(pendingInvite.id)}>Accept</Button>
+          <Button
+            variant="contained"
+            onClick={() => pendingInvite && acceptInvite(pendingInvite.id, getCurrentUserForDemo())}
+          >
+            Accept
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -133,7 +149,7 @@ export default function GlobalEventInvitePopups() {
               set.add(giftInvite.event?.id);
               setPurchasedSet(set);
 
-              acceptGift(giftInvite.id);
+              acceptGift(giftInvite.id, getCurrentUserForDemo());
               // Close after success
               setTimeout(() => clearInvite(giftInvite.id), 600);
             }}

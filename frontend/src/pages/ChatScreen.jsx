@@ -72,6 +72,7 @@ import AiFirstMessage from "../components/AiFirstMessage";
 import useGestureMessagesStore from '../store/gestureMessagesStore';
 import useChatStore from '../store/chatStore';
 import useEventInvitesStore from '../store/eventInvitesStore';
+import { useAuth } from "../context/AuthContext";
 
 /* ----------------- helpers ----------------- */
 const fmtHM = (ts) =>
@@ -1212,6 +1213,7 @@ function genCoachReply(userText = "") {
 /* ================== Main ================== */
 export default function ChatScreen() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { matchId: urlMatchId } = useParams(); // Get matchId from URL if navigating to /chat/:matchId
   const [chats, setChats] = useState([AGENT_ROW, ...demoChats]); // Single unified Agent
   const [openChat, setOpenChat] = useState(null);
@@ -1263,10 +1265,10 @@ export default function ChatScreen() {
         },
         paidByInviter: !!msg.gestureDetails?.paidByInviter,
       });
-      acceptInvite(invite.id);
+      acceptInvite(invite.id, user ? { id: user.id, name: user.firstName || user.username || user.email } : null);
       appendSystemMessageToOpenChat("✅ You accepted the invite");
     },
-    [appendSystemMessageToOpenChat, chat, urlMatchId]
+    [appendSystemMessageToOpenChat, chat, urlMatchId, user]
   );
 
   const handleEventInviteDecline = useCallback(
