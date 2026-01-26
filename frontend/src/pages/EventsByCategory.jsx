@@ -671,32 +671,43 @@ function SwipeDeck({ users, onLike, onSkip }) {
             <Card
               sx={{
                 minHeight: { xs: 220, sm: 260 },
-                borderRadius: 3,
-                boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+                borderRadius: 4,
+                boxShadow: "0 18px 48px rgba(0,0,0,0.14)",
                 overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
                 bgcolor: "#fff",
               }}
             >
-              <CardContent sx={{ flex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
-                  <Box
-                    component="img"
-                    src={u.photo || "https://via.placeholder.com/80"}
-                    alt={u.name}
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = "https://via.placeholder.com/80";
-                    }}
-                    sx={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', bgcolor: '#e5e7eb', flexShrink: 0 }}
-                  />
-                  <Box sx={{ minWidth: 0 }}>
-                <Typography variant="h6" sx={{ fontWeight: 900 }}>{u.name}</Typography>
-                <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>{u.bio}</Typography>
-                  </Box>
-                </Box>
-                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              <Box sx={{ position: 'relative' }}>
+                <Box
+                  component="img"
+                  src={u.photo || "https://via.placeholder.com/500x300"}
+                  alt={u.name}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "https://via.placeholder.com/500x300";
+                  }}
+                  sx={{ width: '100%', height: { xs: 120, sm: 140 }, objectFit: 'cover' }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.0) 55%, rgba(255,255,255,0.0) 100%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              </Box>
+
+              <CardContent sx={{ flex: 1, pt: 1.25, pb: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, lineHeight: 1.1 }}>
+                  {u.name}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.25 }}>
+                  {u.bio}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary", display: 'block', mt: 1 }}>
                   Attends: {(u.eventIds || []).map((id)=>EVENTS.find(e=>e.id===id)?.title).filter(Boolean).join(", ")}
                 </Typography>
               </CardContent>
@@ -714,7 +725,7 @@ function SwipeDeck({ users, onLike, onSkip }) {
                   fullWidth
                   variant="outlined"
                   color="inherit"
-                  sx={{ borderRadius: 999, fontWeight: 700, textTransform: "none" }}
+                  sx={{ borderRadius: 999, fontWeight: 800, textTransform: "none" }}
                   onClick={() => handleSwipe(u, "left")}
                 >
                   Skip
