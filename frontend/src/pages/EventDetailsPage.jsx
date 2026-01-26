@@ -17,7 +17,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { ArrowLeft, MapPin, Plus, Share2, Heart, UserPlus } from 'lucide-react';
+import { ArrowLeft, MapPin, Share2, Heart, UserPlus } from 'lucide-react';
 import { EVENTS, DEMO_ATTENDEES } from './EventsByCategory';
 
 const getPurchasedSet = () => {
