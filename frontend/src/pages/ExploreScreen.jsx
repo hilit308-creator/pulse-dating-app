@@ -3723,7 +3723,7 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
       {/* Step 3: Payment */}
       {step === 3 && (
         <>
-          <DialogTitle sx={{ textAlign: 'center', pt: 3, pb: 1 }}>
+          <DialogTitle sx={{ textAlign: 'center', pt: 3, pb: 1 }} component="div">
             <Typography variant="h6" sx={{ fontWeight: 800 }}>
               Confirm Booking 💳
             </Typography>
