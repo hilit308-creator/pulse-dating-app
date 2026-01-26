@@ -680,8 +680,22 @@ function SwipeDeck({ users, onLike, onSkip }) {
               }}
             >
               <CardContent sx={{ flex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
+                  <Box
+                    component="img"
+                    src={u.photo || "https://via.placeholder.com/80"}
+                    alt={u.name}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "https://via.placeholder.com/80";
+                    }}
+                    sx={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', bgcolor: '#e5e7eb', flexShrink: 0 }}
+                  />
+                  <Box sx={{ minWidth: 0 }}>
                 <Typography variant="h6" sx={{ fontWeight: 900 }}>{u.name}</Typography>
                 <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>{u.bio}</Typography>
+                  </Box>
+                </Box>
                 <Typography variant="caption" sx={{ color: "text.secondary" }}>
                   Attends: {(u.eventIds || []).map((id)=>EVENTS.find(e=>e.id===id)?.title).filter(Boolean).join(", ")}
                 </Typography>
@@ -1487,9 +1501,9 @@ export default function EventsByCategory() {
 
   // דמו "אנשים שתפגשו" (בממשק Purchased)
   const DEMO_USERS = [
-    { id: "u2", name: "Noam",  gender: "male",   bio: "EDM, runs, sushi",   eventIds: ["lp2","spx2"] },
-    { id: "u3", name: "Maya",  gender: "female", bio: "Acoustic nights 🎸", eventIds: ["sp2"] },
-    { id: "u4", name: "Amit",  gender: "male",   bio: "Food markets 😋",    eventIds: ["tw1"] },
+    { id: "u2", name: "Noam",  gender: "male",   bio: "EDM, runs, sushi",   eventIds: ["lp2","spx2"], photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=400&auto=format&fit=crop" },
+    { id: "u3", name: "Maya",  gender: "female", bio: "Acoustic nights 🎸", eventIds: ["sp2"],         photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop" },
+    { id: "u4", name: "Amit",  gender: "male",   bio: "Food markets 😋",    eventIds: ["tw1"],         photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=400&auto=format&fit=crop" },
   ];
   const suggestedUsers = DEMO_USERS.filter((u) => (prefGender==="any" ? true : u.gender===prefGender));
   const likeUser = (u) => setMatches((arr) => Array.from(new Set([...arr, u.id])));
