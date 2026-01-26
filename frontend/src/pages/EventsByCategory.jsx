@@ -1218,11 +1218,21 @@ export default function EventsByCategory() {
 
   // מועדפים
   const [favs, setFavs] = useState(() => {
-    try { const raw = localStorage.getItem("event_favs"); return new Set(raw ? JSON.parse(raw) : []); }
+    try {
+      const raw = localStorage.getItem("event_favs");
+      const parsed = raw ? JSON.parse(raw) : [];
+      return new Set((parsed || []).map((x) => String(x)));
+    }
     catch { return new Set(); }
   });
   useEffect(() => { localStorage.setItem("event_favs", JSON.stringify(Array.from(favs))); }, [favs]);
-  const toggleFav = (id) => setFavs((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleFav = (id) =>
+    setFavs((prev) => {
+      const key = String(id);
+      const n = new Set(prev);
+      n.has(key) ? n.delete(key) : n.add(key);
+      return n;
+    });
 
   // רכישות
   const [purchased, setPurchased] = useState(() => {
@@ -1281,7 +1291,7 @@ export default function EventsByCategory() {
   const visible = useMemo(() => {
     // מקור לפי טאב (כולל saved/purchased)
     let base;
-    if (tab === "saved") base = EVENTS.filter((ev) => favs.has(ev.id));
+    if (tab === "saved") base = EVENTS.filter((ev) => favs.has(String(ev.id)));
     else if (tab === "purchased") base = EVENTS.filter((ev) => purchased.has(ev.id));
     else {
       // Apply 30 days window filter for regular tabs (not saved/purchased)
@@ -1392,7 +1402,7 @@ export default function EventsByCategory() {
   };
 
   // Saved/Purchased datasets
-  const savedList = EVENTS.filter((ev) => favs.has(ev.id));
+  const savedList = EVENTS.filter((ev) => favs.has(String(ev.id)));
   const purchasedList = EVENTS.filter((ev) => purchased.has(ev.id));
 
   // דמו "אנשים שתפגשו" (בממשק Purchased)
