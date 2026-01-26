@@ -679,7 +679,16 @@ function SwipeDeck({ users, onLike, onSkip }) {
                 bgcolor: "#fff",
               }}
             >
-              <Box sx={{ position: 'relative' }}>
+              <Box
+                sx={{
+                  position: 'relative',
+                  height: { xs: 140, sm: 160 },
+                  bgcolor: 'rgba(17,24,39,0.04)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <Box
                   component="img"
                   src={u.photo || "https://via.placeholder.com/500x300"}
@@ -690,21 +699,10 @@ function SwipeDeck({ users, onLike, onSkip }) {
                   }}
                   sx={{
                     width: '100%',
-                    height: { xs: 140, sm: 160 },
-                    objectFit: 'cover',
-                    objectPosition: '50% 35%',
-                    filter: 'contrast(1.02) saturate(1.02)',
-                    transform: 'scale(1.005)',
+                    height: '100%',
+                    objectFit: 'contain',
                     borderTopLeftRadius: 16,
                     borderTopRightRadius: 16,
-                  }}
-                />
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.0) 55%, rgba(255,255,255,0.0) 78%, rgba(255,255,255,0.65) 100%)',
-                    pointerEvents: 'none',
                   }}
                 />
               </Box>
