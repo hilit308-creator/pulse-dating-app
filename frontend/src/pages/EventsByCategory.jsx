@@ -78,7 +78,7 @@ const resolvePublicImageUrl = (url) => {
 const VIBE_TYPES = ['Chill', 'Social', 'Flirty', 'Deep', 'Energetic'];
 
 // Demo people going to events
-const DEMO_ATTENDEES = [
+export const DEMO_ATTENDEES = [
   { id: "a1", name: "Maya", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100", isMatch: true },
   { id: "a2", name: "Noam", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", isMatch: true },
   { id: "a3", name: "Amit", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100", isMatch: false },
@@ -86,7 +86,7 @@ const DEMO_ATTENDEES = [
   { id: "a5", name: "Yoni", photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100", isMatch: false },
 ];
 
-const EVENTS = [
+export const EVENTS = [
   // Large parties
   { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2025-07-23", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a3", "a5"] },
   { id: "lp2", title: "Mega Dance Night", category: "large", price: 99, date: "2025-06-12", time: "21:00", venue: "Sky Dome", country: "USA", region: "Metro", coords: { lat: 40.7306, lng: -73.9352 }, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-dj-playing-music-in-a-club-4819-large.mp4", tags: ["DJ", "Dancing", "Drinks"], blurb: "Top DJs with immersive light show.", details: "Doors 21:00 • Main act 23:30 • Dress code: casual chic.", badges: ["18+"], hostedBy: "NightLife Productions", capacity: 2000, whoFor: "EDM fans, night owls, people who love to dance", vibe: "Energetic", attendees: ["a2", "a4"] },
@@ -1298,7 +1298,6 @@ export default function EventsByCategory() {
   
   const [tab, setTab] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [eventDetailsOpen, setEventDetailsOpen] = useState(null); // New: for Event Details dialog
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [viewMode, setViewMode] = useState("list");
   
@@ -1307,11 +1306,7 @@ export default function EventsByCategory() {
     const eventId = searchParams.get('eventId');
     const businessId = searchParams.get('businessId');
     if (eventId) {
-      // Find the event in EVENTS array
-      const event = EVENTS.find(e => e.id === eventId || e.id === `ev${eventId}` || String(e.id).includes(eventId));
-      if (event) {
-        setEventDetailsOpen(event);
-      }
+      navigate(`/events/${eventId}`, { replace: true });
     }
   }, [searchParams]);
   
@@ -1885,7 +1880,7 @@ export default function EventsByCategory() {
                       onOpenCalendar={openCalendar}
                       onOpenMaps={openMapsForEvent}
                       onInvitePlus1={(e) => setPlusOneEvent(e)}
-                      onViewDetails={(e) => setEventDetailsOpen(e)}
+                      onViewDetails={(e) => navigate(`/events/${e.id}`)}
                       plusOnePartner={resolvePlusOnePartner(ev.id)}
                     />
                   </Grid>
@@ -1893,27 +1888,6 @@ export default function EventsByCategory() {
               </Grid>
             )}
 
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>People you might meet</Typography>
-              <Select size="small" value={prefGender} onChange={(e) => setPrefGender(e.target.value)} sx={{ minWidth: 140 }}>
-                <MenuItem value="any">Any</MenuItem>
-                <MenuItem value="female">Women</MenuItem>
-                <MenuItem value="male">Men</MenuItem>
-              </Select>
-            </Stack>
-
-            <SwipeDeck
-              users={suggestedUsers}
-              onLike={(u) => likeUser(u)}
-              onSkip={(u) => skipUser(u)}
-              onOpenProfile={(u) => navigate(`/user/${u.id}`, { state: { from: 'events_people', profile: u } })}
-            />
-
-            {!!matches.length && (
-              <Alert severity="success" sx={{ mt: 2 }}>
-                Matches: {matches.length}. (Saved locally)
-              </Alert>
-            )}
           </Box>
         )}
 
@@ -1944,7 +1918,7 @@ export default function EventsByCategory() {
                       onOpenCalendar={openCalendar}
                       onOpenMaps={openMapsForEvent}
                       onInvitePlus1={(e) => setPlusOneEvent(e)}
-                      onViewDetails={(e) => setEventDetailsOpen(e)}
+                      onViewDetails={(e) => navigate(`/events/${e.id}`)}
                       plusOnePartner={purchased.has(ev.id) ? resolvePlusOnePartner(ev.id) : null}
                     />
                   </Grid>
@@ -1975,7 +1949,7 @@ export default function EventsByCategory() {
                         distanceKm={distanceKm}
                         onInvitePlus1={(ev) => setPlusOneEvent(ev)}
                         showGoodMatch={idx % 3 === 0}
-                        onViewDetails={(ev) => setEventDetailsOpen(ev)}
+                        onViewDetails={(ev) => navigate(`/events/${ev.id}`)}
                       />
                     </Grid>
                   );
@@ -1984,10 +1958,10 @@ export default function EventsByCategory() {
             )
           ) : tab === "all" ? (
             <>
-              <CategorySection title="Large Parties" events={dataByCat.large} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => setEventDetailsOpen(ev)} />
-              <CategorySection title="Small / Private" events={dataByCat.small} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => setEventDetailsOpen(ev)} />
-              <CategorySection title="Events with a Twist" events={dataByCat.twist} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => setEventDetailsOpen(ev)} />
-              <CategorySection title="Sports" events={dataByCat.sports} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => setEventDetailsOpen(ev)} />
+              <CategorySection title="Large Parties" events={dataByCat.large} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => navigate(`/events/${ev.id}`)} />
+              <CategorySection title="Small / Private" events={dataByCat.small} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => navigate(`/events/${ev.id}`)} />
+              <CategorySection title="Events with a Twist" events={dataByCat.twist} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => navigate(`/events/${ev.id}`)} />
+              <CategorySection title="Sports" events={dataByCat.sports} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => navigate(`/events/${ev.id}`)} />
             </>
           ) : (
             <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -2000,7 +1974,7 @@ export default function EventsByCategory() {
                     isFav={favs.has(String(ev.id))}
                     onOpenCalendar={openCalendar}
                     onOpenMaps={openMapsForEvent}
-                    onViewDetails={(ev) => setEventDetailsOpen(ev)}
+                    onViewDetails={(ev) => navigate(`/events/${ev.id}`)}
                     onInvitePlus1={(ev) => setPlusOneEvent(ev)}
                   />
                 </Grid>
@@ -2060,18 +2034,6 @@ export default function EventsByCategory() {
         event={plusOneEvent}
         matches={demoMatches}
         purchased={purchased}
-      />
-
-      {/* Event Details Dialog */}
-      <EventDetailsDialog
-        open={!!eventDetailsOpen}
-        onClose={() => setEventDetailsOpen(null)}
-        event={eventDetailsOpen}
-        purchased={purchased}
-        onBuy={openBuy}
-        onInvitePlus1={(ev) => setPlusOneEvent(ev)}
-        onSave={toggleFav}
-        isSaved={eventDetailsOpen ? favs.has(eventDetailsOpen.id) : false}
       />
 
       {/* דיאלוג סינון/מיון */}

@@ -45,6 +45,7 @@ import {
   PasswordResetSuccessScreen,
 } from './pages/auth';
 import OAuthCallbackScreen from './pages/auth/OAuthCallbackScreen';
+import EventDetailsPage from './pages/EventDetailsPage';
 
 // Legacy components
 import LandingPage from './components/LandingPage';
@@ -900,6 +901,7 @@ function AppShell() {
             <Route path="/activity-response" element={<ProtectedRoute><ActivityResponseScreen /></ProtectedRoute>} />
             <Route path="/scan" element={<ProtectedRoute><NearbyRoute /></ProtectedRoute>} />
             <Route path="/events/new" element={<ProtectedRoute><AddEvent /></ProtectedRoute>} />
+            <Route path="/events/:id" element={<ProtectedRoute><EventDetailsPage /></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><EventsByCategory /></ProtectedRoute>} />
             <Route path="/my-events" element={<ProtectedRoute><MyEventsScreen /></ProtectedRoute>} />
             <Route path="/events/:id/attendees" element={<ProtectedRoute><EventAttendeesScreen /></ProtectedRoute>} />

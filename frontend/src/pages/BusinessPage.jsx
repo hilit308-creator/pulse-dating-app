@@ -315,7 +315,7 @@ export default function BusinessPage() {
     // If business has events, navigate to the first event
     if (business?.upcomingEvents?.length > 0) {
       const firstEvent = business.upcomingEvents[0];
-      navigate(`/events?eventId=${firstEvent.id}&businessId=${businessId}`);
+      navigate(`/events/${firstEvent.id}`);
     } else {
       navigate("/events");
     }

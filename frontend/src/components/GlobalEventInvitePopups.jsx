@@ -108,7 +108,7 @@ export default function GlobalEventInvitePopups() {
   const openEventDetails = (eventId, inviteId) => {
     if (inviteId) clearInvite(inviteId);
     if (!eventId) return;
-    navigate(`/events?eventId=${eventId}`);
+    navigate(`/events/${eventId}`);
   };
 
   const openChat = (matchId, inviteId) => {
