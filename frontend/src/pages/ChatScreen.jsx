@@ -142,6 +142,45 @@ const hostOf = (u) => {
   }
 };
 
+const invitePrimaryCtaSx = {
+  borderRadius: 999,
+  px: 1.75,
+  fontWeight: 800,
+  textTransform: 'none',
+  background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+  boxShadow: '0 8px 18px rgba(108,92,231,0.32)',
+  '&:hover': {
+    background: 'linear-gradient(135deg, #5B4BD5 0%, #9B4DEB 100%)',
+    boxShadow: '0 10px 22px rgba(108,92,231,0.42)',
+  },
+};
+
+const inviteSecondaryCtaSx = {
+  borderRadius: 999,
+  px: 1.5,
+  fontWeight: 700,
+  textTransform: 'none',
+  borderColor: 'rgba(108,92,231,0.45)',
+  color: '#6C5CE7',
+  background: 'rgba(108,92,231,0.05)',
+  '&:hover': {
+    borderColor: 'rgba(108,92,231,0.7)',
+    background: 'rgba(108,92,231,0.08)',
+  },
+};
+
+const inviteNeutralCtaSx = {
+  borderRadius: 999,
+  px: 1.25,
+  fontWeight: 700,
+  textTransform: 'none',
+  color: '#111827',
+  background: 'rgba(17,24,39,0.04)',
+  '&:hover': {
+    background: 'rgba(17,24,39,0.07)',
+  },
+};
+
 /* --------- Agent API Configuration --------- */
 const AGENT_URL = "http://localhost:5000";
 
@@ -767,10 +806,11 @@ function ChatBubble({
             )}
             <Box 
               sx={{ 
-                border: "1px solid #e5e7eb", 
-                borderRadius: 2, 
+                border: "1px solid rgba(17,24,39,0.10)", 
+                borderRadius: 3, 
                 bgcolor: "#fff",
                 overflow: "hidden",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.08)",
                 cursor: "pointer",
               }}
               onClick={() => window.location.href = `/events?eventId=${msg.gestureDetails?.eventId}`}
@@ -779,11 +819,11 @@ function ChatBubble({
                 <img 
                   src={msg.gestureDetails.eventCover} 
                   alt={msg.gestureDetails.eventTitle} 
-                  style={{ width: "100%", height: 120, objectFit: "cover" }} 
+                  style={{ width: "100%", height: 140, objectFit: "cover" }} 
                 />
               )}
               <Box sx={{ p: 1.5 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                <Typography sx={{ fontWeight: 900, fontSize: '0.95rem' }}>
                   🎉 {msg.gestureDetails?.eventTitle}
                 </Typography>
                 <Typography variant="caption" sx={{ color: "#6b7280", display: 'block', mt: 0.5 }}>
@@ -796,13 +836,7 @@ function ChatBubble({
                   <Button 
                     size="small" 
                     variant="outlined" 
-                    sx={{ 
-                      borderRadius: 999, 
-                      fontSize: '0.75rem',
-                      borderColor: '#6C5CE7',
-                      color: '#6C5CE7',
-                      '&:hover': { borderColor: '#5B4BD5', bgcolor: 'rgba(108,92,231,0.05)' }
-                    }}
+                    sx={{ ...inviteSecondaryCtaSx, fontSize: '0.75rem' }}
                     onClick={(e) => {
                       e.stopPropagation();
                       window.location.href = `/events?eventId=${msg.gestureDetails?.eventId}`;
@@ -816,7 +850,7 @@ function ChatBubble({
                       <Button
                         size="small"
                         variant="contained"
-                        sx={{ borderRadius: 999, fontSize: '0.75rem' }}
+                        sx={{ ...invitePrimaryCtaSx, fontSize: '0.75rem' }}
                         onClick={(e) => {
                           e.stopPropagation();
                           onEventInviteAccept?.(msg);
@@ -827,7 +861,7 @@ function ChatBubble({
                       <Button
                         size="small"
                         color="inherit"
-                        sx={{ borderRadius: 999, fontSize: '0.75rem' }}
+                        sx={{ ...inviteNeutralCtaSx, fontSize: '0.75rem' }}
                         onClick={(e) => {
                           e.stopPropagation();
                           onEventInviteDecline?.(msg);
@@ -842,7 +876,7 @@ function ChatBubble({
                     <Button
                       size="small"
                       variant="outlined"
-                      sx={{ borderRadius: 999, fontSize: '0.75rem' }}
+                      sx={{ ...inviteSecondaryCtaSx, fontSize: '0.75rem' }}
                       onClick={(e) => {
                         e.stopPropagation();
                         onEventInviteOfferPay?.(msg);
