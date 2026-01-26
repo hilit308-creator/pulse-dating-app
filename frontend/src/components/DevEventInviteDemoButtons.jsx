@@ -54,8 +54,15 @@ const pushPendingEventInviteMessage = ({ matchId, user, event, paidByInviter }) 
 
 export default function DevEventInviteDemoButtons() {
   const addInvite = useEventInvitesStore((s) => s.addInvite);
+  const invites = useEventInvitesStore((s) => s.invites);
 
   if (process.env.NODE_ENV !== 'development') return null;
+
+  const hasOpenInviteDialog = (invites || []).some(
+    (i) => i.status === 'pending' || i.status === 'gift_pending' || ((i.status === 'accepted' || i.status === 'gift_declined') && !!i.remindAt && !i.reminded && Date.now() >= i.remindAt)
+  );
+
+  if (hasOpenInviteDialog) return null;
 
   return (
     <Box sx={{ position: 'fixed', bottom: 88, right: 12, zIndex: 20000, display: 'flex', flexDirection: 'column', gap: 1 }}>

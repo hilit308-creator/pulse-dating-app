@@ -105,12 +105,14 @@ export default function GlobalEventInvitePopups() {
     markReminded(reminderInvite.id);
   }, [reminderInvite, markReminded]);
 
-  const openEventDetails = (eventId) => {
+  const openEventDetails = (eventId, inviteId) => {
+    if (inviteId) clearInvite(inviteId);
     if (!eventId) return;
     navigate(`/events?eventId=${eventId}`);
   };
 
-  const openChat = (matchId) => {
+  const openChat = (matchId, inviteId) => {
+    if (inviteId) clearInvite(inviteId);
     if (!matchId) return;
     navigate(`/chat/${matchId}`);
   };
@@ -174,10 +176,21 @@ export default function GlobalEventInvitePopups() {
             </Typography>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 2, pb: 2, gap: 1, flexWrap: 'wrap' }}>
+        <DialogActions
+          sx={{
+            px: 2,
+            pb: 2,
+            pt: 0.5,
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'stretch',
+            gap: 1,
+          }}
+        >
           <Button
             color="inherit"
             sx={neutralCtaSx}
+            fullWidth
             onClick={() => pendingInvite && declineInvite(pendingInvite.id)}
           >
             Decline
@@ -185,20 +198,23 @@ export default function GlobalEventInvitePopups() {
           <Button
             variant="outlined"
             sx={secondaryCtaSx}
-            onClick={() => openEventDetails(pendingInvite?.event?.id)}
+            fullWidth
+            onClick={() => openEventDetails(pendingInvite?.event?.id, pendingInvite?.id)}
           >
             View details
           </Button>
           <Button
             variant="outlined"
             sx={secondaryCtaSx}
-            onClick={() => openChat(pendingInvite?.matchId)}
+            fullWidth
+            onClick={() => openChat(pendingInvite?.matchId, pendingInvite?.id)}
           >
             Open chat
           </Button>
           <Button
             variant="contained"
             sx={primaryCtaSx}
+            fullWidth
             onClick={() => pendingInvite && acceptInvite(pendingInvite.id, getCurrentUserForDemo())}
           >
             Accept
@@ -238,10 +254,21 @@ export default function GlobalEventInvitePopups() {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
+        <DialogActions
+          sx={{
+            px: 2,
+            pb: 2,
+            pt: 0.5,
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'stretch',
+            gap: 1,
+          }}
+        >
           <Button
             color="inherit"
             sx={neutralCtaSx}
+            fullWidth
             onClick={() => {
               if (!giftInvite) return;
               declineGift(giftInvite.id);
@@ -252,6 +279,7 @@ export default function GlobalEventInvitePopups() {
           <Button
             variant="contained"
             sx={primaryCtaSx}
+            fullWidth
             onClick={() => {
               if (!giftInvite) return;
               const charge = demoChargeInviter();
@@ -284,10 +312,21 @@ export default function GlobalEventInvitePopups() {
             {reminderInvite?.event?.title || 'Event'}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
+        <DialogActions
+          sx={{
+            px: 2,
+            pb: 2,
+            pt: 0.5,
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'stretch',
+            gap: 1,
+          }}
+        >
           <Button
             color="inherit"
             sx={neutralCtaSx}
+            fullWidth
             onClick={() => reminderInvite && clearInvite(reminderInvite.id)}
           >
             Later
@@ -295,7 +334,8 @@ export default function GlobalEventInvitePopups() {
           <Button
             variant="contained"
             sx={primaryCtaSx}
-            onClick={() => openEventDetails(reminderInvite?.event?.id)}
+            fullWidth
+            onClick={() => openEventDetails(reminderInvite?.event?.id, reminderInvite?.id)}
           >
             Buy ticket
           </Button>
