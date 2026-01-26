@@ -947,14 +947,14 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
 
         {/* Neighborhood-level map per Pulse spec (zoom 14 = neighborhood level) */}
         {event.coords && (
-          <Box sx={{ mt: 1.5, borderRadius: 2, overflow: 'hidden', height: 120 }}>
+          <Box sx={{ mt: 1.25, borderRadius: 2, overflow: "hidden", border: "1px solid rgba(102,126,234,0.15)" }}>
             <iframe
               title="Event location"
               width="100%"
               height="120"
               style={{ border: 0 }}
               loading="lazy"
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${event.coords.lng-0.02},${event.coords.lat-0.01},${event.coords.lng+0.02},${event.coords.lat+0.01}&layer=mapnik&marker=${event.coords.lat},${event.coords.lng}`}
+              src={`https://www.google.com/maps?q=${event.coords.lat},${event.coords.lng}&z=15&output=embed`}
             />
           </Box>
         )}
