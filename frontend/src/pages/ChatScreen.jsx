@@ -1293,6 +1293,127 @@ export default function ChatScreen() {
       localStorage.removeItem("pending_place_invites");
     }
   }, []);
+
+  // Load pending event invites from localStorage (runs once on mount)
+  useEffect(() => {
+    try {
+      const pendingInvitesRaw = localStorage.getItem("pending_event_invites");
+      if (!pendingInvitesRaw) return;
+
+      const pendingInvites = JSON.parse(pendingInvitesRaw);
+      if (!Array.isArray(pendingInvites) || pendingInvites.length === 0) return;
+
+      // Clear immediately to prevent re-processing
+      localStorage.removeItem("pending_event_invites");
+
+      const validInvites = pendingInvites.filter(
+        (invite) => invite?.message?.text && invite?.matchId
+      );
+
+      if (validInvites.length === 0) return;
+
+      setChats((prevChats) => {
+        let updatedChats = [...prevChats];
+
+        validInvites.forEach((invite) => {
+          const chatIndex = updatedChats.findIndex(
+            (c) =>
+              c.matchId === invite.matchId ||
+              c.user?.id === invite.matchId ||
+              String(c.user?.id) === String(invite.matchId)
+          );
+
+          if (chatIndex !== -1) {
+            const existingChat = updatedChats[chatIndex];
+            const messageExists = existingChat.messages.some(
+              (m) => m.id === invite.message.id
+            );
+            if (!messageExists) {
+              updatedChats[chatIndex] = {
+                ...existingChat,
+                messages: [...existingChat.messages, invite.message],
+                lastSentAt: invite.message.timestamp,
+              };
+            }
+          } else if (invite.user) {
+            const newChat = {
+              matchId: `gesture_${invite.matchId}`,
+              user: {
+                id: invite.user.id,
+                name: invite.user.name,
+                age: invite.user.age || "",
+                photoUrl: invite.user.photoUrl || "https://via.placeholder.com/150",
+              },
+              user24hPhoto: null,
+              connectionSource: "nearby",
+              quickVibe: "Event invite",
+              unreadCount: 1,
+              blocked: false,
+              messages: [invite.message],
+              lastSentAt: invite.message.timestamp,
+              status: "active",
+              pinned: false,
+              muted: false,
+              themeColor: "#ECE5DD",
+              disappearingSeconds: 7200,
+            };
+            updatedChats = [newChat, ...updatedChats];
+          }
+        });
+
+        return updatedChats;
+      });
+    } catch (e) {
+      console.error("Error loading pending event invites:", e);
+      localStorage.removeItem("pending_event_invites");
+    }
+  }, []);
+
+  // Load generic pending chat messages from localStorage (runs once on mount)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("pending_chat_messages");
+      if (!raw) return;
+
+      const pending = JSON.parse(raw);
+      if (!Array.isArray(pending) || pending.length === 0) return;
+
+      localStorage.removeItem("pending_chat_messages");
+
+      setChats((prevChats) => {
+        let updatedChats = [...prevChats];
+
+        pending.forEach((item) => {
+          if (!item?.matchId || !item?.message?.id) return;
+
+          const chatIndex = updatedChats.findIndex(
+            (c) =>
+              c.matchId === item.matchId ||
+              c.user?.id === item.matchId ||
+              String(c.user?.id) === String(item.matchId)
+          );
+          if (chatIndex === -1) return;
+
+          const existingChat = updatedChats[chatIndex];
+          const messageExists = existingChat.messages.some(
+            (m) => m.id === item.message.id
+          );
+          if (messageExists) return;
+
+          updatedChats[chatIndex] = {
+            ...existingChat,
+            messages: [...existingChat.messages, item.message],
+            lastSentAt: item.message.timestamp,
+          };
+        });
+
+        return updatedChats;
+      });
+    } catch (e) {
+      console.error("Error loading pending chat messages:", e);
+      localStorage.removeItem("pending_chat_messages");
+    }
+  }, []);
   
   // Load gesture messages into chats when they arrive
   useEffect(() => {

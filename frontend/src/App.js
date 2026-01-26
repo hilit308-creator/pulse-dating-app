@@ -15,6 +15,8 @@ import { ActivityProvider } from './context/ActivityContext';
 // Notifications System
 import { NotificationsProvider } from './context/NotificationsContext';
 import InAppNotificationBanner from './components/InAppNotificationBanner';
+import GlobalEventInvitePopups from './components/GlobalEventInvitePopups';
+import DevEventInviteDemoButtons from './components/DevEventInviteDemoButtons';
 import {
   WelcomeScreen,
   PhoneInputScreen,
@@ -960,6 +962,8 @@ function App() {
               <GlobalErrorProvider>
                 <Router>
                   <InAppNotificationBanner />
+                  <GlobalEventInvitePopups />
+                  <DevEventInviteDemoButtons />
                   <AppShell />
                 </Router>
               </GlobalErrorProvider>
