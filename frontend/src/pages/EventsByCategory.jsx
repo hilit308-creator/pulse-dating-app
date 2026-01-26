@@ -60,6 +60,7 @@ import {
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { demoMatches } from "./MatchesScreen";
+import useGestureMessagesStore from "../store/gestureMessagesStore";
 
 /* ----------------------------- Mock data --------------------------------- */
 // Vibe types per Pulse spec
@@ -755,7 +756,14 @@ function PlusOneInviteDialog({ open, onClose, event, matches = [], purchased }) 
   const sendInvite = () => {
     if (!selectedMatch) return;
     // In real app, this would send through internal messaging
-    onClose?.({ sent: true, matchId: selectedMatch, eventId: event?.id });
+    onClose?.({ 
+      sent: true, 
+      matchId: selectedMatch, 
+      eventId: event?.id,
+      eventTitle: event?.title,
+      eventDate: event?.date,
+      eventVenue: event?.venue,
+    });
   };
 
   return (
@@ -1859,6 +1867,32 @@ export default function EventsByCategory() {
         onClose={(result) => {
           setPlusOneEvent(null);
           if (result?.sent) {
+            // Find the match to get their info
+            const matchUser = demoMatches.find(m => m.id === result.matchId);
+            
+            // Send invite message to chat using gestureMessagesStore
+            if (matchUser) {
+              const { addGestureMessage } = useGestureMessagesStore.getState();
+              addGestureMessage(
+                result.matchId,
+                {
+                  gestureType: 'event_invite',
+                  message: `Hey! I'm thinking of going to ${result.eventTitle} - want to join me? 🎉`,
+                  details: {
+                    eventId: result.eventId,
+                    eventTitle: result.eventTitle,
+                    eventDate: result.eventDate,
+                    eventVenue: result.eventVenue,
+                  },
+                },
+                {
+                  id: matchUser.id,
+                  name: matchUser.name,
+                  photoUrl: matchUser.photoUrl,
+                }
+              );
+            }
+            
             setSnack("Invite sent!");
             // Navigate to specific chat with the match after short delay
             setTimeout(() => {
