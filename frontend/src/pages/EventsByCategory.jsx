@@ -642,7 +642,7 @@ function SwipeDeck({ users, onLike, onSkip }) {
   const top = deck.slice(0, 3);
 
   return (
-    <Box sx={{ position: "relative", height: { xs: 300, sm: 360 } }}>
+    <Box sx={{ position: "relative", height: { xs: 240, sm: 280 } }}>
       {top.map((u, i) => {
         const isTop = i === 0;
         const z = 10 - i;
@@ -670,7 +670,7 @@ function SwipeDeck({ users, onLike, onSkip }) {
           >
             <Card
               sx={{
-                minHeight: { xs: 280, sm: 340 },
+                minHeight: { xs: 220, sm: 260 },
                 borderRadius: 3,
                 boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
                 overflow: "hidden",
