@@ -7,6 +7,7 @@ const useEventInvitesStore = create(
   persist(
     (set, get) => ({
       invites: [],
+      pairsByEventId: {},
 
       addInvite: (invite) => {
         const id = invite?.id || `event_invite_${Date.now()}`;
@@ -36,6 +37,18 @@ const useEventInvitesStore = create(
             }
             return { ...i, status: 'accepted', remindAt: Date.now() + REMINDER_DELAY_MS };
           }),
+          pairsByEventId: (() => {
+            const inv = state.invites.find((x) => x.id === inviteId);
+            const eventId = inv?.event?.id;
+            if (!eventId) return state.pairsByEventId;
+            return {
+              ...state.pairsByEventId,
+              [String(eventId)]: {
+                matchId: inv?.matchId,
+                name: inv?.inviter?.name,
+              },
+            };
+          })(),
         }));
       },
 
@@ -48,6 +61,18 @@ const useEventInvitesStore = create(
       acceptGift: (inviteId) => {
         set((state) => ({
           invites: state.invites.map((i) => (i.id === inviteId ? { ...i, status: 'gift_accepted' } : i)),
+          pairsByEventId: (() => {
+            const inv = state.invites.find((x) => x.id === inviteId);
+            const eventId = inv?.event?.id;
+            if (!eventId) return state.pairsByEventId;
+            return {
+              ...state.pairsByEventId,
+              [String(eventId)]: {
+                matchId: inv?.matchId,
+                name: inv?.inviter?.name,
+              },
+            };
+          })(),
         }));
       },
 
@@ -71,7 +96,7 @@ const useEventInvitesStore = create(
     }),
     {
       name: 'pulse-event-invites',
-      partialize: (state) => ({ invites: state.invites }),
+      partialize: (state) => ({ invites: state.invites, pairsByEventId: state.pairsByEventId }),
     }
   )
 );

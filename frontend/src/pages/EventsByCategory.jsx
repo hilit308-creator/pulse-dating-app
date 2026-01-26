@@ -64,6 +64,7 @@ import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { demoMatches } from "./MatchesScreen";
 import useGestureMessagesStore from "../store/gestureMessagesStore";
+import useEventInvitesStore from "../store/eventInvitesStore";
 
 const resolvePublicImageUrl = (url) => {
   if (!url) return url;
@@ -220,7 +221,7 @@ function googleCalendarUrl(ev) {
 }
 
 /* ----------------------------- Event Card (Pulse Spec) -------------------------------- */
-function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, distanceKm, onInvitePlus1, showGoodMatch, onViewDetails }) {
+function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, distanceKm, onInvitePlus1, showGoodMatch, onViewDetails, plusOnePartner }) {
   const [open, setOpen] = useState(false);
   
   // Status badge logic
@@ -382,8 +383,14 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
             {ev.title}
           </Typography>
 
+          {!!plusOnePartner?.name && (
+            <Typography variant="caption" sx={{ color: "text.secondary", display: 'block', mb: 0.5 }}>
+              Going with +1: {plusOnePartner.name}
+            </Typography>
+          )}
+
           {/* Pulse-style date: Thu · May 30 · 21:00 */}
-          <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500 }}>
+          <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 600 }}>
             {fmtPulseDate(ev.date, ev.time || "20:00")}
           </Typography>
 
@@ -952,11 +959,14 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
       </Box>
 
       <DialogContent sx={{ pt: 2 }}>
-        {/* Title & Date */}
-        <Typography variant="h5" sx={{ fontWeight: 900, mb: 0.5 }}>{event.title}</Typography>
-        <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-          {fmtPulseDate(event.date, event.time || "20:00")}
-        </Typography>
+        <CardContent sx={{ pb: 1 }}>
+          <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.5 }}>
+            {event.title}
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
+            {fmtPulseDate(event.date, event.time || "20:00")}
+          </Typography>
+        </CardContent>
         
         {/* Location (general only per spec) */}
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, color: 'text.secondary' }}>
@@ -1192,6 +1202,8 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
 export default function EventsByCategory() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  const pairsByEventId = useEventInvitesStore((s) => s.pairsByEventId);
   
   const [tab, setTab] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -1783,6 +1795,7 @@ export default function EventsByCategory() {
                       onOpenMaps={openMapsForEvent}
                       onInvitePlus1={(e) => setPlusOneEvent(e)}
                       onViewDetails={(e) => setEventDetailsOpen(e)}
+                      plusOnePartner={pairsByEventId?.[String(ev.id)]}
                     />
                   </Grid>
                 ))}
@@ -1840,6 +1853,7 @@ export default function EventsByCategory() {
                       onOpenMaps={openMapsForEvent}
                       onInvitePlus1={(e) => setPlusOneEvent(e)}
                       onViewDetails={(e) => setEventDetailsOpen(e)}
+                      plusOnePartner={purchased.has(ev.id) ? pairsByEventId?.[String(ev.id)] : null}
                     />
                   </Grid>
                 ))}
