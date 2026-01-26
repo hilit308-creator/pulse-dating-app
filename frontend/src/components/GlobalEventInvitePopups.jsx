@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
+import { Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import useEventInvitesStore from '../store/eventInvitesStore';
 
@@ -78,26 +78,64 @@ export default function GlobalEventInvitePopups() {
 
   return (
     <>
-      <Dialog open={!!pendingInvite} onClose={() => pendingInvite && clearInvite(pendingInvite.id)} maxWidth="xs" fullWidth>
-        <DialogTitle>Event invitation</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ fontWeight: 700 }}>
-            {pendingInvite?.inviter?.name || 'Someone'} invited you
+      <Dialog
+        open={!!pendingInvite}
+        onClose={() => pendingInvite && clearInvite(pendingInvite.id)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+      >
+        {!!pendingInvite?.event?.cover && (
+          <Box
+            component="img"
+            src={pendingInvite.event.cover}
+            alt={pendingInvite.event.title || 'Event'}
+            sx={{ width: '100%', height: 140, objectFit: 'cover' }}
+          />
+        )}
+        <DialogTitle component="div" sx={{ pb: 0.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            Event invitation
           </Typography>
-          <Typography sx={{ mt: 0.75 }}>
-            {pendingInvite?.event?.title || 'An event'}
-          </Typography>
-          {pendingInvite?.paidByInviter ? (
-            <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-              They want to buy your ticket.
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.25 }}>
+            <Avatar
+              src={pendingInvite?.inviter?.photoUrl || ''}
+              alt={pendingInvite?.inviter?.name || 'Inviter'}
+              sx={{ width: 40, height: 40 }}
+            >
+              {(pendingInvite?.inviter?.name || 'S').slice(0, 1).toUpperCase()}
+            </Avatar>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontWeight: 800 }} noWrap>
+                {pendingInvite?.inviter?.name || 'Someone'} invited you
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
+                {pendingInvite?.event?.title || 'An event'}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box
+            sx={{
+              border: '1px solid #e5e7eb',
+              borderRadius: 2,
+              p: 1,
+              bgcolor: pendingInvite?.paidByInviter ? 'rgba(108,92,231,0.06)' : 'rgba(17,24,39,0.03)',
+            }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              {pendingInvite?.paidByInviter
+                ? "Ticket included — they’ll pay for you"
+                : 'Ticket not included'}
             </Typography>
-          ) : (
-            <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-              Ticket is not included.
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.25 }}>
+              You can accept now, or decide later in chat.
             </Typography>
-          )}
+          </Box>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 2, pb: 2 }}>
           <Button color="inherit" onClick={() => pendingInvite && declineInvite(pendingInvite.id)}>Decline</Button>
           <Button variant="outlined" onClick={() => openEventDetails(pendingInvite?.event?.id)}>View details</Button>
           <Button variant="outlined" onClick={() => openChat(pendingInvite?.matchId)}>Open chat</Button>
@@ -111,14 +149,29 @@ export default function GlobalEventInvitePopups() {
       </Dialog>
 
       <Dialog open={!!giftInvite} onClose={() => giftInvite && clearInvite(giftInvite.id)} maxWidth="xs" fullWidth>
-        <DialogTitle>Ticket gift</DialogTitle>
+        <DialogTitle component="div">
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            Ticket gift
+          </Typography>
+        </DialogTitle>
         <DialogContent>
-          <Typography sx={{ fontWeight: 700 }}>
-            {giftInvite?.inviter?.name || 'They'} want to buy you a ticket
-          </Typography>
-          <Typography sx={{ mt: 0.75 }}>
-            {giftInvite?.event?.title || 'This event'}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
+            <Avatar
+              src={giftInvite?.inviter?.photoUrl || ''}
+              alt={giftInvite?.inviter?.name || 'Inviter'}
+              sx={{ width: 40, height: 40 }}
+            >
+              {(giftInvite?.inviter?.name || 'T').slice(0, 1).toUpperCase()}
+            </Avatar>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontWeight: 800 }} noWrap>
+                {giftInvite?.inviter?.name || 'They'} want to buy you a ticket
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
+                {giftInvite?.event?.title || 'This event'}
+              </Typography>
+            </Box>
+          </Box>
           {lastCharge && (
             <Box sx={{ mt: 1 }}>
               <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
@@ -160,10 +213,16 @@ export default function GlobalEventInvitePopups() {
       </Dialog>
 
       <Dialog open={!!reminderInvite} onClose={() => reminderInvite && clearInvite(reminderInvite.id)} maxWidth="xs" fullWidth>
-        <DialogTitle>Reminder</DialogTitle>
+        <DialogTitle component="div">
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            Reminder
+          </Typography>
+        </DialogTitle>
         <DialogContent>
-          <Typography sx={{ fontWeight: 700 }}>Don’t forget to buy your ticket</Typography>
-          <Typography sx={{ mt: 0.75 }}>{reminderInvite?.event?.title || 'Event'}</Typography>
+          <Typography sx={{ fontWeight: 800 }}>Don’t forget to buy your ticket</Typography>
+          <Typography variant="body2" sx={{ mt: 0.75, color: 'text.secondary' }}>
+            {reminderInvite?.event?.title || 'Event'}
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button color="inherit" onClick={() => reminderInvite && clearInvite(reminderInvite.id)}>Later</Button>
