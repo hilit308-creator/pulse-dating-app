@@ -121,13 +121,15 @@ export default function UserDetailsScreen() {
   
   // Get source (todays_picks, discover, etc.) to handle actions appropriately
   const source = location.state?.from || sessionStorage.getItem('pulse_profile_source') || 'discover';
+
+  const stateProfile = location.state?.profile;
   
   // Get store actions for like/pass
   const { addLikedUser, addPassedUser } = useHomeDeckStore();
   
   // Use location.state as preview data, but always fetch full profile
   const previewUser = location.state?.user || null;
-  const [user, setUser] = useState(previewUser);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -138,8 +140,30 @@ export default function UserDetailsScreen() {
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
 
-  // Always fetch full profile from API (even if we have preview data)
   useEffect(() => {
+    if (stateProfile) {
+      setUser({
+        id: stateProfile.id,
+        firstName: stateProfile.name,
+        lastName: '',
+        age: stateProfile.age,
+        gender: stateProfile.gender,
+        bio: stateProfile.bio,
+        photos: stateProfile.photo ? [stateProfile.photo] : [],
+        interests: stateProfile.interests || [],
+        hobbies: [],
+        lookingFor: [],
+        causes: [],
+        qualities: [],
+        prompts: [],
+        favoriteSongs: [],
+        languages: [],
+      });
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     // Validate ID before fetching
     if (!id || id === 'undefined') {
       setError('Invalid user ID');

@@ -629,7 +629,7 @@ function CategorySection({ title, events, onBuy, favs, onToggleFav, onOpenCalend
 }
 
 /* ------------------------ Swipe Deck (Purchased) ------------------------- */
-function SwipeDeck({ users, onLike, onSkip }) {
+function SwipeDeck({ users, onLike, onSkip, onOpenProfile }) {
   const [deck, setDeck] = useState(users || []);
   useEffect(() => setDeck(users || []), [users]);
 
@@ -680,7 +680,9 @@ function SwipeDeck({ users, onLike, onSkip }) {
                 transition: "all 0.2s ease",
                 display: "flex",
                 flexDirection: "row",
+                cursor: 'pointer',
               }}
+              onClick={() => onOpenProfile?.(u)}
             >
               <CardContent sx={{ p: 2, flex: 1, display: "flex", flexDirection: "column" }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1a1a2e", mb: 0.25 }}>
@@ -708,7 +710,7 @@ function SwipeDeck({ users, onLike, onSkip }) {
                       variant="contained"
                       size="small"
                       fullWidth
-                      onClick={() => handleSwipe(u, "right")}
+                      onClick={(e) => { e.stopPropagation(); handleSwipe(u, "right"); }}
                       sx={{
                         borderRadius: "10px",
                         py: 0.75,
@@ -723,7 +725,7 @@ function SwipeDeck({ users, onLike, onSkip }) {
                     <Button
                       variant="outlined"
                       size="small"
-                      onClick={() => handleSwipe(u, "left")}
+                      onClick={(e) => { e.stopPropagation(); handleSwipe(u, "left"); }}
                       sx={{
                         borderRadius: "10px",
                         py: 0.75,
@@ -748,6 +750,7 @@ function SwipeDeck({ users, onLike, onSkip }) {
                   overflow: "hidden",
                   borderRadius: "0 20px 20px 0",
                 }}
+                onClick={(e) => { e.stopPropagation(); onOpenProfile?.(u); }}
               >
                 <Box
                   component="img"
@@ -1526,9 +1529,9 @@ export default function EventsByCategory() {
 
   // דמו "אנשים שתפגשו" (בממשק Purchased)
   const DEMO_USERS = [
-    { id: "u2", name: "Noam",  gender: "male",   bio: "EDM, runs, sushi",   eventIds: ["lp2","spx2"], photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=400&auto=format&fit=crop" },
-    { id: "u3", name: "Maya",  gender: "female", bio: "Acoustic nights 🎸", eventIds: ["sp2"],         photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop" },
-    { id: "u4", name: "Amit",  gender: "male",   bio: "Food markets 😋",    eventIds: ["tw1"],         photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=400&auto=format&fit=crop" },
+    { id: "u2", name: "Noam",  age: 27, gender: "male",   bio: "EDM, runs, sushi",   eventIds: ["lp2","spx2"], photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=400&auto=format&fit=crop" },
+    { id: "u3", name: "Maya",  age: 25, gender: "female", bio: "Acoustic nights 🎸", eventIds: ["sp2"],         photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop" },
+    { id: "u4", name: "Amit",  age: 28, gender: "male",   bio: "Food markets 😋",    eventIds: ["tw1"],         photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=400&auto=format&fit=crop" },
   ];
   const suggestedUsers = DEMO_USERS.filter((u) => (prefGender==="any" ? true : u.gender===prefGender));
   const likeUser = (u) => setMatches((arr) => Array.from(new Set([...arr, u.id])));
@@ -1903,6 +1906,7 @@ export default function EventsByCategory() {
               users={suggestedUsers}
               onLike={(u) => likeUser(u)}
               onSkip={(u) => skipUser(u)}
+              onOpenProfile={(u) => navigate(`/user/${u.id}`, { state: { from: 'events_people', profile: u } })}
             />
 
             {!!matches.length && (
