@@ -763,7 +763,7 @@ function ChatBubble({
                 overflow: "hidden",
                 cursor: "pointer",
               }}
-              onClick={() => window.location.href = `/events?highlight=${msg.gestureDetails?.eventId}`}
+              onClick={() => window.location.href = `/events?eventId=${msg.gestureDetails?.eventId}`}
             >
               {msg.gestureDetails?.eventCover && (
                 <img 
@@ -795,7 +795,7 @@ function ChatBubble({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    window.location.href = `/events?highlight=${msg.gestureDetails?.eventId}`;
+                    window.location.href = `/events?eventId=${msg.gestureDetails?.eventId}`;
                   }}
                 >
                   View Event
