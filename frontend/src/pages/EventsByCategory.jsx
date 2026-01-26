@@ -1858,7 +1858,13 @@ export default function EventsByCategory() {
         open={!!plusOneEvent} 
         onClose={(result) => {
           setPlusOneEvent(null);
-          if (result?.sent) setSnack("Invite sent!");
+          if (result?.sent) {
+            setSnack("Invite sent!");
+            // Navigate to specific chat with the match after short delay
+            setTimeout(() => {
+              navigate(`/chat/${result.matchId}`);
+            }, 1000);
+          }
         }} 
         event={plusOneEvent}
         matches={demoMatches}
