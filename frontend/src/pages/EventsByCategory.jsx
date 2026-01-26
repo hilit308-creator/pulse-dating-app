@@ -1763,9 +1763,11 @@ export default function EventsByCategory() {
                       ev={ev}
                       onBuy={() => {}}
                       onToggleFav={toggleFav}
-                      isFav={favs.has(ev.id)}
+                      isFav={favs.has(String(ev.id))}
                       onOpenCalendar={openCalendar}
                       onOpenMaps={openMapsForEvent}
+                      onInvitePlus1={(e) => setPlusOneEvent(e)}
+                      onViewDetails={(e) => setEventDetailsOpen(e)}
                     />
                   </Grid>
                 ))}
@@ -1818,9 +1820,11 @@ export default function EventsByCategory() {
                       ev={ev}
                       onBuy={openBuy}
                       onToggleFav={toggleFav}
-                      isFav={favs.has(ev.id)}
+                      isFav={favs.has(String(ev.id))}
                       onOpenCalendar={openCalendar}
                       onOpenMaps={openMapsForEvent}
+                      onInvitePlus1={(e) => setPlusOneEvent(e)}
+                      onViewDetails={(e) => setEventDetailsOpen(e)}
                     />
                   </Grid>
                 ))}
@@ -1844,7 +1848,7 @@ export default function EventsByCategory() {
                         ev={ev}
                         onBuy={openBuy}
                         onToggleFav={toggleFav}
-                        isFav={favs.has(ev.id)}
+                        isFav={favs.has(String(ev.id))}
                         onOpenCalendar={openCalendar}
                         onOpenMaps={openMapsForEvent}
                         distanceKm={distanceKm}
@@ -1872,10 +1876,11 @@ export default function EventsByCategory() {
                     ev={ev}
                     onBuy={openBuy}
                     onToggleFav={toggleFav}
-                    isFav={favs.has(ev.id)}
+                    isFav={favs.has(String(ev.id))}
                     onOpenCalendar={openCalendar}
                     onOpenMaps={openMapsForEvent}
                     onViewDetails={(ev) => setEventDetailsOpen(ev)}
+                    onInvitePlus1={(ev) => setPlusOneEvent(ev)}
                   />
                 </Grid>
               ))}
