@@ -35,6 +35,45 @@ const getCurrentUserForDemo = () => {
   }
 };
 
+const primaryCtaSx = {
+  borderRadius: 999,
+  px: 2.25,
+  fontWeight: 800,
+  textTransform: 'none',
+  background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+  boxShadow: '0 10px 24px rgba(108,92,231,0.35)',
+  '&:hover': {
+    background: 'linear-gradient(135deg, #5B4BD5 0%, #9B4DEB 100%)',
+    boxShadow: '0 12px 28px rgba(108,92,231,0.45)',
+  },
+};
+
+const secondaryCtaSx = {
+  borderRadius: 999,
+  px: 2.0,
+  fontWeight: 700,
+  textTransform: 'none',
+  borderColor: 'rgba(108,92,231,0.45)',
+  color: '#6C5CE7',
+  background: 'rgba(108,92,231,0.05)',
+  '&:hover': {
+    borderColor: 'rgba(108,92,231,0.7)',
+    background: 'rgba(108,92,231,0.08)',
+  },
+};
+
+const neutralCtaSx = {
+  borderRadius: 999,
+  px: 1.75,
+  fontWeight: 700,
+  textTransform: 'none',
+  color: '#111827',
+  background: 'rgba(17,24,39,0.04)',
+  '&:hover': {
+    background: 'rgba(17,24,39,0.07)',
+  },
+};
+
 export default function GlobalEventInvitePopups() {
   const navigate = useNavigate();
   const invites = useEventInvitesStore((s) => s.invites);
@@ -135,12 +174,31 @@ export default function GlobalEventInvitePopups() {
             </Typography>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 2, pb: 2 }}>
-          <Button color="inherit" onClick={() => pendingInvite && declineInvite(pendingInvite.id)}>Decline</Button>
-          <Button variant="outlined" onClick={() => openEventDetails(pendingInvite?.event?.id)}>View details</Button>
-          <Button variant="outlined" onClick={() => openChat(pendingInvite?.matchId)}>Open chat</Button>
+        <DialogActions sx={{ px: 2, pb: 2, gap: 1, flexWrap: 'wrap' }}>
+          <Button
+            color="inherit"
+            sx={neutralCtaSx}
+            onClick={() => pendingInvite && declineInvite(pendingInvite.id)}
+          >
+            Decline
+          </Button>
+          <Button
+            variant="outlined"
+            sx={secondaryCtaSx}
+            onClick={() => openEventDetails(pendingInvite?.event?.id)}
+          >
+            View details
+          </Button>
+          <Button
+            variant="outlined"
+            sx={secondaryCtaSx}
+            onClick={() => openChat(pendingInvite?.matchId)}
+          >
+            Open chat
+          </Button>
           <Button
             variant="contained"
+            sx={primaryCtaSx}
             onClick={() => pendingInvite && acceptInvite(pendingInvite.id, getCurrentUserForDemo())}
           >
             Accept
@@ -180,9 +238,10 @@ export default function GlobalEventInvitePopups() {
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
           <Button
             color="inherit"
+            sx={neutralCtaSx}
             onClick={() => {
               if (!giftInvite) return;
               declineGift(giftInvite.id);
@@ -192,6 +251,7 @@ export default function GlobalEventInvitePopups() {
           </Button>
           <Button
             variant="contained"
+            sx={primaryCtaSx}
             onClick={() => {
               if (!giftInvite) return;
               const charge = demoChargeInviter();
@@ -224,9 +284,21 @@ export default function GlobalEventInvitePopups() {
             {reminderInvite?.event?.title || 'Event'}
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button color="inherit" onClick={() => reminderInvite && clearInvite(reminderInvite.id)}>Later</Button>
-          <Button variant="contained" onClick={() => openEventDetails(reminderInvite?.event?.id)}>Buy ticket</Button>
+        <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
+          <Button
+            color="inherit"
+            sx={neutralCtaSx}
+            onClick={() => reminderInvite && clearInvite(reminderInvite.id)}
+          >
+            Later
+          </Button>
+          <Button
+            variant="contained"
+            sx={primaryCtaSx}
+            onClick={() => openEventDetails(reminderInvite?.event?.id)}
+          >
+            Buy ticket
+          </Button>
         </DialogActions>
       </Dialog>
     </>
