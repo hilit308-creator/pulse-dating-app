@@ -31,6 +31,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Snackbar,
+  Tooltip,
   MenuItem,
   Select,
 } from "@mui/material";
@@ -47,6 +48,7 @@ import {
   List as ListIcon,
   LocateFixed,
   Heart,
+  HeartOff,
   Wine,
   PartyPopper,
   Users,
@@ -261,28 +263,30 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
         whileTap={{ scale: 0.9 }}
         style={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }}
       >
-        <IconButton
-          aria-label={isFav ? "Remove from favorites" : "Save to favorites"}
-          onClick={(e) => { 
-            e.stopPropagation(); 
-            onToggleFav?.(ev.id); 
-            if (navigator?.vibrate) navigator.vibrate(10);
-          }}
-          size="small"
-          sx={{ 
-            bgcolor: isFav ? "#667eea" : "rgba(255,255,255,0.95)", 
-            color: isFav ? "#fff" : "#667eea", 
-            backdropFilter: 'blur(12px)',
-            boxShadow: isFav ? "0 4px 16px rgba(102,126,234,0.4)" : "0 4px 12px rgba(0,0,0,0.12)",
-            transition: 'all 0.2s ease',
-            '&:hover': { 
-              bgcolor: isFav ? "#5568d3" : "white",
-              transform: 'rotate(10deg)',
-            },
-          }}
-        >
-          <Heart size={16} fill={isFav ? '#fff' : 'none'} />
-        </IconButton>
+        <Tooltip title={isFav ? "Remove from saved" : "Save"} placement="left" arrow>
+          <IconButton
+            aria-label={isFav ? "Remove from favorites" : "Save to favorites"}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              onToggleFav?.(ev.id); 
+              if (navigator?.vibrate) navigator.vibrate(10);
+            }}
+            size="small"
+            sx={{ 
+              bgcolor: isFav ? "#667eea" : "rgba(255,255,255,0.95)", 
+              color: isFav ? "#fff" : "#667eea", 
+              backdropFilter: 'blur(12px)',
+              boxShadow: isFav ? "0 4px 16px rgba(102,126,234,0.4)" : "0 4px 12px rgba(0,0,0,0.12)",
+              transition: 'all 0.2s ease',
+              '&:hover': { 
+                bgcolor: isFav ? "#5568d3" : "white",
+                transform: 'rotate(10deg)',
+              },
+            }}
+          >
+            {isFav ? <HeartOff size={16} /> : <Heart size={16} fill="none" />}
+          </IconButton>
+        </Tooltip>
       </motion.div>
 
       {/* Status badge */}
