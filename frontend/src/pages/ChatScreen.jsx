@@ -71,6 +71,7 @@ import AiFirstMessage from "../components/AiFirstMessage";
 // Gesture messages store
 import useGestureMessagesStore from '../store/gestureMessagesStore';
 import useChatStore from '../store/chatStore';
+import useEventInvitesStore from '../store/eventInvitesStore';
 
 /* ----------------- helpers ----------------- */
 const fmtHM = (ts) =>
@@ -578,6 +579,9 @@ function ChatBubble({
   onDoubleLike,
   onLongPressStart,
   onOpenActions,
+  onEventInviteAccept,
+  onEventInviteDecline,
+  onEventInviteOfferPay,
 }) {
   const bg = isMe ? "#DCF8C6" : "#FFFFFF";
   const tailSide = isMe ? "right" : "left";
@@ -755,6 +759,11 @@ function ChatBubble({
             <Typography sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", mb: 1 }}>
               {msg.text}
             </Typography>
+            {!!msg.gestureDetails?.paidByInviter && (
+              <Typography variant="caption" sx={{ color: "#6C5CE7", display: "block", mb: 1 }}>
+                Ticket included — they’ll pay for you
+              </Typography>
+            )}
             <Box 
               sx={{ 
                 border: "1px solid #e5e7eb", 
@@ -782,24 +791,66 @@ function ChatBubble({
                 <Typography variant="caption" sx={{ color: "#6b7280", display: 'block' }}>
                   📍 {msg.gestureDetails?.eventVenue}
                 </Typography>
-                <Button 
-                  size="small" 
-                  variant="outlined" 
-                  sx={{ 
-                    mt: 1, 
-                    borderRadius: 999, 
-                    fontSize: '0.75rem',
-                    borderColor: '#6C5CE7',
-                    color: '#6C5CE7',
-                    '&:hover': { borderColor: '#5B4BD5', bgcolor: 'rgba(108,92,231,0.05)' }
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.location.href = `/events?eventId=${msg.gestureDetails?.eventId}`;
-                  }}
-                >
-                  View Event
-                </Button>
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 1 }}>
+                  <Button 
+                    size="small" 
+                    variant="outlined" 
+                    sx={{ 
+                      borderRadius: 999, 
+                      fontSize: '0.75rem',
+                      borderColor: '#6C5CE7',
+                      color: '#6C5CE7',
+                      '&:hover': { borderColor: '#5B4BD5', bgcolor: 'rgba(108,92,231,0.05)' }
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = `/events?eventId=${msg.gestureDetails?.eventId}`;
+                    }}
+                  >
+                    View Event
+                  </Button>
+
+                  {!isMe && (
+                    <>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        sx={{ borderRadius: 999, fontSize: '0.75rem' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventInviteAccept?.(msg);
+                        }}
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        size="small"
+                        color="inherit"
+                        sx={{ borderRadius: 999, fontSize: '0.75rem' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventInviteDecline?.(msg);
+                        }}
+                      >
+                        Decline
+                      </Button>
+                    </>
+                  )}
+
+                  {isMe && !msg.gestureDetails?.paidByInviter && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      sx={{ borderRadius: 999, fontSize: '0.75rem' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEventInviteOfferPay?.(msg);
+                      }}
+                    >
+                      Buy for +1
+                    </Button>
+                  )}
+                </Box>
               </Box>
             </Box>
           </Box>
@@ -1167,6 +1218,126 @@ export default function ChatScreen() {
   const chat = useMemo(
     () => chats.find((c) => c.matchId === openChat),
     [chats, openChat]
+  );
+
+  const appendSystemMessageToOpenChat = useCallback(
+    (text) => {
+      if (!openChat) return;
+      const sysMsg = {
+        id: `system_${Date.now()}`,
+        type: "text",
+        from: "me",
+        text,
+        timestamp: Date.now(),
+        status: "sent",
+        reactions: {},
+      };
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat
+            ? {
+                ...c,
+                messages: [...c.messages, sysMsg],
+                lastSentAt: sysMsg.timestamp,
+              }
+            : c
+        )
+      );
+    },
+    [openChat, setChats]
+  );
+
+  const handleEventInviteAccept = useCallback(
+    (msg) => {
+      const { addInvite, acceptInvite } = useEventInvitesStore.getState();
+      const invite = addInvite({
+        matchId: chat?.user?.id || urlMatchId,
+        inviter: { id: chat?.user?.id, name: chat?.user?.name },
+        event: {
+          id: msg.gestureDetails?.eventId,
+          title: msg.gestureDetails?.eventTitle,
+          date: msg.gestureDetails?.eventDate,
+          time: msg.gestureDetails?.eventTime,
+          venue: msg.gestureDetails?.eventVenue,
+          cover: msg.gestureDetails?.eventCover,
+        },
+        paidByInviter: !!msg.gestureDetails?.paidByInviter,
+      });
+      acceptInvite(invite.id);
+      appendSystemMessageToOpenChat("✅ You accepted the invite");
+    },
+    [appendSystemMessageToOpenChat, chat, urlMatchId]
+  );
+
+  const handleEventInviteDecline = useCallback(
+    (msg) => {
+      const { addInvite, declineInvite } = useEventInvitesStore.getState();
+      const invite = addInvite({
+        matchId: chat?.user?.id || urlMatchId,
+        inviter: { id: chat?.user?.id, name: chat?.user?.name },
+        event: {
+          id: msg.gestureDetails?.eventId,
+          title: msg.gestureDetails?.eventTitle,
+          date: msg.gestureDetails?.eventDate,
+          time: msg.gestureDetails?.eventTime,
+          venue: msg.gestureDetails?.eventVenue,
+          cover: msg.gestureDetails?.eventCover,
+        },
+        paidByInviter: !!msg.gestureDetails?.paidByInviter,
+      });
+      declineInvite(invite.id);
+      appendSystemMessageToOpenChat("❌ You declined the invite (you can still accept later)");
+    },
+    [appendSystemMessageToOpenChat, chat, urlMatchId]
+  );
+
+  const handleEventInviteOfferPay = useCallback(
+    (msg) => {
+      if (!openChat) return;
+      const newMsg = {
+        id: `event_invite_${Date.now()}`,
+        type: "gesture",
+        gestureType: "event_invite",
+        from: "me",
+        text: `I can buy your ticket for ${msg.gestureDetails?.eventTitle} too — do you want it?`,
+        timestamp: Date.now(),
+        status: "sent",
+        gestureDetails: {
+          ...msg.gestureDetails,
+          paidByInviter: true,
+        },
+        reactions: {},
+      };
+
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat
+            ? {
+                ...c,
+                messages: [...c.messages, newMsg],
+                lastSentAt: newMsg.timestamp,
+              }
+            : c
+        )
+      );
+
+      // Trigger global flow in demo (represents the recipient getting a new invite offer)
+      const { addInvite } = useEventInvitesStore.getState();
+      addInvite({
+        matchId: chat?.user?.id || urlMatchId,
+        inviter: { id: "me", name: "You" },
+        event: {
+          id: msg.gestureDetails?.eventId,
+          title: msg.gestureDetails?.eventTitle,
+          date: msg.gestureDetails?.eventDate,
+          time: msg.gestureDetails?.eventTime,
+          venue: msg.gestureDetails?.eventVenue,
+          cover: msg.gestureDetails?.eventCover,
+        },
+        paidByInviter: true,
+      });
+    },
+    [chat, openChat, setChats, urlMatchId]
   );
   
   // Auto-open chat if matchId is in URL (e.g., from "Go to Chat" button)
@@ -3648,6 +3819,9 @@ export default function ChatScreen() {
                   onDoubleLike={() => toggleHeart(m.id)}
                   onLongPressStart={(anchorEl) => reactPop.openFor(m.id)}
                   onOpenActions={openMsgActions}
+                  onEventInviteAccept={handleEventInviteAccept}
+                  onEventInviteDecline={handleEventInviteDecline}
+                  onEventInviteOfferPay={handleEventInviteOfferPay}
                 />
               </div>
             </Fade>

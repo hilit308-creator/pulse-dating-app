@@ -32,6 +32,7 @@ import {
   ToggleButtonGroup,
   Snackbar,
   Tooltip,
+  Checkbox,
   MenuItem,
   Select,
 } from "@mui/material";
@@ -761,6 +762,7 @@ function TicketPurchaseDialog({ open, onClose, event, onPurchased }) {
 /* --------------------------- +1 Invite Dialog (Pulse Spec) ----------------------------- */
 function PlusOneInviteDialog({ open, onClose, event, matches = [], purchased }) {
   const [selectedMatch, setSelectedMatch] = useState(null);
+  const [payForInvitee, setPayForInvitee] = useState(false);
   const isPurchased = purchased?.has(event?.id);
   
   const sendInvite = () => {
@@ -769,6 +771,7 @@ function PlusOneInviteDialog({ open, onClose, event, matches = [], purchased }) 
     onClose?.({ 
       sent: true, 
       matchId: selectedMatch, 
+      paidByInviter: !!payForInvitee,
       eventId: event?.id,
       eventTitle: event?.title,
       eventDate: event?.date,
@@ -805,6 +808,18 @@ function PlusOneInviteDialog({ open, onClose, event, matches = [], purchased }) 
             ? "I'm already going — want to come with me?"
             : "Thinking of going to this — want to join?"}
         </Typography>
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
+              checked={payForInvitee}
+              onChange={(e) => setPayForInvitee(e.target.checked)}
+            />
+          }
+          label={<Typography variant="caption">I’ll buy your ticket too</Typography>}
+          sx={{ mb: 1, alignItems: 'center' }}
+        />
         
         {matches.length === 0 ? (
           <Alert severity="info" sx={{ py: 0.5, '& .MuiAlert-message': { fontSize: '0.75rem' } }}>
@@ -1908,7 +1923,9 @@ export default function EventsByCategory() {
                 result.matchId,
                 {
                   gestureType: 'event_invite',
-                  message: `Hey! I'm thinking of going to ${result.eventTitle} - want to join me? 🎉`,
+                  message: result.paidByInviter
+                    ? `Hey! I'm thinking of going to ${result.eventTitle} - want to join me? 🎉\nI can also buy your ticket if you want.`
+                    : `Hey! I'm thinking of going to ${result.eventTitle} - want to join me? 🎉`,
                   details: {
                     eventId: result.eventId,
                     eventTitle: result.eventTitle,
@@ -1916,6 +1933,7 @@ export default function EventsByCategory() {
                     eventTime: result.eventTime,
                     eventVenue: result.eventVenue,
                     eventCover: result.eventCover,
+                    paidByInviter: !!result.paidByInviter,
                   },
                 },
                 {

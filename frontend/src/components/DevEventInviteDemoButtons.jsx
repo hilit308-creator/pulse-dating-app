@@ -40,6 +40,7 @@ const pushPendingEventInviteMessage = ({ matchId, user, event, paidByInviter }) 
         eventTime: event.time,
         eventVenue: event.venue,
         eventCover: event.cover,
+        paidByInviter: !!paidByInviter,
       },
       reactions: {},
     };
