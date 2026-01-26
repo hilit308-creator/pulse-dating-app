@@ -64,19 +64,21 @@ describe('gestureMessagesStore', () => {
     });
   });
 
-  describe('canSendGesture - Monthly Limits', () => {
-    it('should allow first gesture for free', () => {
+  // TRIAL PERIOD: All gestures are free and unlimited
+  // These tests reflect the current trial period behavior
+  describe('canSendGesture - Trial Period (Unlimited)', () => {
+    it('should always allow gestures during trial period', () => {
       const store = useGestureMessagesStore.getState();
       const result = store.canSendGesture();
       
       expect(result.canSend).toBe(true);
-      expect(result.reason).toBe('free');
+      expect(result.reason).toBe('trial');
     });
 
-    it('should block second gesture if no points and not Pro', () => {
+    it('should allow gestures even with high usage count during trial', () => {
       useGestureMessagesStore.setState({
         monthlyGestureUsage: {
-          count: 1,
+          count: 100,
           month: new Date().getMonth(),
           year: new Date().getFullYear(),
         },
@@ -87,30 +89,11 @@ describe('gestureMessagesStore', () => {
       const store = useGestureMessagesStore.getState();
       const result = store.canSendGesture();
       
-      expect(result.canSend).toBe(false);
-      expect(result.reason).toBe('limit_reached');
-    });
-
-    it('should allow second gesture if user has 60+ points', () => {
-      useGestureMessagesStore.setState({
-        monthlyGestureUsage: {
-          count: 1,
-          month: new Date().getMonth(),
-          year: new Date().getFullYear(),
-        },
-        pointsBalance: 60,
-        isPulsePro: false,
-      });
-      
-      const store = useGestureMessagesStore.getState();
-      const result = store.canSendGesture();
-      
       expect(result.canSend).toBe(true);
-      expect(result.reason).toBe('points');
-      expect(result.cost).toBe(60);
+      expect(result.reason).toBe('trial');
     });
 
-    it('should allow unlimited gestures for Pro users', () => {
+    it('should allow gestures with zero points during trial', () => {
       useGestureMessagesStore.setState({
         monthlyGestureUsage: {
           count: 10,
@@ -118,30 +101,45 @@ describe('gestureMessagesStore', () => {
           year: new Date().getFullYear(),
         },
         pointsBalance: 0,
-        isPulsePro: true,
+        isPulsePro: false,
       });
       
       const store = useGestureMessagesStore.getState();
       const result = store.canSendGesture();
       
       expect(result.canSend).toBe(true);
-      expect(result.reason).toBe('pro');
+      expect(result.reason).toBe('trial');
+    });
+
+    it('should allow gestures for non-Pro users during trial', () => {
+      useGestureMessagesStore.setState({
+        monthlyGestureUsage: {
+          count: 10,
+          month: new Date().getMonth(),
+          year: new Date().getFullYear(),
+        },
+        pointsBalance: 0,
+        isPulsePro: false,
+      });
+      
+      const store = useGestureMessagesStore.getState();
+      const result = store.canSendGesture();
+      
+      expect(result.canSend).toBe(true);
+      expect(result.reason).toBe('trial');
     });
   });
 
-  describe('useGesture - Consuming Gestures', () => {
-    it('should use free gesture and increment count', () => {
+  describe('useGesture - Trial Period (No Counting)', () => {
+    it('should succeed without counting during trial', () => {
       const store = useGestureMessagesStore.getState();
       const result = store.useGesture();
       
       expect(result.success).toBe(true);
-      expect(result.method).toBe('free');
-      
-      const state = useGestureMessagesStore.getState();
-      expect(state.monthlyGestureUsage.count).toBe(1);
+      expect(result.method).toBe('trial');
     });
 
-    it('should deduct 60 points when free gesture is used', () => {
+    it('should not deduct points during trial', () => {
       useGestureMessagesStore.setState({
         monthlyGestureUsage: {
           count: 1,
@@ -153,35 +151,35 @@ describe('gestureMessagesStore', () => {
       });
       
       const store = useGestureMessagesStore.getState();
+      const initialPoints = store.pointsBalance;
       const result = store.useGesture();
       
       expect(result.success).toBe(true);
-      expect(result.method).toBe('points');
-      expect(result.pointsUsed).toBe(60);
+      expect(result.method).toBe('trial');
       
       const state = useGestureMessagesStore.getState();
-      expect(state.pointsBalance).toBe(140);
+      expect(state.pointsBalance).toBe(initialPoints); // Points unchanged during trial
     });
 
-    it('should fail if no free gesture and insufficient points', () => {
+    it('should always succeed during trial regardless of points', () => {
       useGestureMessagesStore.setState({
         monthlyGestureUsage: {
-          count: 1,
+          count: 100,
           month: new Date().getMonth(),
           year: new Date().getFullYear(),
         },
-        pointsBalance: 50,
+        pointsBalance: 0,
         isPulsePro: false,
       });
       
       const store = useGestureMessagesStore.getState();
       const result = store.useGesture();
       
-      expect(result.success).toBe(false);
-      expect(result.reason).toBe('insufficient_resources');
+      expect(result.success).toBe(true);
+      expect(result.method).toBe('trial');
     });
 
-    it('should not deduct points for Pro users', () => {
+    it('should succeed for any user during trial', () => {
       useGestureMessagesStore.setState({
         monthlyGestureUsage: {
           count: 5,
@@ -196,10 +194,10 @@ describe('gestureMessagesStore', () => {
       const result = store.useGesture();
       
       expect(result.success).toBe(true);
-      expect(result.method).toBe('pro');
+      expect(result.method).toBe('trial');
       
       const state = useGestureMessagesStore.getState();
-      expect(state.pointsBalance).toBe(200); // Points unchanged
+      expect(state.pointsBalance).toBe(200); // Points unchanged during trial
     });
   });
 
@@ -231,8 +229,10 @@ describe('gestureMessagesStore', () => {
     });
   });
 
-  describe('Monthly Reset', () => {
-    it('should reset count when month changes', () => {
+  // TRIAL PERIOD: Monthly reset is not relevant during trial
+  // When trial ends, this test should be updated to check monthly reset behavior
+  describe('Monthly Reset - Trial Period', () => {
+    it('should allow gestures regardless of month during trial', () => {
       const lastMonth = new Date().getMonth() - 1;
       const year = lastMonth < 0 ? new Date().getFullYear() - 1 : new Date().getFullYear();
       const adjustedMonth = lastMonth < 0 ? 11 : lastMonth;
@@ -250,9 +250,9 @@ describe('gestureMessagesStore', () => {
       const store = useGestureMessagesStore.getState();
       const result = store.canSendGesture();
       
-      // Should reset and allow free gesture
+      // During trial, always allow
       expect(result.canSend).toBe(true);
-      expect(result.reason).toBe('free');
+      expect(result.reason).toBe('trial');
     });
   });
 });
