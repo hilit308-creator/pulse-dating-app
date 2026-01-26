@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Button } from '@mui/material';
+import { useLocation } from 'react-router-dom';
 import useEventInvitesStore from '../store/eventInvitesStore';
 
 const DEMO_MATCH = {
@@ -53,10 +54,13 @@ const pushPendingEventInviteMessage = ({ matchId, user, event, paidByInviter }) 
 };
 
 export default function DevEventInviteDemoButtons() {
+  const location = useLocation();
   const addInvite = useEventInvitesStore((s) => s.addInvite);
   const invites = useEventInvitesStore((s) => s.invites);
 
   if (process.env.NODE_ENV !== 'development') return null;
+
+  if (location?.pathname?.startsWith('/events')) return null;
 
   const hasOpenInviteDialog = (invites || []).some(
     (i) => i.status === 'pending' || i.status === 'gift_pending' || ((i.status === 'accepted' || i.status === 'gift_declined') && !!i.remindAt && !i.reminded && Date.now() >= i.remindAt)
