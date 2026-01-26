@@ -642,7 +642,7 @@ function SwipeDeck({ users, onLike, onSkip }) {
   const top = deck.slice(0, 3);
 
   return (
-    <Box sx={{ position: "relative", height: 360 }}>
+    <Box sx={{ position: "relative", height: { xs: 300, sm: 360 } }}>
       {top.map((u, i) => {
         const isTop = i === 0;
         const z = 10 - i;
@@ -670,25 +670,56 @@ function SwipeDeck({ users, onLike, onSkip }) {
           >
             <Card
               sx={{
-                height: 340,
+                minHeight: { xs: 280, sm: 340 },
                 borderRadius: 3,
                 boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
                 overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between",
+                bgcolor: "#fff",
               }}
             >
-              <CardContent>
+              <CardContent sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 900 }}>{u.name}</Typography>
                 <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>{u.bio}</Typography>
                 <Typography variant="caption" sx={{ color: "text.secondary" }}>
                   Attends: {(u.eventIds || []).map((id)=>EVENTS.find(e=>e.id===id)?.title).filter(Boolean).join(", ")}
                 </Typography>
               </CardContent>
-              <CardActions sx={{ px: 2, pb: 2, display: "flex", justifyContent: "space-between" }}>
-                <Button variant="outlined" color="inherit" onClick={() => handleSwipe(u, "left")}>Skip</Button>
-                <Button variant="contained" onClick={() => handleSwipe(u, "right")}>Like</Button>
+              <CardActions
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  display: "flex",
+                  gap: 1,
+                  borderTop: "1px solid rgba(17,24,39,0.08)",
+                  bgcolor: "rgba(17,24,39,0.02)",
+                }}
+              >
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  color="inherit"
+                  sx={{ borderRadius: 999, fontWeight: 700, textTransform: "none" }}
+                  onClick={() => handleSwipe(u, "left")}
+                >
+                  Skip
+                </Button>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  sx={{
+                    borderRadius: 999,
+                    fontWeight: 800,
+                    textTransform: "none",
+                    background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)",
+                    boxShadow: "0 8px 18px rgba(108,92,231,0.32)",
+                    '&:hover': { background: "linear-gradient(135deg, #5B4BD5 0%, #9B4DEB 100%)" },
+                  }}
+                  onClick={() => handleSwipe(u, "right")}
+                >
+                  Like
+                </Button>
               </CardActions>
             </Card>
           </motion.div>
