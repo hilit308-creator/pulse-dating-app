@@ -62,6 +62,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { demoMatches } from "./MatchesScreen";
 import useGestureMessagesStore from "../store/gestureMessagesStore";
 
+const resolvePublicImageUrl = (url) => {
+  if (!url) return url;
+  if (typeof url === "string" && url.startsWith("/")) return `${process.env.PUBLIC_URL}${url}`;
+  return url;
+};
+
 /* ----------------------------- Mock data --------------------------------- */
 // Vibe types per Pulse spec
 const VIBE_TYPES = ['Chill', 'Social', 'Flirty', 'Deep', 'Energetic'];
@@ -820,8 +826,12 @@ function PlusOneInviteDialog({ open, onClose, event, matches = [], purchased }) 
               >
                 <Box 
                   component="img"
-                  src={m.photoUrl}
+                  src={resolvePublicImageUrl(m.photoUrl)}
                   alt={m.name}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "https://via.placeholder.com/64";
+                  }}
                   sx={{ width: 32, height: 32, borderRadius: "50%", bgcolor: "#e5e7eb", flexShrink: 0, objectFit: 'cover' }} 
                 />
                 <Box sx={{ minWidth: 0 }}>
