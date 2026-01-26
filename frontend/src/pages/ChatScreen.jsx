@@ -750,6 +750,59 @@ function ChatBubble({
               </Button>
             ))}
           </Box>
+        ) : msg.type === "gesture" && msg.gestureType === "event_invite" ? (
+          <Box sx={{ mt: 0.25 }}>
+            <Typography sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", mb: 1 }}>
+              {msg.text}
+            </Typography>
+            <Box 
+              sx={{ 
+                border: "1px solid #e5e7eb", 
+                borderRadius: 2, 
+                bgcolor: "#fff",
+                overflow: "hidden",
+                cursor: "pointer",
+              }}
+              onClick={() => window.location.href = `/events?highlight=${msg.gestureDetails?.eventId}`}
+            >
+              {msg.gestureDetails?.eventCover && (
+                <img 
+                  src={msg.gestureDetails.eventCover} 
+                  alt={msg.gestureDetails.eventTitle} 
+                  style={{ width: "100%", height: 120, objectFit: "cover" }} 
+                />
+              )}
+              <Box sx={{ p: 1.5 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                  🎉 {msg.gestureDetails?.eventTitle}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#6b7280", display: 'block', mt: 0.5 }}>
+                  {msg.gestureDetails?.eventDate} {msg.gestureDetails?.eventTime && `• ${msg.gestureDetails.eventTime}`}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#6b7280", display: 'block' }}>
+                  📍 {msg.gestureDetails?.eventVenue}
+                </Typography>
+                <Button 
+                  size="small" 
+                  variant="outlined" 
+                  sx={{ 
+                    mt: 1, 
+                    borderRadius: 999, 
+                    fontSize: '0.75rem',
+                    borderColor: '#6C5CE7',
+                    color: '#6C5CE7',
+                    '&:hover': { borderColor: '#5B4BD5', bgcolor: 'rgba(108,92,231,0.05)' }
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = `/events?highlight=${msg.gestureDetails?.eventId}`;
+                  }}
+                >
+                  View Event
+                </Button>
+              </Box>
+            </Box>
+          </Box>
         ) : (
           <>
             <Typography sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>

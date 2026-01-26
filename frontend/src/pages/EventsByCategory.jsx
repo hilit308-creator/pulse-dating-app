@@ -763,6 +763,8 @@ function PlusOneInviteDialog({ open, onClose, event, matches = [], purchased }) 
       eventTitle: event?.title,
       eventDate: event?.date,
       eventVenue: event?.venue,
+      eventCover: event?.cover,
+      eventTime: event?.time,
     });
   };
 
@@ -1882,7 +1884,9 @@ export default function EventsByCategory() {
                     eventId: result.eventId,
                     eventTitle: result.eventTitle,
                     eventDate: result.eventDate,
+                    eventTime: result.eventTime,
                     eventVenue: result.eventVenue,
+                    eventCover: result.eventCover,
                   },
                 },
                 {
