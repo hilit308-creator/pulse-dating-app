@@ -117,6 +117,15 @@ export default function GlobalEventInvitePopups() {
     navigate(`/chat/${matchId}`);
   };
 
+  const dialogPortalProps = useMemo(
+    () => ({
+      disablePortal: false,
+      container: typeof document !== 'undefined' ? document.body : undefined,
+      sx: { zIndex: (theme) => (theme?.zIndex?.modal ?? 1300) + 2000 },
+    }),
+    []
+  );
+
   return (
     <>
       <Dialog
@@ -124,6 +133,9 @@ export default function GlobalEventInvitePopups() {
         onClose={() => pendingInvite && clearInvite(pendingInvite.id)}
         maxWidth="xs"
         fullWidth
+        disablePortal={dialogPortalProps.disablePortal}
+        container={dialogPortalProps.container}
+        sx={dialogPortalProps.sx}
         PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
       >
         {!!pendingInvite?.event?.cover && (
@@ -222,7 +234,15 @@ export default function GlobalEventInvitePopups() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={!!giftInvite} onClose={() => giftInvite && clearInvite(giftInvite.id)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={!!giftInvite}
+        onClose={() => giftInvite && clearInvite(giftInvite.id)}
+        maxWidth="xs"
+        fullWidth
+        disablePortal={dialogPortalProps.disablePortal}
+        container={dialogPortalProps.container}
+        sx={dialogPortalProps.sx}
+      >
         <DialogTitle component="div">
           <Typography variant="h6" sx={{ fontWeight: 800 }}>
             Ticket gift
@@ -300,7 +320,15 @@ export default function GlobalEventInvitePopups() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={!!reminderInvite} onClose={() => reminderInvite && clearInvite(reminderInvite.id)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={!!reminderInvite}
+        onClose={() => reminderInvite && clearInvite(reminderInvite.id)}
+        maxWidth="xs"
+        fullWidth
+        disablePortal={dialogPortalProps.disablePortal}
+        container={dialogPortalProps.container}
+        sx={dialogPortalProps.sx}
+      >
         <DialogTitle component="div">
           <Typography variant="h6" sx={{ fontWeight: 800 }}>
             Reminder

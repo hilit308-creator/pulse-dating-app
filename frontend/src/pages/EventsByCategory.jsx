@@ -79,17 +79,22 @@ const VIBE_TYPES = ['Chill', 'Social', 'Flirty', 'Deep', 'Energetic'];
 
 // Demo people going to events
 export const DEMO_ATTENDEES = [
-  { id: "a1", name: "Maya", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100", isMatch: true },
-  { id: "a2", name: "Noam", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", isMatch: true },
-  { id: "a3", name: "Amit", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100", isMatch: false },
-  { id: "a4", name: "Shira", photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100", isMatch: false },
-  { id: "a5", name: "Yoni", photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100", isMatch: false },
+  { id: "a1", name: "Maya", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100", isMatch: true, gender: "female" },
+  { id: "a2", name: "Noam", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", isMatch: true, gender: "male" },
+  { id: "a3", name: "Amit", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100", isMatch: false, gender: "male" },
+  { id: "a4", name: "Shira", photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100", isMatch: false, gender: "female" },
+  { id: "a5", name: "Yoni", photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100", isMatch: false, gender: "male" },
+  { id: "a6", name: "Noa", photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100", isMatch: true, gender: "female" },
+  { id: "a7", name: "Daniel", photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100", isMatch: false, gender: "male" },
+  { id: "a8", name: "Yael", photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100", isMatch: false, gender: "female" },
+  { id: "a9", name: "Omer", photo: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100", isMatch: false, gender: "male" },
+  { id: "a10", name: "Tamar", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100", isMatch: false, gender: "female" },
 ];
 
 export const EVENTS = [
   // Large parties
-  { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2025-07-23", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a3", "a5"] },
-  { id: "lp2", title: "Mega Dance Night", category: "large", price: 99, date: "2025-06-12", time: "21:00", venue: "Sky Dome", country: "USA", region: "Metro", coords: { lat: 40.7306, lng: -73.9352 }, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-dj-playing-music-in-a-club-4819-large.mp4", tags: ["DJ", "Dancing", "Drinks"], blurb: "Top DJs with immersive light show.", details: "Doors 21:00 • Main act 23:30 • Dress code: casual chic.", badges: ["18+"], hostedBy: "NightLife Productions", capacity: 2000, whoFor: "EDM fans, night owls, people who love to dance", vibe: "Energetic", attendees: ["a2", "a4"] },
+  { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2025-07-23", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a3", "a5", "a6", "a7", "a10"] },
+  { id: "lp2", title: "Mega Dance Night", category: "large", price: 99, date: "2025-06-12", time: "21:00", venue: "Sky Dome", country: "USA", region: "Metro", coords: { lat: 40.7306, lng: -73.9352 }, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-dj-playing-music-in-a-club-4819-large.mp4", tags: ["DJ", "Dancing", "Drinks"], blurb: "Top DJs with immersive light show.", details: "Doors 21:00 • Main act 23:30 • Dress code: casual chic.", badges: ["18+"], hostedBy: "NightLife Productions", capacity: 2000, whoFor: "EDM fans, night owls, people who love to dance", vibe: "Energetic", attendees: ["a2", "a4", "a8", "a9"] },
   // Small / Private
   { id: "sp1", title: "Private Loft Party", category: "small", price: 60, date: "2025-05-30", time: "20:00", venue: "Maple St. 123", country: "USA", region: "Uptown", coords: { lat: 40.7644, lng: -73.9747 }, cover: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks"], blurb: "Intimate house vibes, 80 guests max.", details: "BYOB, rooftop chill zone, quiet room available.", badges: ["New"], hostedBy: "The Loft Collective", capacity: 80, whoFor: "People seeking intimate connections in a relaxed setting", vibe: "Flirty", attendees: ["a1", "a2"] },
   { id: "sp2", title: "Acoustic Night", category: "small", price: 45, date: "2025-06-18", time: "20:30", venue: "Indie Bar", country: "USA", region: "City Center", coords: { lat: 40.741, lng: -73.9897 }, cover: "https://images.unsplash.com/photo-1464375117522-1311dd6d0cd2?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Social"], blurb: "Unplugged sets & candlelight atmosphere.", details: "Limited seating • First set at 20:30 • Open mic at 22:30.", hostedBy: "Indie Sessions", capacity: 50, whoFor: "Music appreciators, acoustic lovers, creative souls", vibe: "Chill", attendees: ["a3"] },
@@ -1343,6 +1348,29 @@ export default function EventsByCategory() {
     catch { return new Set(); }
   });
   useEffect(() => { localStorage.setItem("event_favs", JSON.stringify(Array.from(favs))); }, [favs]);
+  useEffect(() => {
+    const syncFavsFromStorage = () => {
+      try {
+        const raw = localStorage.getItem('event_favs');
+        const parsed = raw ? JSON.parse(raw) : [];
+        setFavs(new Set((parsed || []).map((x) => String(x))));
+      } catch {
+        setFavs(new Set());
+      }
+    };
+
+    const onFavsChanged = () => syncFavsFromStorage();
+    const onStorage = (e) => {
+      if (e?.key === 'event_favs') syncFavsFromStorage();
+    };
+
+    window.addEventListener('pulse:event_favs_changed', onFavsChanged);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('pulse:event_favs_changed', onFavsChanged);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
   const toggleFav = (id) =>
     setFavs((prev) => {
       const key = String(id);

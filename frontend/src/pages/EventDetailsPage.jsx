@@ -2,8 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
+  Card,
+  CardContent,
   Box,
   Button,
+  Checkbox,
   Chip,
   Container,
   Divider,
@@ -11,14 +14,19 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
+  FormControlLabel,
   Paper,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import { ArrowLeft, MapPin, Share2, Heart, UserPlus } from 'lucide-react';
+import { MapPin, Share2, Heart, UserPlus } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { EVENTS, DEMO_ATTENDEES } from './EventsByCategory';
+import { demoMatches } from './MatchesScreen';
+import useGestureMessagesStore from '../store/gestureMessagesStore';
 
 const getPurchasedSet = () => {
   try {
@@ -29,9 +37,206 @@ const getPurchasedSet = () => {
   }
 };
 
+function SwipeDeck({ users, onLike, onSkip, onOpenProfile, onExhausted }) {
+  const [deck, setDeck] = useState(users || []);
+  React.useEffect(() => setDeck(users || []), [users]);
+
+  const handleSwipe = (u, dir) => {
+    setDeck((d) => {
+      const next = d.filter((x) => x.id !== u.id);
+      if (next.length === 0) onExhausted?.();
+      return next;
+    });
+    dir === 'right' ? onLike?.(u) : onSkip?.(u);
+  };
+
+  const top = deck.slice(0, 3);
+
+  if (top.length === 0) return null;
+
+  return (
+    <Box sx={{ position: 'relative', height: { xs: 260, sm: 280 } }}>
+      {top.map((u, i) => {
+        const isTop = i === 0;
+        const z = 10 - i;
+        const yOffset = i * 10;
+        return (
+          <motion.div
+            key={u.id}
+            drag={isTop ? 'x' : false}
+            dragElastic={0.2}
+            dragConstraints={{ left: 0, right: 0 }}
+            onDragEnd={(_, info) => {
+              const power = Math.abs(info.offset.x) + Math.abs(info.velocity.x);
+              const dir = info.offset.x > 0 ? 'right' : 'left';
+              if (power > 160) {
+                handleSwipe(u, dir);
+              }
+            }}
+            whileTap={{ scale: isTop ? 1.02 : 1 }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              y: yOffset,
+              zIndex: z,
+              height: '100%',
+            }}
+          >
+            <Card
+              sx={{
+                overflow: 'hidden',
+                borderRadius: '20px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                bgcolor: '#fff',
+                border: '1px solid rgba(0,0,0,0.04)',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                flexDirection: 'row',
+                cursor: 'pointer',
+                height: '100%',
+                minHeight: { xs: 240, sm: 260 },
+                '&:hover': {
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                  transform: 'translateY(-2px)',
+                },
+              }}
+              onClick={() => onOpenProfile?.(u)}
+            >
+              <CardContent
+                sx={{
+                  p: 2,
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minWidth: 0,
+                  height: '100%',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e' }} noWrap>
+                    {u.name}
+                  </Typography>
+                  {u.isMatch && (
+                    <Box
+                      sx={{
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 800,
+                        bgcolor: 'rgba(108,92,231,0.10)',
+                        color: '#6C5CE7',
+                        border: '1px solid rgba(108,92,231,0.25)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      Match
+                    </Box>
+                  )}
+                </Box>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#64748b',
+                    mb: 0.75,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {u.bio}
+                </Typography>
+                <Box sx={{ mt: 'auto' }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ pt: 1.25 }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSwipe(u, 'right');
+                      }}
+                      sx={{
+                        flex: 1,
+                        borderRadius: '10px',
+                        py: 0.75,
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                        '&:hover': { background: 'linear-gradient(135deg, #5a4bd1 0%, #9333ea 100%)' },
+                      }}
+                    >
+                      Like
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSwipe(u, 'left');
+                      }}
+                      sx={{
+                        flex: 1,
+                        borderRadius: '10px',
+                        py: 0.75,
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        borderColor: '#e2e8f0',
+                        color: '#64748b',
+                        '&:hover': { borderColor: '#cbd5e1', bgcolor: '#f8fafc' },
+                      }}
+                    >
+                      Skip
+                    </Button>
+                  </Stack>
+                </Box>
+              </CardContent>
+
+              <Box
+                sx={{
+                  width: 140,
+                  minWidth: 140,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  borderRadius: '0 20px 20px 0',
+                  height: '100%',
+                }}
+              >
+                <Box
+                  component="img"
+                  src={u.photo}
+                  alt={u.name}
+                  sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              </Box>
+            </Card>
+          </motion.div>
+        );
+      })}
+    </Box>
+  );
+}
+
 const setPurchasedSet = (set) => {
   try {
     localStorage.setItem('event_purchased', JSON.stringify(Array.from(set)));
+  } catch {
+    // ignore
+  }
+};
+
+const getFavsSet = () => {
+  try {
+    const raw = localStorage.getItem('event_favs');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set((parsed || []).map((x) => String(x)));
+  } catch {
+    return new Set();
+  }
+};
+
+const setFavsSet = (set) => {
+  try {
+    localStorage.setItem('event_favs', JSON.stringify(Array.from(set)));
   } catch {
     // ignore
   }
@@ -62,10 +267,20 @@ export default function EventDetailsPage() {
   const [purchased, setPurchased] = useState(() => getPurchasedSet());
   const isPurchased = !!(event && purchased.has(event.id));
 
+  const [favs, setFavs] = useState(() => getFavsSet());
+  const isFav = !!(event && favs.has(String(event.id)));
+
   const [buyOpen, setBuyOpen] = useState(false);
   const [buyerName, setBuyerName] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyErr, setBuyErr] = useState('');
+
+  const [plusOpen, setPlusOpen] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState(null);
+  const [payForInvitee, setPayForInvitee] = useState(false);
+
+  const [prefGender, setPrefGender] = useState('any'); // 'any' | 'female' | 'male'
+  const [deckDone, setDeckDone] = useState(false);
 
   const eventAttendees = useMemo(() => {
     if (!event?.attendees?.length) return [];
@@ -78,6 +293,92 @@ export default function EventDetailsPage() {
     const arr = [...eventAttendees];
     return arr.sort((a, b) => (b.isMatch ? 1 : 0) - (a.isMatch ? 1 : 0));
   }, [eventAttendees]);
+
+  const deckUsers = useMemo(() => {
+    if (!event) return [];
+    return (sortedAttendees || []).map((a) => ({
+      id: a.id,
+      name: a.name,
+      bio: a.isMatch ? 'You might already vibe 👀' : 'Going to this event',
+      photo: a.photo,
+      isMatch: !!a.isMatch,
+      gender: a.gender,
+      eventIds: [event.id],
+    }));
+  }, [event, sortedAttendees]);
+
+  const filteredDeckUsers = useMemo(() => {
+    return (deckUsers || []).filter((u) => {
+      if (prefGender === 'any') return true;
+      if (!u.gender) return true;
+      return u.gender === prefGender;
+    });
+  }, [deckUsers, prefGender]);
+
+  React.useEffect(() => {
+    setDeckDone(false);
+  }, [event?.id, prefGender]);
+
+  const likeUser = () => {};
+  const skipUser = () => {};
+
+  const toggleFav = () => {
+    if (!event) return;
+    setFavs((prev) => {
+      const next = new Set(prev);
+      const key = String(event.id);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      setFavsSet(next);
+      try {
+        window.dispatchEvent(
+          new CustomEvent('pulse:event_favs_changed', {
+            detail: { eventId: key, isFav: next.has(key) },
+          })
+        );
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+    if (navigator?.vibrate) navigator.vibrate(10);
+  };
+
+  const sendPlusOneInvite = () => {
+    if (!event || !selectedMatch) return;
+    const matchUser = (demoMatches || []).find((m) => m.id === selectedMatch);
+    if (!matchUser) return;
+
+    const { addGestureMessage } = useGestureMessagesStore.getState();
+    addGestureMessage(
+      selectedMatch,
+      {
+        gestureType: 'event_invite',
+        message: payForInvitee
+          ? `Hey! I'm thinking of going to ${event.title} - want to join me? 🎉\nI can also buy your ticket if you want.`
+          : `Hey! I'm thinking of going to ${event.title} - want to join me? 🎉`,
+        details: {
+          eventId: event.id,
+          eventTitle: event.title,
+          eventDate: event.date,
+          eventTime: event.time,
+          eventVenue: event.venue,
+          eventCover: event.cover,
+          paidByInviter: !!payForInvitee,
+        },
+      },
+      {
+        id: matchUser.id,
+        name: matchUser.name,
+        photoUrl: matchUser.photoUrl,
+      }
+    );
+
+    setPlusOpen(false);
+    setSelectedMatch(null);
+    setPayForInvitee(false);
+    setTimeout(() => navigate(`/chat/${selectedMatch}`), 150);
+  };
 
   if (!event) {
     return (
@@ -96,17 +397,6 @@ export default function EventDetailsPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#fafbfc', pb: 'calc(88px + env(safe-area-inset-bottom, 0px))' }}>
-      <Box sx={{ position: 'sticky', top: 0, zIndex: 20, bgcolor: '#fff', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1.25 }}>
-          <IconButton onClick={() => navigate(-1)} sx={{ color: '#1a1a2e' }}>
-            <ArrowLeft size={20} />
-          </IconButton>
-          <Typography sx={{ fontWeight: 800, color: '#1a1a2e' }} noWrap>
-            {event.title}
-          </Typography>
-        </Box>
-      </Box>
-
       <Box sx={{ position: 'relative' }}>
         {event.videoUrl ? (
           <video
@@ -171,60 +461,6 @@ export default function EventDetailsPage() {
               {!!event.vibe && <Chip label={event.vibe} size="small" sx={{ fontWeight: 700 }} />}
             </Stack>
 
-            {/* People you might meet - ONLY here, ONLY after purchase */}
-            {isPurchased && sortedAttendees.length > 0 && (
-              <>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="subtitle1" sx={{ fontWeight: 900, mb: 1 }}>
-                  People you might meet
-                </Typography>
-                <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5 }}>
-                  {sortedAttendees.map((a) => (
-                    <Box
-                      key={a.id}
-                      onClick={() =>
-                        navigate(`/user/${a.id}`, {
-                          state: {
-                            from: 'event_details_people',
-                            profile: {
-                              id: a.id,
-                              name: a.name,
-                              age: 26,
-                              gender: 'any',
-                              bio: 'Met at events',
-                              photo: a.photo,
-                            },
-                          },
-                        })
-                      }
-                      sx={{ textAlign: 'center', minWidth: 72, cursor: 'pointer' }}
-                    >
-                      <Box
-                        component="img"
-                        src={a.photo}
-                        alt={a.name}
-                        sx={{
-                          width: 54,
-                          height: 54,
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: a.isMatch ? '2px solid #6C5CE7' : '2px solid #e5e7eb',
-                        }}
-                      />
-                      <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-                        {a.name}
-                      </Typography>
-                      {a.isMatch && (
-                        <Typography variant="caption" sx={{ color: '#6C5CE7', fontSize: '0.6rem' }}>
-                          Match
-                        </Typography>
-                      )}
-                    </Box>
-                  ))}
-                </Stack>
-              </>
-            )}
-
             {!isPurchased && (
               <Alert severity="info" sx={{ mt: 2 }}>
                 Buy a ticket to unlock the people you might meet at this event.
@@ -259,8 +495,14 @@ export default function EventDetailsPage() {
               >
                 {isPurchased ? "You're going! ✓" : event.soldOut ? 'SOLD OUT' : event.price === 0 ? 'JOIN' : 'BUY TICKET'}
               </Button>
-              <Button variant="outlined" startIcon={<Heart size={16} />} fullWidth sx={{ borderRadius: 2.5, py: 1 }}>
-                Save
+              <Button
+                variant="outlined"
+                startIcon={<Heart size={16} />}
+                fullWidth
+                sx={{ borderRadius: 2.5, py: 1 }}
+                onClick={toggleFav}
+              >
+                {isFav ? 'Saved' : 'Save'}
               </Button>
             </Stack>
 
@@ -281,12 +523,89 @@ export default function EventDetailsPage() {
               >
                 Share
               </Button>
-              <Button variant="outlined" startIcon={<UserPlus size={16} />} fullWidth sx={{ borderRadius: 2.5, py: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<UserPlus size={16} />}
+                fullWidth
+                sx={{ borderRadius: 2.5, py: 1 }}
+                onClick={() => setPlusOpen(true)}
+              >
                 +1
               </Button>
             </Stack>
           </Box>
         </Paper>
+      </Container>
+
+      <Container maxWidth="sm" sx={{ pb: 2 }}>
+        {/* People you might meet - ONLY here, ONLY after purchase */}
+        {isPurchased && filteredDeckUsers.length > 0 && (
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 3,
+              bgcolor: '#fff',
+              border: '1px solid rgba(0,0,0,0.06)',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.08)',
+              overflow: 'hidden',
+              p: 2,
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ fontWeight: 900, mb: 1 }}>
+              People you might meet
+            </Typography>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={prefGender}
+              onChange={(_, v) => v && setPrefGender(v)}
+              sx={{
+                mb: 1.25,
+                borderRadius: '12px',
+                '& .MuiToggleButton-root': {
+                  textTransform: 'none',
+                  fontWeight: 800,
+                  border: '1px solid rgba(0,0,0,0.10)',
+                  '&.Mui-selected': {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: '#fff',
+                    borderColor: 'transparent',
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="any">Any</ToggleButton>
+              <ToggleButton value="female">Women</ToggleButton>
+              <ToggleButton value="male">Men</ToggleButton>
+            </ToggleButtonGroup>
+            <SwipeDeck
+              users={filteredDeckUsers}
+              onLike={likeUser}
+              onSkip={skipUser}
+              onExhausted={() => setDeckDone(true)}
+              onOpenProfile={(u) =>
+                navigate(`/user/${u.id}`, {
+                  state: {
+                    from: 'event_details_people',
+                    profile: {
+                      id: u.id,
+                      name: u.name,
+                      age: 26,
+                      gender: u.gender || 'any',
+                      bio: u.bio,
+                      photo: u.photo,
+                    },
+                  },
+                })
+              }
+            />
+            {deckDone && (
+              <Alert severity="success" sx={{ mt: 1.5 }}>
+                You’ve reached the end — you’ve seen everyone for this event.
+              </Alert>
+            )}
+          </Paper>
+        )}
       </Container>
 
       <Dialog open={buyOpen} onClose={() => setBuyOpen(false)} maxWidth="xs" fullWidth>
@@ -331,6 +650,98 @@ export default function EventDetailsPage() {
             }}
           >
             Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={plusOpen}
+        onClose={() => {
+          setPlusOpen(false);
+          setSelectedMatch(null);
+          setPayForInvitee(false);
+        }}
+        maxWidth="xs"
+        fullWidth
+        scroll="paper"
+        PaperProps={{
+          sx: {
+            maxHeight: '75vh',
+            borderRadius: '14px',
+          },
+        }}
+      >
+        <DialogTitle>Invite +1</DialogTitle>
+        <DialogContent dividers sx={{ py: 1.25 }}>
+          <Stack spacing={1}>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Invite a match to {event.title}
+            </Typography>
+            <FormControlLabel
+              control={<Checkbox size="small" checked={payForInvitee} onChange={(e) => setPayForInvitee(e.target.checked)} />}
+              label={<Typography variant="caption">I’ll buy your ticket too</Typography>}
+              sx={{ alignItems: 'center', m: 0 }}
+            />
+            <Stack spacing={0.75} sx={{ maxHeight: 280, overflowY: 'auto', pr: 0.5 }}>
+              {(demoMatches || []).map((m) => (
+                <Box
+                  key={m.id}
+                  onClick={() => setSelectedMatch(m.id)}
+                  sx={{
+                    p: 1,
+                    borderRadius: 1.75,
+                    border: selectedMatch === m.id ? '2px solid #6C5CE7' : '1px solid #e5e7eb',
+                    bgcolor: selectedMatch === m.id ? 'rgba(108,92,231,0.05)' : '#fff',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={m.photoUrl}
+                    alt={m.name}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://via.placeholder.com/64';
+                    }}
+                    sx={{ width: 34, height: 34, borderRadius: '50%', bgcolor: '#e5e7eb', flexShrink: 0, objectFit: 'cover' }}
+                  />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>{m.name}</Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        fontSize: '0.7rem',
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {(m.interests || []).slice(0, 3).join(', ') || m.tagline}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            color="inherit"
+            onClick={() => {
+              setPlusOpen(false);
+              setSelectedMatch(null);
+              setPayForInvitee(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={sendPlusOneInvite} disabled={!selectedMatch}>
+            Send
           </Button>
         </DialogActions>
       </Dialog>
