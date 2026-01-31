@@ -55,7 +55,7 @@ import Dashboard from './components/Dashboard';
 import Profile from './components/Profile';
 import RegistrationSuccess from './components/RegistrationSuccess';
 import ProfileCardDemo from './components/ProfileCardDemo';
-import Home from './components/Home';
+import Home from './components/Home.js';
 import Home1Screen from './pages/Home1Screen';
 import HomeScreen from './pages/HomeScreen';
 import BusinessPage from './pages/BusinessPage';
@@ -680,8 +680,39 @@ function NearbyRoute() {
 function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoggedIn, isOnboardingComplete } = useAuth();
+  const { isLoggedIn, isOnboardingComplete, user } = useAuth();
   const [showHelpDialog, setShowHelpDialog] = React.useState(false);
+  const [matchPopup, setMatchPopup] = React.useState(null);
+
+  React.useEffect(() => {
+    const onShowMatch = (e) => {
+      const match = e?.detail?.match;
+      if (!match) return;
+      try {
+        console.log('[MatchPopup] open', match);
+      } catch {
+        // ignore
+      }
+      setMatchPopup({
+        match,
+        copy: e?.detail?.copy,
+        onLater: e?.detail?.onLater,
+        onTertiary: e?.detail?.onTertiary,
+      });
+    };
+
+    window.addEventListener('pulse:show_match', onShowMatch);
+    return () => window.removeEventListener('pulse:show_match', onShowMatch);
+  }, []);
+
+  React.useEffect(() => {
+    if (!matchPopup) return;
+    const prev = document?.body?.style?.overflow;
+    if (document?.body?.style) document.body.style.overflow = 'hidden';
+    return () => {
+      if (document?.body?.style) document.body.style.overflow = prev || '';
+    };
+  }, [matchPopup]);
   
   // Paths where we hide tab bar and header (auth flow)
   const authPaths = [
@@ -725,6 +756,35 @@ function AppShell() {
 
   return (
     <div style={{ paddingBottom: showTabBar ? 64 : 0, minHeight: '100vh' }}>
+      {!!matchPopup && (
+        <MatchPulseScreen
+          match={matchPopup.match}
+          currentUser={user}
+          copy={matchPopup.copy}
+          onTertiary={(m) => {
+            setMatchPopup(null);
+            try {
+              matchPopup.onTertiary?.(m);
+            } catch {
+              // ignore
+            }
+          }}
+          onStartChat={(m) => {
+            setMatchPopup(null);
+            const matchId = m?.matchId || m?.id;
+            if (matchId) navigate(`/chat/${matchId}`);
+            else navigate('/chat');
+          }}
+          onLater={() => {
+            setMatchPopup(null);
+            try {
+              matchPopup.onLater?.();
+            } catch {
+              // ignore
+            }
+          }}
+        />
+      )}
       {/* Permanent Top App Bar */}
       {showHeader && (
         <Box
@@ -793,51 +853,52 @@ function AppShell() {
       {/* Spacer equal to header height to prevent overlap */}
       {showHeader && <Box sx={{ height: 56 }} />}
       
-      {/* Global Help Dialog - content changes based on current page */}
+      {/* Global Help Dialog - Compact */}
       <Dialog
         open={showHelpDialog}
         onClose={() => setShowHelpDialog(false)}
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            p: 1,
-            maxWidth: 360,
-            width: '100%',
+            borderRadius: '16px',
+            p: 0,
+            maxWidth: 300,
+            width: '90%',
           },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1, textAlign: 'center' }}>
+        <DialogTitle sx={{ fontWeight: 700, pb: 0.5, pt: 2, textAlign: 'center', fontSize: '1.05rem' }}>
           {helpContent.title}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ py: 1, px: 2.5 }}>
           <Box sx={{ textAlign: 'center' }}>
             {helpContent.steps.map((step, index) => (
-              <Box key={index} sx={{ mb: index === helpContent.steps.length - 1 ? 2 : 3 }}>
+              <Box key={index} sx={{ mb: index === helpContent.steps.length - 1 ? 0.5 : 1.5 }}>
                 {step.emoji && (
-                  <Typography sx={{ fontSize: 32, mb: 1 }}>
+                  <Typography sx={{ fontSize: 22, mb: 0.25 }}>
                     {step.emoji}
                   </Typography>
                 )}
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.85rem' }}>
                   {step.title}
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
                   {step.description}
                 </Typography>
               </Box>
             ))}
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
+        <DialogActions sx={{ px: 2, pb: 2, pt: 0.5 }}>
           <Button
             fullWidth
             variant="contained"
             onClick={() => setShowHelpDialog(false)}
             sx={{
-              py: 1.5,
+              py: 1,
               borderRadius: '12px',
               textTransform: 'none',
               fontWeight: 600,
+              fontSize: '0.9rem',
               background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
             }}
           >

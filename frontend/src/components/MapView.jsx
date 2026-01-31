@@ -59,7 +59,15 @@ export default function MapView({ profiles = [], userLocation }) {
               <Marker key={profile.id || idx} position={[lat, lng]} icon={L.divIcon({ className: 'profile-marker', html: `<div style='background:#2e2e2e;width:18px;height:18px;border-radius:50%;border:2px solid #fff;'></div>` })}>
                 <Popup>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar src={profile.photo} sx={{ width: 32, height: 32, bgcolor: '#eee', cursor: 'pointer' }} onClick={() => navigate(`/user/${profile.id}`, { state: { from: 'map' } })} />
+                    <Avatar
+                      src={profile.photo}
+                      sx={{ width: 32, height: 32, bgcolor: '#eee', cursor: 'pointer' }}
+                      onClick={() =>
+                        navigate(`/user/${profile.id}`, {
+                          state: { from: 'map', user: profile },
+                        })
+                      }
+                    />
                     <Typography>{profile.name}</Typography>
                   </Box>
                 </Popup>

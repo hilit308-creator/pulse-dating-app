@@ -5,6 +5,24 @@ import { persist } from 'zustand/middleware';
  * Global store for Home deck state persistence across route transitions.
  * Uses sessionStorage to persist state across page navigations.
  */
+// Force reset on version change
+const STORE_VERSION = 4;
+const storedVersion = sessionStorage.getItem('pulse-home-deck-version');
+if (storedVersion !== String(STORE_VERSION)) {
+  console.log('[homeDeckStore] Version mismatch, clearing storage');
+  sessionStorage.removeItem('pulse-home-deck-storage');
+  sessionStorage.setItem('pulse-home-deck-version', String(STORE_VERSION));
+}
+
+// Daily reset - clear picks at start of each new day
+const today = new Date().toDateString();
+const lastResetDate = localStorage.getItem('pulse-last-daily-reset');
+if (lastResetDate !== today) {
+  console.log('[homeDeckStore] New day detected, resetting picks for fresh daily experience');
+  sessionStorage.removeItem('pulse-home-deck-storage');
+  localStorage.setItem('pulse-last-daily-reset', today);
+}
+
 const useHomeDeckStore = create(
   persist(
     (set, get) => ({
@@ -16,6 +34,9 @@ const useHomeDeckStore = create(
       likedUsers: [],
       passedUsers: [],
       swipeHistory: [],
+      
+      // Full profile data for liked users (for YOU LIKE tab in Matches)
+      likedProfiles: [],
       
       // Navigation anchor - the userId that should be visible after Back
       anchorUserId: null,
@@ -32,6 +53,19 @@ const useHomeDeckStore = create(
       removeLikedUser: (userId) => set((state) => {
         const arr = Array.isArray(state.likedUsers) ? state.likedUsers : [];
         return { likedUsers: arr.filter(id => id !== userId) };
+      }),
+      
+      // Liked profiles management (full profile data for YOU LIKE tab)
+      setLikedProfiles: (profiles) => set({ likedProfiles: Array.isArray(profiles) ? profiles : [] }),
+      addLikedProfile: (profile) => set((state) => {
+        const arr = Array.isArray(state.likedProfiles) ? state.likedProfiles : [];
+        // Don't add duplicates
+        if (arr.some(p => p.id === profile.id)) return state;
+        return { likedProfiles: [...arr, { ...profile, likedAt: Date.now() }] };
+      }),
+      removeLikedProfile: (userId) => set((state) => {
+        const arr = Array.isArray(state.likedProfiles) ? state.likedProfiles : [];
+        return { likedProfiles: arr.filter(p => p.id !== userId) };
       }),
       
       setPassedUsers: (passedUsers) => set({ passedUsers: Array.isArray(passedUsers) ? passedUsers : [] }),
@@ -68,6 +102,7 @@ const useHomeDeckStore = create(
         likedUsers: [],
         passedUsers: [],
         swipeHistory: [],
+        likedProfiles: [],
         anchorUserId: null,
         anchorIdsHash: null,
       }),
@@ -79,6 +114,7 @@ const useHomeDeckStore = create(
         likedUsers: [],
         passedUsers: [],
         swipeHistory: [],
+        likedProfiles: [],
         anchorUserId: null,
         anchorIdsHash: null,
       }),
@@ -97,6 +133,7 @@ const useHomeDeckStore = create(
               if (!Array.isArray(parsed.state.passedUsers)) parsed.state.passedUsers = [];
               if (!Array.isArray(parsed.state.swipeHistory)) parsed.state.swipeHistory = [];
               if (!Array.isArray(parsed.state.users)) parsed.state.users = [];
+              if (!Array.isArray(parsed.state.likedProfiles)) parsed.state.likedProfiles = [];
             }
             return parsed;
           } catch (e) {
@@ -119,6 +156,7 @@ const useHomeDeckStore = create(
         likedUsers: state.likedUsers,
         passedUsers: state.passedUsers,
         swipeHistory: state.swipeHistory,
+        likedProfiles: state.likedProfiles,
         anchorUserId: state.anchorUserId,
         anchorIdsHash: state.anchorIdsHash,
       }),

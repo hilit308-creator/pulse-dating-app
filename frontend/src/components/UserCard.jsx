@@ -296,9 +296,12 @@ export default function UserCard({
     // Reset for next card
     controls.set({ x: 0, rotate: 0, opacity: 1 });
     
+    console.log('[UserCard] handleDecision:', direction, 'user:', user?.name || user?.firstName);
     if (direction === 'right') {
+      console.log('[UserCard] Calling onLike, exists:', !!onLike);
       onLike?.(user);
     } else {
+      console.log('[UserCard] Calling onPass, exists:', !!onPass);
       onPass?.(user);
     }
   }, [controls, onLike, onPass, user]);
@@ -560,7 +563,7 @@ export default function UserCard({
           }}
           sx={{
             position: 'relative',
-            height: '62%',
+            height: '52%',
             flexShrink: 0,
             overflowY: 'scroll',
             overflowX: 'hidden',
@@ -648,6 +651,7 @@ export default function UserCard({
           <IconButton
             onClick={(e) => {
               e.stopPropagation();
+              console.log('[UserCard] Undo button clicked, onUndo exists:', !!onUndo);
               onUndo?.();
             }}
             sx={{
@@ -827,16 +831,15 @@ export default function UserCard({
 
         </Box>
 
-        {/* Section B - InfoBlock (38% height) - Enhanced per new spec */}
+        {/* Section B - InfoBlock (48% height) - Enhanced per new spec */}
         <Box
           sx={{
-            height: '38%',
+            height: '48%',
             p: 2,
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
-            overflowY: 'auto',
-            overflowX: 'hidden',
+            gap: '6px',
+            overflow: 'hidden',
             bgcolor: '#fff',
             position: 'relative',
             zIndex: 5,

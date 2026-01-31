@@ -55,11 +55,36 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import useHomeDeckStore from '../store/homeDeckStore';
+import { DEMO_ATTENDEES } from './EventsByCategory';
 
 const formatDistance = (meters) => {
   if (meters === null || meters === undefined) return null;
   if (meters < 1000) return `${Math.round(meters)}m`;
   return `${(meters / 1000).toFixed(1)}km`;
+};
+
+const getLikedProfiles = () => {
+  try {
+    const raw = localStorage.getItem('pulse_profile_likes');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const addLikedProfile = (id, meta = {}) => {
+  try {
+    const key = String(id);
+    const arr = getLikedProfiles();
+    const next = arr.some((x) => String(x?.id ?? x) === key)
+      ? arr
+      : [{ id: key, ts: Date.now(), ...meta }, ...arr];
+    localStorage.setItem('pulse_profile_likes', JSON.stringify(next));
+    window.dispatchEvent(new Event('pulse:profile_likes_changed'));
+  } catch {
+    // ignore
+  }
 };
 
 // Transform API response to match frontend user model
@@ -141,32 +166,163 @@ export default function UserDetailsScreen() {
   const [reportReason, setReportReason] = useState('');
 
   useEffect(() => {
-    if (stateProfile) {
-      setUser({
+    // Validate ID before fetching
+    if (!id || id === 'undefined') {
+      setError('Invalid user ID');
+      setLoading(false);
+      return;
+    }
+
+    const isNumericId = /^\d+$/.test(String(id));
+    const isDemoId = !isNumericId;
+
+    // If we navigated here without state and this is a demo/non-numeric ID,
+    // resolve from DEMO_ATTENDEES so the profile spec stays consistent everywhere.
+    if (!previewUser && !stateProfile && isDemoId) {
+      const demo = (DEMO_ATTENDEES || []).find((a) => String(a.id) === String(id));
+      if (demo) {
+        setUser((prev) => ({
+          ...(prev || {}),
+          id: demo.id,
+          firstName: demo.name,
+          lastName: '',
+          age: demo.age,
+          gender: demo.gender,
+          isMatch: !!demo.isMatch,
+          likesYou: !!demo.likesYou,
+          bio: demo.bio || '',
+          photos: demo.photos?.length ? demo.photos : demo.photo ? [demo.photo] : [],
+          primaryPhotoUrl: demo.photo,
+          interests: demo.interests || [],
+          hobbies: demo.hobbies || [],
+          lookingFor: demo.lookingFor || ['New connections'],
+          location: demo.location,
+          jobTitle: demo.jobTitle || 'Member',
+          education: demo.education || '—',
+          height: demo.height || 170,
+          zodiac: demo.zodiac,
+          languages: demo.languages || ['Hebrew', 'English'],
+          causes: demo.causes || ['Community'],
+          qualities: demo.qualities || ['Kindness'],
+          prompts: demo.prompts || [{ question: 'I geek out on...', answer: 'Live events and good vibes.' }],
+          favoriteSongs: demo.favoriteSongs || ['Chill Vibes'],
+          drinking: demo.drinking || 'Socially',
+          smoking: demo.smoking || 'Never',
+          children: demo.children || 'Not sure',
+          religion: demo.religion || 'Secular',
+          politics: demo.politics || 'Center',
+        }));
+        setLoading(false);
+        setError(null);
+        return;
+      }
+    }
+
+    // Prefer Home-style payload (state.user). If absent, fall back to state.profile.
+    const preview = previewUser || null;
+    if (preview) {
+      const rawLookingFor = preview.lookingFor;
+      const lookingForArr = Array.isArray(rawLookingFor)
+        ? rawLookingFor
+        : rawLookingFor
+          ? [rawLookingFor]
+          : [];
+
+      const rawPhotos = preview.photos;
+      const photos = Array.isArray(rawPhotos)
+        ? rawPhotos
+        : preview.primaryPhotoUrl
+          ? [preview.primaryPhotoUrl]
+          : [];
+
+      setUser((prev) => ({
+        ...(prev || {}),
+        id: preview.id ?? preview.userId ?? preview.user_id,
+        firstName: preview.firstName || preview.name,
+        lastName: preview.lastName || '',
+        age: preview.age,
+        gender: preview.gender,
+        bio: preview.bio,
+        photos,
+        primaryPhotoUrl: preview.primaryPhotoUrl,
+        interests: preview.interests || [],
+        hobbies: preview.hobbies || [],
+        lookingFor: lookingForArr,
+        location: preview.location,
+        jobTitle: preview.jobTitle,
+        education: preview.education,
+        height: preview.height,
+        zodiac: preview.zodiac || preview.starSign,
+        causes: preview.causes || (isDemoId ? ['Community'] : []),
+        qualities: preview.qualities || (isDemoId ? ['Kindness'] : []),
+        prompts: preview.prompts || (isDemoId ? [{ question: 'I geek out on...', answer: 'Live events and good vibes.' }] : []),
+        favoriteSongs: preview.favoriteSongs,
+        spotifyPlaylists: preview.spotifyPlaylists,
+        languages: preview.languages || (isDemoId ? ['Hebrew', 'English'] : []),
+        drinking: preview.drinking || (isDemoId ? 'Socially' : undefined),
+        smoking: preview.smoking || (isDemoId ? 'Never' : undefined),
+        children: (preview.children || preview.kids) || (isDemoId ? 'Not sure' : undefined),
+        religion: preview.religion || (isDemoId ? 'Secular' : undefined),
+        politics: preview.politics || (isDemoId ? 'Center' : undefined),
+        // Match-related fields
+        likesYou: preview.likesYou,
+        isMatch: preview.isMatch,
+      }));
+      setLoading(false);
+      setError(null);
+    } else if (stateProfile) {
+      const rawLookingFor = stateProfile.lookingFor;
+      const lookingForArr = Array.isArray(rawLookingFor)
+        ? rawLookingFor
+        : rawLookingFor
+          ? [rawLookingFor]
+          : ['New connections'];
+
+      const rawPhotos = stateProfile.photos;
+      const photos = Array.isArray(rawPhotos)
+        ? rawPhotos
+        : stateProfile.photo
+          ? [stateProfile.photo]
+          : [];
+
+      setUser((prev) => ({
+        ...(prev || {}),
         id: stateProfile.id,
         firstName: stateProfile.name,
         lastName: '',
         age: stateProfile.age,
         gender: stateProfile.gender,
         bio: stateProfile.bio,
-        photos: stateProfile.photo ? [stateProfile.photo] : [],
+        photos,
         interests: stateProfile.interests || [],
-        hobbies: [],
-        lookingFor: [],
-        causes: [],
-        qualities: [],
-        prompts: [],
-        favoriteSongs: [],
-        languages: [],
-      });
+        hobbies: stateProfile.hobbies || [],
+        lookingFor: lookingForArr,
+        location: stateProfile.location || stateProfile.city || '',
+        jobTitle: stateProfile.jobTitle || stateProfile.profession || 'Member',
+        education: stateProfile.education || '—',
+        height: stateProfile.height || 170,
+        zodiac: stateProfile.zodiac || stateProfile.starSign,
+        causes: stateProfile.causes || (isDemoId ? ['Community'] : []),
+        qualities: stateProfile.qualities || (isDemoId ? ['Kindness'] : []),
+        prompts: stateProfile.prompts || (isDemoId ? [{ question: 'I geek out on...', answer: 'Live events and good vibes.' }] : []),
+        favoriteSongs: stateProfile.favoriteSongs,
+        spotifyPlaylists: stateProfile.spotifyPlaylists,
+        languages: stateProfile.languages || (isDemoId ? ['Hebrew', 'English'] : []),
+        drinking: stateProfile.drinking || (isDemoId ? 'Socially' : undefined),
+        smoking: stateProfile.smoking || (isDemoId ? 'Never' : undefined),
+        children: stateProfile.children || stateProfile.kids || (isDemoId ? 'Not sure' : undefined),
+        religion: stateProfile.religion || (isDemoId ? 'Secular' : undefined),
+        politics: stateProfile.politics || (isDemoId ? 'Center' : undefined),
+        // Match-related fields
+        likesYou: stateProfile.likesYou,
+        isMatch: stateProfile.isMatch,
+      }));
       setLoading(false);
       setError(null);
-      return;
     }
 
-    // Validate ID before fetching
-    if (!id || id === 'undefined') {
-      setError('Invalid user ID');
+    // Demo-only profiles (non-numeric IDs) do not exist in backend DB; don't fetch.
+    if ((previewUser || stateProfile) && !isNumericId) {
       setLoading(false);
       return;
     }
@@ -182,11 +338,14 @@ export default function UserDetailsScreen() {
         const fullUser = transformApiUser(data);
         console.log('[UserDetails] Fetched user from API:', fullUser.id, fullUser.firstName);
         
-        // Use API data as source of truth (replace preview completely)
-        setUser(fullUser);
+        // Prefer API data as source of truth, but keep any preview-only fields as fallback
+        setUser((prev) => ({
+          ...(prev || {}),
+          ...fullUser,
+        }));
       } catch (err) {
         // If fetch fails but we have preview data, keep showing it
-        if (!previewUser) {
+        if (!previewUser && !stateProfile) {
           setError(err.message);
         }
       } finally {
@@ -195,7 +354,7 @@ export default function UserDetailsScreen() {
     };
     
     fetchUser();
-  }, [id, previewUser]);
+  }, [id, previewUser, stateProfile]);
   
   const photos = useMemo(() => {
     if (user?.photos?.length) return user.photos;
@@ -214,14 +373,59 @@ export default function UserDetailsScreen() {
     if (!user?.id) return;
     
     console.log('[UserDetails] Like user:', user.id, 'source:', source);
+
+    // Persist immediately so other screens can reflect status outside the card.
+    addLikedProfile(user.id, { source });
     
     // Add to liked users in store (optimistic UI update)
     addLikedUser(user.id);
     
     // Get current user ID from auth context or localStorage
     const currentUserId = localStorage.getItem('pulse_user_id');
+
+    // Check if this will be a match (they already liked us)
+    const willBeMatch = user?.likesYou || user?.isMatch;
+    console.log('[UserDetails] willBeMatch:', willBeMatch, 'likesYou:', user?.likesYou, 'isMatch:', user?.isMatch);
+
+    // Helper to show match popup
+    const showMatchPopup = (matchId) => {
+      console.log('[UserDetails] Triggering match popup for:', user.firstName || user.name);
+      sessionStorage.removeItem('pulse_profile_source');
+      try {
+        window.dispatchEvent(
+          new CustomEvent('pulse:show_match', {
+            detail: {
+              match: {
+                id: user.id,
+                name: user.firstName || user.name,
+                firstName: user.firstName || user.name,
+                photo: user.primaryPhotoUrl || user.photo,
+                photos: user.photos,
+                matchId: matchId,
+              },
+            },
+          })
+        );
+      } catch {
+        // ignore
+      }
+    };
+
+    // Demo-only profiles (non-numeric IDs) do not exist in backend DB; don't call API.
+    const isNumericLikedId = /^\d+$/.test(String(user.id));
+    if (!isNumericLikedId) {
+      if (willBeMatch) {
+        showMatchPopup();
+        return;
+      }
+      sessionStorage.removeItem('pulse_profile_source');
+      navigate(-1);
+      return;
+    }
     
     // Send like to server for persistence and match creation
+    let apiMatch = false;
+    let apiMatchId = null;
     try {
       const response = await fetch('/api/likes', {
         method: 'POST',
@@ -233,15 +437,23 @@ export default function UserDetailsScreen() {
         }),
       });
       
-      const data = await response.json();
-      console.log('[UserDetails] Like response:', data);
-      
-      if (data.isMatch) {
-        console.log('[UserDetails] It\'s a match! matchId:', data.matchId);
-        // TODO: Show match celebration UI
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[UserDetails] Like response:', data);
+        apiMatch = data.isMatch;
+        apiMatchId = data.matchId;
+      } else {
+        console.log('[UserDetails] API failed with status:', response.status);
       }
     } catch (err) {
       console.error('[UserDetails] Failed to send like to server:', err);
+    }
+    
+    // Show match if API says it's a match OR if local data indicates they liked us
+    if (apiMatch || willBeMatch) {
+      console.log('[UserDetails] It\'s a match! matchId:', apiMatchId);
+      showMatchPopup(apiMatchId);
+      return;
     }
     
     // If from Today's Picks, dismiss the pick (removes from Today's Picks UI)
@@ -607,7 +819,7 @@ export default function UserDetailsScreen() {
         )}
 
         {/* Looking For */}
-        {user.lookingFor && (
+        {((Array.isArray(user.lookingFor) && user.lookingFor.length > 0) || (!Array.isArray(user.lookingFor) && !!user.lookingFor)) && (
           <Box sx={{ mb: 2.5, py: 1.5, borderBottom: '1px solid #e5e7eb' }}>
             <Typography sx={{ fontSize: 12, color: '#64748b', mb: 0.5 }}>Looking for</Typography>
             <Typography sx={{ fontSize: 14, fontWeight: 500 }}>
@@ -768,14 +980,16 @@ export default function UserDetailsScreen() {
         )}
 
         {/* Spotify / Favorite Music with Album Art */}
-        {user.favoriteSongs?.length > 0 && (
+        {(user.favoriteSongs?.length > 0 || user.spotifyPlaylists?.length > 0) && (
           <Box sx={{ mb: 3 }}>
             <Typography sx={{ fontSize: 14, fontWeight: 600, color: '#1a1a2e', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <Music size={16} color="#1DB954" /> Favorite Music
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1 }}>
-              {user.favoriteSongs.map((song, i) => {
+              {(user.favoriteSongs || user.spotifyPlaylists || []).map((song, i) => {
                 const songName = typeof song === 'string' ? song : song.name;
+                const artistName = typeof song === 'object' ? song.artist : null;
+                const customImage = typeof song === 'object' ? song.image : null;
                 // Demo album art based on song name
                 const albumArts = {
                   'Shape of You': 'https://i.scdn.co/image/ab67616d0000b273ba5db46f4b838ef6027e6f96',
@@ -785,7 +999,7 @@ export default function UserDetailsScreen() {
                   'Watermelon Sugar': 'https://i.scdn.co/image/ab67616d0000b27377fdcfda6535601aff081b6a',
                   'Stay': 'https://i.scdn.co/image/ab67616d0000b273a91c10fe9472d9bd89802e5a',
                 };
-                const albumArt = albumArts[songName] || `https://picsum.photos/seed/${songName}/120/120`;
+                const albumArt = customImage || albumArts[songName] || `https://picsum.photos/seed/${songName}/120/120`;
                 
                 return (
                   <Box key={i} sx={{ minWidth: 100, textAlign: 'center' }}>
@@ -805,6 +1019,11 @@ export default function UserDetailsScreen() {
                     <Typography sx={{ fontSize: 11, fontWeight: 500, color: '#374151', lineHeight: 1.2 }}>
                       {songName}
                     </Typography>
+                    {artistName && (
+                      <Typography sx={{ fontSize: 10, color: '#9ca3af', lineHeight: 1.2 }}>
+                        {artistName}
+                      </Typography>
+                    )}
                   </Box>
                 );
               })}

@@ -537,8 +537,8 @@ function TodaysPicks({ users = [], brand, onCardClick, onPickViewed }) {
         <Typography
           sx={{ fontSize: 13, color: "#64748b", mb: 2, lineHeight: 1.5 }}
         >
-          You've seen all your picks for today.<br />
-          New matches coming soon!
+          You've seen all your picks for today! ✨<br />
+          Tomorrow brings new possibilities.
         </Typography>
         <Button
           variant="contained"
@@ -783,6 +783,8 @@ export default function Home({ onOpenTutorial }) {
     setAnchor,
     clearAnchor,
     resetDeck,
+    addLikedProfile,
+    removeLikedProfile,
   } = useHomeDeckStore();
 
   // Use cached users if available, otherwise local state for loading
@@ -1031,7 +1033,9 @@ export default function Home({ onOpenTutorial }) {
 
   // Handle undo - go back to previous card
   const handleUndo = () => {
-    console.log('[Home] handleUndo called, swipeHistory.length=', swipeHistory.length);
+    console.log('[Home] handleUndo called, swipeHistory:', JSON.stringify(swipeHistory));
+    console.log('[Home] handleUndo - likedUsers:', JSON.stringify(likedUsers));
+    console.log('[Home] handleUndo - passedUsers:', JSON.stringify(passedUsers));
     if (swipeHistory.length === 0) {
       console.log('[Home] handleUndo: No swipe history to undo');
       return;
@@ -1060,6 +1064,8 @@ export default function Home({ onOpenTutorial }) {
   // Today's Picks now navigates to full profile page (not popup) per spec
   // selectedPickUser and pickPhotoIndex removed - profile opens via navigate()
   
+  // AUTO-RESET removed - now handled by store version check
+
   // Today's Picks state - SEPARATE from Discover
   // Fetched from dedicated /api/todays-picks endpoint
   // Picks are a locked daily set that shrinks on action, never refills
@@ -1075,6 +1081,21 @@ export default function Home({ onOpenTutorial }) {
     todaysPicksFetchedRef.current = true;
     
     const fetchTodaysPicks = async () => {
+      // Helper to load fallback demo picks - use DIFFERENT users than Discover
+      // Today's Picks should be a separate set from the main deck
+      const loadFallbackPicks = () => {
+        // Use users 3, 4, 5 (Dana, Shira, etc.) for Today's Picks
+        // while Discover uses users 1, 2, 3 (Maya, Noa, Lior)
+        const fallbackPicks = demoUsers.slice(3, 6).map(u => ({ ...u }));
+        // If not enough users, wrap around
+        if (fallbackPicks.length === 0) {
+          setTodaysPicksRaw(demoUsers.slice(0, 3).map(u => ({ ...u })));
+        } else {
+          setTodaysPicksRaw(fallbackPicks);
+        }
+        console.log('[TodaysPicks] Using fallback demo picks:', fallbackPicks.length);
+      };
+
       try {
         setPicksLoading(true);
         // Demo: no user_id means server generates picks for anonymous user
@@ -1095,11 +1116,21 @@ export default function Home({ onOpenTutorial }) {
             lookingFor: pick.lookingFor,
             meetingContext: pick.meetingContext, // 'nearby_now', 'active_today', 'good_timing', null
           }));
-          setTodaysPicksRaw(picks);
-          console.log('[TodaysPicks] Fetched from API:', picks.length, 'picks');
+          if (picks.length > 0) {
+            setTodaysPicksRaw(picks);
+            console.log('[TodaysPicks] Fetched from API:', picks.length, 'picks');
+          } else {
+            // API returned empty, use fallback
+            loadFallbackPicks();
+          }
+        } else {
+          // API returned error status, use fallback
+          console.log('[TodaysPicks] API returned status:', response.status);
+          loadFallbackPicks();
         }
       } catch (error) {
         console.error('[TodaysPicks] Failed to fetch:', error);
+        loadFallbackPicks();
       } finally {
         setPicksLoading(false);
       }
@@ -1127,6 +1158,37 @@ export default function Home({ onOpenTutorial }) {
   
   // Match popup state
   const [matchUser, setMatchUser] = useState(null);
+
+  // Dispatch global match popup event when matchUser changes
+  useEffect(() => {
+    if (!matchUser) return;
+    try {
+      window.dispatchEvent(
+        new CustomEvent('pulse:show_match', {
+          detail: {
+            match: {
+              id: matchUser.id,
+              name: matchUser.name,
+              firstName: matchUser.firstName || matchUser.name,
+              photo: matchUser.photoUrl,
+              photos: matchUser.photos,
+            },
+            copy: {
+              title: "It's a Match",
+              subtitle: "You're in sync",
+              description: 'Something real can happen now',
+              matchedLine: `You and ${matchUser.name} matched!`,
+              primaryCta: 'Send a message',
+              secondaryCta: 'Keep swiping',
+            },
+          },
+        })
+      );
+    } catch {
+      // ignore
+    }
+    setMatchUser(null); // Clear local state - global popup handles display
+  }, [matchUser]);
   
   // Soft onboarding state
   const [showOnboardingCard, setShowOnboardingCard] = useState(false);
@@ -1647,18 +1709,10 @@ export default function Home({ onOpenTutorial }) {
                 Adjust filters
               </Button>
 
-              <Button
-                size="small"
-                sx={{ mt: 1, borderRadius: 999 }}
-                variant="contained"
-                color="primary"
-                onClick={() => {
-                  setDeckIndex(0, 'startOver');
-                  resetDeck(); // Use global store method to reset liked/passed/swipeHistory
-                }}
-              >
-                Start over
-              </Button>
+              <Typography variant="body2" sx={{ color: '#6B7280', mt: 3, fontSize: 13, textAlign: 'center', lineHeight: 1.6 }}>
+                You've seen all your picks for today! ✨<br />
+                Tomorrow brings new possibilities.
+              </Typography>
             </Box>
           ) : (
             <>
@@ -1683,12 +1737,36 @@ export default function Home({ onOpenTutorial }) {
                   
                   // Check if this will be a match (they already liked us)
                   const willBeMatch = topUser.likesYou || topUser.isMatch;
+                  console.log('[Home] Like action - willBeMatch:', willBeMatch, 'likesYou:', topUser.likesYou, 'isMatch:', topUser.isMatch, 'user:', topUser.name);
                   
+                  console.log('[Home] Adding to swipeHistory:', { userId: topUser.id, action: 'like', index: deckIndex });
                   addSwipeHistory({ userId: topUser.id, action: 'like', index: deckIndex });
+                  console.log('[Home] Adding to likedUsers:', topUser.id);
                   addLikedUser(topUser.id);
+                  
+                  // Add full profile to YOU LIKE tab (will be removed if it becomes a match)
+                  if (!willBeMatch) {
+                    addLikedProfile({
+                      id: topUser.id,
+                      name: topUser.name || topUser.firstName,
+                      age: topUser.age,
+                      distance: topUser.distance,
+                      city: topUser.city,
+                      photoUrl: topUser.photos?.[0] || topUser.photoUrl || '',
+                      photos: topUser.photos || [],
+                      verified: topUser.verified,
+                      interests: topUser.interests || topUser.tags || [],
+                      profession: topUser.profession,
+                      tagline: topUser.tagline || topUser.bio,
+                      aboutMe: topUser.aboutMe || [],
+                      lookingFor: topUser.lookingFor || [],
+                      status: 'you_liked',
+                    });
+                  }
                   
                   // Send like to server for persistence and match creation
                   const currentUserId = localStorage.getItem('pulse_user_id');
+                  let apiMatch = false;
                   try {
                     const response = await fetch('/api/likes', {
                       method: 'POST',
@@ -1699,17 +1777,23 @@ export default function Home({ onOpenTutorial }) {
                         source: 'discover',
                       }),
                     });
-                    const data = await response.json();
-                    // Show match if API says it's a match OR if local data indicates they liked us
-                    if (data.isMatch || willBeMatch) {
-                      setMatchUser(topUser);
+                    if (response.ok) {
+                      const data = await response.json();
+                      apiMatch = data.isMatch;
+                      console.log('[Home] API response - isMatch:', apiMatch);
+                    } else {
+                      console.log('[Home] API failed with status:', response.status);
                     }
                   } catch (err) {
                     console.error('[Home] Failed to send like:', err);
-                    // Still show match if local data indicates it
-                    if (willBeMatch) {
-                      setMatchUser(topUser);
-                    }
+                  }
+                  
+                  // Show match if API says it's a match OR if local data indicates they liked us
+                  if (apiMatch || willBeMatch) {
+                    console.log('[Home] Triggering match popup for:', topUser.name);
+                    // Remove from YOU LIKE tab since it's now a match
+                    removeLikedProfile(topUser.id);
+                    setMatchUser(topUser);
                   }
                   
                   // If this was the last card, decrement index to stay in bounds
@@ -1726,7 +1810,9 @@ export default function Home({ onOpenTutorial }) {
                   const currentFilteredLen = filtered.length;
                   const isLastCard = deckIndex >= currentFilteredLen - 1;
                   
+                  console.log('[Home] Adding to swipeHistory:', { userId: topUser.id, action: 'pass', index: deckIndex });
                   addSwipeHistory({ userId: topUser.id, action: 'pass', index: deckIndex });
+                  console.log('[Home] Adding to passedUsers:', topUser.id);
                   addPassedUser(topUser.id);
                   
                   // If this was the last card, decrement index to stay in bounds
@@ -1859,9 +1945,9 @@ export default function Home({ onOpenTutorial }) {
 
       {/* Today's Picks profile now opens as full page via navigate() - dialog removed per spec */}
 
-      {/* It's a Match! Dialog */}
+      {/* It's a Match! Dialog - LEGACY: Now handled by global MatchPulseScreen popup */}
       <Dialog
-        open={!!matchUser}
+        open={false && !!matchUser}
         onClose={() => setMatchUser(null)}
         PaperProps={{
           sx: {

@@ -98,12 +98,30 @@ export default function GlobalEventInvitePopups() {
   );
 
   const [lastCharge, setLastCharge] = useState(null);
+  const [declinedInvite, setDeclinedInvite] = useState(null); // For showing decline options dialog
+  const [paymentConfirm, setPaymentConfirm] = useState(null); // For showing payment confirmation dialog
 
   useEffect(() => {
     if (!reminderInvite) return;
     // This will display the reminder dialog; mark as reminded so it won't repeat.
     markReminded(reminderInvite.id);
   }, [reminderInvite, markReminded]);
+
+  // Listen for demo decline event
+  useEffect(() => {
+    const handleDemoDecline = (e) => {
+      const { event, declinedBy } = e.detail || {};
+      if (event) {
+        setDeclinedInvite({
+          event,
+          inviter: declinedBy,
+          matchId: declinedBy?.id,
+        });
+      }
+    };
+    window.addEventListener('demo-invite-declined', handleDemoDecline);
+    return () => window.removeEventListener('demo-invite-declined', handleDemoDecline);
+  }, []);
 
   const openEventDetails = (eventId, inviteId) => {
     if (inviteId) clearInvite(inviteId);
@@ -170,6 +188,23 @@ export default function GlobalEventInvitePopups() {
             </Box>
           </Box>
 
+          {/* Event details */}
+          {(pendingInvite?.event?.date || pendingInvite?.event?.time || pendingInvite?.event?.venue) && (
+            <Box sx={{ mb: 1.25, p: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1.5 }}>
+              {pendingInvite?.event?.date && (
+                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
+                  <span>📅</span> {new Date(pendingInvite.event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {pendingInvite?.event?.time && ` at ${pendingInvite.event.time}`}
+                </Typography>
+              )}
+              {pendingInvite?.event?.venue && (
+                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <span>📍</span> {pendingInvite.event.venue}
+                </Typography>
+              )}
+            </Box>
+          )}
+
           <Box
             sx={{
               border: '1px solid #e5e7eb',
@@ -203,17 +238,15 @@ export default function GlobalEventInvitePopups() {
             color="inherit"
             sx={neutralCtaSx}
             fullWidth
-            onClick={() => pendingInvite && declineInvite(pendingInvite.id)}
+            onClick={() => {
+              if (pendingInvite) {
+                // Save invite info before declining for the options dialog
+                setDeclinedInvite({ ...pendingInvite });
+                declineInvite(pendingInvite.id);
+              }
+            }}
           >
             Decline
-          </Button>
-          <Button
-            variant="outlined"
-            sx={secondaryCtaSx}
-            fullWidth
-            onClick={() => openEventDetails(pendingInvite?.event?.id, pendingInvite?.id)}
-          >
-            View details
           </Button>
           <Button
             variant="outlined"
@@ -227,7 +260,14 @@ export default function GlobalEventInvitePopups() {
             variant="contained"
             sx={primaryCtaSx}
             fullWidth
-            onClick={() => pendingInvite && acceptInvite(pendingInvite.id, getCurrentUserForDemo())}
+            onClick={() => {
+              if (pendingInvite) {
+                const matchId = pendingInvite.matchId;
+                acceptInvite(pendingInvite.id, getCurrentUserForDemo());
+                // Navigate to chat with the inviter
+                navigate(`/chat/${matchId}`);
+              }
+            }}
           >
             Accept
           </Button>
@@ -366,6 +406,208 @@ export default function GlobalEventInvitePopups() {
             onClick={() => openEventDetails(reminderInvite?.event?.id, reminderInvite?.id)}
           >
             Buy ticket
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Decline Options Dialog - shown to inviter after invite is declined */}
+      <Dialog
+        open={!!declinedInvite}
+        onClose={() => setDeclinedInvite(null)}
+        maxWidth="xs"
+        fullWidth
+        disablePortal={dialogPortalProps.disablePortal}
+        container={dialogPortalProps.container}
+        sx={dialogPortalProps.sx}
+        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+      >
+        <DialogTitle component="div" sx={{ pb: 0.5, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 40, mb: 0.5 }}>😔</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            They declined the invite
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+            Don't worry! Here are some options for the workshop:
+          </Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+            {declinedInvite?.event?.title}
+          </Typography>
+          {declinedInvite?.event?.date && (
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              📅 {new Date(declinedInvite.event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              {declinedInvite?.event?.time && ` at ${declinedInvite.event.time}`}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions
+          sx={{
+            px: 2,
+            pb: 2,
+            pt: 0.5,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            gap: 1,
+          }}
+        >
+          <Button
+            variant="contained"
+            sx={primaryCtaSx}
+            fullWidth
+            onClick={() => {
+              // Save event info and navigate to matches to invite someone else
+              const eventToInvite = declinedInvite?.event;
+              setDeclinedInvite(null);
+              // Store event in localStorage so matches page can show invite option
+              if (eventToInvite) {
+                localStorage.setItem('pending_workshop_invite', JSON.stringify(eventToInvite));
+              }
+              navigate('/matches');
+            }}
+          >
+            🎯 Invite someone else
+          </Button>
+          <Button
+            variant="outlined"
+            sx={secondaryCtaSx}
+            fullWidth
+            onClick={() => {
+              // Show payment confirmation popup
+              const eventToPay = declinedInvite?.event;
+              setDeclinedInvite(null);
+              if (eventToPay) {
+                setPaymentConfirm({ event: eventToPay, amount: 120 });
+              }
+            }}
+          >
+            🎟️ Buy ticket anyway
+          </Button>
+          <Button
+            color="inherit"
+            sx={neutralCtaSx}
+            fullWidth
+            onClick={() => {
+              // Cancel - no purchase action, just close
+              setDeclinedInvite(null);
+            }}
+          >
+            ❌ Cancel purchase
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Payment Confirmation Dialog */}
+      <Dialog
+        open={!!paymentConfirm}
+        onClose={() => setPaymentConfirm(null)}
+        maxWidth="xs"
+        fullWidth
+        disablePortal={dialogPortalProps.disablePortal}
+        container={dialogPortalProps.container}
+        sx={dialogPortalProps.sx}
+        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+      >
+        <DialogTitle component="div" sx={{ pb: 0.5, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 40, mb: 0.5 }}>🎟️</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            Confirm Purchase
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+            {paymentConfirm?.event?.title}
+          </Typography>
+          {paymentConfirm?.event?.date && (
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+              📅 {new Date(paymentConfirm.event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              {paymentConfirm?.event?.time && ` at ${paymentConfirm.event.time}`}
+            </Typography>
+          )}
+          
+          {/* Price */}
+          <Box sx={{ 
+            bgcolor: 'rgba(108,92,231,0.08)', 
+            borderRadius: 2, 
+            p: 2, 
+            mb: 2 
+          }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: '#6C5CE7' }}>
+              ₪{paymentConfirm?.amount || 120}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Total amount
+            </Typography>
+          </Box>
+
+          {/* Masked card */}
+          <Box sx={{ 
+            border: '1px solid #e5e7eb', 
+            borderRadius: 2, 
+            p: 1.5, 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1.5,
+            bgcolor: '#fafafa'
+          }}>
+            <Box sx={{ 
+              width: 40, 
+              height: 28, 
+              bgcolor: '#1a1f71', 
+              borderRadius: 1, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <Typography sx={{ color: 'white', fontSize: 10, fontWeight: 700 }}>VISA</Typography>
+            </Box>
+            <Box sx={{ flex: 1, textAlign: 'left' }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>
+                •••• •••• •••• 4242
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                Expires 12/28
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions
+          sx={{
+            px: 2,
+            pb: 2,
+            pt: 0.5,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            gap: 1,
+          }}
+        >
+          <Button
+            variant="contained"
+            sx={primaryCtaSx}
+            fullWidth
+            onClick={() => {
+              // Simulate payment - add to purchased
+              const purchased = getPurchasedSet();
+              if (paymentConfirm?.event?.id) {
+                purchased.add(paymentConfirm.event.id);
+                setPurchasedSet(purchased);
+              }
+              setPaymentConfirm(null);
+              // Show success message or navigate
+              navigate('/events?tab=purchased');
+            }}
+          >
+            💳 Pay ₪{paymentConfirm?.amount || 120}
+          </Button>
+          <Button
+            color="inherit"
+            sx={neutralCtaSx}
+            fullWidth
+            onClick={() => setPaymentConfirm(null)}
+          >
+            Cancel
           </Button>
         </DialogActions>
       </Dialog>

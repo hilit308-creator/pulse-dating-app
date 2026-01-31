@@ -28,6 +28,36 @@ import { EVENTS, DEMO_ATTENDEES } from './EventsByCategory';
 import { demoMatches } from './MatchesScreen';
 import useGestureMessagesStore from '../store/gestureMessagesStore';
 
+const resolvePublicImageUrl = (url) => {
+  if (!url) return url;
+  if (typeof url === 'string' && url.startsWith('/')) return `${process.env.PUBLIC_URL}${url}`;
+  return url;
+};
+
+const getLikedProfiles = () => {
+  try {
+    const raw = localStorage.getItem('pulse_profile_likes');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const addLikedProfile = (id, meta = {}) => {
+  try {
+    const key = String(id);
+    const arr = getLikedProfiles();
+    const next = arr.some((x) => String(x?.id ?? x) === key)
+      ? arr
+      : [{ id: key, ts: Date.now(), ...meta }, ...arr];
+    localStorage.setItem('pulse_profile_likes', JSON.stringify(next));
+    window.dispatchEvent(new Event('pulse:profile_likes_changed'));
+  } catch {
+    // ignore
+  }
+};
+
 const getPurchasedSet = () => {
   try {
     const raw = localStorage.getItem('event_purchased');
@@ -43,6 +73,13 @@ function SwipeDeck({ users, onLike, onSkip, onOpenProfile, onExhausted }) {
 
   const handleSwipe = (u, dir) => {
     setDeck((d) => {
+      if (!Array.isArray(d) || d.length === 0) return d;
+      // Keep liked cards in the deck (move to end) so they don't disappear.
+      if (dir === 'right') {
+        const next = d.filter((x) => x.id !== u.id);
+        return [...next, u];
+      }
+      // Skipped cards are removed.
       const next = d.filter((x) => x.id !== u.id);
       if (next.length === 0) onExhausted?.();
       return next;
@@ -146,6 +183,23 @@ function SwipeDeck({ users, onLike, onSkip, onOpenProfile, onExhausted }) {
                 >
                   {u.bio}
                 </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#64748b',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {[
+                    u.age ? String(u.age) : null,
+                    u.location || null,
+                    u.jobTitle || null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </Typography>
                 <Box sx={{ mt: 'auto' }}>
                   <Stack direction="row" spacing={1} alignItems="center" sx={{ pt: 1.25 }}>
                     <Button
@@ -205,6 +259,7 @@ function SwipeDeck({ users, onLike, onSkip, onOpenProfile, onExhausted }) {
                   component="img"
                   src={u.photo}
                   alt={u.name}
+                  srcSet={`${u.photo}&dpr=2 2x`}
                   sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
               </Box>
@@ -261,11 +316,11 @@ export default function EventDetailsPage() {
 
   const event = useMemo(() => {
     if (!id) return null;
-    return EVENTS.find((e) => String(e.id) === String(id) || String(e.id).includes(String(id)));
+    return EVENTS.find((e) => String(e.id) === String(id));
   }, [id]);
 
   const [purchased, setPurchased] = useState(() => getPurchasedSet());
-  const isPurchased = !!(event && purchased.has(event.id));
+  const isPurchased = !!(event && purchased.has(String(event.id)));
 
   const [favs, setFavs] = useState(() => getFavsSet());
   const isFav = !!(event && favs.has(String(event.id)));
@@ -281,6 +336,8 @@ export default function EventDetailsPage() {
 
   const [prefGender, setPrefGender] = useState('any'); // 'any' | 'female' | 'male'
   const [deckDone, setDeckDone] = useState(false);
+  const [deckMode, setDeckMode] = useState('all'); // 'all' | 'skipped'
+  const [skippedUsers, setSkippedUsers] = useState([]);
 
   const eventAttendees = useMemo(() => {
     if (!event?.attendees?.length) return [];
@@ -303,6 +360,25 @@ export default function EventDetailsPage() {
       photo: a.photo,
       isMatch: !!a.isMatch,
       gender: a.gender,
+      age: a.age,
+      location: a.location,
+      jobTitle: a.jobTitle,
+      education: a.education,
+      height: a.height,
+      zodiac: a.zodiac,
+      languages: a.languages,
+      causes: a.causes,
+      qualities: a.qualities,
+      prompts: a.prompts,
+      favoriteSongs: a.favoriteSongs,
+      drinking: a.drinking,
+      smoking: a.smoking,
+      children: a.children,
+      religion: a.religion,
+      politics: a.politics,
+      lookingFor: a.lookingFor,
+      hobbies: a.hobbies,
+      photos: a.photos,
       eventIds: [event.id],
     }));
   }, [event, sortedAttendees]);
@@ -317,10 +393,58 @@ export default function EventDetailsPage() {
 
   React.useEffect(() => {
     setDeckDone(false);
-  }, [event?.id, prefGender]);
+  }, [event?.id, prefGender, deckMode]);
 
-  const likeUser = () => {};
-  const skipUser = () => {};
+  React.useEffect(() => {
+    setDeckMode('all');
+    setSkippedUsers([]);
+  }, [event?.id]);
+
+  const likeUser = (u) => {
+    if (!u) return;
+    addLikedProfile(u.id, { from: 'event_details_deck', eventId: event?.id });
+    setSkippedUsers((prev) => prev.filter((x) => x.id !== u.id));
+    if (u.isMatch) {
+      setTimeout(
+        () => {
+          try {
+            window.dispatchEvent(
+              new CustomEvent('pulse:show_match', {
+                detail: {
+                  match: {
+                    id: u.id,
+                    name: u.name,
+                    firstName: u.name,
+                    photo: u.photo,
+                    photos: u.photos?.length ? u.photos : u.photo ? [u.photo] : [],
+                  },
+                },
+              })
+            );
+          } catch {
+            // ignore
+          }
+        },
+        0
+      );
+    }
+  };
+
+  const skipUser = (u) => {
+    if (!u) return;
+    setSkippedUsers((prev) => {
+      if (prev.some((x) => x.id === u.id)) return prev;
+      return [u, ...prev];
+    });
+  };
+
+  const filteredSkippedUsers = useMemo(() => {
+    return (skippedUsers || []).filter((u) => {
+      if (prefGender === 'any') return true;
+      if (!u.gender) return true;
+      return u.gender === prefGender;
+    });
+  }, [skippedUsers, prefGender]);
 
   const toggleFav = () => {
     if (!event) return;
@@ -405,11 +529,16 @@ export default function EventDetailsPage() {
             loop
             muted
             playsInline
-            poster={event.cover}
+            poster={resolvePublicImageUrl(event.cover)}
             style={{ width: '100%', height: 240, objectFit: 'cover', display: 'block' }}
           />
         ) : (
-          <Box component="img" src={event.cover} alt={event.title} sx={{ width: '100%', height: 240, objectFit: 'cover', display: 'block' }} />
+          <Box
+            component="img"
+            src={resolvePublicImageUrl(event.cover)}
+            alt={event.title}
+            sx={{ width: '100%', height: 240, objectFit: 'cover', display: 'block' }}
+          />
         )}
       </Box>
 
@@ -579,30 +708,104 @@ export default function EventDetailsPage() {
               <ToggleButton value="male">Men</ToggleButton>
             </ToggleButtonGroup>
             <SwipeDeck
-              users={filteredDeckUsers}
+              key={`${event.id}:${prefGender}:${deckMode}`}
+              users={deckMode === 'skipped' ? filteredSkippedUsers : filteredDeckUsers}
               onLike={likeUser}
               onSkip={skipUser}
               onExhausted={() => setDeckDone(true)}
               onOpenProfile={(u) =>
                 navigate(`/user/${u.id}`, {
                   state: {
-                    from: 'event_details_people',
-                    profile: {
+                    user: {
                       id: u.id,
-                      name: u.name,
-                      age: 26,
-                      gender: u.gender || 'any',
-                      bio: u.bio,
-                      photo: u.photo,
+                      firstName: u.name,
+                      age: u.age || 26,
+                      gender: u.gender,
+                      isMatch: !!u.isMatch,
+                      bio: u.isMatch
+                        ? `We might already vibe — catch me at ${event.title}.`
+                        : `Going to ${event.title}. Say hi if you see me there.`,
+                      photos: u.photos?.length ? u.photos : u.photo ? [u.photo] : [],
+                      primaryPhotoUrl: u.photo,
+                      interests: (event?.tags || []).slice(0, 5),
+                      lookingFor: u.lookingFor?.length ? u.lookingFor : ['New connections'],
+                      hobbies: u.hobbies?.length ? u.hobbies : [],
+                      location: u.location || event.region || event.venue,
+                      jobTitle: u.jobTitle || 'Member',
+                      education: u.education || '—',
+                      height: u.height || 170,
+                      zodiac: u.zodiac,
+                      languages: u.languages || [],
+                      causes: u.causes || [],
+                      qualities: u.qualities || [],
+                      prompts: u.prompts || [],
+                      favoriteSongs: u.favoriteSongs || [],
+                      drinking: u.drinking,
+                      smoking: u.smoking,
+                      children: u.children,
+                      religion: u.religion,
+                      politics: u.politics,
+                      sharedEvent: event.title,
+                      contextLine: `Going to ${event.title}`,
                     },
                   },
                 })
               }
             />
             {deckDone && (
-              <Alert severity="success" sx={{ mt: 1.5 }}>
-                You’ve reached the end — you’ve seen everyone for this event.
-              </Alert>
+              <>
+                <Alert severity="success" sx={{ mt: 1.5 }}>
+                  {deckMode === 'skipped'
+                    ? "You’re all caught up — no more skipped profiles to review."
+                    : "You’ve reached the end — you’ve seen everyone for this event."}
+                </Alert>
+                {deckMode !== 'skipped' && skippedUsers.length > 0 && (
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 1.25 }}>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      sx={{ borderRadius: 2.5, py: 1, textTransform: 'none', fontWeight: 800 }}
+                      onClick={() => {
+                        setDeckMode('skipped');
+                        setDeckDone(false);
+                      }}
+                    >
+                      Review skipped ({skippedUsers.length})
+                    </Button>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      sx={{
+                        borderRadius: 2.5,
+                        py: 1,
+                        textTransform: 'none',
+                        fontWeight: 800,
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        '&:hover': { background: 'linear-gradient(135deg, #5568d3 0%, #6a4296 100%)' },
+                      }}
+                      onClick={() => {
+                        setDeckMode('all');
+                        setDeckDone(false);
+                      }}
+                    >
+                      Start over
+                    </Button>
+                  </Stack>
+                )}
+                {deckMode === 'skipped' && (
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    sx={{ mt: 1.25, borderRadius: 2.5, py: 1, textTransform: 'none', fontWeight: 800 }}
+                    onClick={() => {
+                      setDeckMode('all');
+                      setDeckDone(false);
+                    }}
+                  >
+                    Back to all profiles
+                  </Button>
+                )}
+              </>
             )}
           </Paper>
         )}

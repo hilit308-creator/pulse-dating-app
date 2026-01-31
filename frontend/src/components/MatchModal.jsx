@@ -5,27 +5,39 @@ import { fireConfetti } from '../utils/match';
 import { resolvePrimaryPhoto } from '../utils/photoUtils';
 
 export default function MatchModal({ open, onClose, me, other, onStartChat }) {
-  useEffect(() => { if (open) fireConfetti(); }, [open]);
-  if (!other) return null;
-  
-  // Use shared photo resolution to ensure no broken images
-  const mePhoto = resolvePrimaryPhoto(me);
-  const otherPhoto = resolvePrimaryPhoto(other);
-  
-  return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>It's a Match!</DialogTitle>
-      <DialogContent>
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="center" sx={{ my: 1 }}>
-          <Avatar src={mePhoto} sx={{ width: 64, height: 64 }} />
-          <Avatar src={otherPhoto} sx={{ width: 64, height: 64 }} />
-        </Stack>
-        <Typography align="center">You and {other?.name || other?.firstName} like each other</Typography>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Keep browsing</Button>
-        <Button variant="contained" onClick={onStartChat}>Say hi</Button>
-      </DialogActions>
-    </Dialog>
-  );
+  // FALLBACK: If this legacy component is triggered, dispatch global popup and render nothing.
+  useEffect(() => {
+    if (!open || !other) return;
+    try {
+      window.dispatchEvent(
+        new CustomEvent('pulse:show_match', {
+          detail: {
+            match: {
+              id: other.id,
+              name: other.name || other.firstName,
+              firstName: other.firstName || other.name,
+              photo: resolvePrimaryPhoto(other),
+              photos: other.photos,
+            },
+            copy: {
+              title: "It's a Match",
+              subtitle: "You're in sync",
+              description: 'Something real can happen now',
+              matchedLine: `You and ${other.name || other.firstName} matched!`,
+              primaryCta: 'Say hi',
+              secondaryCta: 'Keep browsing',
+            },
+            onLater: onClose,
+          },
+        })
+      );
+    } catch {
+      // ignore
+    }
+    // Close this legacy modal immediately so it doesn't render
+    if (onClose) onClose();
+  }, [open, other, onClose]);
+
+  // Never render the old UI - global popup handles display
+  return null;
 }

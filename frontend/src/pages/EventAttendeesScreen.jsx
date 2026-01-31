@@ -3,7 +3,7 @@
  * Users can swipe through attendees like in the Nearby flow
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -250,88 +250,42 @@ function AttendeeCard({ person, onSwipe }) {
   );
 }
 
-// Match Screen
+// Match Screen - LEGACY: now redirects to global popup
 function MatchModal({ person, onStartChat, onKeepSwiping }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 100,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(180deg, rgba(108,92,231,0.95) 0%, rgba(168,85,247,0.95) 100%)',
-      }}
-    >
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: 'spring', delay: 0.2 }}
-      >
-        <Heart size={64} color="#fff" fill="#fff" />
-      </motion.div>
+  // FALLBACK: dispatch global popup and render nothing
+  React.useEffect(() => {
+    if (!person) return;
+    try {
+      window.dispatchEvent(
+        new CustomEvent('pulse:show_match', {
+          detail: {
+            match: {
+              id: person.id,
+              name: person.name || person.firstName,
+              firstName: person.firstName || person.name,
+              photo: person.photoUrl || person.photos?.[0],
+              photos: person.photos,
+            },
+            copy: {
+              title: "It's a Match",
+              subtitle: "You're in sync",
+              description: 'Something real can happen now',
+              matchedLine: `You and ${person.firstName || person.name} matched!`,
+              primaryCta: 'Start Chat',
+              secondaryCta: 'Keep Swiping',
+            },
+            onLater: onKeepSwiping,
+          },
+        })
+      );
+    } catch {
+      // ignore
+    }
+    if (onKeepSwiping) onKeepSwiping();
+  }, [person, onKeepSwiping]);
 
-      <Typography variant="h3" sx={{ fontWeight: 900, color: '#fff', mt: 3, mb: 1 }}>
-        It's a Match!
-      </Typography>
-      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', mb: 4 }}>
-        You and {person.firstName} both liked each other
-      </Typography>
-
-      <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
-        <Box
-          sx={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            border: '3px solid #fff',
-            backgroundImage: 'url(https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80)',
-            backgroundSize: 'cover',
-          }}
-        />
-        <Box
-          sx={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            border: '3px solid #fff',
-            backgroundImage: `url(${person.photos[0]})`,
-            backgroundSize: 'cover',
-          }}
-        />
-      </Box>
-
-      <Button
-        variant="contained"
-        startIcon={<MessageCircle size={20} />}
-        onClick={onStartChat}
-        sx={{
-          py: 1.5,
-          px: 4,
-          mb: 2,
-          borderRadius: '14px',
-          backgroundColor: '#fff',
-          color: '#6C5CE7',
-          fontWeight: 700,
-          '&:hover': { backgroundColor: '#f8f8f8' },
-        }}
-      >
-        Start Chat
-      </Button>
-      <Button
-        variant="text"
-        onClick={onKeepSwiping}
-        sx={{ color: 'rgba(255,255,255,0.9)' }}
-      >
-        Keep Swiping
-      </Button>
-    </motion.div>
-  );
+  // Never render legacy UI - global popup handles display
+  return null;
 }
 
 const EventAttendeesScreen = () => {
@@ -378,7 +332,8 @@ const EventAttendeesScreen = () => {
   };
 
   const handleStartChat = () => {
-    navigate('/chat', { state: { matchPerson } });
+    if (!matchPerson) return;
+    navigate(`/chat?matchId=${matchPerson.id}`);
   };
 
   const handleKeepSwiping = () => {
@@ -392,6 +347,38 @@ const EventAttendeesScreen = () => {
       });
     }, 200);
   };
+
+  useEffect(() => {
+    if (!matchPerson) return;
+    try {
+      window.dispatchEvent(
+        new CustomEvent('pulse:show_match', {
+          detail: {
+            match: {
+              id: matchPerson.id,
+              name: matchPerson.firstName,
+              firstName: matchPerson.firstName,
+              photo: matchPerson.photos?.[0],
+              photos: matchPerson.photos,
+            },
+            copy: {
+              title: "It's a Match",
+              subtitle: "You're in sync",
+              description: 'Something real can happen now',
+              matchedLine: `You and ${matchPerson.firstName} matched!`,
+              primaryCta: 'Start chat',
+              secondaryCta: 'Keep swiping',
+            },
+          },
+        })
+      );
+    } catch {
+      // ignore
+    }
+    // Do not advance cards automatically; user can decide next action.
+    // Keep matchPerson cleared to avoid re-opening popup.
+    setMatchPerson(null);
+  }, [matchPerson]);
 
   const currentPerson = attendees[currentIndex];
 
@@ -412,7 +399,7 @@ const EventAttendeesScreen = () => {
     >
       {/* Match Modal */}
       <AnimatePresence>
-        {matchPerson && (
+        {false && matchPerson && (
           <MatchModal
             person={matchPerson}
             onStartChat={handleStartChat}

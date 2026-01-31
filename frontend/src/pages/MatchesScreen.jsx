@@ -35,6 +35,7 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from "framer-motion";
 import { HomeInlinePromoBanner } from '../components/SubscriptionPromoBanner';
+import useHomeDeckStore from '../store/homeDeckStore';
 import {
   MessageCircle,
   ChevronLeft,
@@ -68,6 +69,8 @@ export const demoMatches = [
     name: "Shani",
     age: 24,
     distance: 0.7,
+    lat: 32.0853, // Tel Aviv coordinates
+    lng: 34.7818,
     verified: true,
     online: true,
     city: "Tel Aviv",
@@ -93,6 +96,8 @@ export const demoMatches = [
     name: "Yael",
     age: 26,
     distance: 1.1,
+    lat: 32.0900, // Tel Aviv - slightly north
+    lng: 34.7750,
     verified: true,
     online: false,
     city: "Tel Aviv",
@@ -118,6 +123,8 @@ export const demoMatches = [
     name: "Lior",
     age: 26,
     distance: 1.2,
+    lat: 32.0714, // Givatayim coordinates
+    lng: 34.8122,
     verified: false,
     online: true,
     city: "Givatayim",
@@ -142,6 +149,8 @@ export const demoMatches = [
     name: "Maya",
     age: 27,
     distance: 0.6,
+    lat: 32.0800, // Tel Aviv - central
+    lng: 34.7805,
     verified: true,
     online: true,
     city: "Tel Aviv",
@@ -445,7 +454,7 @@ function CompactPhotoSection({ photos, name, index, onChangeIndex }) {
  * Card content order: Image, Identity line, Short description, Details, Interests (4-5 max), Looking For
  * No expandable sections allowed
  */
-function CompactMatchCard({ profile, onPass, onOpenChat, onBlock, onReport }) {
+function CompactMatchCard({ profile, onPass, onOpenChat, onBlock, onReport, pendingWorkshopInvite, onInvite, isYouLikeTab = false }) {
   const { t } = useLanguage();
   const photos = profile.photos?.length ? profile.photos : [profile.photoUrl].filter(Boolean);
   const [photoIdx, setPhotoIdx] = useState(0);
@@ -508,7 +517,7 @@ function CompactMatchCard({ profile, onPass, onOpenChat, onBlock, onReport }) {
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <MapPin size={14} color="#64748b" />
             <Typography variant="caption" sx={{ color: "#64748b" }}>
-              {(profile.distance ?? 0).toFixed(1)} km
+              {(profile.calculatedDistance ?? profile.distance ?? 0).toFixed(1)} km
             </Typography>
           </Box>
         </Box>
@@ -556,25 +565,44 @@ function CompactMatchCard({ profile, onPass, onOpenChat, onBlock, onReport }) {
           </Box>
         )}
 
-        {/* Actions: Primary = Chat, Secondary = Pass, Safety actions available */}
+        {/* Actions: Primary = Chat/Invite, Secondary = Pass, Safety actions available */}
         <Stack direction="row" spacing={1} alignItems="center">
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() => onOpenChat?.(profile)}
-            startIcon={<MessageCircle size={16} />}
-            sx={{
-              flex: 1,
-              borderRadius: "10px",
-              py: 0.75,
-              textTransform: "none",
-              fontWeight: 600,
-              background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)",
-              "&:hover": { background: "linear-gradient(135deg, #5a4bd1 0%, #9333ea 100%)" },
-            }}
-          >
-            {t('chat')}
-          </Button>
+          {pendingWorkshopInvite ? (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => onInvite?.(profile, pendingWorkshopInvite)}
+              sx={{
+                flex: 1,
+                borderRadius: "10px",
+                py: 0.75,
+                textTransform: "none",
+                fontWeight: 600,
+                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                "&:hover": { background: "linear-gradient(135deg, #059669 0%, #047857 100%)" },
+              }}
+            >
+              🎟️ Invite to workshop
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => onOpenChat?.(profile)}
+              startIcon={<MessageCircle size={16} />}
+              sx={{
+                flex: 1,
+                borderRadius: "10px",
+                py: 0.75,
+                textTransform: "none",
+                fontWeight: 600,
+                background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)",
+                "&:hover": { background: "linear-gradient(135deg, #5a4bd1 0%, #9333ea 100%)" },
+              }}
+            >
+              {t('chat')}
+            </Button>
+          )}
           <Button
             variant="outlined"
             size="small"
@@ -589,7 +617,7 @@ function CompactMatchCard({ profile, onPass, onOpenChat, onBlock, onReport }) {
               "&:hover": { borderColor: "#cbd5e1", bgcolor: "#f8fafc" },
             }}
           >
-            {t('pass')}
+            {isYouLikeTab ? 'Unlike' : t('pass')}
           </Button>
           <IconButton
             size="small"
@@ -920,135 +948,42 @@ function FullProfileCard({ profile, onLike, onPass, onClose }) {
   );
 }
 
-/* It's a Match! Match celebration - shown when Like creates match from Interested in You */
+/* It's a Match! Match celebration - LEGACY: now redirects to global popup */
 function MatchCelebration({ person, onStartChat, onKeepBrowsing }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1100,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        paddingTop: 100,
-        background: 'linear-gradient(180deg, rgba(108,92,231,0.95) 0%, rgba(168,85,247,0.95) 100%)',
-        backdropFilter: 'blur(10px)',
-      }}
-    >
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-          <Sparkles size={48} color="#fff" />
-        </Box>
-      </motion.div>
+  // FALLBACK: dispatch global popup and render nothing
+  React.useEffect(() => {
+    if (!person) return;
+    try {
+      window.dispatchEvent(
+        new CustomEvent('pulse:show_match', {
+          detail: {
+            match: {
+              id: person.id,
+              name: person.name || person.firstName,
+              firstName: person.firstName || person.name,
+              photo: person.photoUrl || person.photos?.[0],
+              photos: person.photos,
+            },
+            copy: {
+              title: "It's a Match",
+              subtitle: "You're in sync",
+              description: 'Something real can happen now',
+              matchedLine: `You and ${person.name || person.firstName} matched!`,
+              primaryCta: 'Start chat',
+              secondaryCta: 'Keep browsing',
+            },
+            onLater: onKeepBrowsing,
+          },
+        })
+      );
+    } catch {
+      // ignore
+    }
+    if (onKeepBrowsing) onKeepBrowsing();
+  }, [person, onKeepBrowsing]);
 
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3 }}
-      >
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 900,
-            color: '#fff',
-            textAlign: 'center',
-            mb: 0.5,
-          }}
-        >
-          It's a Match!
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: 'rgba(255,255,255,0.9)',
-            textAlign: 'center',
-            mb: 2.5,
-          }}
-        >
-          You and {person?.name} liked each other
-        </Typography>
-      </motion.div>
-
-      {/* Profile photo */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Box
-          sx={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            border: '3px solid #fff',
-            overflow: 'hidden',
-            boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
-            mb: 2.5,
-          }}
-        >
-          <img
-            src={person?.photos?.[0] || person?.photoUrl}
-            alt={person?.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
-          />
-        </Box>
-      </motion.div>
-
-      {/* Actions */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        style={{ width: '100%', maxWidth: 260, padding: '0 20px' }}
-      >
-        <Button
-          fullWidth
-          variant="contained"
-          onClick={onStartChat}
-          startIcon={<MessageCircle size={18} />}
-          sx={{
-            py: 1.25,
-            mb: 1.5,
-            borderRadius: '12px',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            textTransform: 'none',
-            backgroundColor: '#fff',
-            color: '#6C5CE7',
-            boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
-            '&:hover': { backgroundColor: '#f8f8f8' },
-          }}
-        >
-          Start chat
-        </Button>
-        <Button
-          fullWidth
-          variant="text"
-          onClick={onKeepBrowsing}
-          sx={{
-            py: 1,
-            borderRadius: '10px',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-            textTransform: 'none',
-            color: 'rgba(255,255,255,0.9)',
-            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-          }}
-        >
-          Keep browsing
-        </Button>
-      </motion.div>
-    </motion.div>
-  );
+  // Never render legacy UI - global popup handles display
+  return null;
 }
 
 /* =============================
@@ -1057,11 +992,18 @@ function MatchCelebration({ person, onStartChat, onKeepBrowsing }) {
 export default function MatchesScreen() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  
+  // Global store for liked profiles (YOU LIKE tab)
+  const { likedProfiles, removeLikedProfile } = useHomeDeckStore();
 
   const [tab, setTab] = useState(0);
   const [matches, setMatches] = useState([]);
   const [likes, setLikes] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // GPS location for distance calculation
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
 
   // Filters (open only on button)
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -1081,10 +1023,60 @@ export default function MatchesScreen() {
   const [selectedLikeProfile, setSelectedLikeProfile] = useState(null); // Profile card open
   const [matchCelebration, setMatchCelebration] = useState(null); // "It's a Match!" celebration
 
+  // Pending workshop invite (from decline flow)
+  const [pendingWorkshopInvite, setPendingWorkshopInvite] = useState(null);
+
   // Blocked profiles (per current user)
   const [blocked, setBlocked] = useState(() => loadBlocks());
   // Reports state
   const [reports, setReports] = useState(() => loadReports());
+
+  // Load pending workshop invite from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('pending_workshop_invite');
+      if (raw) {
+        setPendingWorkshopInvite(JSON.parse(raw));
+      }
+    } catch {}
+  }, []);
+
+  // Get user's GPS location for distance filtering
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setLocationError(null);
+        console.log('[MatchesScreen] GPS location obtained:', position.coords.latitude, position.coords.longitude);
+      },
+      (error) => {
+        console.warn('[MatchesScreen] GPS error:', error.message);
+        setLocationError(error.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    );
+  }, []);
+
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+  }, []);
 
   // Google Account Sync: Load fresh data on mount/reload
   useEffect(() => {
@@ -1139,16 +1131,31 @@ export default function MatchesScreen() {
   useEffect(() => saveReports(reports), [reports]);
 
   const filteredMatches = useMemo(() => {
-    let res = matches
+    // Calculate real distance from GPS if available, otherwise use static distance
+    const matchesWithDistance = matches.map((m) => {
+      if (userLocation && m.lat && m.lng) {
+        // Calculate real distance from GPS
+        const realDistance = calculateDistance(userLocation.lat, userLocation.lng, m.lat, m.lng);
+        return { ...m, calculatedDistance: realDistance };
+      }
+      // Use static distance if no GPS or no match coordinates (don't filter out)
+      return { ...m, calculatedDistance: m.distance ?? 0 };
+    });
+
+    let res = matchesWithDistance
       .filter((m) => !blocked.has(m.id))
       .filter((m) => m.age >= ageRange[0] && m.age <= ageRange[1])
-      .filter((m) => (maxDistance ? m.distance <= maxDistance : true))
+      .filter((m) => {
+        // Only filter by distance if we have GPS location
+        if (!userLocation) return true; // No GPS = show all
+        return maxDistance ? m.calculatedDistance <= maxDistance : true;
+      })
       .filter((m) => (onlyActiveChats ? m.chatActive : true));
 
-    if (sortBy === "distance") return [...res].sort((a, b) => a.distance - b.distance);
+    if (sortBy === "distance") return [...res].sort((a, b) => a.calculatedDistance - b.calculatedDistance);
     if (sortBy === "compat") return [...res].sort((a, b) => (b.compatibility ?? 0) - (a.compatibility ?? 0));
     return [...res].sort((a, b) => b.matchedAt - a.matchedAt);
-  }, [matches, blocked, ageRange, maxDistance, onlyActiveChats, sortBy]);
+  }, [matches, blocked, ageRange, maxDistance, onlyActiveChats, sortBy, userLocation, calculateDistance]);
 
   const handlePass = (p) => setMatches((prev) => prev.filter((x) => x.id !== p.id));
   const handleOpenChat = (p) => {
@@ -1244,6 +1251,83 @@ export default function MatchesScreen() {
     setMatchCelebration(null);
   }, []);
 
+  // Handle inviting a match to a workshop
+  const handleInviteToWorkshop = useCallback((profile, workshop) => {
+    // Clear the pending workshop invite
+    localStorage.removeItem('pending_workshop_invite');
+    setPendingWorkshopInvite(null);
+    
+    // Create the invite message to be added to chat
+    const inviteMessage = {
+      matchId: profile.id,
+      message: {
+        id: `workshop_invite_${Date.now()}`,
+        from: 'me',
+        type: 'workshop_invite',
+        text: `🎉 ${workshop.title}`,
+        workshop: {
+          id: workshop.id,
+          title: workshop.title,
+          date: workshop.date,
+          time: workshop.time,
+          venue: workshop.venue,
+          cover: workshop.cover,
+        },
+        timestamp: Date.now(),
+        status: 'sent',
+      }
+    };
+    
+    // Store in localStorage for ChatScreen to pick up
+    try {
+      const key = 'pending_workshop_invite_messages';
+      const raw = localStorage.getItem(key);
+      const arr = raw ? JSON.parse(raw) : [];
+      arr.push(inviteMessage);
+      localStorage.setItem(key, JSON.stringify(arr));
+    } catch {}
+    
+    // Show success message
+    setSnack({ 
+      open: true, 
+      msg: `Invitation sent to ${profile.name} for ${workshop.title}!`, 
+      severity: "success" 
+    });
+    
+    // Navigate to chat with this person
+    navigate(`/chat/${profile.id}`);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!matchCelebration) return;
+    try {
+      window.dispatchEvent(
+        new CustomEvent('pulse:show_match', {
+          detail: {
+            match: {
+              id: matchCelebration.id,
+              name: matchCelebration.name,
+              firstName: matchCelebration.firstName || matchCelebration.name,
+              photo: matchCelebration.photoUrl,
+              photos: matchCelebration.photos,
+            },
+            copy: {
+              title: "It's a Match",
+              subtitle: "You're in sync",
+              description: 'Something real can happen now',
+              matchedLine: `You and ${matchCelebration.name} matched!`,
+              primaryCta: 'Start chat',
+              secondaryCta: 'Keep browsing',
+            },
+          },
+        })
+      );
+    } catch {
+      // ignore
+    }
+    setMatchCelebration(null);
+  }, [matchCelebration]);
+
   return (
     <Box
       sx={{
@@ -1255,6 +1339,50 @@ export default function MatchesScreen() {
     >
       {/* Subscription Promo Banner - appears after browsing */}
       <HomeInlinePromoBanner swipeCount={filteredMatches.length > 0 ? 8 : 0} />
+
+      {/* Pending Workshop Invite Banner */}
+      {pendingWorkshopInvite && (
+        <Box
+          sx={{
+            mx: 2,
+            mt: 2,
+            p: 2,
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(168,85,247,0.1) 100%)',
+            border: '1px solid rgba(108,92,231,0.2)',
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#6C5CE7', mb: 0.5 }}>
+            🎯 Invite someone to the workshop
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>
+            {pendingWorkshopInvite.title}
+            {pendingWorkshopInvite.date && (
+              <span> • {new Date(pendingWorkshopInvite.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+            )}
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', mb: 1.5 }}>
+            Tap on a match below to send them an invite
+          </Typography>
+          <Button
+            size="small"
+            onClick={() => {
+              localStorage.removeItem('pending_workshop_invite');
+              setPendingWorkshopInvite(null);
+            }}
+            sx={{ 
+              color: '#94a3b8', 
+              textTransform: 'none',
+              fontSize: 12,
+              p: 0,
+              minWidth: 'auto',
+              '&:hover': { color: '#64748b', bgcolor: 'transparent' }
+            }}
+          >
+            Cancel
+          </Button>
+        </Box>
+      )}
 
       {/* Top bar - per spec: calm, organized, no excitement */}
       <Box
@@ -1368,6 +1496,28 @@ export default function MatchesScreen() {
               </Box>
             } 
           />
+          <Tab 
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span>YOU LIKE</span>
+                {likedProfiles.filter(p => !blocked.has(p.id)).length > 0 && (
+                  <Box sx={{ 
+                    backgroundColor: tab === 2 ? '#10b981' : '#e2e8f0',
+                    color: tab === 2 ? '#fff' : '#64748b',
+                    borderRadius: 999,
+                    px: 0.75,
+                    py: 0.25,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    minWidth: 20,
+                    textAlign: 'center',
+                  }}>
+                    {likedProfiles.filter(p => !blocked.has(p.id)).length}
+                  </Box>
+                )}
+              </Box>
+            } 
+          />
         </Tabs>
       </Box>
 
@@ -1444,6 +1594,8 @@ export default function MatchesScreen() {
                     onOpenChat={(p) => navigate(`/chat?matchId=${p.id}`)}
                     onBlock={handleBlock}
                     onReport={handleReport}
+                    pendingWorkshopInvite={pendingWorkshopInvite}
+                    onInvite={handleInviteToWorkshop}
                   />
                 </motion.div>
               ))}
@@ -1452,6 +1604,7 @@ export default function MatchesScreen() {
         </Box>
       )}
 
+      {/* INTERESTED IN YOU Tab */}
       {tab === 1 && (
         <Box sx={{ px: 1.25, pt: 1.25 }}>
           {loading ? (
@@ -1588,6 +1741,84 @@ export default function MatchesScreen() {
         </Box>
       )}
 
+      {/* YOU LIKE Tab */}
+      {tab === 2 && (
+        <Box sx={{ px: 1.25, pt: 1.25 }}>
+          {likedProfiles.filter(p => !blocked.has(p.id)).length === 0 ? (
+            <Box
+              sx={{
+                py: 6,
+                px: 3,
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(34,197,94,0.1) 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mb: 3,
+                }}
+              >
+                <Heart size={48} color="#10b981" />
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a2e", mb: 1 }}>
+                No likes yet
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#64748b", mb: 3, maxWidth: 280 }}>
+                When you like someone, they'll appear here until they like you back.
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={() => navigate("/")}
+                startIcon={<Heart size={18} />}
+                sx={{
+                  py: 1.5,
+                  px: 4,
+                  borderRadius: "14px",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  background: "linear-gradient(135deg, #10b981 0%, #22c55e 100%)",
+                  boxShadow: '0 4px 16px rgba(16,185,129,0.3)',
+                }}
+              >
+                Start Swiping
+              </Button>
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              {likedProfiles
+                .filter(p => !blocked.has(p.id))
+                .map((profile, index) => (
+                  <motion.div
+                    key={profile.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                  >
+                    <CompactMatchCard
+                      profile={profile}
+                      onPass={(p) => removeLikedProfile(p.id)}
+                      onOpenChat={(p) => navigate(`/chat?matchId=${p.id}`)}
+                      onBlock={handleBlock}
+                      onReport={handleReport}
+                      isYouLikeTab={true}
+                    />
+                  </motion.div>
+                ))}
+            </Stack>
+          )}
+        </Box>
+      )}
+
       {/* Full Profile Card - opens when clicking unlocked "Interested in You" */}
       <AnimatePresence>
         {selectedLikeProfile && (
@@ -1602,7 +1833,7 @@ export default function MatchesScreen() {
 
       {/* Match Celebration - "It's a Match!" */}
       <AnimatePresence>
-        {matchCelebration && (
+        {false && matchCelebration && (
           <MatchCelebration
             person={matchCelebration}
             onStartChat={() => handleStartChatFromMatch(matchCelebration)}

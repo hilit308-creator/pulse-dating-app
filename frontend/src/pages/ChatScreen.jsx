@@ -308,6 +308,39 @@ const AI_ADVISOR_ROW = AGENT_ROW;
 
 const demoChats = [
   {
+    matchId: 1,
+    user: {
+      id: 1,
+      name: "Maya",
+      age: 27,
+      photoUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=256&q=80",
+      interests: ["Design", "Yoga", "Music", "Coffee"],
+    },
+    user24hPhoto: null,
+    connectionSource: CONNECTION_SOURCE.SWIPE,
+    quickVibe: "You both love design",
+    unreadCount: 1,
+    blocked: false,
+    messages: [
+      {
+        id: 11,
+        from: "them",
+        type: "text",
+        text: "Hey! I found this amazing pottery workshop and thought it would be fun to do together 🎨",
+        timestamp: Date.now() - 1 * 60 * 60 * 1000,
+        status: "delivered",
+        reactions: {},
+        replyTo: null,
+      },
+    ],
+    lastSentAt: Date.now() - 1 * 60 * 60 * 1000,
+    status: "active",
+    pinned: false,
+    muted: false,
+    themeColor: "#ECE5DD",
+    disappearingSeconds: DEFAULT_DISAPPEARING_SECONDS,
+  },
+  {
     matchId: 4,
     user: {
       id: 4,
@@ -622,6 +655,7 @@ function ChatBubble({
   onEventInviteAccept,
   onEventInviteDecline,
   onEventInviteOfferPay,
+  onWorkshopInviteRespond,
 }) {
   const bg = isMe ? "#DCF8C6" : "#FFFFFF";
   const tailSide = isMe ? "right" : "left";
@@ -886,6 +920,125 @@ function ChatBubble({
                     </Button>
                   )}
                 </Box>
+              </Box>
+            </Box>
+          </Box>
+        ) : msg.type === "workshop_invite" ? (
+          <Box sx={{ mt: 0.25 }}>
+            <Box 
+              sx={{ 
+                border: "1px solid rgba(17,24,39,0.10)", 
+                borderRadius: 3, 
+                bgcolor: "#fff",
+                overflow: "hidden",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.08)",
+              }}
+            >
+              {msg.workshop?.cover && (
+                <img 
+                  src={msg.workshop.cover} 
+                  alt={msg.workshop.title} 
+                  style={{ width: "100%", height: 120, objectFit: "cover" }} 
+                />
+              )}
+              <Box sx={{ p: 1.5 }}>
+                <Typography sx={{ fontWeight: 900, fontSize: '0.95rem' }}>
+                  {msg.text}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#6b7280", display: 'block', mt: 0.5 }}>
+                  {msg.workshop?.date} • {msg.workshop?.time}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#6b7280", display: 'block' }}>
+                  📍 {msg.workshop?.venue}
+                </Typography>
+
+                {/* Show status if already responded */}
+                {msg.inviteStatus === 'accepted' && (
+                  <Box sx={{ 
+                    mt: 1, 
+                    p: 1, 
+                    borderRadius: 2, 
+                    bgcolor: 'rgba(16,185,129,0.1)', 
+                    border: '1px solid rgba(16,185,129,0.3)' 
+                  }}>
+                    <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 700 }}>
+                      ✅ Accepted
+                    </Typography>
+                  </Box>
+                )}
+                {msg.inviteStatus === 'declined' && (
+                  <Box sx={{ 
+                    mt: 1, 
+                    p: 1, 
+                    borderRadius: 2, 
+                    bgcolor: 'rgba(107,114,128,0.08)', 
+                    border: '1px solid rgba(107,114,128,0.2)' 
+                  }}>
+                    <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 600, mb: 0.5 }}>
+                      Maybe next time 💭
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="text"
+                      sx={{ 
+                        color: '#6C5CE7', 
+                        textTransform: 'none', 
+                        fontSize: '0.75rem',
+                        p: 0,
+                        minWidth: 'auto',
+                        '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' }
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onWorkshopInviteRespond?.(msg.id, 'accepted');
+                      }}
+                    >
+                      Actually, I'd love to join! ✨
+                    </Button>
+                  </Box>
+                )}
+
+                {/* Show buttons only if not yet responded */}
+                {!msg.inviteStatus && (
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 1 }}>
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      sx={{ ...inviteSecondaryCtaSx, fontSize: '0.75rem' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // View workshop details - for demo just show alert
+                        alert(`Workshop: ${msg.workshop?.title}\nDate: ${msg.workshop?.date}\nTime: ${msg.workshop?.time}\nVenue: ${msg.workshop?.venue}`);
+                      }}
+                    >
+                      View Event
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      sx={{ ...invitePrimaryCtaSx, fontSize: '0.75rem' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Accept workshop invite - update message status
+                        onWorkshopInviteRespond?.(msg.id, 'accepted');
+                      }}
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      size="small"
+                      color="inherit"
+                      sx={{ ...inviteNeutralCtaSx, fontSize: '0.75rem' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Decline workshop invite - update message status
+                        onWorkshopInviteRespond?.(msg.id, 'declined');
+                      }}
+                    >
+                      Decline
+                    </Button>
+                  </Box>
+                )}
               </Box>
             </Box>
           </Box>
@@ -1375,6 +1528,46 @@ export default function ChatScreen() {
     },
     [chat, openChat, setChats, urlMatchId]
   );
+
+  // Handle workshop invite response (accept/decline)
+  const handleWorkshopInviteRespond = useCallback(
+    (messageId, status) => {
+      if (!openChat) return;
+      
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat
+            ? {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === messageId
+                    ? { ...m, inviteStatus: status }
+                    : m
+                ),
+              }
+            : c
+        )
+      );
+
+      // Add system message
+      const statusText = status === 'accepted' ? '✅ Invite accepted!' : '💭 Maybe another time';
+      const sysMsg = {
+        id: `sys_${Date.now()}`,
+        from: 'system',
+        type: 'system',
+        text: statusText,
+        timestamp: Date.now(),
+      };
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat
+            ? { ...c, messages: [...c.messages, sysMsg] }
+            : c
+        )
+      );
+    },
+    [openChat, setChats]
+  );
   
   // Auto-open chat if matchId is in URL (e.g., from "Go to Chat" button)
   useEffect(() => {
@@ -1619,6 +1812,52 @@ export default function ChatScreen() {
     } catch (e) {
       console.error("Error loading pending chat messages:", e);
       localStorage.removeItem("pending_chat_messages");
+    }
+  }, []);
+
+  // Load pending workshop invite messages from localStorage (runs once on mount)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("pending_workshop_invite_messages");
+      if (!raw) return;
+
+      const pending = JSON.parse(raw);
+      if (!Array.isArray(pending) || pending.length === 0) return;
+
+      localStorage.removeItem("pending_workshop_invite_messages");
+
+      setChats((prevChats) => {
+        let updatedChats = [...prevChats];
+
+        pending.forEach((item) => {
+          if (!item?.matchId || !item?.message?.id) return;
+
+          const chatIndex = updatedChats.findIndex(
+            (c) =>
+              c.matchId === item.matchId ||
+              c.user?.id === item.matchId ||
+              String(c.user?.id) === String(item.matchId)
+          );
+          if (chatIndex === -1) return;
+
+          const existingChat = updatedChats[chatIndex];
+          const messageExists = existingChat.messages.some(
+            (m) => m.id === item.message.id
+          );
+          if (messageExists) return;
+
+          updatedChats[chatIndex] = {
+            ...existingChat,
+            messages: [...existingChat.messages, item.message],
+            lastSentAt: item.message.timestamp,
+          };
+        });
+
+        return updatedChats;
+      });
+    } catch (e) {
+      console.error("Error loading pending workshop invite messages:", e);
+      localStorage.removeItem("pending_workshop_invite_messages");
     }
   }, []);
   
@@ -3858,6 +4097,7 @@ export default function ChatScreen() {
                   onEventInviteAccept={handleEventInviteAccept}
                   onEventInviteDecline={handleEventInviteDecline}
                   onEventInviteOfferPay={handleEventInviteOfferPay}
+                  onWorkshopInviteRespond={handleWorkshopInviteRespond}
                 />
               </div>
             </Fade>

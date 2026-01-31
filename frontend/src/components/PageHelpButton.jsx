@@ -40,51 +40,52 @@ export default function PageHelpButton({
         <HelpCircle size={24} />
       </IconButton>
 
-      {/* Help Dialog */}
+      {/* Help Dialog - Compact */}
       <Dialog
         open={showHelp}
         onClose={() => setShowHelp(false)}
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            p: 1,
-            maxWidth: 360,
-            width: '100%',
+            borderRadius: '14px',
+            p: 0,
+            maxWidth: 280,
+            width: '85%',
           },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1, textAlign: 'center' }}>
+        <DialogTitle sx={{ fontWeight: 700, pb: 0.5, pt: 1.5, textAlign: 'center', fontSize: '1rem' }}>
           {title}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ py: 0.5, px: 2 }}>
           <Box sx={{ textAlign: 'center' }}>
             {steps.map((step, index) => (
-              <Box key={index} sx={{ mb: index === steps.length - 1 ? 2 : 3 }}>
+              <Box key={index} sx={{ mb: index === steps.length - 1 ? 0 : 0.75 }}>
                 {step.emoji && (
-                  <Typography sx={{ fontSize: 32, mb: 1 }}>
+                  <Typography sx={{ fontSize: 16, mb: 0, lineHeight: 1.2 }}>
                     {step.emoji}
                   </Typography>
                 )}
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.8rem', lineHeight: 1.3 }}>
                   {step.title}
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.7rem', lineHeight: 1.3 }}>
                   {step.description}
                 </Typography>
               </Box>
             ))}
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
+        <DialogActions sx={{ px: 1.5, pb: 1.5, pt: 0.5 }}>
           <Button
             fullWidth
             variant="contained"
             onClick={() => setShowHelp(false)}
             sx={{
-              py: 1.5,
-              borderRadius: '12px',
+              py: 0.75,
+              borderRadius: '10px',
               textTransform: 'none',
               fontWeight: 600,
+              fontSize: '0.85rem',
               background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
             }}
           >

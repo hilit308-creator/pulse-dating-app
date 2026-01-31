@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { ArrowLeft, MapPin, Sparkles, X, Heart, Ruler, Wine, PawPrint, Baby, ShieldCheck, HeartHandshake, Sun, Smile, Radar, RefreshCw, MessageCircle, HelpCircle, Coffee } from "lucide-react";
 import { NearbyMatchMoment, InvitationModal } from "../components/nearby";
+import useHomeDeckStore from "../store/homeDeckStore";
 
 /* ------------------------------ Constants --------------------------------- */
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
@@ -403,7 +404,7 @@ function SwipeableCard({ person, onSwipe, isActive }) {
           onClick={handlePhotoTap}
           sx={{
             width: "100%",
-            height: "65%",
+            height: "45%",
             position: "relative",
             cursor: 'pointer',
             userSelect: 'none',
@@ -544,95 +545,53 @@ function SwipeableCard({ person, onSwipe, isActive }) {
           </Box>
         </Box>
 
-        {/* Content below photo */}
-        <Box sx={{ p: 2.5, height: '35%', overflow: 'auto' }}>
-          {/* Profession */}
-          {person.profession && (
-            <Typography variant="body2" sx={{ color: "#64748b", fontWeight: 500 }}>
-              {person.profession}
-            </Typography>
-          )}
+        {/* Content below photo - ultra compact layout */}
+        <Box sx={{ p: 1.25, flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          {/* Row 1: Profession + Tagline */}
+          <Box>
+            {person.profession && (
+              <Typography sx={{ color: "#64748b", fontWeight: 500, fontSize: '0.8rem' }}>
+                {person.profession}
+              </Typography>
+            )}
+            {person.tagline && (
+              <Typography sx={{ color: "#1a1a2e", fontSize: '0.85rem', mt: 0.25 }}>
+                {person.tagline}
+              </Typography>
+            )}
+          </Box>
 
-          {/* Tagline */}
-          {person.tagline && (
-            <Typography variant="body2" sx={{ color: "#1a1a2e", mt: 0.75, mb: 1.5 }}>
-              {person.tagline}
-            </Typography>
-          )}
-
-          {/* About the moment (optional) */}
+          {/* Row 2: About the moment - inline */}
           {person.aboutMoment && (
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: "12px",
-                backgroundColor: "rgba(34,197,94,0.08)",
-                border: "1px solid rgba(34,197,94,0.15)",
-                mb: 1.5,
-              }}
-            >
-              <Typography variant="caption" sx={{ color: "#10b981", fontWeight: 600, display: "block", mb: 0.25 }}>
-                Right now
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#1a1a2e" }}>
-                {person.aboutMoment}
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.5, px: 1, borderRadius: 2, bgcolor: 'rgba(34,197,94,0.08)' }}>
+              <Typography sx={{ color: "#10b981", fontWeight: 600, fontSize: '0.7rem' }}>📍</Typography>
+              <Typography sx={{ color: "#1a1a2e", fontSize: '0.75rem' }}>{person.aboutMoment}</Typography>
             </Box>
           )}
 
-          {/* Details section */}
-          {person.aboutMe && person.aboutMe.length > 0 && (
-            <Box sx={{ mb: 1.5 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1a1a2e", mb: 0.75, fontSize: '0.8rem' }}>
-                Details
-              </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                {person.aboutMe.map((item, i) => (
-                  <DetailPill key={i} text={item} />
-                ))}
-              </Box>
-            </Box>
-          )}
-
-          {/* Interests */}
+          {/* Row 3: Interests */}
           {person.tags && person.tags.length > 0 && (
-            <Box sx={{ mb: 1.5 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1a1a2e", mb: 0.75, fontSize: '0.8rem' }}>
-                Interests
-              </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                {person.tags.map((tag, i) => (
-                  <Box
-                    key={i}
-                    sx={{
-                      px: 1.25,
-                      py: 0.4,
-                      borderRadius: 999,
-                      backgroundColor: "rgba(108,92,231,0.08)",
-                      border: "1px solid rgba(108,92,231,0.15)",
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      sx={{ color: "#6C5CE7", fontWeight: 600, fontSize: '0.7rem' }}
-                    >
-                      {tag}
-                    </Typography>
+            <Box>
+              <Typography sx={{ fontWeight: 700, color: "#1a1a2e", fontSize: '0.75rem', mb: 0.25 }}>Interests</Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.4 }}>
+                {person.tags.slice(0, 4).map((tag, i) => (
+                  <Box key={i} sx={{ px: 0.75, py: 0.2, borderRadius: 999, bgcolor: "rgba(108,92,231,0.1)" }}>
+                    <Typography sx={{ color: "#6C5CE7", fontWeight: 600, fontSize: '0.7rem' }}>{tag}</Typography>
                   </Box>
                 ))}
               </Box>
             </Box>
           )}
 
-          {/* Looking for */}
+          {/* Row 4: Looking for */}
           {person.lookingFor && person.lookingFor.length > 0 && (
             <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1a1a2e", mb: 0.75, fontSize: '0.8rem' }}>
-                Looking for
-              </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                {person.lookingFor.map((item, i) => (
-                  <LookingForPill key={i} text={item} />
+              <Typography sx={{ fontWeight: 700, color: "#1a1a2e", fontSize: '0.75rem', mb: 0.25 }}>Looking for</Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.4 }}>
+                {person.lookingFor.slice(0, 3).map((item, i) => (
+                  <Box key={i} sx={{ px: 0.75, py: 0.2, borderRadius: 999, bgcolor: "rgba(244,63,94,0.1)" }}>
+                    <Typography sx={{ color: "#f43f5e", fontWeight: 600, fontSize: '0.7rem' }}>{item}</Typography>
+                  </Box>
                 ))}
               </Box>
             </Box>
@@ -714,227 +673,13 @@ function EmptyState({ onBack }) {
   );
 }
 
-// Match Screen - shown when there's a mutual like
-// Per spec: "Start chat" and "Keep browsing" are equal choices
+// Match Screen - LEGACY: This component is disabled and should never render.
+// The useEffect in the main component dispatches pulse:show_match directly.
+// This function exists only as a safety fallback.
 function MatchScreen({ person, onStartChat, onKeepSwiping, onSuggestMeeting }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 100,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(180deg, rgba(108,92,231,0.95) 0%, rgba(168,85,247,0.95) 100%)',
-        backdropFilter: 'blur(10px)',
-      }}
-    >
-      {/* Hearts animation */}
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-          <motion.div
-            animate={{ rotate: [-10, 10, -10] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-          >
-            <Heart size={64} color="#fff" fill="#fff" />
-          </motion.div>
-        </Box>
-      </motion.div>
-
-      {/* Title */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3 }}
-      >
-        <Typography
-          variant="h3"
-          sx={{
-            fontWeight: 900,
-            color: '#fff',
-            textAlign: 'center',
-            mb: 1,
-            textShadow: '0 4px 20px rgba(0,0,0,0.2)',
-          }}
-        >
-          It's a Match!
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: 'rgba(255,255,255,0.9)',
-            textAlign: 'center',
-            mb: 4,
-          }}
-        >
-          You can start chatting now
-        </Typography>
-      </motion.div>
-
-      {/* Profile photos */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: -2, mb: 4 }}>
-          {/* User photo (placeholder) */}
-          <Box
-            sx={{
-              width: 100,
-              height: 100,
-              borderRadius: '50%',
-              border: '4px solid #fff',
-              backgroundColor: '#e0e0e0',
-              backgroundImage: 'url(https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=80)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-              zIndex: 2,
-            }}
-          />
-          {/* Match photo */}
-          <Box
-            sx={{
-              width: 100,
-              height: 100,
-              borderRadius: '50%',
-              border: '4px solid #fff',
-              backgroundImage: `url(${person.photos?.[0] || ''})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-              ml: -3,
-              zIndex: 1,
-            }}
-          />
-        </Box>
-      </motion.div>
-
-      {/* Buttons */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        style={{ width: '100%', maxWidth: 300, padding: '0 24px' }}
-      >
-        <Button
-          fullWidth
-          variant="contained"
-          onClick={onStartChat}
-          startIcon={<MessageCircle size={20} />}
-          sx={{
-            py: 1.75,
-            mb: 2,
-            borderRadius: '14px',
-            fontSize: '1.1rem',
-            fontWeight: 700,
-            textTransform: 'none',
-            backgroundColor: '#fff',
-            color: '#6C5CE7',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-            '&:hover': {
-              backgroundColor: '#f8f8f8',
-            },
-          }}
-        >
-          Start chat
-        </Button>
-        {/* Suggest meeting - per spec: equally valid option */}
-        {onSuggestMeeting && (
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={() => onSuggestMeeting(person)}
-            startIcon={<Coffee size={18} />}
-            sx={{
-              py: 1.25,
-              mb: 1,
-              borderRadius: '12px',
-              fontSize: '0.95rem',
-              fontWeight: 600,
-              textTransform: 'none',
-              borderColor: 'rgba(255,255,255,0.5)',
-              color: '#fff',
-              '&:hover': {
-                borderColor: '#fff',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-              },
-            }}
-          >
-            Suggest meeting up
-          </Button>
-        )}
-        <Button
-          fullWidth
-          variant="text"
-          onClick={onKeepSwiping}
-          sx={{
-            py: 1.25,
-            borderRadius: '12px',
-            fontSize: '1rem',
-            fontWeight: 600,
-            textTransform: 'none',
-            color: 'rgba(255,255,255,0.9)',
-            '&:hover': {
-              backgroundColor: 'rgba(255,255,255,0.1)',
-            },
-          }}
-        >
-          Keep browsing
-        </Button>
-      </motion.div>
-
-      {/* Confetti effect */}
-      <Box
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          overflow: 'hidden',
-        }}
-      >
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            initial={{
-              x: Math.random() * window.innerWidth,
-              y: -20,
-              rotate: 0,
-              opacity: 1,
-            }}
-            animate={{
-              y: window.innerHeight + 20,
-              rotate: Math.random() * 360,
-              opacity: 0,
-            }}
-            transition={{
-              duration: 2 + Math.random() * 2,
-              delay: Math.random() * 0.5,
-              repeat: Infinity,
-              repeatDelay: Math.random() * 2,
-            }}
-            style={{
-              position: 'absolute',
-              width: 10,
-              height: 10,
-              borderRadius: Math.random() > 0.5 ? '50%' : 0,
-              backgroundColor: ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#fff'][Math.floor(Math.random() * 5)],
-            }}
-          />
-        ))}
-      </Box>
-    </motion.div>
-  );
+  // This component should never be rendered (wrapped in {false && ...})
+  // If somehow called, just return null immediately
+  return null;
 }
 
 // All done screen when user finishes swiping
@@ -1037,6 +782,9 @@ export default function ViewNearbyPeopleScreen() {
   // Get data from NearbyScreen navigation (if coming from radar screen)
   const { liveNowCount = 0, scanCompleted = false } = location.state || {};
   
+  // Global store for liked profiles (YOU LIKE tab)
+  const { addLikedProfile, addLikedUser, removeLikedProfile } = useHomeDeckStore();
+  
   // States - load cards directly, no scanning
   const [people, setPeople] = useState(MOCK_NEARBY_PEOPLE);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -1096,12 +844,35 @@ export default function ViewNearbyPeopleScreen() {
         liked: [...prev.liked, person]
       }));
       
+      // Add to global store for YOU LIKE tab
+      addLikedUser(person.id);
+      
       // Check for mutual like (match!)
       if (person.likesYou) {
         trackEvent("match_created", { personId: person.id });
         if (navigator?.vibrate) navigator.vibrate([50, 50, 100]);
+        // Remove from likedProfiles since it's now a match
+        removeLikedProfile(person.id);
         setMatchPerson(person);
         return; // Don't move to next card yet - show match screen first
+      } else {
+        // Not a match yet - add full profile to YOU LIKE tab
+        addLikedProfile({
+          id: person.id,
+          name: person.firstName,
+          age: person.age,
+          distance: person.distance,
+          city: person.city,
+          photoUrl: person.photos?.[0] || '',
+          photos: person.photos || [],
+          verified: person.verified,
+          interests: person.tags || [],
+          profession: person.profession,
+          tagline: person.tagline,
+          aboutMe: person.aboutMe || [],
+          lookingFor: person.lookingFor || [],
+          status: 'you_liked',
+        });
       }
     } else {
       trackEvent("nearby_swipe_left", { personId: person.id });
@@ -1121,7 +892,53 @@ export default function ViewNearbyPeopleScreen() {
         return nextIndex;
       });
     }, 200);
-  }, [people.length]);
+  }, [people.length, addLikedUser, addLikedProfile, removeLikedProfile]);
+
+  useEffect(() => {
+    if (!matchPerson) return;
+    try {
+      window.dispatchEvent(
+        new CustomEvent('pulse:show_match', {
+          detail: {
+            match: {
+              id: matchPerson.id,
+              name: matchPerson.name,
+              firstName: matchPerson.firstName || matchPerson.name,
+              photo: matchPerson.photos?.[0],
+              photos: matchPerson.photos,
+            },
+            copy: {
+              title: "It's a Match",
+              subtitle: "You're in sync",
+              description: 'Something real can happen now',
+              matchedLine: `You and ${matchPerson.name || matchPerson.firstName} matched!`,
+              primaryCta: 'Start chat',
+              secondaryCta: 'Keep browsing',
+              tertiaryCta: 'Suggest meeting',
+            },
+            onLater: () => {
+              // Continue browsing - same behavior as previous overlay
+              setTimeout(() => {
+                setCurrentIndex((prev) => {
+                  const nextIndex = prev + 1;
+                  if (nextIndex >= people.length) {
+                    setIsAllDone(true);
+                  }
+                  return nextIndex;
+                });
+              }, 200);
+            },
+            onTertiary: () => {
+              handleOpenInvitation(matchPerson);
+            },
+          },
+        })
+      );
+    } catch {
+      // ignore
+    }
+    setMatchPerson(null);
+  }, [matchPerson]);
 
   // Handle button actions
   const handlePass = useCallback(() => {
@@ -1294,7 +1111,7 @@ export default function ViewNearbyPeopleScreen() {
     >
       {/* Match Screen Overlay */}
       <AnimatePresence>
-        {matchPerson && (
+        {false && matchPerson && (
           <MatchScreen
             person={matchPerson}
             onStartChat={handleStartChat}
@@ -1338,38 +1155,8 @@ export default function ViewNearbyPeopleScreen() {
           zIndex: 10,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton onClick={handleBack} sx={{ color: "#1a1a2e" }}>
-            <ArrowLeft size={22} />
-          </IconButton>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a2e", lineHeight: 1.2 }}>
-              People nearby
-            </Typography>
-            {liveCount > 0 && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Box
-                  sx={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    backgroundColor: '#22c55e',
-                    animation: 'pulse 2s infinite',
-                    '@keyframes pulse': {
-                      '0%, 100%': { opacity: 1 },
-                      '50%': { opacity: 0.5 },
-                    },
-                  }}
-                />
-                <Typography variant="caption" sx={{ color: '#64748b' }}>
-                  {liveCount} live now
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 600 }}>
+          <Typography variant="body2" sx={{ color: '#1a1a2e', fontWeight: 600 }}>
             {currentIndex + 1} / {people.length}
           </Typography>
           {/* Scan button */}
@@ -1393,19 +1180,6 @@ export default function ViewNearbyPeopleScreen() {
             >
               <Radar size={20} />
             </motion.div>
-          </IconButton>
-          {/* Help button - Tutorial */}
-          <IconButton
-            onClick={() => setShowTutorial(true)}
-            sx={{
-              color: '#6C5CE7',
-              backgroundColor: 'rgba(108,92,231,0.08)',
-              '&:hover': {
-                backgroundColor: 'rgba(108,92,231,0.15)',
-              },
-            }}
-          >
-            <HelpCircle size={20} />
           </IconButton>
         </Box>
       </Box>

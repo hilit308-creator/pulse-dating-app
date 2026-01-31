@@ -201,24 +201,6 @@ export default function AddEvent() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', pb: 'calc(88px + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Header */}
-      <Box sx={{ 
-        position: 'sticky', 
-        top: 0, 
-        zIndex: 10, 
-        bgcolor: '#fff', 
-        borderBottom: '1px solid rgba(0,0,0,0.05)',
-        px: 2,
-        py: 1.5
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', maxWidth: 720, mx: 'auto' }}>
-          <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }}>
-            <ArrowLeft size={22} color="#1a1a2e" />
-          </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>Create Event</Typography>
-        </Box>
-      </Box>
-
       {/* Hero Section with Progress */}
       <Box sx={{ px: 2, pt: 3, pb: 2, maxWidth: 720, mx: 'auto' }}>
         <motion.div

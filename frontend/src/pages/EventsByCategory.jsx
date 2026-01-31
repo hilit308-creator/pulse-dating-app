@@ -79,40 +79,320 @@ const VIBE_TYPES = ['Chill', 'Social', 'Flirty', 'Deep', 'Energetic'];
 
 // Demo people going to events
 export const DEMO_ATTENDEES = [
-  { id: "a1", name: "Maya", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100", isMatch: true, gender: "female" },
-  { id: "a2", name: "Noam", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", isMatch: true, gender: "male" },
-  { id: "a3", name: "Amit", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100", isMatch: false, gender: "male" },
-  { id: "a4", name: "Shira", photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100", isMatch: false, gender: "female" },
-  { id: "a5", name: "Yoni", photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100", isMatch: false, gender: "male" },
-  { id: "a6", name: "Noa", photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100", isMatch: true, gender: "female" },
-  { id: "a7", name: "Daniel", photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100", isMatch: false, gender: "male" },
-  { id: "a8", name: "Yael", photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100", isMatch: false, gender: "female" },
-  { id: "a9", name: "Omer", photo: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100", isMatch: false, gender: "male" },
-  { id: "a10", name: "Tamar", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100", isMatch: false, gender: "female" },
+  {
+    id: "a1",
+    name: "Maya",
+    photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=800&auto=format&fit=crop",
+    isMatch: true,
+    gender: "female",
+    age: 26,
+    location: "Tel Aviv",
+    jobTitle: "Product Designer",
+    education: "Shenkar",
+    height: 165,
+    lookingFor: ["Relationship"],
+    hobbies: ["Live music", "Rooftop sunsets", "Coffee"],
+    photos: ["https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1200&auto=format&fit=crop"],
+    zodiac: "Taurus",
+    languages: ["Hebrew", "English"],
+    causes: ["Environment", "Education"],
+    qualities: ["Humor", "Kindness", "Openness"],
+    prompts: [
+      { question: "I geek out on...", answer: "Design systems and tiny UX details." },
+      { question: "Perfect first date...", answer: "A walk, a coffee, and a playlist swap." },
+    ],
+    favoriteSongs: ["Chill Vibes", "Morning Coffee", "Workout Mix"],
+    drinking: "I drink sometimes",
+    smoking: "Never",
+    children: "Not sure",
+    religion: "Traditional",
+    politics: "Moderate",
+  },
+  {
+    id: "a2",
+    name: "Noam",
+    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop",
+    isMatch: true,
+    gender: "male",
+    age: 26,
+    location: "Tel Aviv",
+    jobTitle: "Software Engineer",
+    education: "Tel Aviv University",
+    height: 178,
+    lookingFor: ["New connections"],
+    hobbies: ["Dancing", "Running", "Sushi"],
+    photos: ["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1200&auto=format&fit=crop"],
+    zodiac: "Leo",
+    languages: ["Hebrew", "English"],
+    causes: ["Tech for good"],
+    qualities: ["Curiosity", "Confidence"],
+    prompts: [
+      { question: "The one thing I won't shut up about...", answer: "EDM nights and good ramen." },
+      { question: "My most controversial opinion is...", answer: "Pineapple belongs on pizza." },
+    ],
+    favoriteSongs: ["Energy Up", "Late Night Drive"],
+    drinking: "Socially",
+    smoking: "Never",
+    children: "Not sure",
+    religion: "Secular",
+    politics: "Center",
+  },
+  {
+    id: "a3",
+    name: "Amit",
+    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=800&auto=format&fit=crop",
+    isMatch: false,
+    gender: "male",
+    age: 28,
+    location: "Ramat Gan",
+    jobTitle: "Account Manager",
+    education: "IDC Herzliya",
+    height: 181,
+    lookingFor: ["Casual"],
+    hobbies: ["Food markets", "Gym", "Podcasts"],
+    photos: ["https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1200&auto=format&fit=crop"],
+    zodiac: "Virgo",
+    languages: ["Hebrew", "English"],
+    causes: ["Business", "Health"],
+    qualities: ["Stability", "Humor"],
+    prompts: [
+      { question: "Most spontaneous thing I've done...", answer: "Booked a weekend trip the same day." },
+      { question: "A green flag is...", answer: "Kindness to waiters." },
+    ],
+    favoriteSongs: ["Daily Focus", "Weekend Energy"],
+    drinking: "Sometimes",
+    smoking: "Never",
+    children: "Not sure",
+    religion: "Traditional",
+    politics: "Moderate",
+  },
+  {
+    id: "a4",
+    name: "Shira",
+    photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=800&auto=format&fit=crop",
+    isMatch: false,
+    gender: "female",
+    age: 26,
+    location: "Givatayim",
+    jobTitle: "Marketing",
+    education: "Bar-Ilan",
+    height: 168,
+    lookingFor: ["Relationship"],
+    hobbies: ["Pilates", "Brunch", "Concerts"],
+    photos: ["https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop"],
+    zodiac: "Aquarius",
+    languages: ["Hebrew", "English"],
+    causes: ["Women in tech", "Education"],
+    qualities: ["Empathy", "Curiosity"],
+    prompts: [
+      { question: "My perfect Sunday...", answer: "Brunch, walk, and a concert at night." },
+      { question: "Let's debate...", answer: "Best brunch spot in TLV." },
+    ],
+    favoriteSongs: ["Indie Pop", "Live Sessions"],
+    drinking: "Socially",
+    smoking: "Never",
+    children: "Want someday",
+    religion: "Secular",
+    politics: "Liberal",
+  },
+  {
+    id: "a5",
+    name: "Yoni",
+    photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=800&auto=format&fit=crop",
+    isMatch: false,
+    gender: "male",
+    age: 29,
+    location: "Tel Aviv",
+    jobTitle: "Founder",
+    education: "Technion",
+    height: 183,
+    lookingFor: ["Relationship"],
+    hobbies: ["Startups", "Travel", "Wine"],
+    photos: ["https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=1200&auto=format&fit=crop"],
+    zodiac: "Aries",
+    languages: ["Hebrew", "English"],
+    causes: ["Tech for good", "Entrepreneurship"],
+    qualities: ["Ambition", "Openness"],
+    prompts: [
+      { question: "I'm known for...", answer: "Turning ideas into reality." },
+      { question: "A fun fact about me...", answer: "I can pack for a weekend in 5 minutes." },
+    ],
+    favoriteSongs: ["Startup Focus", "Late Night Coding"],
+    drinking: "I drink sometimes",
+    smoking: "Never",
+    children: "Don't have",
+    religion: "Secular",
+    politics: "Center",
+  },
+  {
+    id: "a6",
+    name: "Noa",
+    photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=800&auto=format&fit=crop",
+    isMatch: true,
+    gender: "female",
+    age: 25,
+    location: "Herzliya",
+    jobTitle: "UX Researcher",
+    education: "Bezalel",
+    height: 162,
+    lookingFor: ["Casual"],
+    hobbies: ["Beach", "Yoga", "Festivals"],
+    photos: ["https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop"],
+    zodiac: "Libra",
+    languages: ["Hebrew", "English", "French"],
+    causes: ["Mental health"],
+    qualities: ["Humor", "Kindness"],
+    prompts: [
+      { question: "Two truths and a lie...", answer: "I love yoga, I hate coffee, I can surf." },
+      { question: "The quickest way to my heart...", answer: "Good music + good vibes." },
+    ],
+    favoriteSongs: ["Festival Mode", "Chill Beats"],
+    drinking: "Rarely",
+    smoking: "Never",
+    children: "Not sure",
+    religion: "Secular",
+    politics: "Progressive",
+  },
+  {
+    id: "a7",
+    name: "Daniel",
+    photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=800&auto=format&fit=crop",
+    isMatch: false,
+    gender: "male",
+    age: 27,
+    location: "Ramat Gan",
+    jobTitle: "Data Analyst",
+    education: "Ben-Gurion University",
+    height: 176,
+    lookingFor: ["New friends"],
+    hobbies: ["Board games", "Hiking", "Tech meetups"],
+    photos: ["https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1200&auto=format&fit=crop"],
+    zodiac: "Capricorn",
+    languages: ["Hebrew", "English"],
+    causes: ["Education"],
+    qualities: ["Curiosity", "Stability"],
+    prompts: [
+      { question: "My ideal night...", answer: "Board games and good company." },
+      { question: "I'll know it's a match if...", answer: "We can laugh at the same jokes." },
+    ],
+    favoriteSongs: ["Lo-Fi Focus", "Hiking Playlist"],
+    drinking: "Socially",
+    smoking: "Never",
+    children: "Not sure",
+    religion: "Traditional",
+    politics: "Moderate",
+  },
+  {
+    id: "a8",
+    name: "Yael",
+    photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=800&auto=format&fit=crop",
+    isMatch: false,
+    gender: "female",
+    age: 26,
+    location: "Tel Aviv",
+    jobTitle: "HR",
+    education: "Reichman University",
+    height: 170,
+    lookingFor: ["Relationship"],
+    hobbies: ["Dancing", "Art", "Coffee"],
+    photos: ["https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop"],
+    zodiac: "Gemini",
+    languages: ["Hebrew", "English"],
+    causes: ["Animal rights"],
+    qualities: ["Empathy", "Openness"],
+    prompts: [
+      { question: "A random skill I have...", answer: "I can spot good coffee from far away." },
+      { question: "My love language is...", answer: "Quality time." },
+    ],
+    favoriteSongs: ["Indie Folk", "Study Focus"],
+    drinking: "Sometimes",
+    smoking: "Never",
+    children: "Want someday",
+    religion: "Secular",
+    politics: "Liberal",
+  },
+  {
+    id: "a9",
+    name: "Omer",
+    photo: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop",
+    isMatch: false,
+    gender: "male",
+    age: 28,
+    location: "Jaffa",
+    jobTitle: "Photographer",
+    education: "Self-taught",
+    height: 180,
+    lookingFor: ["Casual"],
+    hobbies: ["Photography", "Food", "Movies"],
+    photos: ["https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1200&auto=format&fit=crop"],
+    zodiac: "Pisces",
+    languages: ["Hebrew", "English"],
+    causes: ["Arts"],
+    qualities: ["Creativity", "Curiosity"],
+    prompts: [
+      { question: "The best photo I've ever taken...", answer: "Sunset in Jaffa." },
+      { question: "My go-to comfort movie...", answer: "Anything with a great soundtrack." },
+    ],
+    favoriteSongs: ["Soundtrack Favorites", "Golden Hour"],
+    drinking: "Socially",
+    smoking: "Never",
+    children: "Not sure",
+    religion: "Secular",
+    politics: "Center",
+  },
+  {
+    id: "a10",
+    name: "Tamar",
+    photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop",
+    isMatch: false,
+    gender: "female",
+    age: 27,
+    location: "Tel Aviv",
+    jobTitle: "Content Creator",
+    education: "Open University",
+    height: 164,
+    lookingFor: ["Relationship"],
+    hobbies: ["Wellness", "Live music", "Cooking"],
+    photos: ["https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1200&auto=format&fit=crop"],
+    zodiac: "Sagittarius",
+    languages: ["Hebrew", "English"],
+    causes: ["Wellness"],
+    qualities: ["Optimism", "Confidence"],
+    prompts: [
+      { question: "My favorite way to recharge...", answer: "A long walk + a good playlist." },
+      { question: "If I cook for you...", answer: "It means I really like you." },
+    ],
+    favoriteSongs: ["Feel Good", "Kitchen Dancing"],
+    drinking: "Sometimes",
+    smoking: "Never",
+    children: "Not sure",
+    religion: "Traditional",
+    politics: "Moderate",
+  },
 ];
 
 export const EVENTS = [
   // Large parties
-  { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2025-07-23", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a3", "a5", "a6", "a7", "a10"] },
-  { id: "lp2", title: "Mega Dance Night", category: "large", price: 99, date: "2025-06-12", time: "21:00", venue: "Sky Dome", country: "USA", region: "Metro", coords: { lat: 40.7306, lng: -73.9352 }, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-dj-playing-music-in-a-club-4819-large.mp4", tags: ["DJ", "Dancing", "Drinks"], blurb: "Top DJs with immersive light show.", details: "Doors 21:00 • Main act 23:30 • Dress code: casual chic.", badges: ["18+"], hostedBy: "NightLife Productions", capacity: 2000, whoFor: "EDM fans, night owls, people who love to dance", vibe: "Energetic", attendees: ["a2", "a4", "a8", "a9"] },
+  { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2026-07-23", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a3", "a5", "a6", "a7", "a10"] },
+  { id: "lp2", title: "Mega Dance Night", category: "large", price: 99, date: "2026-02-12", time: "21:00", venue: "Sky Dome", country: "USA", region: "Metro", coords: { lat: 40.7306, lng: -73.9352 }, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-dj-playing-music-in-a-club-4819-large.mp4", tags: ["DJ", "Dancing", "Drinks"], blurb: "Top DJs with immersive light show.", details: "Doors 21:00 • Main act 23:30 • Dress code: casual chic.", badges: ["18+"], hostedBy: "NightLife Productions", capacity: 2000, whoFor: "EDM fans, night owls, people who love to dance", vibe: "Energetic", attendees: ["a2", "a4", "a8", "a9"] },
   // Small / Private
-  { id: "sp1", title: "Private Loft Party", category: "small", price: 60, date: "2025-05-30", time: "20:00", venue: "Maple St. 123", country: "USA", region: "Uptown", coords: { lat: 40.7644, lng: -73.9747 }, cover: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks"], blurb: "Intimate house vibes, 80 guests max.", details: "BYOB, rooftop chill zone, quiet room available.", badges: ["New"], hostedBy: "The Loft Collective", capacity: 80, whoFor: "People seeking intimate connections in a relaxed setting", vibe: "Flirty", attendees: ["a1", "a2"] },
-  { id: "sp2", title: "Acoustic Night", category: "small", price: 45, date: "2025-06-18", time: "20:30", venue: "Indie Bar", country: "USA", region: "City Center", coords: { lat: 40.741, lng: -73.9897 }, cover: "https://images.unsplash.com/photo-1464375117522-1311dd6d0cd2?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Social"], blurb: "Unplugged sets & candlelight atmosphere.", details: "Limited seating • First set at 20:30 • Open mic at 22:30.", hostedBy: "Indie Sessions", capacity: 50, whoFor: "Music appreciators, acoustic lovers, creative souls", vibe: "Chill", attendees: ["a3"] },
+  { id: "sp1", title: "Private Loft Party", category: "small", price: 60, date: "2026-02-14", time: "20:00", venue: "Maple St. 123", country: "USA", region: "Uptown", coords: { lat: 40.7644, lng: -73.9747 }, cover: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks"], blurb: "Intimate house vibes, 80 guests max.", details: "BYOB, rooftop chill zone, quiet room available.", badges: ["New"], hostedBy: "The Loft Collective", capacity: 80, whoFor: "People seeking intimate connections in a relaxed setting", vibe: "Flirty", attendees: ["a1", "a2"] },
+  { id: "sp2", title: "Acoustic Night", category: "small", price: 45, date: "2026-02-18", time: "20:30", venue: "Indie Bar", country: "USA", region: "City Center", coords: { lat: 40.741, lng: -73.9897 }, cover: "https://images.unsplash.com/photo-1464375117522-1311dd6d0cd2?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Social"], blurb: "Unplugged sets & candlelight atmosphere.", details: "Limited seating • First set at 20:30 • Open mic at 22:30.", hostedBy: "Indie Sessions", capacity: 50, whoFor: "Music appreciators, acoustic lovers, creative souls", vibe: "Chill", attendees: ["a3"] },
   // Events with a Twist
-  { id: "tw1", title: "Night Food Market", category: "twist", price: 0, date: "2025-09-07", time: "18:00", venue: "Downtown Plaza", country: "USA", region: "Downtown", coords: { lat: 40.7128, lng: -74.006 }, cover: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-people-walking-by-a-food-stand-at-night-4401-large.mp4", tags: ["Outdoor", "Social"], blurb: "Global cuisines, live demos, indie bands.", details: "30+ vendors, vegan options, chef talks, tasting bracelets available.", badges: ["Family"], hostedBy: "Foodies United", capacity: 1000, whoFor: "Food enthusiasts, social butterflies, anyone hungry", vibe: "Social", attendees: ["a1", "a4", "a5"] },
-  { id: "tw2", title: "Museum Late Hours", category: "twist", price: 30, date: "2025-08-15", time: "19:00", venue: "City Museum", country: "USA", region: "Museum District", coords: { lat: 40.7794, lng: -73.9632 }, cover: "https://images.unsplash.com/photo-1505666287802-931dc83948e9?q=80&w=1600&auto=format&fit=crop", tags: ["Talks", "Social"], blurb: "Special curation + ambient DJ set.", details: "Guided tours every hour • Café open till midnight.", hostedBy: "City Museum", capacity: 300, whoFor: "Art lovers, curious minds, those seeking deeper conversations", vibe: "Deep", attendees: ["a2", "a3"] },
+  { id: "tw1", title: "Night Food Market", category: "twist", price: 0, date: "2026-03-07", time: "18:00", venue: "Downtown Plaza", country: "USA", region: "Downtown", coords: { lat: 40.7128, lng: -74.006 }, cover: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-people-walking-by-a-food-stand-at-night-4401-large.mp4", tags: ["Outdoor", "Social"], blurb: "Global cuisines, live demos, indie bands.", details: "30+ vendors, vegan options, chef talks, tasting bracelets available.", badges: ["Family"], hostedBy: "Foodies United", capacity: 1000, whoFor: "Food enthusiasts, social butterflies, anyone hungry", vibe: "Social", attendees: ["a1", "a4", "a5"] },
+  { id: "tw2", title: "Museum Late Hours", category: "twist", price: 30, date: "2026-02-15", time: "19:00", venue: "City Museum", country: "USA", region: "Museum District", coords: { lat: 40.7794, lng: -73.9632 }, cover: "https://images.unsplash.com/photo-1505666287802-931dc83948e9?q=80&w=1600&auto=format&fit=crop", tags: ["Talks", "Social"], blurb: "Special curation + ambient DJ set.", details: "Guided tours every hour • Café open till midnight.", hostedBy: "City Museum", capacity: 300, whoFor: "Art lovers, curious minds, those seeking deeper conversations", vibe: "Deep", attendees: ["a2", "a3"] },
   // Sports
-  { id: "spx1", title: "Tennis Tournament", category: "sports", price: 70, date: "2025-06-05", time: "10:00", venue: "Grand Arena", country: "USA", region: "Sports Park", coords: { lat: 40.8296, lng: -73.9262 }, cover: "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Quarterfinals • Center court seats available.", details: "Gates 10:00 • No outside drinks • Family bundle discounts.", hostedBy: "Sports League", capacity: 800, whoFor: "Sports fans, tennis enthusiasts", vibe: "Energetic", attendees: [] },
-  { id: "spx2", title: "Sunset 5K Run", category: "sports", price: 35, date: "2025-06-22", time: "19:00", venue: "Beachfront", country: "USA", region: "Beach", coords: { lat: 40.583, lng: -73.8283 }, cover: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Scenic route along the coast, medals for finishers.", details: "Packet pickup from 16:00 • Start 19:00 • Hydration stations.", hostedBy: "Run Club", capacity: 500, whoFor: "Runners, fitness lovers, sunset chasers", vibe: "Energetic", attendees: ["a5"] },
+  { id: "spx1", title: "Tennis Tournament", category: "sports", price: 70, date: "2026-02-05", time: "10:00", venue: "Grand Arena", country: "USA", region: "Sports Park", coords: { lat: 40.8296, lng: -73.9262 }, cover: "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Quarterfinals • Center court seats available.", details: "Gates 10:00 • No outside drinks • Family bundle discounts.", hostedBy: "Sports League", capacity: 800, whoFor: "Sports fans, tennis enthusiasts", vibe: "Energetic", attendees: [] },
+  { id: "spx2", title: "Sunset 5K Run", category: "sports", price: 35, date: "2026-02-22", time: "19:00", venue: "Beachfront", country: "USA", region: "Beach", coords: { lat: 40.583, lng: -73.8283 }, cover: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Scenic route along the coast, medals for finishers.", details: "Packet pickup from 16:00 • Start 19:00 • Hydration stations.", hostedBy: "Run Club", capacity: 500, whoFor: "Runners, fitness lovers, sunset chasers", vibe: "Energetic", attendees: ["a5"] },
   // Tel Aviv venue-specific events (for Explore places)
-  { id: "tlv1", title: "Underground Beats @ Kuli Alma", category: "large", price: 80, date: "2025-06-15", time: "23:00", venue: "Kuli Alma", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0636, lng: 34.7705 }, cover: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1600&auto=format&fit=crop", tags: ["DJ", "Dancing", "Underground"], blurb: "Eclectic DJ sets in Tel Aviv's iconic underground venue.", details: "Doors 23:00 • Multiple rooms • Art installations.", badges: ["18+"], hostedBy: "Kuli Alma", capacity: 400, whoFor: "Alternative music lovers, night owls", vibe: "Energetic", attendees: ["a1", "a2"] },
-  { id: "tlv2", title: "Techno Warehouse @ The Block", category: "large", price: 120, date: "2025-06-20", time: "23:30", venue: "The Block", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0500, lng: 34.7600 }, cover: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?q=80&w=1600&auto=format&fit=crop", tags: ["Techno", "Dancing", "International DJs"], blurb: "World-class techno in Tel Aviv's premier club.", details: "International headliner • Funktion-One sound • Till sunrise.", badges: ["18+", "Verified"], hostedBy: "The Block TLV", capacity: 1500, whoFor: "Techno enthusiasts, serious dancers", vibe: "Energetic", attendees: ["a3", "a4"] },
-  { id: "tlv3", title: "Chill Vibes @ Sputnik", category: "small", price: 0, date: "2025-06-14", time: "21:00", venue: "Sputnik", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0700, lng: 34.7750 }, cover: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks", "Casual"], blurb: "Laid-back evening at Tel Aviv's favorite dive bar.", details: "No cover • Great drinks • Meet new people.", badges: [], hostedBy: "Sputnik Bar", capacity: 100, whoFor: "Casual drinkers, social butterflies", vibe: "Chill", attendees: ["a1", "a5"] },
-  { id: "tlv4", title: "Live Jazz @ Pastel", category: "small", price: 50, date: "2025-06-19", time: "20:30", venue: "Pastel", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0720, lng: 34.7800 }, cover: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Jazz", "Intimate"], blurb: "Intimate jazz performance in candlelit setting.", details: "Limited seating • Two sets • Wine bar open.", hostedBy: "Pastel TLV", capacity: 60, whoFor: "Jazz lovers, romantic date night", vibe: "Chill", attendees: ["a2", "a3"] },
-  { id: "tlv5", title: "Rooftop Party @ Beit Maariv", category: "large", price: 70, date: "2025-06-21", time: "22:00", venue: "Beit Maariv", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0680, lng: 34.7850 }, cover: "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?q=80&w=1600&auto=format&fit=crop", tags: ["Rooftop", "Dancing", "Views"], blurb: "Dance under the stars with city views.", details: "Multiple floors • Rooftop bar • Dress to impress.", badges: ["18+"], hostedBy: "Beit Maariv", capacity: 500, whoFor: "Party lovers, rooftop enthusiasts", vibe: "Energetic", attendees: ["a4", "a5"] },
-  { id: "tlv6", title: "Open Mic @ Anna Loulou", category: "small", price: 30, date: "2025-06-17", time: "21:00", venue: "Anna Loulou", country: "Israel", region: "Jaffa", coords: { lat: 32.0530, lng: 34.7550 }, cover: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Open Mic", "Alternative"], blurb: "Showcase your talent at Jaffa's legendary bar.", details: "Sign up from 20:00 • All genres welcome • Great cocktails.", hostedBy: "Anna Loulou Bar", capacity: 80, whoFor: "Musicians, artists, creative souls", vibe: "Social", attendees: ["a1", "a3"] },
-  { id: "tlv7", title: "Sunset Sessions @ Teder.fm", category: "small", price: 0, date: "2025-06-16", time: "17:00", venue: "Teder.fm", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0580, lng: 34.7650 }, cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Radio", "Chill"], blurb: "Live radio broadcast with sunset drinks.", details: "Free entry • Food trucks • Chill vibes till late.", badges: ["Family"], hostedBy: "Teder.fm", capacity: 200, whoFor: "Music lovers, sunset chasers", vibe: "Chill", attendees: ["a2", "a4"] },
-  { id: "tlv8", title: "Levinsky Food Fest @ Spicehaus", category: "twist", price: 0, date: "2025-06-22", time: "18:00", venue: "Spicehaus", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0620, lng: 34.7720 }, cover: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?q=80&w=1600&auto=format&fit=crop", tags: ["Food", "Social", "Market"], blurb: "Culinary journey through Levinsky Market.", details: "Tasting menu • Chef demos • Live music.", badges: ["Family"], hostedBy: "Spicehaus", capacity: 150, whoFor: "Foodies, culture lovers", vibe: "Social", attendees: ["a1", "a5"] },
+  { id: "tlv1", title: "Underground Beats @ Kuli Alma", category: "large", price: 80, date: "2026-02-15", time: "23:00", venue: "Kuli Alma", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0636, lng: 34.7705 }, cover: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1600&auto=format&fit=crop", tags: ["DJ", "Dancing", "Underground"], blurb: "Eclectic DJ sets in Tel Aviv's iconic underground venue.", details: "Doors 23:00 • Multiple rooms • Art installations.", badges: ["18+"], hostedBy: "Kuli Alma", capacity: 400, whoFor: "Alternative music lovers, night owls", vibe: "Energetic", attendees: ["a1", "a2"] },
+  { id: "tlv2", title: "Techno Warehouse @ The Block", category: "large", price: 120, date: "2026-02-20", time: "23:30", venue: "The Block", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0500, lng: 34.7600 }, cover: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?q=80&w=1600&auto=format&fit=crop", tags: ["Techno", "Dancing", "International DJs"], blurb: "World-class techno in Tel Aviv's premier club.", details: "International headliner • Funktion-One sound • Till sunrise.", badges: ["18+", "Verified"], hostedBy: "The Block TLV", capacity: 1500, whoFor: "Techno enthusiasts, serious dancers", vibe: "Energetic", attendees: ["a3", "a4"] },
+  { id: "tlv3", title: "Chill Vibes @ Sputnik", category: "small", price: 0, date: "2026-02-14", time: "21:00", venue: "Sputnik", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0700, lng: 34.7750 }, cover: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks", "Casual"], blurb: "Laid-back evening at Tel Aviv's favorite dive bar.", details: "No cover • Great drinks • Meet new people.", badges: [], hostedBy: "Sputnik Bar", capacity: 100, whoFor: "Casual drinkers, social butterflies", vibe: "Chill", attendees: ["a1", "a5"] },
+  { id: "tlv4", title: "Live Jazz @ Pastel", category: "small", price: 50, date: "2026-02-19", time: "20:30", venue: "Pastel", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0720, lng: 34.7800 }, cover: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Jazz", "Intimate"], blurb: "Intimate jazz performance in candlelit setting.", details: "Limited seating • Two sets • Wine bar open.", hostedBy: "Pastel TLV", capacity: 60, whoFor: "Jazz lovers, romantic date night", vibe: "Chill", attendees: ["a2", "a3"] },
+  { id: "tlv5", title: "Rooftop Party @ Beit Maariv", category: "large", price: 70, date: "2026-02-21", time: "22:00", venue: "Beit Maariv", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0680, lng: 34.7850 }, cover: "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?q=80&w=1600&auto=format&fit=crop", tags: ["Rooftop", "Dancing", "Views"], blurb: "Dance under the stars with city views.", details: "Multiple floors • Rooftop bar • Dress to impress.", badges: ["18+"], hostedBy: "Beit Maariv", capacity: 500, whoFor: "Party lovers, rooftop enthusiasts", vibe: "Energetic", attendees: ["a4", "a5"] },
+  { id: "tlv6", title: "Open Mic @ Anna Loulou", category: "small", price: 30, date: "2026-02-17", time: "21:00", venue: "Anna Loulou", country: "Israel", region: "Jaffa", coords: { lat: 32.0530, lng: 34.7550 }, cover: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Open Mic", "Alternative"], blurb: "Showcase your talent at Jaffa's legendary bar.", details: "Sign up from 20:00 • All genres welcome • Great cocktails.", hostedBy: "Anna Loulou Bar", capacity: 80, whoFor: "Musicians, artists, creative souls", vibe: "Social", attendees: ["a1", "a3"] },
+  { id: "tlv7", title: "Sunset Sessions @ Teder.fm", category: "small", price: 0, date: "2026-02-16", time: "17:00", venue: "Teder.fm", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0580, lng: 34.7650 }, cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Radio", "Chill"], blurb: "Live radio broadcast with sunset drinks.", details: "Free entry • Food trucks • Chill vibes till late.", badges: ["Family"], hostedBy: "Teder.fm", capacity: 200, whoFor: "Music lovers, sunset chasers", vibe: "Chill", attendees: ["a2", "a4"] },
+  { id: "tlv8", title: "Levinsky Food Fest @ Spicehaus", category: "twist", price: 0, date: "2026-02-22", time: "18:00", venue: "Spicehaus", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0620, lng: 34.7720 }, cover: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?q=80&w=1600&auto=format&fit=crop", tags: ["Food", "Social", "Market"], blurb: "Culinary journey through Levinsky Market.", details: "Tasting menu • Chef demos • Live music.", badges: ["Family"], hostedBy: "Spicehaus", capacity: 150, whoFor: "Foodies, culture lovers", vibe: "Social", attendees: ["a1", "a5"] },
 ];
 
 /* --------------------------- Tabs meta -------------------------------- */
@@ -154,8 +434,39 @@ const isHappeningTonight = (dateStr) => isSameYMD(new Date(dateStr), new Date())
 // Pulse spec: 30 days window, 15-25 events max
 const EVENTS_WINDOW_DAYS = 30;
 const EVENTS_MAX_COUNT = 25;
+const PAST_EVENT_VISIBILITY_HOURS = 24;
 
-// Filter events within 30 days window
+// Get event end datetime (uses end_datetime if available, otherwise date + time + 3 hours default duration)
+const getEventEndTime = (ev) => {
+  if (ev.end_datetime) return new Date(ev.end_datetime);
+  const startTime = ev.time || "20:00";
+  const [hours, minutes] = startTime.split(':').map(Number);
+  const endDate = new Date(ev.date);
+  endDate.setHours(hours + 3, minutes, 0, 0); // Default 3 hour duration
+  return endDate;
+};
+
+// Check if event is past (now > end_datetime)
+const isEventPast = (ev) => {
+  const endTime = getEventEndTime(ev);
+  return new Date() > endTime;
+};
+
+// Check if past event is still within 24h visibility window
+const isPastEventVisible = (ev) => {
+  if (!isEventPast(ev)) return true; // Not past, always visible
+  const endTime = getEventEndTime(ev);
+  const visibilityEnd = new Date(endTime.getTime() + PAST_EVENT_VISIBILITY_HOURS * 60 * 60 * 1000);
+  return new Date() <= visibilityEnd;
+};
+
+// Check if event should be expired (past + beyond 24h window)
+const isEventExpired = (ev) => {
+  if (!isEventPast(ev)) return false;
+  return !isPastEventVisible(ev);
+};
+
+// Filter events within 30 days window (excludes expired events)
 const isWithin30Days = (dateStr) => {
   const eventDate = new Date(dateStr);
   const today = new Date();
@@ -230,8 +541,12 @@ function googleCalendarUrl(ev) {
 function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, distanceKm, onInvitePlus1, showGoodMatch, onViewDetails, plusOnePartner }) {
   const [open, setOpen] = useState(false);
   
-  // Status badge logic
+  // Check if event is past
+  const isPast = isEventPast(ev);
+  
+  // Status badge logic - Past takes priority
   const getStatusBadge = () => {
+    if (isPast) return { label: "Past", color: "#6b7280", bg: "rgba(107,114,128,0.15)" };
     if (isHappeningTonight(ev.date)) return { label: "Happening tonight", color: "#dc2626", bg: "rgba(220,38,38,0.1)" };
     if (ev.soldOut) return { label: "Sold out", color: "#6b7280", bg: "rgba(107,114,128,0.1)" };
     if (ev.price === 0) return { label: "Free", color: "#16a34a", bg: "rgba(22,163,74,0.1)" };
@@ -259,6 +574,11 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
           position: "relative",
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           border: '1px solid rgba(102,126,234,0.1)',
+          // Visual de-emphasis for past events
+          ...(isPast && {
+            opacity: 0.7,
+            filter: 'grayscale(30%)',
+          }),
           '&:hover': {
             boxShadow: '0 20px 60px rgba(102,126,234,0.25)',
             borderColor: 'rgba(102,126,234,0.3)',
@@ -365,12 +685,12 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
               loop
               muted
               playsInline
-              poster={ev.cover}
+              poster={resolvePublicImageUrl(ev.cover)}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           </Box>
         ) : (
-          ev.cover && <CardMedia component="img" height="180" image={ev.cover} alt={ev.title} loading="lazy" style={{ objectFit: "cover" }} />
+          ev.cover && <CardMedia component="img" height="180" image={resolvePublicImageUrl(ev.cover)} alt={ev.title} loading="lazy" style={{ objectFit: "cover" }} />
         )}
         <CardContent sx={{ pb: 1 }}>
           {/* Title */}
@@ -449,7 +769,7 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
                   onBuy(ev);
                   if (navigator?.vibrate) navigator.vibrate([10, 5, 10]);
                 }}
-                disabled={ev.soldOut}
+                disabled={ev.soldOut || isPast}
                 sx={{ 
                   background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
                   fontWeight: 700,
@@ -464,7 +784,7 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
                   },
                 }}
               >
-                {ev.soldOut ? "SOLD OUT" : ev.price === 0 ? "JOIN" : "BUY TICKET"}
+                {isPast ? "EVENT ENDED" : ev.soldOut ? "SOLD OUT" : ev.price === 0 ? "JOIN" : "BUY TICKET"}
               </Button>
             </motion.div>
           </Stack>
@@ -796,7 +1116,7 @@ function TicketPurchaseDialog({ open, onClose, event, onPurchased }) {
     if (!name.trim()) return setErr("Please enter the buyer name.");
     if (!email.trim() || !email.includes("@")) return setErr("Please enter a valid email.");
     setErr("");
-    onPurchased?.(event?.id);
+    onPurchased?.(String(event?.id));
     onClose?.({ ok: true, eventId: event.id, qty, name, email, method, total });
   };
 
@@ -1397,13 +1717,64 @@ export default function EventsByCategory() {
   const [userLocation, setUserLocation] = useState(null);
   const [geoError, setGeoError] = useState("");
   const [snack, setSnack] = useState("");
+
+  const [likedProfiles, setLikedProfiles] = useState(() => {
+    try {
+      const raw = localStorage.getItem('pulse_profile_likes');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const syncLikesFromStorage = () => {
+      try {
+        const raw = localStorage.getItem('pulse_profile_likes');
+        const parsed = raw ? JSON.parse(raw) : [];
+        setLikedProfiles(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        setLikedProfiles([]);
+      }
+    };
+
+    const onLikesChanged = () => syncLikesFromStorage();
+    const onStorage = (e) => {
+      if (e?.key === 'pulse_profile_likes') syncLikesFromStorage();
+    };
+
+    window.addEventListener('pulse:profile_likes_changed', onLikesChanged);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('pulse:profile_likes_changed', onLikesChanged);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
   useEffect(() => {
     if (quickNear && !userLocation) {
-      if (!navigator.geolocation) setGeoError("Geolocation is not supported by your browser.");
-      else {
+      if (!navigator.geolocation) {
+        setGeoError("Geolocation is not supported by your browser.");
+        setQuickNear(false);
+      } else {
         navigator.geolocation.getCurrentPosition(
-          (pos) => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoError(""); },
-          (err) => { setGeoError(err.message || "Could not get your location."); setQuickNear(false); },
+          (pos) => { 
+            setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); 
+            setGeoError(""); 
+          },
+          (err) => { 
+            // Provide user-friendly error messages based on error code
+            let message = "Could not get your location.";
+            if (err.code === 1) {
+              message = "Location access denied. Please enable location permissions in your browser settings to use 'Near me' filter.";
+            } else if (err.code === 2) {
+              message = "Location unavailable. Please check your device's location settings.";
+            } else if (err.code === 3) {
+              message = "Location request timed out. Please try again.";
+            }
+            setGeoError(message); 
+            setQuickNear(false); 
+          },
           { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
         );
       }
@@ -1432,16 +1803,49 @@ export default function EventsByCategory() {
     quickToday || quickWeekend || quickFree || quickNear || quickOutdoor || quickLive
   ), [selectedCategories, selectedTags, country, region, searchText, dateFrom, dateTo, priceMin, priceMax, quickToday, quickWeekend, quickFree, quickNear, quickOutdoor, quickLive]);
 
+  // Calculate which quick filters have results for the current tab
+  const availableFilters = useMemo(() => {
+    // Get base events for current tab (without quick filters applied)
+    let baseEvents;
+    if (tab === "saved") {
+      baseEvents = EVENTS.filter((ev) => favs.has(String(ev.id)));
+    } else if (tab === "purchased") {
+      baseEvents = EVENTS.filter((ev) => purchased.has(String(ev.id)) && isPastEventVisible(ev));
+    } else {
+      const filtered30Days = EVENTS.filter((ev) => isWithin30Days(ev.date));
+      const windowed = filtered30Days.length ? filtered30Days : EVENTS;
+      baseEvents = tab === "all" ? windowed : windowed.filter((ev) => ev.category === tab);
+    }
+
+    // Check which filters would have results
+    const hasToday = baseEvents.some((ev) => isSameYMD(new Date(ev.date), new Date()));
+    const hasWeekend = baseEvents.some((ev) => isWeekend(new Date(ev.date)));
+    const hasFree = baseEvents.some((ev) => Number(ev.price || 0) === 0);
+    const hasOutdoor = baseEvents.some((ev) => (ev.tags || []).map((t) => String(t).toLowerCase()).includes("outdoor"));
+    const hasLiveMusic = baseEvents.some((ev) => (ev.tags || []).map((t) => String(t).toLowerCase()).includes("live music"));
+    // Near me is always available if we have events with coords
+    const hasNearMe = baseEvents.some((ev) => ev.coords);
+
+    return { hasToday, hasWeekend, hasFree, hasOutdoor, hasLiveMusic, hasNearMe };
+  }, [tab, favs, purchased]);
+
   // סינון+מיון - Pulse spec: 30 days window, max 25 events
+  // Note: 24h expiration rule applies ONLY to Purchased tab
   const visible = useMemo(() => {
     // מקור לפי טאב (כולל saved/purchased)
     let base;
-    if (tab === "saved") base = EVENTS.filter((ev) => favs.has(String(ev.id)));
-    else if (tab === "purchased") base = EVENTS.filter((ev) => purchased.has(ev.id));
-    else {
-      // Apply 30 days window filter for regular tabs (not saved/purchased)
+    if (tab === "saved") {
+      // Saved tab: show all saved events (no expiration)
+      base = EVENTS.filter((ev) => favs.has(String(ev.id)));
+    } else if (tab === "purchased") {
+      // Purchased tab: show past events for 24h only, filter out expired
+      base = EVENTS.filter((ev) => purchased.has(String(ev.id)) && isPastEventVisible(ev));
+    } else {
+      // Discovery tabs: show all events (no expiration, events reset monthly)
+      // Apply 30 days window filter for regular tabs
       const filtered30Days = EVENTS.filter((ev) => isWithin30Days(ev.date));
-      base = tab === "all" ? filtered30Days : filtered30Days.filter((ev) => ev.category === tab);
+      const windowed = filtered30Days.length ? filtered30Days : EVENTS;
+      base = tab === "all" ? windowed : windowed.filter((ev) => ev.category === tab);
     }
 
     if (selectedCategories.length > 0) {
@@ -1500,7 +1904,7 @@ export default function EventsByCategory() {
     setSelectedEvent(null);
     if (result?.ok) { console.log("ORDER", result); setSnack("Order placed successfully."); }
   };
-  const markPurchased = (eventId) => setPurchased((prev) => new Set(prev).add(eventId));
+  const markPurchased = (eventId) => setPurchased((prev) => new Set(prev).add(String(eventId)));
 
   const activeFilterCount = useMemo(() => {
     let c = 0;
@@ -1547,8 +1951,10 @@ export default function EventsByCategory() {
   };
 
   // Saved/Purchased datasets
+  // Saved: show all saved events (no expiration, events reset monthly)
+  // Purchased: apply 24h expiration rule (past events visible for 24h only)
   const savedList = EVENTS.filter((ev) => favs.has(String(ev.id)));
-  const purchasedList = EVENTS.filter((ev) => purchased.has(ev.id));
+  const purchasedList = EVENTS.filter((ev) => purchased.has(String(ev.id)) && isPastEventVisible(ev));
 
   // דמו "אנשים שתפגשו" (בממשק Purchased)
   const DEMO_USERS = [
@@ -1699,7 +2105,16 @@ export default function EventsByCategory() {
           {/* Tabs */}
           <Tabs 
             value={tab} 
-            onChange={(_, v) => setTab(v)} 
+            onChange={(_, v) => {
+              setTab(v);
+              // Clear quick filter chips when switching tabs to prevent empty results
+              setQuickToday(false);
+              setQuickWeekend(false);
+              setQuickFree(false);
+              setQuickNear(false);
+              setQuickOutdoor(false);
+              setQuickLive(false);
+            }} 
             variant="scrollable" 
             scrollButtons="auto"
             sx={{ 
@@ -1738,8 +2153,8 @@ export default function EventsByCategory() {
               <Chip 
                 icon={<CalendarClock size={14} />} 
                 label="Today" 
-                color={quickToday ? "primary" : "default"} 
-                variant={quickToday ? "filled" : "outlined"} 
+                color="primary"
+                variant="filled"
                 onClick={() => { setQuickToday((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
                 sx={{
                   fontWeight: 600,
@@ -1748,9 +2163,14 @@ export default function EventsByCategory() {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
                   },
-                  ...(quickToday && {
+                  // Unselected = dark gradient, Selected = light
+                  ...(!quickToday ? {
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.4)',
+                    color: '#fff',
+                  } : {
+                    background: 'rgba(102,126,234,0.15)',
+                    color: '#667eea',
+                    border: '2px solid #667eea',
                   }),
                 }}
               />
@@ -1763,8 +2183,8 @@ export default function EventsByCategory() {
               <Chip 
                 icon={<CalendarClock size={14} />} 
                 label="Weekend" 
-                color={quickWeekend ? "primary" : "default"} 
-                variant={quickWeekend ? "filled" : "outlined"} 
+                color="primary"
+                variant="filled"
                 onClick={() => { setQuickWeekend((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
                 sx={{
                   fontWeight: 600,
@@ -1773,9 +2193,13 @@ export default function EventsByCategory() {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
                   },
-                  ...(quickWeekend && {
+                  ...(!quickWeekend ? {
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.4)',
+                    color: '#fff',
+                  } : {
+                    background: 'rgba(102,126,234,0.15)',
+                    color: '#667eea',
+                    border: '2px solid #667eea',
                   }),
                 }}
               />
@@ -1787,20 +2211,23 @@ export default function EventsByCategory() {
             >
               <Chip 
                 label="Free" 
-                color={quickFree ? "primary" : "default"} 
-                variant={quickFree ? "filled" : "outlined"} 
+                color="primary"
+                variant="filled"
                 onClick={() => { setQuickFree((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
                 sx={{
                   fontWeight: 600,
                   transition: 'all 0.2s ease',
                   '&:hover': {
                     transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(34,197,94,0.3)',
+                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
                   },
-                  ...(quickFree && {
-                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                  ...(!quickFree ? {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     color: '#fff',
-                    boxShadow: '0 4px 12px rgba(34,197,94,0.4)',
+                  } : {
+                    background: 'rgba(102,126,234,0.15)',
+                    color: '#667eea',
+                    border: '2px solid #667eea',
                   }),
                 }}
               />
@@ -1813,8 +2240,8 @@ export default function EventsByCategory() {
               <Chip 
                 icon={<LocateFixed size={14} />} 
                 label="Near me" 
-                color={quickNear ? "primary" : "default"} 
-                variant={quickNear ? "filled" : "outlined"} 
+                color="primary"
+                variant="filled"
                 onClick={() => { setQuickNear((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
                 sx={{
                   fontWeight: 600,
@@ -1823,9 +2250,13 @@ export default function EventsByCategory() {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
                   },
-                  ...(quickNear && {
+                  ...(!quickNear ? {
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.4)',
+                    color: '#fff',
+                  } : {
+                    background: 'rgba(102,126,234,0.15)',
+                    color: '#667eea',
+                    border: '2px solid #667eea',
                   }),
                 }}
               />
@@ -1838,8 +2269,8 @@ export default function EventsByCategory() {
               <Chip 
                 icon={<Sun size={14} />} 
                 label="Outdoor" 
-                color={quickOutdoor ? "primary" : "default"} 
-                variant={quickOutdoor ? "filled" : "outlined"} 
+                color="primary"
+                variant="filled"
                 onClick={() => { setQuickOutdoor((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
                 sx={{
                   fontWeight: 600,
@@ -1848,9 +2279,13 @@ export default function EventsByCategory() {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
                   },
-                  ...(quickOutdoor && {
+                  ...(!quickOutdoor ? {
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.4)',
+                    color: '#fff',
+                  } : {
+                    background: 'rgba(102,126,234,0.15)',
+                    color: '#667eea',
+                    border: '2px solid #667eea',
                   }),
                 }}
               />
@@ -1863,8 +2298,8 @@ export default function EventsByCategory() {
               <Chip 
                 icon={<Music size={14} />} 
                 label="Live Music" 
-                color={quickLive ? "primary" : "default"} 
-                variant={quickLive ? "filled" : "outlined"} 
+                color="primary"
+                variant="filled"
                 onClick={() => { setQuickLive((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
                 sx={{
                   fontWeight: 600,
@@ -1873,9 +2308,13 @@ export default function EventsByCategory() {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
                   },
-                  ...(quickLive && {
+                  ...(!quickLive ? {
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.4)',
+                    color: '#fff',
+                  } : {
+                    background: 'rgba(102,126,234,0.15)',
+                    color: '#667eea',
+                    border: '2px solid #667eea',
                   }),
                 }}
               />
@@ -1911,6 +2350,7 @@ export default function EventsByCategory() {
                       onViewDetails={(e) => navigate(`/events/${e.id}`)}
                       plusOnePartner={resolvePlusOnePartner(ev.id)}
                     />
+
                   </Grid>
                 ))}
               </Grid>
@@ -1933,7 +2373,46 @@ export default function EventsByCategory() {
               </Button>
             </Stack>
             {savedList.length === 0 ? (
-              <Alert severity="info">You have no saved events yet.</Alert>
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                py: 6, 
+                px: 3,
+                textAlign: 'center',
+              }}>
+                <Box sx={{ 
+                  width: 64, 
+                  height: 64, 
+                  borderRadius: '16px', 
+                  bgcolor: 'rgba(102,126,234,0.1)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  mb: 2,
+                }}>
+                  <Heart size={28} color="#667eea" />
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>
+                  No saved events yet
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748b', mb: 3, maxWidth: 280 }}>
+                  Tap the heart on any event to save it here for easy access later
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  onClick={() => setTab("all")}
+                  sx={{ 
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    fontWeight: 600,
+                    px: 3,
+                    borderRadius: '12px',
+                  }}
+                >
+                  Browse Events
+                </Button>
+              </Box>
             ) : (
               <Grid container spacing={2}>
                 {savedList.map((ev) => (
@@ -1947,7 +2426,7 @@ export default function EventsByCategory() {
                       onOpenMaps={openMapsForEvent}
                       onInvitePlus1={(e) => setPlusOneEvent(e)}
                       onViewDetails={(e) => navigate(`/events/${e.id}`)}
-                      plusOnePartner={purchased.has(ev.id) ? resolvePlusOnePartner(ev.id) : null}
+                      plusOnePartner={purchased.has(String(ev.id)) ? resolvePlusOnePartner(ev.id) : null}
                     />
                   </Grid>
                 ))}
@@ -2065,44 +2544,69 @@ export default function EventsByCategory() {
       />
 
       {/* דיאלוג סינון/מיון */}
-      <Dialog open={filtersOpen} onClose={() => setFiltersOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle>Filter & Sort</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={3}>
-            <TextField label="Search (title, venue, tag, region, country)" value={searchText} onChange={(e) => setSearchText(e.target.value)} fullWidth />
-            <Autocomplete multiple options={BASE_TABS.filter((c)=>c.key!=="all").map((c)=>c.key)} value={selectedCategories} onChange={(_, val) => setSelectedCategories(val)}
-              renderTags={(value, getTagProps) => value.map((opt, i) => <Chip variant="outlined" label={BASE_TABS.find((c)=>c.key===opt)?.label || opt} {...getTagProps({ index: i })} key={opt} />)}
-              renderInput={(params) => <TextField {...params} label="Categories" placeholder="Pick one or more" />} />
-            <Autocomplete multiple options={allTags} value={selectedTags} onChange={(_, val) => setSelectedTags(val)}
-              renderTags={(value, getTagProps) => value.map((opt, i) => <Chip variant="outlined" label={opt} {...getTagProps({ index: i })} key={opt} />)}
-              renderInput={(params) => <TextField {...params} label="Tags" placeholder="EDM, Outdoor, Acoustic…" />} />
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <Autocomplete options={allCountries} value={country || null} onChange={(_, val) => setCountry(val || "")} renderInput={(p) => <TextField {...p} label="Country" placeholder="All" />} sx={{ flex: 1 }} clearOnEscape />
-              <Autocomplete options={allRegions} value={region || null} onChange={(_, val) => setRegion(val || "")} renderInput={(p) => <TextField {...p} label="Region / Area" placeholder="All" />} sx={{ flex: 1 }} clearOnEscape />
+      <Dialog 
+        open={filtersOpen} 
+        onClose={() => setFiltersOpen(false)} 
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            maxHeight: '70vh',
+            borderRadius: 3,
+          }
+        }}
+      >
+        <DialogTitle sx={{ py: 1.5, px: 2, fontSize: '1rem', fontWeight: 700 }}>Filter & Sort</DialogTitle>
+        <DialogContent dividers sx={{ py: 1.5, px: 2 }}>
+          <Stack spacing={2}>
+            <TextField 
+              label="Search" 
+              placeholder="Title, venue, tag..."
+              value={searchText} 
+              onChange={(e) => setSearchText(e.target.value)} 
+              fullWidth 
+              size="small"
+            />
+            <Autocomplete 
+              multiple 
+              size="small"
+              options={BASE_TABS.filter((c)=>c.key!=="all").map((c)=>c.key)} 
+              value={selectedCategories} 
+              onChange={(_, val) => setSelectedCategories(val)}
+              renderTags={(value, getTagProps) => value.map((opt, i) => <Chip size="small" variant="outlined" label={BASE_TABS.find((c)=>c.key===opt)?.label || opt} {...getTagProps({ index: i })} key={opt} />)}
+              renderInput={(params) => <TextField {...params} label="Categories" size="small" />} 
+            />
+            <Autocomplete 
+              multiple 
+              size="small"
+              options={allTags} 
+              value={selectedTags} 
+              onChange={(_, val) => setSelectedTags(val)}
+              renderTags={(value, getTagProps) => value.map((opt, i) => <Chip size="small" variant="outlined" label={opt} {...getTagProps({ index: i })} key={opt} />)}
+              renderInput={(params) => <TextField {...params} label="Tags" size="small" />} 
+            />
+            <Stack direction="row" spacing={1}>
+              <TextField label="From" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} sx={{ flex: 1 }} size="small" InputLabelProps={{ shrink: true }} />
+              <TextField label="To" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} sx={{ flex: 1 }} size="small" InputLabelProps={{ shrink: true }} />
             </Stack>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField label="From date" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} sx={{ flex: 1 }} InputLabelProps={{ shrink: true }} />
-              <TextField label="To date" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} sx={{ flex: 1 }} InputLabelProps={{ shrink: true }} />
+            <Stack direction="row" spacing={1}>
+              <TextField label="Min ₪" type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} sx={{ flex: 1 }} size="small" inputProps={{ min: 0 }} />
+              <TextField label="Max ₪" type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} sx={{ flex: 1 }} size="small" inputProps={{ min: 0 }} />
             </Stack>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField label={`Min price (₪${priceBounds.min})`} type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} sx={{ flex: 1 }} inputProps={{ min: 0 }} />
-              <TextField label={`Max price (₪${priceBounds.max})`} type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} sx={{ flex: 1 }} inputProps={{ min: 0 }} />
-            </Stack>
-            <Stack>
-              <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 700 }}>Sort by</Typography>
-              <RadioGroup row value={sortBy} onChange={(e) => setSortBy(e.target.value)} name="sortby">
-                <FormControlLabel value="date_desc" control={<Radio />} label="Date (newest first)" />
-                <FormControlLabel value="date_asc"  control={<Radio />} label="Date (oldest first)" />
-                <FormControlLabel value="price_low" control={<Radio />} label="Price (low → high)" />
-                <FormControlLabel value="price_high"control={<Radio />} label="Price (high → low)" />
-                <FormControlLabel value="title_az"  control={<Radio />} label="Title (A → Z)" />
+            <Box>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: '#374151' }}>Sort by</Typography>
+              <RadioGroup value={sortBy} onChange={(e) => setSortBy(e.target.value)} name="sortby" sx={{ mt: 0.5 }}>
+                <FormControlLabel value="date_desc" control={<Radio size="small" />} label={<Typography variant="body2">Date (newest)</Typography>} />
+                <FormControlLabel value="date_asc"  control={<Radio size="small" />} label={<Typography variant="body2">Date (oldest)</Typography>} />
+                <FormControlLabel value="price_low" control={<Radio size="small" />} label={<Typography variant="body2">Price (low → high)</Typography>} />
+                <FormControlLabel value="price_high"control={<Radio size="small" />} label={<Typography variant="body2">Price (high → low)</Typography>} />
               </RadioGroup>
-            </Stack>
+            </Box>
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button color="inherit" onClick={() => setFiltersOpen(false) || clearFilters()}>Clear</Button>
-          <Button variant="contained" onClick={() => setFiltersOpen(false)}>Apply</Button>
+        <DialogActions sx={{ py: 1, px: 2 }}>
+          <Button color="inherit" size="small" onClick={() => setFiltersOpen(false) || clearFilters()}>Clear</Button>
+          <Button variant="contained" size="small" onClick={() => setFiltersOpen(false)}>Apply</Button>
         </DialogActions>
       </Dialog>
 

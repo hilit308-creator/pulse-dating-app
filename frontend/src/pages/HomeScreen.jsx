@@ -15,7 +15,7 @@
  * It says: "These are your options right now."
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -442,24 +442,47 @@ const HomeScreen = () => {
       });
     }
   }, [currentPickIndex, todaysPicks]);
-  
-  // Handle match screen actions
-  const handleStartChat = useCallback(() => {
-    if (matchPerson) {
-      navigate(`/chat/${matchPerson.id}`);
-    }
-  }, [navigate, matchPerson]);
 
-  const handleKeepSwiping = useCallback(() => {
+  // Handle match screen actions
+  useEffect(() => {
+    if (!matchPerson) return;
+    try {
+      window.dispatchEvent(
+        new CustomEvent('pulse:show_match', {
+          detail: {
+            match: {
+              id: matchPerson.id,
+              name: matchPerson.name,
+              firstName: matchPerson.firstName || matchPerson.name,
+              photo: matchPerson.photoUrl || matchPerson.photos?.[0],
+              photos: matchPerson.photos,
+            },
+            copy: {
+              title: "It's a Match",
+              subtitle: "You're in sync",
+              description: 'Something real can happen now',
+              matchedLine: `You and ${matchPerson.name || matchPerson.firstName} matched!`,
+              primaryCta: 'Start chat',
+              secondaryCta: 'Keep browsing',
+            },
+            onLater: () => {
+              // Continue browsing: same behavior as previous match overlay
+              setTimeout(() => {
+                setCurrentPickIndex((prev) => {
+                  const nextIndex = prev + 1;
+                  return nextIndex >= todaysPicks.length ? 0 : nextIndex;
+                });
+              }, 200);
+            },
+          },
+        })
+      );
+    } catch {
+      // ignore
+    }
     setMatchPerson(null);
-    setTimeout(() => {
-      setCurrentPickIndex(prev => {
-        const nextIndex = prev + 1;
-        return nextIndex >= todaysPicks.length ? 0 : nextIndex;
-      });
-    }, 200);
-  }, [todaysPicks.length]);
-  
+  }, [matchPerson]);
+
   // Check if we have any content to show
   const hasAnyContent = nearbyProfiles.length > 0 || events.length > 0 || places.length > 0 || activeChat;
 
@@ -613,17 +636,6 @@ const HomeScreen = () => {
           </Box>
         </motion.div>
       )}
-
-      {/* Match Screen Overlay */}
-      <AnimatePresence>
-        {matchPerson && (
-          <MatchScreen
-            person={matchPerson}
-            onStartChat={handleStartChat}
-            onKeepSwiping={handleKeepSwiping}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Main Content */}
       <Box sx={{ px: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -1525,118 +1537,42 @@ function SwipeableCard({ profile, onSwipe, isActive }) {
   );
 }
 
-// Match Screen
+// Match Screen - LEGACY: now redirects to global popup
 function MatchScreen({ person, onStartChat, onKeepSwiping }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 100,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(180deg, rgba(108,92,231,0.95) 0%, rgba(168,85,247,0.95) 100%)',
-        backdropFilter: 'blur(10px)',
-      }}
-    >
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-          <motion.div
-            animate={{ rotate: [-10, 10, -10] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-          >
-            <Heart size={64} color="#fff" fill="#fff" />
-          </motion.div>
-        </Box>
-      </motion.div>
-
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3 }}
-      >
-        <Typography
-          variant="h3"
-          sx={{
-            fontWeight: 900,
-            color: '#fff',
-            textAlign: 'center',
-            mb: 1,
-            textShadow: '0 4px 20px rgba(0,0,0,0.2)',
-          }}
-        >
-          It's a Match!
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: 'rgba(255,255,255,0.9)',
-            textAlign: 'center',
-            mb: 4,
-          }}
-        >
-          You can start chatting now
-        </Typography>
-      </motion.div>
-
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        style={{ width: '100%', maxWidth: 300, padding: '0 24px' }}
-      >
-        <Button
-          fullWidth
-          variant="contained"
-          onClick={onStartChat}
-          startIcon={<MessageCircle size={20} />}
-          sx={{
-            py: 1.75,
-            mb: 2,
-            borderRadius: '14px',
-            fontSize: '1.1rem',
-            fontWeight: 700,
-            textTransform: 'none',
-            backgroundColor: '#fff',
-            color: '#6C5CE7',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-            '&:hover': {
-              backgroundColor: '#f8f8f8',
+  // FALLBACK: dispatch global popup and render nothing
+  React.useEffect(() => {
+    if (!person) return;
+    try {
+      window.dispatchEvent(
+        new CustomEvent('pulse:show_match', {
+          detail: {
+            match: {
+              id: person.id,
+              name: person.name || person.firstName,
+              firstName: person.firstName || person.name,
+              photo: person.photoUrl || person.photos?.[0],
+              photos: person.photos,
             },
-          }}
-        >
-          Start chat
-        </Button>
-        <Button
-          fullWidth
-          variant="text"
-          onClick={onKeepSwiping}
-          sx={{
-            py: 1.25,
-            borderRadius: '12px',
-            fontSize: '1rem',
-            fontWeight: 600,
-            textTransform: 'none',
-            color: 'rgba(255,255,255,0.9)',
-            '&:hover': {
-              backgroundColor: 'rgba(255,255,255,0.1)',
+            copy: {
+              title: "It's a Match",
+              subtitle: "You're in sync",
+              description: 'Something real can happen now',
+              matchedLine: `You and ${person.name || person.firstName} matched!`,
+              primaryCta: 'Start chat',
+              secondaryCta: 'Keep browsing',
             },
-          }}
-        >
-          Keep browsing
-        </Button>
-      </motion.div>
-    </motion.div>
-  );
+            onLater: onKeepSwiping,
+          },
+        })
+      );
+    } catch {
+      // ignore
+    }
+    if (onKeepSwiping) onKeepSwiping();
+  }, [person, onKeepSwiping]);
+
+  // Never render legacy UI - global popup handles display
+  return null;
 }
 
 // CSS animations for badges

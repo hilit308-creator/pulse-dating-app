@@ -4865,6 +4865,7 @@ export default function ExploreScreen() {
     return () => clearTimeout(timer);
   }, []);
 
+
   // Auto-hide toast after 1 second
   React.useEffect(() => {
     if (toast.open) {

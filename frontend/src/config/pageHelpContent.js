@@ -9,17 +9,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: '📍',
         title: 'See Who\'s Near You',
-        description: 'The radar shows people nearby in real-time. Closer = larger on screen.',
+        description: 'See who\'s around you right now.',
       },
       {
         emoji: '💬',
         title: 'Send Gestures & Chat',
-        description: 'Tap a profile to like, send a gesture, or start chatting.',
+        description: 'Tap to like, gesture, or chat.',
       },
       {
         emoji: '🔄',
         title: 'Adjust Range',
-        description: 'Change distance from 500m to 50km using the button above.',
+        description: 'Set your preferred distance.',
       },
     ],
   },
@@ -31,17 +31,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: "🔍",
         title: "Discover Places",
-        description: "Browse cafes, bars, events and nature spots for your next date."
+        description: "Find cafes, bars, and date spots."
       },
       {
         emoji: "💜",
         title: "Save & Plan",
-        description: "Save places you like and view upcoming events."
+        description: "Save your favorite places."
       },
       {
         emoji: "✨",
         title: "Get Perks",
-        description: "Unlock exclusive benefits at partner venues."
+        description: "Get exclusive venue benefits."
       }
     ]
   },
@@ -53,17 +53,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: "💕",
         title: "Mutual Likes",
-        description: "See everyone who liked you back."
+        description: "See who liked you back."
       },
       {
         emoji: "💬",
         title: "Start Chatting",
-        description: "Tap a match to open a private conversation."
+        description: "Tap to start a conversation."
       },
       {
         emoji: "⭐",
         title: "Favorites",
-        description: "Mark special matches to find them easily."
+        description: "Mark special matches."
       }
     ]
   },
@@ -75,17 +75,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: "💬",
         title: "Send Messages",
-        description: "Chat with your matches and build real connections."
+        description: "Chat with your matches."
       },
       {
         emoji: "📸",
         title: "Share Media",
-        description: "Send photos and emojis to make chats fun."
+        description: "Send photos and emojis."
       },
       {
         emoji: "🔔",
         title: "Notifications",
-        description: "Get notified when you receive new messages."
+        description: "Get message alerts."
       }
     ]
   },
@@ -97,17 +97,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: "📝",
         title: "Edit Details",
-        description: "Add photos and update your bio."
+        description: "Add photos and bio."
       },
       {
         emoji: "⚙️",
         title: "Settings",
-        description: "Customize preferences and privacy."
+        description: "Set your preferences."
       },
       {
         emoji: "✨",
         title: "Complete Profile",
-        description: "A full profile gets more matches!"
+        description: "Get more matches!"
       }
     ]
   },
@@ -119,17 +119,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: "🏠",
         title: "Your Feed",
-        description: "Swipe through profiles and find your match."
+        description: "Swipe through profiles."
       },
       {
         emoji: "🎯",
         title: "Like or Pass",
-        description: "Swipe right to like, left to pass."
+        description: "Right = like, left = pass."
       },
       {
         emoji: "👥",
         title: "Get Matches",
-        description: "When you both like each other, it's a match!"
+        description: "Mutual likes = match!"
       }
     ]
   },
@@ -141,17 +141,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: "🎉",
         title: "Browse Events",
-        description: "Find parties, workshops, and social activities nearby."
+        description: "Find events nearby."
       },
       {
         emoji: "✅",
         title: "Join Events",
-        description: "RSVP and see who else is going."
+        description: "RSVP and see attendees."
       },
       {
         emoji: "🤝",
         title: "Meet People",
-        description: "Connect with attendees before and during events."
+        description: "Connect with attendees."
       }
     ]
   },
@@ -163,17 +163,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: "💖",
         title: "See Your Admirers",
-        description: "View everyone who liked your profile."
+        description: "See who liked you."
       },
       {
         emoji: "👀",
         title: "Check Profiles",
-        description: "Browse their photos and bio."
+        description: "View their profiles."
       },
       {
         emoji: "💕",
         title: "Like Back",
-        description: "Like them back to create a match!"
+        description: "Like back to match!"
       }
     ]
   },
@@ -185,17 +185,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: "⚙️",
         title: "Preferences",
-        description: "Set distance, age range, and interests."
+        description: "Set your filters."
       },
       {
         emoji: "🔒",
         title: "Privacy",
-        description: "Control who sees your profile and location."
+        description: "Control your visibility."
       },
       {
         emoji: "🔔",
         title: "Notifications",
-        description: "Choose which alerts you want to receive."
+        description: "Manage your alerts."
       }
     ]
   },
@@ -207,17 +207,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: "⭐",
         title: "Unlimited Likes",
-        description: "Like as many profiles as you want."
+        description: "Like unlimited profiles."
       },
       {
         emoji: "🚀",
         title: "Boost",
-        description: "Get more visibility for 30 minutes."
+        description: "Get more visibility."
       },
       {
         emoji: "💎",
         title: "See Likes",
-        description: "See who liked you before swiping."
+        description: "See likes first."
       }
     ]
   },
@@ -229,17 +229,17 @@ export const PAGE_HELP_CONTENT = {
       {
         emoji: "🛡️",
         title: "Protect Info",
-        description: "Never share sensitive personal details."
+        description: "Keep personal info private."
       },
       {
         emoji: "📍",
         title: "Meet Safely",
-        description: "First dates should be in public places."
+        description: "Meet in public places."
       },
       {
         emoji: "🚨",
         title: "Report",
-        description: "Block or report suspicious behavior."
+        description: "Report bad behavior."
       }
     ]
   }

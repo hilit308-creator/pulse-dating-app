@@ -16,6 +16,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Avatar } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Clock } from 'lucide-react';
@@ -209,30 +210,51 @@ export default function MatchPulseScreen({
   currentUser,
   onStartChat,
   onLater,
+  onTertiary,
+  copy,
   userSignals = {},
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const stateMatch = location.state?.match;
+  const stateCurrentUser = location.state?.currentUser;
+  const stateCopy = location.state?.copy;
+  const stateOnTertiary = location.state?.onTertiary;
+  const resolvedMatch = match || stateMatch;
+  const resolvedCurrentUser = currentUser || stateCurrentUser;
+  const resolvedCopy = copy || stateCopy || {};
+  const resolvedOnTertiary = onTertiary || stateOnTertiary;
+
+  const resolvedOnStartChat = onStartChat || ((m) => {
+    const matchId = m?.matchId || m?.id;
+    if (matchId) navigate(`/chat?matchId=${matchId}`);
+    else navigate('/chat');
+  });
+
+  const resolvedOnLater = onLater || (() => navigate(-1));
+
   const [empowermentText, setEmpowermentText] = useState('');
   const [isVisible, setIsVisible] = useState(true);
 
   // Get empowerment message on mount
   useEffect(() => {
-    if (match?.id) {
-      const { text } = getEmpowermentMessage(match.id, userSignals);
+    if (resolvedMatch?.id) {
+      const { text } = getEmpowermentMessage(resolvedMatch.id, userSignals);
       setEmpowermentText(text);
     }
-  }, [match?.id, userSignals]);
+  }, [resolvedMatch?.id, userSignals]);
 
   const handleStartChat = () => {
     setIsVisible(false);
     setTimeout(() => {
-      onStartChat?.(match);
+      resolvedOnStartChat?.(resolvedMatch);
     }, 300);
   };
 
   const handleLater = () => {
     setIsVisible(false);
     setTimeout(() => {
-      onLater?.(match);
+      resolvedOnLater?.(resolvedMatch);
     }, 300);
   };
 
@@ -250,7 +272,7 @@ export default function MatchPulseScreen({
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: 1000,
+            zIndex: 9999,
           }}
         >
           <Box
@@ -290,7 +312,7 @@ export default function MatchPulseScreen({
                 }}
               >
                 <Avatar
-                  src={currentUser?.photo}
+                  src={resolvedCurrentUser?.photo}
                   sx={{
                     width: 64,
                     height: 64,
@@ -302,7 +324,7 @@ export default function MatchPulseScreen({
                   <HeartbeatIcon />
                 </Box>
                 <Avatar
-                  src={match?.photo || match?.photos?.[0]}
+                  src={resolvedMatch?.photo || resolvedMatch?.photos?.[0]}
                   sx={{
                     width: 64,
                     height: 64,
@@ -322,7 +344,7 @@ export default function MatchPulseScreen({
                   mb: 1,
                 }}
               >
-                It's a Match
+                {resolvedCopy.title || "It's a Match"}
               </Typography>
 
               {/* Subtitle */}
@@ -338,7 +360,7 @@ export default function MatchPulseScreen({
                   mb: 1,
                 }}
               >
-                You're in sync
+                {resolvedCopy.subtitle || "You're in sync"}
               </Typography>
 
               <Typography
@@ -349,7 +371,7 @@ export default function MatchPulseScreen({
                   mb: 4,
                 }}
               >
-                Something real can happen now
+                {resolvedCopy.description || 'Something real can happen now'}
               </Typography>
 
               {/* Match name */}
@@ -361,7 +383,7 @@ export default function MatchPulseScreen({
                   mb: 4,
                 }}
               >
-                You and {match?.name || match?.firstName} matched!
+                {resolvedCopy.matchedLine || `You and ${resolvedMatch?.name || resolvedMatch?.firstName} matched!`}
               </Typography>
 
               {/* Action buttons */}
@@ -386,8 +408,30 @@ export default function MatchPulseScreen({
                     },
                   }}
                 >
-                  Start the Pulse
+                  {resolvedCopy.primaryCta || 'Start the Pulse'}
                 </Button>
+
+                {!!resolvedCopy.tertiaryCta && (
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="large"
+                    onClick={() => resolvedOnTertiary?.(resolvedMatch)}
+                    sx={{
+                      mt: 2,
+                      py: 1.75,
+                      borderRadius: '16px',
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderColor: 'rgba(108,92,231,0.35)',
+                      color: '#6C5CE7',
+                      '&:hover': { borderColor: 'rgba(108,92,231,0.55)', backgroundColor: 'rgba(108,92,231,0.04)' },
+                    }}
+                  >
+                    {resolvedCopy.tertiaryCta}
+                  </Button>
+                )}
 
                 <Button
                   fullWidth
@@ -408,7 +452,7 @@ export default function MatchPulseScreen({
                     },
                   }}
                 >
-                  Later
+                  {resolvedCopy.secondaryCta || 'Later'}
                 </Button>
               </Box>
 
