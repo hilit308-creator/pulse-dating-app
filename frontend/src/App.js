@@ -727,13 +727,14 @@ function AppShell() {
   const isAuthPath = authPaths.some((prefix) => location.pathname.startsWith(prefix));
   const isProfilePath = location.pathname.startsWith('/profile/');
   
-  // Root tabs - no back button needed
+  // Root tabs - no back button needed (chat with specific matchId SHOULD show back button)
   const rootTabs = ['/', '/home', '/home1', '/home-swipe', '/home-pulse', '/chat', '/matches', '/nearby', '/events', '/explore'];
   const isRootTab = rootTabs.includes(location.pathname);
   
   // Show tab bar and header only when logged in and onboarding complete
+  // Note: hideByFlag only hides TabBar, NOT the main header
   const showTabBar = isLoggedIn && isOnboardingComplete && !isAuthPath && !isProfilePath && !hideByFlag;
-  const showHeader = isLoggedIn && isOnboardingComplete && !isAuthPath && !hideByFlag;
+  const showHeader = isLoggedIn && isOnboardingComplete && !isAuthPath;
   const showBackButton = showHeader && !isRootTab;
   
   // Get help content based on current route
@@ -810,7 +811,14 @@ function AppShell() {
             {showBackButton && (
               <IconButton 
                 size="small" 
-                onClick={() => navigate(-1)}
+                onClick={() => {
+                  // If in a specific chat, go back to chat list
+                  if (location.pathname.startsWith('/chat/')) {
+                    navigate('/chat');
+                  } else {
+                    navigate(-1);
+                  }
+                }}
                 sx={{ 
                   width: 36, 
                   height: 36,

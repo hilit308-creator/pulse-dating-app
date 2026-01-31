@@ -201,7 +201,45 @@ Check back at https://developer.spotify.com/dashboard periodically.
 
 ---
 
-## 8. Cloud Hosting / Backend
+## 8. Video & Voice Calling
+
+### Current Status: **Simulation (Free)**
+Uses WebRTC for local camera/mic access, simulates remote connection.
+
+### Future Options:
+
+| Service | Purpose | Cost | Notes |
+|---------|---------|------|-------|
+| **Daily.co** | Video/voice calls | Free: 10K min/month | Easy integration, recommended |
+| **Agora** | Video/voice calls | Free: 10K min/month | Good SDK |
+| **Twilio Video** | Video/voice calls | ~$0.004/min | Pay as you go |
+| **Jitsi** | Video/voice calls | Free (self-hosted) | Open source |
+| **100ms** | Video/voice calls | Free: 10K min/month | Modern API |
+
+### Recommended: **Daily.co** or **Jitsi**
+- Daily.co: Easiest integration, generous free tier
+- Jitsi: Completely free if self-hosted
+
+### What's Needed for Real Calls:
+1. **Signaling Server** - Exchange connection info between users (WebSocket)
+2. **STUN Server** - Discover public IP (Google provides free: `stun:stun.l.google.com:19302`)
+3. **TURN Server** - Relay for difficult NAT situations (can be costly)
+
+### Current Implementation:
+- `VideoCallModal.jsx` - Full UI with controls (mute, video toggle, speaker, end call)
+- WebRTC `getUserMedia()` for camera/mic access
+- Simulated "ringing" and "connected" states
+- Call duration timer
+
+### Action Items:
+- [ ] Choose video calling provider (Daily.co recommended for MVP)
+- [ ] Set up signaling server (Socket.io on backend)
+- [ ] Implement WebRTC peer connection
+- [ ] Add incoming call notifications
+
+---
+
+## 9. Cloud Hosting / Backend
 
 ### Current Status: **Local development**
 
@@ -226,6 +264,7 @@ Check back at https://developer.spotify.com/dashboard periodically.
 | Photo Verification | $0 (simulation) |
 | Push Notifications | $0 (free) |
 | SMS (Firebase) | $0 (free tier) |
+| Video Calling (Daily.co) | $0 (free tier) |
 | Hosting | $0 (free tier) |
 | **Total** | **$0** |
 
@@ -236,8 +275,9 @@ Check back at https://developer.spotify.com/dashboard periodically.
 | Photo Verification (AWS) | ~$50/month |
 | Push Notifications | $0 |
 | SMS | ~$50/month |
+| Video Calling | ~$30/month |
 | Hosting | ~$50/month |
-| **Total** | **~$170/month** |
+| **Total** | **~$200/month** |
 
 ### Scale Phase (100,000 users):
 | Service | Estimated Cost |
@@ -246,8 +286,9 @@ Check back at https://developer.spotify.com/dashboard periodically.
 | Photo Verification | ~$500/month |
 | Push Notifications | $0 |
 | SMS | ~$500/month |
+| Video Calling | ~$300/month |
 | Hosting | ~$500/month |
-| **Total** | **~$1,700/month** |
+| **Total** | **~$2,000/month** |
 
 ---
 
@@ -257,6 +298,8 @@ Check back at https://developer.spotify.com/dashboard periodically.
 2. [ ] Decide on photo verification service (AWS/Azure/Google)
 3. [ ] Set up Firebase for auth and push notifications
 4. [ ] Choose hosting provider for production
+5. [ ] Choose video calling provider (Daily.co recommended)
+6. [ ] Set up signaling server for real-time call connections
 
 ---
 

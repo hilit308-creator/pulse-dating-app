@@ -7,7 +7,7 @@ import React, {
   Suspense,
   useCallback,
 } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -67,6 +67,12 @@ import {
 
 // AI First Message - Per spec section 9
 import AiFirstMessage from "../components/AiFirstMessage";
+
+// Video/Voice Call Modal
+import VideoCallModal from "../components/VideoCallModal";
+
+// Camera Modal
+import CameraModal from "../components/CameraModal";
 
 // Gesture messages store
 import useGestureMessagesStore from '../store/gestureMessagesStore';
@@ -542,23 +548,23 @@ function VoicePlayer({ url, durationMs }) {
           }
         }}
         sx={{
-          bgcolor: "#25D366",
+          bgcolor: "#6C5CE7",
           color: "#fff",
           width: 32,
           height: 32,
-          "&:hover": { bgcolor: "#20bd5b" },
+          "&:hover": { bgcolor: "#5B4BD1" },
         }}
       >
         {playing ? "❚❚" : "▶"}
       </IconButton>
       <Box sx={{ flex: 1 }}>
-        <Box sx={{ height: 4, bgcolor: "#D9FDD3", borderRadius: 999 }}>
+        <Box sx={{ height: 4, bgcolor: "rgba(108, 92, 231, 0.2)", borderRadius: 999 }}>
           <Box
             sx={{
               width: `${Math.round(progress * 100)}%`,
               height: 4,
               borderRadius: 999,
-              bgcolor: "#128C7E",
+              bgcolor: "#6C5CE7",
             }}
           />
         </Box>
@@ -657,7 +663,7 @@ function ChatBubble({
   onEventInviteOfferPay,
   onWorkshopInviteRespond,
 }) {
-  const bg = isMe ? "#DCF8C6" : "#FFFFFF";
+  const bg = isMe ? "#F3F0FF" : "#FFFFFF";
   const tailSide = isMe ? "right" : "left";
   const reactionEntries = Object.entries(msg.reactions || {}).filter(
     ([, c]) => c > 0
@@ -731,8 +737,8 @@ function ChatBubble({
               mb: 0.5,
               px: 1,
               py: 0.5,
-              borderLeft: "3px solid #7aa6ff",
-              bgcolor: "#f6f7fb",
+              borderLeft: "3px solid #6C5CE7",
+              bgcolor: "#F5F3FF",
               borderRadius: 1,
             }}
           >
@@ -958,10 +964,10 @@ function ChatBubble({
                     mt: 1, 
                     p: 1, 
                     borderRadius: 2, 
-                    bgcolor: 'rgba(16,185,129,0.1)', 
-                    border: '1px solid rgba(16,185,129,0.3)' 
+                    bgcolor: 'rgba(108,92,231,0.1)', 
+                    border: '1px solid rgba(108,92,231,0.3)' 
                   }}>
-                    <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 700 }}>
+                    <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 700 }}>
                       ✅ Accepted
                     </Typography>
                   </Box>
@@ -1401,9 +1407,24 @@ function genCoachReply(userText = "") {
 export default function ChatScreen() {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { matchId: urlMatchId } = useParams(); // Get matchId from URL if navigating to /chat/:matchId
-  const [chats, setChats] = useState([AGENT_ROW, ...demoChats]); // Single unified Agent
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { matchId: urlMatchId } = useParams();
+  const [chats, setChats] = useState([AGENT_ROW, ...demoChats]);
   const [openChat, setOpenChat] = useState(null);
+  
+  // Helper to open chat and update URL
+  const openChatWithNav = useCallback((matchId) => {
+    setOpenChat(matchId);
+    navigate(`/chat/${matchId}`, { replace: true });
+  }, [navigate]);
+  
+  // Close chat when navigating back to /chat (no matchId in URL)
+  useEffect(() => {
+    if (location.pathname === '/chat' && openChat !== null) {
+      setOpenChat(null);
+    }
+  }, [location.pathname]);
   const chat = useMemo(
     () => chats.find((c) => c.matchId === openChat),
     [chats, openChat]
@@ -1582,7 +1603,7 @@ export default function ChatScreen() {
         String(c.user?.id) === urlMatchId
       );
       if (foundChat) {
-        setOpenChat(foundChat.matchId);
+        openChatWithNav(foundChat.matchId);
       }
     }
   }, [urlMatchId, chats]);
@@ -1971,10 +1992,17 @@ export default function ChatScreen() {
   useEffect(() => {
     if (typeof document !== "undefined" && document.body) {
       document.body.dataset.hideTabBar = openChat ? "true" : "false";
+      // Hide page scrollbar when in chat view
+      if (openChat) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
     }
     return () => {
       if (typeof document !== "undefined" && document.body) {
         delete document.body.dataset.hideTabBar;
+        document.body.style.overflow = '';
       }
     };
   }, [openChat]);
@@ -2252,6 +2280,8 @@ export default function ChatScreen() {
   const [attachMenu, setAttachMenu] = useState(null);
   const imageInputRef = useRef(null);
   const fileAttachInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   // reactions popper
   const reactPop = useReactionPopper();
@@ -2275,6 +2305,7 @@ export default function ChatScreen() {
   // search in chat
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
+  const [searchIndex, setSearchIndex] = useState(0);
   const matches = useMemo(
     () =>
       searchQ
@@ -2286,6 +2317,44 @@ export default function ChatScreen() {
         : [],
     [searchQ, chat]
   );
+  
+  // Navigate to search result
+  const navigateToSearchResult = useCallback((index) => {
+    if (matches.length === 0) return;
+    const safeIndex = Math.max(0, Math.min(index, matches.length - 1));
+    setSearchIndex(safeIndex);
+    const msgId = matches[safeIndex];
+    const msgElement = document.getElementById(`msg-${msgId}`);
+    if (msgElement) {
+      msgElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Highlight effect
+      msgElement.style.transition = 'background-color 0.3s';
+      msgElement.style.backgroundColor = 'rgba(108, 92, 231, 0.3)';
+      setTimeout(() => {
+        msgElement.style.backgroundColor = '';
+      }, 1500);
+    }
+  }, [matches]);
+  
+  // Auto-navigate when search query changes
+  useEffect(() => {
+    if (matches.length > 0 && searchQ) {
+      setSearchIndex(0);
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const msgId = matches[0];
+        const msgElement = document.getElementById(`msg-${msgId}`);
+        if (msgElement) {
+          msgElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          msgElement.style.transition = 'background-color 0.3s';
+          msgElement.style.backgroundColor = 'rgba(108, 92, 231, 0.3)';
+          setTimeout(() => {
+            msgElement.style.backgroundColor = '';
+          }, 1500);
+        }
+      }, 100);
+    }
+  }, [matches.length, searchQ]);
 
   // typing / recording indicators
   const [typing, setTyping] = useState(false);
@@ -2337,12 +2406,57 @@ export default function ChatScreen() {
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior });
   };
+  
+  // Check if user is near bottom (within 150px)
+  const isNearBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+  };
+  
+  // Track if user scrolled up
+  const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false);
+  const prevMsgCount = useRef(chat?.messages?.length || 0);
+  
+  // Scroll to bottom when opening chat - with delay to ensure DOM is ready
   useEffect(() => {
-    if (openChat) scrollToBottom("auto");
+    if (openChat) {
+      setShowNewMsgIndicator(false);
+      scrollToBottom("auto");
+      setTimeout(() => scrollToBottom("auto"), 100);
+      setTimeout(() => scrollToBottom("auto"), 300);
+      setTimeout(() => scrollToBottom("auto"), 500);
+    }
   }, [openChat]);
+  
+  // Also scroll when footerH changes (composer height calculated)
   useEffect(() => {
-    if (openChat) scrollToBottom("smooth");
-  }, [chat?.messages?.length, footerH]);
+    if (openChat && footerH > 0) {
+      setTimeout(() => scrollToBottom("auto"), 50);
+    }
+  }, [footerH, openChat]);
+  
+  // Smart scroll: only auto-scroll if user is near bottom
+  useEffect(() => {
+    if (!openChat) return;
+    const newCount = chat?.messages?.length || 0;
+    if (newCount > prevMsgCount.current) {
+      if (isNearBottom()) {
+        scrollToBottom("smooth");
+      } else {
+        // User scrolled up, show indicator
+        setShowNewMsgIndicator(true);
+      }
+    }
+    prevMsgCount.current = newCount;
+  }, [chat?.messages?.length, openChat]);
+  
+  // Hide indicator when user scrolls to bottom
+  const handleScroll = useCallback(() => {
+    if (isNearBottom()) {
+      setShowNewMsgIndicator(false);
+    }
+  }, []);
 
   /* -------- Message mutations helpers -------- */
   const updateMessageById = (id, patch) =>
@@ -2992,9 +3106,9 @@ export default function ChatScreen() {
               justifyContent: 'space-between',
               px: 2,
               py: 1,
-              bgcolor: sosState === SOS_STATE.NONE ? '#10B981' : 
-                       sosState === SOS_STATE.SEARCHING ? '#F59E0B' :
-                       sosState === SOS_STATE.HELPER_ARRIVED ? '#10B981' : '#3B82F6',
+              bgcolor: sosState === SOS_STATE.NONE ? '#6C5CE7' : 
+                       sosState === SOS_STATE.SEARCHING ? '#8B5CF6' :
+                       sosState === SOS_STATE.HELPER_ARRIVED ? '#6C5CE7' : '#8B5CF6',
               color: '#fff',
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               transition: 'background-color 0.3s ease',
@@ -3043,7 +3157,7 @@ export default function ChatScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <Check size={10} color="#10B981" />
+                    <Check size={10} color="#8B9467" />
                   </Box>
                 )}
               </Box>
@@ -3172,7 +3286,7 @@ export default function ChatScreen() {
                     aria-label="Ask AI"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenChat(AI_ADVISOR_ROW.matchId);
+                      openChatWithNav(AI_ADVISOR_ROW.matchId);
                       setTimeout(() => {
                         const id = Date.now();
                         const mention = `${c.user.name}${c.user.age ? ` (${c.user.age})` : ""}`;
@@ -3214,7 +3328,7 @@ export default function ChatScreen() {
                     aria-label="Support chat"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenChat(THERAPIST_ID);
+                      openChatWithNav(THERAPIST_ID);
                       setTimeout(() => {
                         const id = Date.now();
                         const msg = `Sometimes I feel anxious when chatting with ${c.user.name}. Can we figure out a tiny step that would help?`;
@@ -3290,7 +3404,7 @@ export default function ChatScreen() {
                   bgcolor: "#fff",
                   "&:hover": { bgcolor: "#fafafa" },
                 }}
-                onClick={() => setOpenChat(c.matchId)}
+                onClick={() => openChatWithNav(c.matchId)}
                 role="button"
                 aria-label={`Open chat with ${c.user.name}`}
               >
@@ -3298,7 +3412,7 @@ export default function ChatScreen() {
                   src={c.user.photoUrl}
                   onClick={(e) => {
                     e.stopPropagation();
-                    c.user24hPhoto ? handleUserStoryClick(c.matchId) : setOpenChat(c.matchId);
+                    c.user24hPhoto ? handleUserStoryClick(c.matchId) : openChatWithNav(c.matchId);
                   }}
                   sx={{
                     width: 48,
@@ -3448,7 +3562,7 @@ export default function ChatScreen() {
         bgcolor: "#fff",
       }}
     >
-      {/* In-chat header */}
+      {/* In-chat header - positioned below main app header (56px) */}
       <Box
         sx={{
           position: "fixed",
@@ -3467,23 +3581,6 @@ export default function ChatScreen() {
           boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         }}
       >
-        <IconButton 
-          onClick={() => setOpenChat(null)} 
-          aria-label="Back"
-          sx={{
-            bgcolor: "rgba(108, 92, 231, 0.08)",
-            color: "#6C5CE7",
-            width: 40,
-            height: 40,
-            transition: "all 0.2s ease",
-            "&:hover": { 
-              bgcolor: "rgba(108, 92, 231, 0.15)",
-              transform: "translateX(-2px)"
-            }
-          }}
-        >
-          <ArrowLeft size={20} />
-        </IconButton>
         <Avatar
           src={chat.user.photoUrl}
           sx={{ 
@@ -3562,7 +3659,7 @@ export default function ChatScreen() {
               color: '#fff',
               borderRadius: '14px',
               px: 0.5,
-              boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)',
+              boxShadow: '0 4px 14px rgba(168, 85, 247, 0.3)',
               border: '1px solid rgba(255,255,255,0.2)',
               '& .MuiChip-label': { px: 1 },
             }}
@@ -3574,13 +3671,13 @@ export default function ChatScreen() {
               aria-label="Video call" 
               onClick={() => startCall("video")}
               sx={{
-                bgcolor: "rgba(59, 130, 246, 0.08)",
-                color: "#3B82F6",
+                bgcolor: "rgba(108, 92, 231, 0.08)",
+                color: "#6C5CE7",
                 width: 40,
                 height: 40,
                 transition: "all 0.2s ease",
                 "&:hover": { 
-                  bgcolor: "rgba(59, 130, 246, 0.15)",
+                  bgcolor: "rgba(108, 92, 231, 0.15)",
                   transform: "scale(1.05)"
                 }
               }}
@@ -3591,13 +3688,13 @@ export default function ChatScreen() {
               aria-label="Voice call" 
               onClick={() => startCall("voice")}
               sx={{
-                bgcolor: "rgba(16, 185, 129, 0.08)",
-                color: "#10B981",
+                bgcolor: "rgba(108, 92, 231, 0.08)",
+                color: "#6C5CE7",
                 width: 40,
                 height: 40,
                 transition: "all 0.2s ease",
                 "&:hover": { 
-                  bgcolor: "rgba(16, 185, 129, 0.15)",
+                  bgcolor: "rgba(108, 92, 231, 0.15)",
                   transform: "scale(1.05)"
                 }
               }}
@@ -3628,7 +3725,7 @@ export default function ChatScreen() {
                 onClick={handleStartMeeting}
                 aria-label="Start Meeting"
                 sx={{
-                  background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)',
+                  background: 'linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)',
                   color: '#fff',
                   fontWeight: 700,
                   fontSize: '0.85rem',
@@ -3637,17 +3734,17 @@ export default function ChatScreen() {
                   px: 2.5,
                   py: 1,
                   minWidth: 'auto',
-                  boxShadow: '0 0 24px rgba(52, 211, 153, 0.6), 0 6px 16px rgba(16, 185, 129, 0.5)',
-                  border: '2px solid rgba(255,255,255,0.4)',
+                  boxShadow: '0 4px 14px rgba(128, 90, 213, 0.3)',
+                  border: 'none',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': { 
-                    background: 'linear-gradient(135deg, #6EE7B7 0%, #34D399 50%, #10B981 100%)',
-                    boxShadow: '0 0 32px rgba(52, 211, 153, 0.7), 0 8px 20px rgba(16, 185, 129, 0.6)',
-                    transform: 'translateY(-2px) scale(1.02)',
+                    background: 'linear-gradient(135deg, #B794F4 0%, #9F7AEA 100%)',
+                    boxShadow: '0 6px 20px rgba(128, 90, 213, 0.4)',
+                    transform: 'translateY(-2px)',
                   },
                   '&:active': {
-                    transform: 'translateY(0) scale(0.98)',
-                    boxShadow: '0 0 16px rgba(52, 211, 153, 0.5), 0 4px 12px rgba(16, 185, 129, 0.4)',
+                    transform: 'translateY(0)',
+                    boxShadow: '0 2px 8px rgba(128, 90, 213, 0.3)',
                   },
                 }}
               >
@@ -3741,16 +3838,16 @@ export default function ChatScreen() {
             position: 'fixed',
             left: 0,
             right: 0,
-            top: 0,
+            top: 56,
             zIndex: 1500,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             px: 2,
             py: 1,
-            bgcolor: sosState === SOS_STATE.NONE ? '#10B981' : 
-                     sosState === SOS_STATE.SEARCHING ? '#F59E0B' :
-                     sosState === SOS_STATE.HELPER_ARRIVED ? '#10B981' : '#3B82F6',
+            bgcolor: sosState === SOS_STATE.NONE ? '#6C5CE7' : 
+                     sosState === SOS_STATE.SEARCHING ? '#8B5CF6' :
+                     sosState === SOS_STATE.HELPER_ARRIVED ? '#6C5CE7' : '#8B5CF6',
             color: '#fff',
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             transition: 'background-color 0.3s ease',
@@ -3804,7 +3901,7 @@ export default function ChatScreen() {
                     justifyContent: 'center',
                   }}
                 >
-                  <Check size={10} color="#10B981" />
+                  <Check size={10} color="#6C5CE7" />
                 </Box>
               )}
             </Box>
@@ -3812,8 +3909,8 @@ export default function ChatScreen() {
               <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
                 {sosState === SOS_STATE.NONE && 'Meeting in progress'}
                 {sosState === SOS_STATE.SEARCHING && 'Finding helper...'}
-                {sosState === SOS_STATE.HELPER_FOUND && `Helper found: ${sosHelper?.name}`}
-                {sosState === SOS_STATE.HELPER_APPROACHING && `${sosHelper?.name} approaching`}
+                {sosState === SOS_STATE.HELPER_FOUND && `Helper found`}
+                {sosState === SOS_STATE.HELPER_APPROACHING && `Helper approaching`}
                 {sosState === SOS_STATE.HELPER_ARRIVED && 'Helper arrived'}
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1 }}>
@@ -3865,28 +3962,66 @@ export default function ChatScreen() {
         </Box>
       )}
 
-      {/* Search bar */}
+      {/* Search bar - compact, fixed below in-chat header */}
       {searchOpen && (
         <Box
           sx={{
-            px: 1.25,
-            py: 1,
-            borderBottom: "1px solid #E5E7EB",
+            position: "fixed",
+            top: 130,
+            left: 0,
+            right: 0,
+            zIndex: 1450,
             bgcolor: "#fff",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
             display: "flex",
-            gap: 1,
+            gap: 0.5,
             alignItems: "center",
+            px: 1,
+            py: 0.75,
+            borderBottom: "1px solid #E5E7EB",
           }}
         >
+          <Search size={16} color="#9CA3AF" />
           <TextField
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
-            fullWidth
             size="small"
-            placeholder="Search in chat…"
+            placeholder="Search…"
             aria-label="Search in chat"
+            autoFocus
+            sx={{ flex: 1, '& .MuiInputBase-input': { py: 0.5, fontSize: '0.875rem' } }}
           />
-          <Chip label={`${matches.length}`} />
+          {matches.length > 0 && (
+            <>
+              <IconButton 
+                size="small" 
+                onClick={() => navigateToSearchResult(searchIndex - 1)}
+                disabled={searchIndex <= 0}
+                sx={{ p: 0.5 }}
+              >
+                <ArrowLeft size={16} />
+              </IconButton>
+              <Typography variant="caption" sx={{ minWidth: 40, textAlign: 'center', fontWeight: 600 }}>
+                {searchIndex + 1}/{matches.length}
+              </Typography>
+              <IconButton 
+                size="small" 
+                onClick={() => navigateToSearchResult(searchIndex + 1)}
+                disabled={searchIndex >= matches.length - 1}
+                sx={{ p: 0.5 }}
+              >
+                <ArrowLeft size={16} style={{ transform: 'rotate(180deg)' }} />
+              </IconButton>
+            </>
+          )}
+          {matches.length === 0 && searchQ && (
+            <Typography variant="caption" sx={{ color: '#9CA3AF' }}>
+              0
+            </Typography>
+          )}
+          <IconButton size="small" onClick={() => { setSearchOpen(false); setSearchQ(''); }} sx={{ p: 0.5 }}>
+            <X size={16} />
+          </IconButton>
         </Box>
       )}
 
@@ -3895,6 +4030,7 @@ export default function ChatScreen() {
         open={Boolean(menuEl)}
         onClose={() => setMenuEl(null)}
         keepMounted
+        sx={{ zIndex: 9999 }}
       >
         {chat.matchId !== AGENT_ID && (
           <>
@@ -3904,7 +4040,9 @@ export default function ChatScreen() {
                   prompt("Enter theme color (hex / css)", chat.themeColor || "#ECE5DD") ||
                   chat.themeColor;
                 setChats((prev) =>
-                  prev.map((c) => (c.matchId === openChat ? { ...c, themeColor: color } : c))
+                  prev.map((c) =>
+                    c.matchId === openChat ? { ...c, themeColor: color } : c
+                  )
                 );
                 setMenuEl(null);
               }}
@@ -3996,20 +4134,29 @@ export default function ChatScreen() {
         </Alert>
       )}
 
-      {/* Messages */}
+      {/* Messages wrapper - fixed height, scrollable */}
       <Box
         ref={scrollRef}
+        onScroll={handleScroll}
         sx={{
-          flex: "1 1 auto",
-          minHeight: 0, /* critical for flex scroll */
-          overflowY: "auto",
+          position: 'fixed',
+          top: 126,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
           px: 1.25,
-          pt: "24px", /* padding to push first message down */
-          backgroundImage: doodleBg,
+          pt: 1,
+          pb: `${footerH + 46}px`,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
           backgroundColor: chat.themeColor || "#ECE5DD",
-          backgroundBlendMode: "multiply",
-          pb: `calc(${footerH}px + var(--app-bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px))`,
-          scrollPaddingBottom: `calc(${footerH}px + var(--app-bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px))`,
+          backgroundImage: doodleBg,
+          backgroundAttachment: 'fixed',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       >
         {/* Unified Agent Panel */}
@@ -4085,7 +4232,17 @@ export default function ChatScreen() {
               <div>
                 {dayBreak && (
                   <Box sx={{ my: 1.5, textAlign: "center" }}>
-                    <Chip size="small" label={new Date(m.timestamp).toLocaleDateString()} />
+                    <Chip
+                      size="small"
+                      label={new Date(m.timestamp).toLocaleDateString()}
+                      sx={{
+                        bgcolor: "rgba(108, 92, 231, 0.14) !important",
+                        color: "#4B3DB6 !important",
+                        fontWeight: 700,
+                        border: "1px solid rgba(108, 92, 231, 0.18) !important",
+                        '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                      }}
+                    />
                   </Box>
                 )}
                 <ChatBubble
@@ -4163,15 +4320,47 @@ export default function ChatScreen() {
         </Box>
       )}
 
-      {/* Composer */}
+      {/* New messages indicator */}
+      {showNewMsgIndicator && (
+        <Box
+          onClick={() => {
+            scrollToBottom("smooth");
+            setShowNewMsgIndicator(false);
+          }}
+          sx={{
+            position: "fixed",
+            bottom: footerH + 70,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1600,
+            bgcolor: "#6C5CE7",
+            color: "#fff",
+            px: 2,
+            py: 0.75,
+            borderRadius: 20,
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(108, 92, 231, 0.4)",
+            display: "flex",
+            alignItems: "center",
+            gap: 0.5,
+            "&:hover": { bgcolor: "#5B4ED1" },
+          }}
+        >
+          <ArrowLeft size={14} style={{ transform: "rotate(-90deg)" }} />
+          New messages
+        </Box>
+      )}
+
+      {/* Composer - fixed at bottom, above tab bar */}
       <Box
         ref={footerRef}
         sx={{
           position: "fixed",
           left: 0,
           right: 0,
-          bottom:
-            "calc(env(safe-area-inset-bottom, 0px) + var(--app-bottom-nav-height, 64px))",
+          bottom: 0,
           zIndex: 1500,
           background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%)",
           borderTop: "1px solid #E5E7EB",
@@ -4199,18 +4388,18 @@ export default function ChatScreen() {
                 size="small"
                 onClick={() => setInput(s)}
                 sx={{
-                  background: 'linear-gradient(135deg, #FFA726 0%, #FB8C00 100%)',
+                  background: 'linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)',
                   color: '#fff',
                   fontWeight: 600,
                   fontSize: '0.8rem',
                   height: 32,
                   px: 1.5,
-                  boxShadow: '0 2px 8px rgba(255, 167, 38, 0.3)',
+                  boxShadow: '0 2px 8px rgba(128, 90, 213, 0.28)',
                   border: '1px solid rgba(255,255,255,0.2)',
                   transition: 'all 0.2s ease',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #FB8C00 0%, #F57C00 100%)',
-                    boxShadow: '0 4px 12px rgba(255, 167, 38, 0.4)',
+                    background: 'linear-gradient(135deg, #B794F4 0%, #9F7AEA 100%)',
+                    boxShadow: '0 4px 12px rgba(128, 90, 213, 0.38)',
                     transform: 'translateY(-2px)',
                   },
                   '&:active': {
@@ -4342,7 +4531,7 @@ export default function ChatScreen() {
                   color: "#6B7280",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    color: "#FFA726",
+                    color: "#6C5CE7",
                     transform: "scale(1.1)",
                   }
                 }}
@@ -4414,7 +4603,7 @@ export default function ChatScreen() {
                   color: "#6B7280",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    color: "#3B82F6",
+                    color: "#7A0BC0",
                     transform: "scale(1.1) rotate(-15deg)",
                   }
                 }}
@@ -4422,11 +4611,11 @@ export default function ChatScreen() {
                 <Paperclip size={20} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Attach image">
+            <Tooltip title="Take photo">
               <IconButton
-                aria-label="Attach image"
+                aria-label="Take photo"
                 size="small"
-                onClick={() => imageInputRef.current?.click()}
+                onClick={() => setCameraOpen(true)}
                 sx={{
                   color: "#6B7280",
                   transition: "all 0.2s ease",
@@ -4463,17 +4652,17 @@ export default function ChatScreen() {
             <IconButton
               aria-label="Voice message"
               sx={{
-                background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                background: "linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)",
                 color: "#fff",
                 width: 44,
                 height: 44,
                 borderRadius: "50%",
-                boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
-                border: "2px solid rgba(255,255,255,0.3)",
+                boxShadow: "0 4px 12px rgba(128, 90, 213, 0.3)",
+                border: "none",
                 transition: "all 0.2s ease",
                 "&:hover": { 
-                  background: "linear-gradient(135deg, #34D399 0%, #10B981 100%)",
-                  boxShadow: "0 6px 16px rgba(16, 185, 129, 0.4)",
+                  background: "linear-gradient(135deg, #B794F4 0%, #9F7AEA 100%)",
+                  boxShadow: "0 6px 16px rgba(128, 90, 213, 0.4)",
                   transform: "scale(1.05)",
                 },
                 "&:active": {
@@ -4665,36 +4854,24 @@ export default function ChatScreen() {
         }}
       />
 
-      {/* Calls modal */}
-      <Modal open={!!call} onClose={endCall}>
-        <Box
-          sx={{
-            position: "fixed",
-            inset: 0,
-            display: "grid",
-            placeItems: "center",
-            bgcolor: "rgba(0,0,0,.6)",
-          }}
-        >
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              bgcolor: "#111",
-              color: "#fff",
-              minWidth: 280,
-              textAlign: "center",
-            }}
-          >
-            <Typography sx={{ mb: 1 }}>
-              {call?.type === "video" ? "Video" : "Voice"} call with {call?.with?.name}
-            </Typography>
-            <Button onClick={endCall} variant="contained" color="error">
-              End
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+      {/* Video/Voice Call Modal */}
+      <VideoCallModal
+        open={!!call}
+        onClose={endCall}
+        callType={call?.type}
+        remoteUser={call?.with}
+        onCallEnd={endCall}
+      />
+
+      {/* Camera Modal */}
+      <CameraModal
+        open={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onCapture={(file) => {
+          sendImage(file);
+          setCameraOpen(false);
+        }}
+      />
 
       {/* Media Gallery */}
       <Modal open={gallery.open} onClose={() => setGallery({ open: false, images: [] })}>
@@ -4763,19 +4940,58 @@ export default function ChatScreen() {
 
           <Box sx={{ mb: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {["open","followup","invite","compliment","clarify"].map((k)=>(
-              <Chip key={k} size="small" label={k} onClick={() => { setAiIntent(k); persistIfNeeded(null,null,k); computeAI("settings_change"); }} color={aiIntent===k?'primary':'default'} />
+              <Chip
+                key={k}
+                size="small"
+                label={k}
+                onClick={() => { setAiIntent(k); persistIfNeeded(null,null,k); computeAI("settings_change"); }}
+                color={aiIntent===k?'primary':'default'}
+                sx={{
+                  bgcolor: (aiIntent === k ? 'rgba(108, 92, 231, 0.22)' : 'rgba(108, 92, 231, 0.12)') + ' !important',
+                  color: '#4B3DB6 !important',
+                  border: '1px solid rgba(108, 92, 231, 0.18) !important',
+                  fontWeight: 700,
+                  '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                }}
+              />
             ))}
           </Box>
 
           <Box sx={{ mb: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {["friendly","playful","formal","flirty","confident"].map((t)=>(
-              <Chip key={t} size="small" label={t} onClick={() => { setAiTone(t); persistIfNeeded(t,null,null); computeAI("settings_change"); }} color={aiTone===t?'primary':'default'} />
+              <Chip
+                key={t}
+                size="small"
+                label={t}
+                onClick={() => { setAiTone(t); persistIfNeeded(t,null,null); computeAI("settings_change"); }}
+                color={aiTone===t?'primary':'default'}
+                sx={{
+                  bgcolor: (aiTone === t ? 'rgba(108, 92, 231, 0.22)' : 'rgba(108, 92, 231, 0.12)') + ' !important',
+                  color: '#4B3DB6 !important',
+                  border: '1px solid rgba(108, 92, 231, 0.18) !important',
+                  fontWeight: 700,
+                  '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                }}
+              />
             ))}
           </Box>
 
           <Box sx={{ mb: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {["short","medium","long"].map((l)=>(
-              <Chip key={l} size="small" label={l} onClick={() => { setAiLen(l); persistIfNeeded(null,l,null); computeAI("settings_change"); }} color={aiLen===l?'primary':'default'} />
+              <Chip
+                key={l}
+                size="small"
+                label={l}
+                onClick={() => { setAiLen(l); persistIfNeeded(null,l,null); computeAI("settings_change"); }}
+                color={aiLen===l?'primary':'default'}
+                sx={{
+                  bgcolor: (aiLen === l ? 'rgba(108, 92, 231, 0.22)' : 'rgba(108, 92, 231, 0.12)') + ' !important',
+                  color: '#4B3DB6 !important',
+                  border: '1px solid rgba(108, 92, 231, 0.18) !important',
+                  fontWeight: 700,
+                  '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                }}
+              />
             ))}
             <FormControlLabel
               sx={{ ml: 0.5 }}
@@ -4858,7 +5074,7 @@ export default function ChatScreen() {
               <X size={20} />
             </IconButton>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10B981', boxShadow: '0 0 6px #10B981' }} />
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#6C5CE7', boxShadow: '0 0 6px #6C5CE7' }} />
               <Typography variant="body2" sx={{ fontWeight: 600, color: '#1F2937' }}>Meeting Time</Typography>
             </Box>
             <Button variant="text" color="error" size="small" onClick={handleEndMeeting} sx={{ fontWeight: 600, fontSize: '0.8rem', minWidth: 'auto' }}>
@@ -4877,10 +5093,10 @@ export default function ChatScreen() {
                 gap: 1, 
                 width: '100%', 
                 p: 2.5, 
-                background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+                background: 'linear-gradient(135deg, #F3F0FF 0%, #E9E4FF 100%)',
                 borderRadius: 3, 
-                border: '2px solid #A7F3D0',
-                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.15)',
+                border: '2px solid #C4B5FD',
+                boxShadow: '0 4px 16px rgba(108, 92, 231, 0.15)',
                 position: 'relative',
                 overflow: 'hidden',
                 '&::before': {
@@ -4890,7 +5106,7 @@ export default function ChatScreen() {
                   left: 0,
                   right: 0,
                   height: '3px',
-                  background: 'linear-gradient(90deg, #10B981 0%, #34D399 50%, #10B981 100%)',
+                  background: 'linear-gradient(90deg, #6C5CE7 0%, #8B7CF7 50%, #6C5CE7 100%)',
                   backgroundSize: '200% 100%',
                   animation: 'shimmer 3s linear infinite',
                 },
@@ -4904,19 +5120,20 @@ export default function ChatScreen() {
                     width: 36, 
                     height: 36, 
                     borderRadius: '50%', 
-                    background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #8B7CF7 100%)',
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4), 0 0 0 3px rgba(16, 185, 129, 0.1)',
+                    boxShadow: '0 4px 12px rgba(108, 92, 231, 0.4)',
+                    border: '2px solid rgba(255,255,255,0.9)',
                   }}>
                     <Users size={18} color="#fff" />
                   </Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#065F46', fontSize: '1.1rem' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#4C1D95', fontSize: '1.1rem' }}>
                     Meeting with {meetingWith?.name} ✓
                   </Typography>
                 </Box>
-                <Typography variant="body2" sx={{ color: '#047857', fontStyle: 'italic', textAlign: 'center', fontWeight: 500, fontSize: '0.9rem' }}>
+                <Typography variant="body2" sx={{ color: '#5B21B6', fontStyle: 'italic', textAlign: 'center', fontWeight: 500, fontSize: '0.9rem' }}>
                   ✨ Be yourself, stay safe, and enjoy the moment
                 </Typography>
               </Box>
@@ -4949,14 +5166,14 @@ export default function ChatScreen() {
                     borderRadius: 2.5,
                     bgcolor: '#fff',
                     boxShadow: contactsNotifiedThisMeeting.includes(contact.id) 
-                      ? '0 0 0 3px #10B981, 0 4px 16px rgba(16, 185, 129, 0.3)' 
+                      ? '0 0 0 3px #6C5CE7, 0 4px 16px rgba(108, 92, 231, 0.3)' 
                       : '0 4px 12px rgba(0,0,0,0.08)',
                     cursor: 'pointer',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-4px)',
                       boxShadow: contactsNotifiedThisMeeting.includes(contact.id)
-                        ? '0 0 0 3px #10B981, 0 8px 24px rgba(16, 185, 129, 0.4)'
+                        ? '0 0 0 3px #6C5CE7, 0 8px 24px rgba(108, 92, 231, 0.4)'
                         : '0 8px 20px rgba(0,0,0,0.12)',
                     },
                     '&:active': { transform: 'translateY(-2px) scale(0.98)' },
@@ -4984,7 +5201,7 @@ export default function ChatScreen() {
                     {contact.name.length > 6 ? contact.name.slice(0, 6) + '…' : contact.name}
                   </Typography>
                   <Typography variant="caption" sx={{ 
-                    color: contactsNotifiedThisMeeting.includes(contact.id) ? '#10B981' : '#9CA3AF', 
+                    color: contactsNotifiedThisMeeting.includes(contact.id) ? '#6C5CE7' : '#9CA3AF', 
                     fontSize: '0.65rem',
                     fontWeight: 600,
                     mt: 0.25,
@@ -5019,21 +5236,18 @@ export default function ChatScreen() {
                     width: 48,
                     height: 48,
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                    background: 'linear-gradient(135deg, #8B7CF7 0%, #6C5CE7 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     mb: 0.75,
-                    boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
+                    boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
                     border: '2px solid rgba(255,255,255,0.9)',
                   }}
                 >
                   <MessageCircle size={20} color="#fff" />
                 </Box>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
-                  WhatsApp
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem', fontWeight: 600, mt: 0.25 }}>
                   Share
                 </Typography>
               </Box>
@@ -5042,7 +5256,7 @@ export default function ChatScreen() {
               <Box
                 onClick={() => {
                   setShowMeetingScreen(false);
-                  setOpenChat(AGENT_ID);
+                  openChatWithNav(AGENT_ID);
                   setTimeout(() => {
                     setChats((prev) =>
                       prev.map((c) =>
@@ -5090,12 +5304,12 @@ export default function ChatScreen() {
                     width: 48,
                     height: 48,
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+                    background: 'linear-gradient(135deg, #9F7AEA 0%, #6C5CE7 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     mb: 0.75,
-                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                    boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
                     border: '2px solid rgba(255,255,255,0.9)',
                   }}
                 >
@@ -5146,7 +5360,7 @@ export default function ChatScreen() {
                 >
                   <UserPlus size={20} color="#6B7280" />
                 </Box>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, textAlign: 'center', color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
                   Add
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem', fontWeight: 600, mt: 0.25 }}>
@@ -5195,7 +5409,7 @@ export default function ChatScreen() {
                 width: 36,
                 height: 36,
                 borderRadius: '50%',
-                bgcolor: '#FEF3C7',
+                bgcolor: '#F3E8FF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -5203,7 +5417,7 @@ export default function ChatScreen() {
                 mb: 1,
               }}
             >
-              <Users size={18} color="#F59E0B" />
+              <Users size={18} color="#6C5CE7" />
             </Box>
             <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.25 }}>
               Want to set up meeting contacts?
@@ -5431,7 +5645,7 @@ export default function ChatScreen() {
                 mb: 2,
               }}
             >
-              <Check size={32} color="#10B981" />
+              <Check size={32} color="#6C5CE7" />
             </Box>
 
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
@@ -5454,7 +5668,7 @@ export default function ChatScreen() {
                 startIcon={<MessageCircle size={18} />}
                 onClick={() => {
                   setShowSafetySummary(false);
-                  setOpenChat(AGENT_ID);
+                  openChatWithNav(AGENT_ID);
                   // Send supportive message
                   setTimeout(() => {
                     setChats((prev) =>
@@ -5481,12 +5695,13 @@ export default function ChatScreen() {
                     );
                   }, 300);
                 }}
-                sx={{ 
-                  borderRadius: 999, 
+                sx={{
+
+                  borderRadius: 999,
                   py: 1.5,
                   borderColor: '#E5E7EB',
                   color: '#374151',
-                  '&:hover': { borderColor: '#3B82F6', bgcolor: '#EFF6FF' },
+                  '&:hover': { borderColor: '#6C5CE7', bgcolor: '#F5F3FF' },
                 }}
               >
                 Talk to AI Coach
@@ -5508,8 +5723,9 @@ export default function ChatScreen() {
                       setMeetingEndedWith(null);
                     }
                   }}
-                  sx={{ 
-                    borderRadius: 999, 
+                  sx={{
+
+                    borderRadius: 999,
                     py: 1.5,
                     borderColor: '#FEE2E2',
                     color: '#DC2626',
@@ -5531,8 +5747,9 @@ export default function ChatScreen() {
                     setShowSafetySummary(false);
                     setMeetingEndedWith(null);
                   }}
-                  sx={{ 
-                    borderRadius: 999, 
+                  sx={{
+
+                    borderRadius: 999,
                     py: 1.5,
                     borderColor: '#FEE2E2',
                     color: '#DC2626',
@@ -5639,18 +5856,17 @@ export default function ChatScreen() {
                 alignItems: 'flex-start',
                 gap: 1.5,
                 p: 2,
-                bgcolor: '#EFF6FF',
+                bgcolor: '#F5F3FF',
                 borderRadius: 2,
-                border: '1px solid #BFDBFE',
-                mb: 3,
+                border: '1px solid rgba(108, 92, 231, 0.18)',
               }}
             >
-              <MapPin size={20} color="#3B82F6" style={{ marginTop: 2, flexShrink: 0 }} />
+              <MapPin size={20} color="#6C5CE7" style={{ marginTop: 2, flexShrink: 0 }} />
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E40AF', mb: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#4B3DB6', mb: 0.5 }}>
                   Location sharing
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#3B82F6' }}>
+                <Typography variant="caption" sx={{ color: '#6C5CE7' }}>
                   Your live location will be shared with {contactToNotify?.name} until the meeting ends. 
                   Location is visible only to this contact and cannot be forwarded.
                 </Typography>
@@ -5722,6 +5938,18 @@ export default function ChatScreen() {
         ref={imageInputRef}
         type="file"
         accept="image/*,video/*"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) sendImage(f);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
