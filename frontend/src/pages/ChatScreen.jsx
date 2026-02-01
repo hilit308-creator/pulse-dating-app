@@ -15,6 +15,7 @@ import {
   TextField,
   Button,
   Popper,
+  Popover,
   Menu,
   MenuItem,
   Avatar,
@@ -2282,6 +2283,32 @@ export default function ChatScreen() {
   const fileAttachInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [toolIndex, setToolIndex] = useState(1);
+  const getToolColor = (i) => (i === 0 ? "#4B3DB6" : i === 1 ? "#B45309" : "#BE185D");
+  const getToolBg = (i) =>
+    i === 0
+      ? "rgba(108, 92, 231, 0.14)"
+      : i === 1
+        ? "rgba(245, 158, 11, 0.14)"
+        : "rgba(236, 72, 153, 0.14)";
+  const getToolBorder = (i) =>
+    i === 0
+      ? "rgba(108, 92, 231, 0.18)"
+      : i === 1
+        ? "rgba(245, 158, 11, 0.22)"
+        : "rgba(236, 72, 153, 0.22)";
+  const getToolBgHover = (i) =>
+    i === 0
+      ? "rgba(108, 92, 231, 0.18)"
+      : i === 1
+        ? "rgba(245, 158, 11, 0.18)"
+        : "rgba(236, 72, 153, 0.18)";
+  const getToolGlow = (i) =>
+    i === 0
+      ? "none"
+      : i === 1
+        ? "0 0 0 3px rgba(245, 158, 11, 0.10), 0 6px 14px rgba(245, 158, 11, 0.16)"
+        : "0 0 0 3px rgba(236, 72, 153, 0.10), 0 6px 14px rgba(236, 72, 153, 0.16)";
 
   // reactions popper
   const reactPop = useReactionPopper();
@@ -2394,13 +2421,15 @@ export default function ChatScreen() {
   const footerRef = useRef(null);
   const [footerH, setFooterH] = useState(56);
   useEffect(() => {
-    if (!footerRef.current) return;
+    const el = footerRef.current;
+    if (!el) return;
+    setFooterH(Math.ceil(el.getBoundingClientRect().height));
     const ro = new ResizeObserver(([e]) =>
       setFooterH(Math.ceil(e.contentRect.height))
     );
-    ro.observe(footerRef.current);
+    ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [openChat]);
   const scrollToBottom = (behavior = "auto") => {
     const el = scrollRef.current;
     if (!el) return;
@@ -2417,24 +2446,41 @@ export default function ChatScreen() {
   // Track if user scrolled up
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false);
   const prevMsgCount = useRef(chat?.messages?.length || 0);
+  const initialScrollDoneRef = useRef(false);
+  const initialScrollFooterHRef = useRef(0);
+  const openChatAtRef = useRef(0);
   
   // Scroll to bottom when opening chat - with delay to ensure DOM is ready
   useEffect(() => {
     if (openChat) {
       setShowNewMsgIndicator(false);
-      scrollToBottom("auto");
-      setTimeout(() => scrollToBottom("auto"), 100);
-      setTimeout(() => scrollToBottom("auto"), 300);
-      setTimeout(() => scrollToBottom("auto"), 500);
+      initialScrollDoneRef.current = false;
+      initialScrollFooterHRef.current = 0;
+      openChatAtRef.current = Date.now();
     }
   }, [openChat]);
   
-  // Also scroll when footerH changes (composer height calculated)
   useEffect(() => {
-    if (openChat && footerH > 0) {
-      setTimeout(() => scrollToBottom("auto"), 50);
-    }
-  }, [footerH, openChat]);
+    if (!openChat) return;
+    const count = chat?.messages?.length || 0;
+    if (!count) return;
+    if (!footerH) return;
+
+    const withinInitialWindow = Date.now() - openChatAtRef.current < 900;
+    const footerChangedSinceInitial =
+      initialScrollFooterHRef.current && initialScrollFooterHRef.current !== footerH;
+    const shouldRescrollForFooterChange = withinInitialWindow && footerChangedSinceInitial;
+
+    if (initialScrollDoneRef.current && !shouldRescrollForFooterChange) return;
+    setShowNewMsgIndicator(false);
+    requestAnimationFrame(() => {
+      scrollToBottom("auto");
+      requestAnimationFrame(() => scrollToBottom("auto"));
+      setTimeout(() => scrollToBottom("auto"), 80);
+    });
+    initialScrollDoneRef.current = true;
+    initialScrollFooterHRef.current = footerH;
+  }, [openChat, chat?.messages?.length, footerH]);
   
   // Smart scroll: only auto-scroll if user is near bottom
   useEffect(() => {
@@ -2711,6 +2757,21 @@ export default function ChatScreen() {
   const [aiTone, setAiTone] = useState("friendly");
   const [aiLen, setAiLen] = useState("short");
   const [aiIntent, setAiIntent] = useState("open");
+  const [aiActiveGroup, setAiActiveGroup] = useState(null);
+  const [aiShowOptions, setAiShowOptions] = useState(false);
+
+  // When rotating the triangle, close any currently open tool UI
+  useEffect(() => {
+    setAiAnchor(null);
+    setEmojiOpen(false);
+    setCameraOpen(false);
+  }, [toolIndex]);
+
+  useEffect(() => {
+    if (aiAnchor) return;
+    setAiActiveGroup(null);
+    setAiShowOptions(false);
+  }, [aiAnchor]);
   const [aiRemember, setAiRemember] = useState(false);
   const [aiOptions, setAiOptions] = useState([]);
 
@@ -4143,12 +4204,12 @@ export default function ChatScreen() {
           top: 126,
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: footerH,
           overflowY: 'auto',
           overflowX: 'hidden',
           px: 1.25,
           pt: 1,
-          pb: `${footerH + 46}px`,
+          pb: `46px`,
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
           '&::-webkit-scrollbar': { display: 'none' },
@@ -4159,107 +4220,109 @@ export default function ChatScreen() {
           backgroundPosition: 'center',
         }}
       >
-        {/* Unified Agent Panel */}
-        {chat.matchId === AGENT_ID && (
-          <Box sx={{ mt: 5, mb: 1, p: 1, bgcolor: "#F0F7FF", border: "1px solid #E0E7FF", borderRadius: 2 }}>
-            {/* Mode Selector */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                💬 Pulse | Coach
-              </Typography>
-              <Box sx={{ ml: "auto", display: "flex", gap: 0.5 }}>
-                {[
-                  { key: "auto", label: "🔄 Auto", desc: "זיהוי אוטומטי" },
-                  { key: "coach", label: "📝 Coach", desc: "עזרה בניסוח" },
-                  { key: "therapist", label: "💙 Support", desc: "שיחה תומכת" },
-                ].map((m) => (
-                  <Chip
-                    key={m.key}
-                    size="small"
-                    label={m.label}
-                    color={getAgentMode(chat.matchId) === m.key ? "primary" : "default"}
-                    onClick={() => setAgentMode(chat.matchId, m.key)}
-                    sx={{ 
-                      fontWeight: getAgentMode(chat.matchId) === m.key ? 700 : 400,
-                      cursor: "pointer"
-                    }}
-                  />
-                ))}
-              </Box>
-            </Box>
-            
-            {/* Quick actions based on current mode */}
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
-              {getAgentMode(chat.matchId) !== "therapist" && [
-                { k: "📝 ניסוח הודעה", v: "עזור לי לנסח הודעה ל..." },
-                { k: "💡 טיפים", v: "מה כדאי לכתוב כשרוצים..." },
-              ].map((o) => (
-                <Chip key={o.k} size="small" label={o.k} onClick={() => setInput(o.v)} variant="outlined" />
-              ))}
-              {getAgentMode(chat.matchId) !== "coach" && [
-                { k: "💙 צריך/ה לדבר", v: "קשה לי עכשיו, צריך/ה לדבר..." },
-                { k: "🌬️ נשימה", v: "עזור לי להירגע" },
-              ].map((o) => (
-                <Chip key={o.k} size="small" label={o.k} onClick={() => setInput(o.v)} variant="outlined" />
-              ))}
-              <Button size="small" sx={{ ml: "auto" }} onClick={() => setHelpOpen(true)}>
-                🆘 עזרה
-              </Button>
-            </Box>
-            
-            <Typography variant="caption" sx={{ display: "block", color: "#6b7280" }}>
-              {getAgentMode(chat.matchId) === "auto" && "אני מזהה אוטומטית את מה שאת/ה צריך/ה."}
-              {getAgentMode(chat.matchId) === "coach" && "מצב Coach - עזרה בניסוח הודעות."}
-              {getAgentMode(chat.matchId) === "therapist" && "מצב Support - שיחה תומכת. במצב חירום — פנו לעזרה מקצועית."}
-            </Typography>
-          </Box>
-        )}
-
-        {/* AI First Message - Per spec section 9 */}
-        {chat.isNewMatch && chat.matchId !== AGENT_ID && chat.messages.length <= 1 && (
-          <AiFirstMessage
-            matchName={chat.user?.name || 'there'}
-            sharedInterests={chat.user?.interests || []}
-            onToneSelect={(suggestion) => setInput(suggestion)}
-          />
-        )}
-
-        {chat.messages.map((m, i, arr) => {
-          const prev = arr[i - 1];
-          const dayBreak = !prev || !isSameDay(prev.timestamp, m.timestamp);
-          return (
-            <Fade in key={m.id} timeout={180}>
-              <div>
-                {dayBreak && (
-                  <Box sx={{ my: 1.5, textAlign: "center" }}>
+        <Box>
+          {/* Unified Agent Panel */}
+          {chat.matchId === AGENT_ID && (
+            <Box sx={{ mt: 5, mb: 1, p: 1, bgcolor: "#F0F7FF", border: "1px solid #E0E7FF", borderRadius: 2 }}>
+              {/* Mode Selector */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  💬 Pulse | Coach
+                </Typography>
+                <Box sx={{ ml: "auto", display: "flex", gap: 0.5 }}>
+                  {[
+                    { key: "auto", label: "🔄 Auto", desc: "זיהוי אוטומטי" },
+                    { key: "coach", label: "📝 Coach", desc: "עזרה בניסוח" },
+                    { key: "therapist", label: "💙 Support", desc: "שיחה תומכת" },
+                  ].map((m) => (
                     <Chip
+                      key={m.key}
                       size="small"
-                      label={new Date(m.timestamp).toLocaleDateString()}
-                      sx={{
-                        bgcolor: "rgba(108, 92, 231, 0.14) !important",
-                        color: "#4B3DB6 !important",
-                        fontWeight: 700,
-                        border: "1px solid rgba(108, 92, 231, 0.18) !important",
-                        '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                      label={m.label}
+                      color={getAgentMode(chat.matchId) === m.key ? "primary" : "default"}
+                      onClick={() => setAgentMode(chat.matchId, m.key)}
+                      sx={{ 
+                        fontWeight: getAgentMode(chat.matchId) === m.key ? 700 : 400,
+                        cursor: "pointer"
                       }}
                     />
-                  </Box>
-                )}
-                <ChatBubble
-                  msg={m}
-                  isMe={m.from === "me"}
-                  onDoubleLike={() => toggleHeart(m.id)}
-                  onLongPressStart={(anchorEl) => reactPop.openFor(m.id)}
-                  onOpenActions={openMsgActions}
-                  onEventInviteAccept={handleEventInviteAccept}
-                  onEventInviteDecline={handleEventInviteDecline}
-                  onEventInviteOfferPay={handleEventInviteOfferPay}
-                  onWorkshopInviteRespond={handleWorkshopInviteRespond}
-                />
-              </div>
-            </Fade>
-          );
-        })}
+                  ))}
+                </Box>
+              </Box>
+              
+              {/* Quick actions based on current mode */}
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
+                {getAgentMode(chat.matchId) !== "therapist" && [
+                  { k: "📝 ניסוח הודעה", v: "עזור לי לנסח הודעה ל..." },
+                  { k: "💡 טיפים", v: "מה כדאי לכתוב כשרוצים..." },
+                ].map((o) => (
+                  <Chip key={o.k} size="small" label={o.k} onClick={() => setInput(o.v)} variant="outlined" />
+                ))}
+                {getAgentMode(chat.matchId) !== "coach" && [
+                  { k: "💙 צריך/ה לדבר", v: "קשה לי עכשיו, צריך/ה לדבר..." },
+                  { k: "🌬️ נשימה", v: "עזור לי להירגע" },
+                ].map((o) => (
+                  <Chip key={o.k} size="small" label={o.k} onClick={() => setInput(o.v)} variant="outlined" />
+                ))}
+                <Button size="small" sx={{ ml: "auto" }} onClick={() => setHelpOpen(true)}>
+                  🆘 עזרה
+                </Button>
+              </Box>
+              
+              <Typography variant="caption" sx={{ display: "block", color: "#6b7280" }}>
+                {getAgentMode(chat.matchId) === "auto" && "אני מזהה אוטומטית את מה שאת/ה צריך/ה."}
+                {getAgentMode(chat.matchId) === "coach" && "מצב Coach - עזרה בניסוח הודעות."}
+                {getAgentMode(chat.matchId) === "therapist" && "מצב Support - שיחה תומכת. במצב חירום — פנו לעזרה מקצועית."}
+              </Typography>
+            </Box>
+          )}
+
+          {/* AI First Message - Per spec section 9 */}
+          {chat.isNewMatch && chat.matchId !== AGENT_ID && chat.messages.length <= 1 && (
+            <AiFirstMessage
+              matchName={chat.user?.name || 'there'}
+              sharedInterests={chat.user?.interests || []}
+              onToneSelect={(suggestion) => setInput(suggestion)}
+            />
+          )}
+
+          {chat.messages.map((m, i, arr) => {
+            const prev = arr[i - 1];
+            const dayBreak = !prev || !isSameDay(prev.timestamp, m.timestamp);
+            return (
+              <Fade in key={m.id} timeout={180}>
+                <div>
+                  {dayBreak && (
+                    <Box sx={{ my: 1.5, textAlign: "center" }}>
+                      <Chip
+                        size="small"
+                        label={new Date(m.timestamp).toLocaleDateString()}
+                        sx={{
+                          bgcolor: "rgba(108, 92, 231, 0.14) !important",
+                          color: "#4B3DB6 !important",
+                          fontWeight: 700,
+                          border: "1px solid rgba(108, 92, 231, 0.18) !important",
+                          '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                        }}
+                      />
+                    </Box>
+                  )}
+                  <ChatBubble
+                    msg={m}
+                    isMe={m.from === "me"}
+                    onDoubleLike={() => toggleHeart(m.id)}
+                    onLongPressStart={(anchorEl) => reactPop.openFor(m.id)}
+                    onOpenActions={openMsgActions}
+                    onEventInviteAccept={handleEventInviteAccept}
+                    onEventInviteDecline={handleEventInviteDecline}
+                    onEventInviteOfferPay={handleEventInviteOfferPay}
+                    onWorkshopInviteRespond={handleWorkshopInviteRespond}
+                  />
+                </div>
+              </Fade>
+            );
+          })}
+        </Box>
       </Box>
 
       {/* Recording bar */}
@@ -4388,18 +4451,23 @@ export default function ChatScreen() {
                 size="small"
                 onClick={() => setInput(s)}
                 sx={{
-                  background: 'linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)',
-                  color: '#fff',
-                  fontWeight: 600,
+                  background: "none !important",
+                  backgroundImage: "none !important",
+                  bgcolor: "rgba(108, 92, 231, 0.14) !important",
+                  color: "#4B3DB6 !important",
+                  fontWeight: 700,
                   fontSize: '0.8rem',
                   height: 32,
                   px: 1.5,
-                  boxShadow: '0 2px 8px rgba(128, 90, 213, 0.28)',
-                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 999,
+                  boxShadow: "none !important",
+                  border: "1px solid rgba(108, 92, 231, 0.18) !important",
                   transition: 'all 0.2s ease',
+                  '& .MuiChip-label': { color: '#4B3DB6 !important' },
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #B794F4 0%, #9F7AEA 100%)',
-                    boxShadow: '0 4px 12px rgba(128, 90, 213, 0.38)',
+                    background: "none !important",
+                    backgroundImage: "none !important",
+                    bgcolor: "rgba(108, 92, 231, 0.18) !important",
                     transform: 'translateY(-2px)',
                   },
                   '&:active': {
@@ -4481,11 +4549,11 @@ export default function ChatScreen() {
         )}
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {/* Attach menu trigger */}
+          {/* Attach menu trigger - toggles open/close */}
           <IconButton
             aria-label="Open attachments"
             size="small"
-            onClick={(e) => setAttachMenu({ open: true, anchor: e.currentTarget })}
+            onClick={(e) => setAttachMenu(prev => prev?.open ? null : { open: true, anchor: e.currentTarget })}
             sx={{
               bgcolor: "rgba(108, 92, 231, 0.08)",
               color: "#6C5CE7",
@@ -4519,47 +4587,107 @@ export default function ChatScreen() {
               }
             }}
           >
-            <Tooltip title="Emoji">
+            {/* Triangle tool selector: AI on top, emoji and camera below */}
+            <Box sx={{ position: "relative", width: 56, height: 48, mr: 0.75 }}>
               <IconButton
-                aria-label="Open emoji"
-                size="small"
-                onClick={() => {
-                  setEmojiMode("compose");
-                  setEmojiOpen(true);
-                }}
-                sx={{
-                  color: "#6B7280",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    color: "#6C5CE7",
-                    transform: "scale(1.1)",
-                  }
-                }}
-              >
-                <Smile size={20} />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="AI Suggestions">
-              <IconButton
-                aria-label="AI Suggestions"
+                aria-label={toolIndex === 0 ? "AI Suggestions" : toolIndex === 1 ? "Open emoji" : "Take photo"}
                 size="small"
                 onClick={(e) => {
-                  setAiAnchor(e.currentTarget);
-                  computeAI();
+                  if (toolIndex === 0) {
+                    if (aiAnchor) {
+                      setAiAnchor(null);
+                      return;
+                    }
+                    setAiAnchor(e.currentTarget);
+                    setAiOptions([]);
+                    setAiShowOptions(false);
+                    return;
+                  }
+                  if (toolIndex === 1) {
+                    if (emojiOpen) {
+                      setEmojiOpen(false);
+                      return;
+                    }
+                    setEmojiMode("compose");
+                    setEmojiOpen(true);
+                    return;
+                  }
+                  setCameraOpen((v) => !v);
                 }}
                 sx={{
-                  color: "#6C5CE7",
+                  position: "absolute",
+                  top: -10,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  bgcolor: getToolBg(toolIndex),
+                  color: getToolColor(toolIndex),
+                  width: 34,
+                  height: 34,
+                  boxShadow: "none",
+                  border: `1px solid ${getToolBorder(toolIndex)}`,
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    color: "#5B4BC4",
-                    transform: "scale(1.1) rotate(15deg)",
+                    bgcolor: getToolBgHover(toolIndex),
+                    boxShadow: "none",
+                    transform: "translateX(-50%) scale(1.05)",
                   }
                 }}
               >
-                <Wand2 size={20} />
+                {toolIndex === 0 ? <Wand2 size={18} /> : toolIndex === 1 ? <Smile size={18} /> : <Camera size={18} />}
               </IconButton>
-            </Tooltip>
+
+              <IconButton
+                aria-label={toolIndex === 0 ? "Open emoji" : toolIndex === 1 ? "Take photo" : "AI Suggestions"}
+                size="small"
+                onClick={() => setToolIndex((toolIndex + 1) % 3)}
+                sx={{
+                  position: "absolute",
+                  bottom: 2,
+                  left: 2,
+                  color: "#6B7280",
+                  bgcolor: "transparent",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: 999,
+                  opacity: 0.75,
+                  width: 26,
+                  height: 26,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    opacity: 1,
+                    bgcolor: "rgba(17, 24, 39, 0.04)",
+                    transform: "scale(1.06)",
+                  }
+                }}
+              >
+                {toolIndex === 0 ? <Smile size={16} /> : toolIndex === 1 ? <Camera size={16} /> : <Wand2 size={16} />}
+              </IconButton>
+
+              <IconButton
+                aria-label={toolIndex === 0 ? "Take photo" : toolIndex === 1 ? "AI Suggestions" : "Open emoji"}
+                size="small"
+                onClick={() => setToolIndex((toolIndex + 2) % 3)}
+                sx={{
+                  position: "absolute",
+                  bottom: 2,
+                  right: 2,
+                  color: "#6B7280",
+                  bgcolor: "transparent",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: 999,
+                  opacity: 0.75,
+                  width: 26,
+                  height: 26,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    opacity: 1,
+                    bgcolor: "rgba(17, 24, 39, 0.04)",
+                    transform: "scale(1.06)",
+                  }
+                }}
+              >
+                {toolIndex === 0 ? <Camera size={16} /> : toolIndex === 1 ? <Wand2 size={16} /> : <Smile size={16} />}
+              </IconButton>
+            </Box>
 
             <InputBase
               value={input}
@@ -4569,7 +4697,7 @@ export default function ChatScreen() {
               maxRows={4}
               fullWidth
               sx={{ 
-                mx: 1.5,
+                mx: 1,
                 fontSize: "0.95rem",
                 '& .MuiInputBase-input': {
                   py: 0.5,
@@ -4594,74 +4722,69 @@ export default function ChatScreen() {
               aria-label="Message input"
             />
 
-            <Tooltip title="Attach file">
-              <IconButton 
-                aria-label="Attach file" 
-                size="small" 
-                onClick={() => fileAttachInputRef.current?.click()}
-                sx={{
-                  color: "#6B7280",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    color: "#7A0BC0",
-                    transform: "scale(1.1) rotate(-15deg)",
-                  }
-                }}
-              >
-                <Paperclip size={20} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Take photo">
-              <IconButton
-                aria-label="Take photo"
-                size="small"
-                onClick={() => setCameraOpen(true)}
-                sx={{
-                  color: "#6B7280",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    color: "#EC4899",
-                    transform: "scale(1.1)",
-                  }
-                }}
-              >
-                <Camera size={20} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Send">
-              <IconButton 
-                aria-label="Send" 
-                size="small" 
-                onClick={handleSend}
-                sx={{
-                  color: "#6C5CE7",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    color: "#5B4BC4",
-                    transform: "scale(1.1) rotate(-15deg)",
-                  }
-                }}
-              >
-                <Send size={20} />
-              </IconButton>
-            </Tooltip>
+            <IconButton 
+              aria-label="Send" 
+              size="small" 
+              onClick={handleSend}
+              sx={{
+                color: "#6C5CE7",
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  color: "#5B4BC4",
+                  transform: "scale(1.1) rotate(-15deg)",
+                }
+              }}
+            >
+              <Send size={20} />
+            </IconButton>
           </Box>
 
-          {/* Mic: Press & Hold */}
-          <Tooltip title="Hold to record">
+          {/* Mic: Press & Hold with stable recording indicator */}
+          <Box sx={{ position: "relative" }}>
+            {recActive && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: "100%",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  mb: 0.5,
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1,
+                  bgcolor: "#DC2626",
+                  color: "#fff",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                }}
+              >
+                <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#fff" }} />
+                {Math.floor(recMs / 1000)}s
+              </Box>
+            )}
             <IconButton
               aria-label="Voice message"
               sx={{
-                background: "linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)",
+                background: recActive 
+                  ? "linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)"
+                  : "linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)",
                 color: "#fff",
                 width: 44,
                 height: 44,
                 borderRadius: "50%",
-                boxShadow: "0 4px 12px rgba(128, 90, 213, 0.3)",
+                boxShadow: recActive 
+                  ? "0 4px 12px rgba(220, 38, 38, 0.4)"
+                  : "0 4px 12px rgba(128, 90, 213, 0.3)",
                 border: "none",
                 transition: "all 0.2s ease",
                 "&:hover": { 
-                  background: "linear-gradient(135deg, #B794F4 0%, #9F7AEA 100%)",
+                  background: recActive
+                    ? "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)"
+                    : "linear-gradient(135deg, #B794F4 0%, #9F7AEA 100%)",
                   boxShadow: "0 6px 16px rgba(128, 90, 213, 0.4)",
                   transform: "scale(1.05)",
                 },
@@ -4691,7 +4814,7 @@ export default function ChatScreen() {
             >
               <Mic size={22} />
             </IconButton>
-          </Tooltip>
+          </Box>
         </Box>
       </Box>
 
@@ -4701,7 +4824,7 @@ export default function ChatScreen() {
         anchorEl={attachMenu?.anchor}
         placement="top-start"
         modifiers={[{ name: "offset", options: { offset: [0, 8] } }]}
-        sx={{ zIndex: 22 }}
+        sx={{ zIndex: 1601 }}
       >
         <Box sx={{ p: 1, bgcolor: "#fff", border: "1px solid #E5E7EB", borderRadius: 2, boxShadow: 3, display: "flex", gap: 1 }}>
           <Button size="small" onClick={() => { imageInputRef.current?.click(); setAttachMenu(null); }}>Photo/Video</Button>
@@ -4924,116 +5047,248 @@ export default function ChatScreen() {
       </Modal>
 
       {/* AI suggestions popover */}
-      <Popper
+      <Popover
         open={Boolean(aiAnchor)}
         anchorEl={aiAnchor}
-        placement="top-start"
-        disablePortal
-        modifiers={[{ name: 'offset', options: { offset: [0, 8] } }]}
-        sx={{ zIndex: 22 }}
+        onClose={() => setAiAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        marginThreshold={24}
+        sx={{ zIndex: 1601 }}
+        PaperProps={{
+          sx: {
+            p: 1,
+            bgcolor: '#fff',
+            border: '1px solid #E5E7EB',
+            borderRadius: 2,
+            boxShadow: 3,
+            minWidth: 280,
+            maxWidth: 'min(520px, calc(100vw - 24px))',
+            maxHeight: 'min(540px, calc(100vh - 220px))',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            mt: 1,
+          },
+        }}
       >
-        <Box sx={{ p: 1, bgcolor: '#fff', border: '1px solid #E5E7EB', borderRadius: 2, boxShadow: 3, minWidth: 280 }}>
+        <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography variant="caption" sx={{ color: '#64748b' }}>AI Suggestions</Typography>
             <Button size="small" onClick={() => setAiAnchor(null)}>Close</Button>
           </Box>
 
-          <Box sx={{ mb: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {["open","followup","invite","compliment","clarify"].map((k)=>(
+          <Box sx={{ display: 'grid', gap: 0.5, mb: 0.5 }}>
+            <Box
+              onClick={() => setAiActiveGroup((g) => (g === 'intent' ? null : 'intent'))}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: 1,
+                py: 0.75,
+                borderRadius: 2,
+                border: '1px solid #E5E7EB',
+                cursor: 'pointer',
+                bgcolor: aiActiveGroup === 'intent' ? 'rgba(108, 92, 231, 0.06)' : '#fff',
+              }}
+            >
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700 }}>
+                Intent
+              </Typography>
               <Chip
-                key={k}
                 size="small"
-                label={k}
-                onClick={() => { setAiIntent(k); persistIfNeeded(null,null,k); computeAI("settings_change"); }}
-                color={aiIntent===k?'primary':'default'}
+                label={aiIntent}
                 sx={{
-                  bgcolor: (aiIntent === k ? 'rgba(108, 92, 231, 0.22)' : 'rgba(108, 92, 231, 0.12)') + ' !important',
+                  bgcolor: 'rgba(108, 92, 231, 0.14) !important',
                   color: '#4B3DB6 !important',
                   border: '1px solid rgba(108, 92, 231, 0.18) !important',
                   fontWeight: 700,
                   '& .MuiChip-label': { color: '#4B3DB6 !important' },
                 }}
               />
-            ))}
-          </Box>
+            </Box>
 
-          <Box sx={{ mb: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {["friendly","playful","formal","flirty","confident"].map((t)=>(
-              <Chip
-                key={t}
-                size="small"
-                label={t}
-                onClick={() => { setAiTone(t); persistIfNeeded(t,null,null); computeAI("settings_change"); }}
-                color={aiTone===t?'primary':'default'}
-                sx={{
-                  bgcolor: (aiTone === t ? 'rgba(108, 92, 231, 0.22)' : 'rgba(108, 92, 231, 0.12)') + ' !important',
-                  color: '#4B3DB6 !important',
-                  border: '1px solid rgba(108, 92, 231, 0.18) !important',
-                  fontWeight: 700,
-                  '& .MuiChip-label': { color: '#4B3DB6 !important' },
-                }}
-              />
-            ))}
-          </Box>
-
-          <Box sx={{ mb: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {["short","medium","long"].map((l)=>(
-              <Chip
-                key={l}
-                size="small"
-                label={l}
-                onClick={() => { setAiLen(l); persistIfNeeded(null,l,null); computeAI("settings_change"); }}
-                color={aiLen===l?'primary':'default'}
-                sx={{
-                  bgcolor: (aiLen === l ? 'rgba(108, 92, 231, 0.22)' : 'rgba(108, 92, 231, 0.12)') + ' !important',
-                  color: '#4B3DB6 !important',
-                  border: '1px solid rgba(108, 92, 231, 0.18) !important',
-                  fontWeight: 700,
-                  '& .MuiChip-label': { color: '#4B3DB6 !important' },
-                }}
-              />
-            ))}
-            <FormControlLabel
-              sx={{ ml: 0.5 }}
-              control={<Checkbox size="small" checked={aiRemember} onChange={(e)=> {
-                const v = e.target.checked; setAiRemember(v);
-                if (v && chat?.matchId) {
-                  localStorage.setItem(`ai_tone_${chat.matchId}`, aiTone);
-                  localStorage.setItem(`ai_len_${chat.matchId}`, aiLen);
-                  localStorage.setItem(`ai_intent_${chat.matchId}`, aiIntent);
-                }
-                if (!v && chat?.matchId) {
-                  localStorage.removeItem(`ai_tone_${chat.matchId}`);
-                  localStorage.removeItem(`ai_len_${chat.matchId}`);
-                  localStorage.removeItem(`ai_intent_${chat.matchId}`);
-                }
-              }} />}
-              label={<Typography variant="caption" sx={{ color: '#64748b' }}>Remember for this chat</Typography>}
-            />
-          </Box>
-
-          <Box sx={{ display: 'grid', gap: 0.5 }}>
-            {aiOptions.map((s, i) => (
-              <Box key={i} sx={{ p: 1, border: '1px solid #e5e7eb', borderRadius: 1 }}>
-                <Typography variant="body2" sx={{ mb: 0.5 }}>{s}</Typography>
-                <Button size="small" onClick={() => {
-                  setInput(s);
-                  setAiAnchor(null);
-                  if (agentTraceId) {
-                    sendAgentFeedback({ traceId: agentTraceId, action: "inserted", suggestionText: s });
-                  }
-                }} sx={{ borderRadius: 999 }}>
-                  Insert
-                </Button>
+            {aiActiveGroup === 'intent' && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, px: 0.5, pb: 0.5 }}>
+                {["open","followup","invite","compliment","clarify"].map((k) => (
+                  <Chip
+                    key={k}
+                    size="small"
+                    label={k}
+                    onClick={() => {
+                      setAiIntent(k);
+                      persistIfNeeded(null, null, k);
+                      setAiShowOptions(true);
+                      computeAI("settings_change");
+                      setAiActiveGroup(null);
+                    }}
+                    sx={{
+                      bgcolor: (aiIntent === k ? 'rgba(108, 92, 231, 0.22)' : 'rgba(108, 92, 231, 0.12)') + ' !important',
+                      color: '#4B3DB6 !important',
+                      border: '1px solid rgba(108, 92, 231, 0.18) !important',
+                      fontWeight: 700,
+                      '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                    }}
+                  />
+                ))}
               </Box>
-            ))}
+            )}
+
+            <Box
+              onClick={() => setAiActiveGroup((g) => (g === 'tone' ? null : 'tone'))}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: 1,
+                py: 0.75,
+                borderRadius: 2,
+                border: '1px solid #E5E7EB',
+                cursor: 'pointer',
+                bgcolor: aiActiveGroup === 'tone' ? 'rgba(108, 92, 231, 0.06)' : '#fff',
+              }}
+            >
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700 }}>
+                Tone
+              </Typography>
+              <Chip
+                size="small"
+                label={aiTone}
+                sx={{
+                  bgcolor: 'rgba(108, 92, 231, 0.14) !important',
+                  color: '#4B3DB6 !important',
+                  border: '1px solid rgba(108, 92, 231, 0.18) !important',
+                  fontWeight: 700,
+                  '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                }}
+              />
+            </Box>
+
+            {aiActiveGroup === 'tone' && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, px: 0.5, pb: 0.5 }}>
+                {["friendly","playful","formal","flirty","confident"].map((t) => (
+                  <Chip
+                    key={t}
+                    size="small"
+                    label={t}
+                    onClick={() => {
+                      setAiTone(t);
+                      persistIfNeeded(t, null, null);
+                      setAiShowOptions(true);
+                      computeAI("settings_change");
+                      setAiActiveGroup(null);
+                    }}
+                    sx={{
+                      bgcolor: (aiTone === t ? 'rgba(108, 92, 231, 0.22)' : 'rgba(108, 92, 231, 0.12)') + ' !important',
+                      color: '#4B3DB6 !important',
+                      border: '1px solid rgba(108, 92, 231, 0.18) !important',
+                      fontWeight: 700,
+                      '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
+
+            <Box
+              onClick={() => setAiActiveGroup((g) => (g === 'length' ? null : 'length'))}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: 1,
+                py: 0.75,
+                borderRadius: 2,
+                border: '1px solid #E5E7EB',
+                cursor: 'pointer',
+                bgcolor: aiActiveGroup === 'length' ? 'rgba(108, 92, 231, 0.06)' : '#fff',
+              }}
+            >
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700 }}>
+                Length
+              </Typography>
+              <Chip
+                size="small"
+                label={aiLen}
+                sx={{
+                  bgcolor: 'rgba(108, 92, 231, 0.14) !important',
+                  color: '#4B3DB6 !important',
+                  border: '1px solid rgba(108, 92, 231, 0.18) !important',
+                  fontWeight: 700,
+                  '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                }}
+              />
+            </Box>
+
+            {aiActiveGroup === 'length' && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, px: 0.5, pb: 0.5 }}>
+                {["short","medium","long"].map((l) => (
+                  <Chip
+                    key={l}
+                    size="small"
+                    label={l}
+                    onClick={() => {
+                      setAiLen(l);
+                      persistIfNeeded(null, l, null);
+                      setAiShowOptions(true);
+                      computeAI("settings_change");
+                      setAiActiveGroup(null);
+                    }}
+                    sx={{
+                      bgcolor: (aiLen === l ? 'rgba(108, 92, 231, 0.22)' : 'rgba(108, 92, 231, 0.12)') + ' !important',
+                      color: '#4B3DB6 !important',
+                      border: '1px solid rgba(108, 92, 231, 0.18) !important',
+                      fontWeight: 700,
+                      '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
           </Box>
 
-          <Box sx={{ textAlign: 'right', mt: 0.5 }}>
-            <Button size="small" onClick={() => computeAI("button_click")}>Regenerate</Button>
+          <FormControlLabel
+            sx={{ ml: 0.5, mb: 0.75 }}
+            control={<Checkbox size="small" checked={aiRemember} onChange={(e)=> {
+              const v = e.target.checked; setAiRemember(v);
+              if (v && chat?.matchId) {
+                localStorage.setItem(`ai_tone_${chat.matchId}`, aiTone);
+                localStorage.setItem(`ai_len_${chat.matchId}`, aiLen);
+                localStorage.setItem(`ai_intent_${chat.matchId}`, aiIntent);
+              }
+              if (!v && chat?.matchId) {
+                localStorage.removeItem(`ai_tone_${chat.matchId}`);
+                localStorage.removeItem(`ai_len_${chat.matchId}`);
+                localStorage.removeItem(`ai_intent_${chat.matchId}`);
+              }
+            }} />}
+            label={<Typography variant="caption" sx={{ color: '#64748b' }}>Remember for this chat</Typography>}
+          />
+
+          {aiShowOptions && (
+            <Box sx={{ display: 'grid', gap: 0.5 }}>
+              {aiOptions.map((s, i) => (
+                <Box key={i} sx={{ p: 1, border: '1px solid #e5e7eb', borderRadius: 1 }}>
+                  <Typography variant="body2" sx={{ mb: 0.5 }}>{s}</Typography>
+                  <Button size="small" onClick={() => {
+                    setInput(s);
+                    setAiAnchor(null);
+                    if (agentTraceId) {
+                      sendAgentFeedback({ traceId: agentTraceId, action: "inserted", suggestionText: s });
+                    }
+                  }} sx={{ borderRadius: 999 }}>
+                    Insert
+                  </Button>
+                </Box>
+              ))}
+            </Box>
+          )}
+
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
+            <Button size="small" onClick={() => { setAiShowOptions(true); computeAI('regen'); }}>{aiShowOptions ? 'Regenerate' : 'Generate'}</Button>
           </Box>
         </Box>
-      </Popper>
+      </Popover>
 
       {/* ==================== Meeting Time Screen ==================== */}
       <Modal 
