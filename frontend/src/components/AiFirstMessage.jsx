@@ -25,7 +25,7 @@
  */
 
 import React, { useState } from 'react';
-import { Box, Typography, Button, Avatar } from '@mui/material';
+import { Box, Typography, Button, Avatar, Chip } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Sparkles, Heart, Smile, Coffee } from 'lucide-react';
 
@@ -116,6 +116,20 @@ export default function AiFirstMessage({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
+      {/* Date pill */}
+      <Box sx={{ mb: 1.5, textAlign: "center" }}>
+        <Chip
+          size="small"
+          label={new Date().toLocaleDateString()}
+          sx={{
+            bgcolor: "rgba(108, 92, 231, 0.14) !important",
+            color: "#4B3DB6 !important",
+            fontWeight: 700,
+            border: "1px solid rgba(108, 92, 231, 0.18) !important",
+            '& .MuiChip-label': { color: '#4B3DB6 !important' },
+          }}
+        />
+      </Box>
       <Box
         sx={{
           display: 'flex',

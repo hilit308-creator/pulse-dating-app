@@ -658,6 +658,25 @@ export function useSafetyFlow() {
   const handleConfirmBlock = useCallback(async () => {
     setShowBlockConfirm(false);
     
+    // Add to blocked users in localStorage for Settings page
+    if (targetUser) {
+      const blockedUser = {
+        id: targetUser.id,
+        name: targetUser.name || targetUser.firstName || 'User',
+        photo: targetUser.photos?.[0] || targetUser.photoUrl || '',
+        source: 'profile',
+        blockedAt: new Date().toISOString().split('T')[0],
+      };
+      try {
+        const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+        if (!existing.find(u => u.id === blockedUser.id)) {
+          localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
+        }
+      } catch (e) {
+        console.error('Failed to save blocked user to localStorage:', e);
+      }
+    }
+    
     // Execute block action
     // In real app: await api.blockUser(targetUser.id)
     console.log('[Safety] User blocked:', targetUser?.id);
@@ -672,7 +691,23 @@ export function useSafetyFlow() {
     console.log('[Safety] User reported:', targetUser?.id, reportData);
     
     // If block selected, execute block too
-    if (reportData.blockUser) {
+    if (reportData.blockUser && targetUser) {
+      // Add to blocked users in localStorage for Settings page
+      const blockedUser = {
+        id: targetUser.id,
+        name: targetUser.name || targetUser.firstName || 'User',
+        photo: targetUser.photos?.[0] || targetUser.photoUrl || '',
+        source: 'profile',
+        blockedAt: new Date().toISOString().split('T')[0],
+      };
+      try {
+        const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+        if (!existing.find(u => u.id === blockedUser.id)) {
+          localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
+        }
+      } catch (e) {
+        console.error('Failed to save blocked user to localStorage:', e);
+      }
       console.log('[Safety] User also blocked');
     }
   }, [targetUser]);

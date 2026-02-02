@@ -1165,6 +1165,23 @@ export default function MatchesScreen() {
 
   // === BLOCK (per user) ===
   const handleBlock = (p) => {
+    // Add to blocked users in localStorage for Settings page
+    const blockedUser = {
+      id: p.id,
+      name: p.name || 'User',
+      photo: p.photos?.[0] || p.photoUrl || '',
+      source: 'profile',
+      blockedAt: new Date().toISOString().split('T')[0],
+    };
+    try {
+      const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+      if (!existing.find(u => u.id === blockedUser.id)) {
+        localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
+      }
+    } catch (e) {
+      console.error('Failed to save blocked user to localStorage:', e);
+    }
+    
     const next = new Set(blocked);
     next.add(p.id);
     setBlocked(next);

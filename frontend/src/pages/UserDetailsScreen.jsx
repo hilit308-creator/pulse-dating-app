@@ -536,6 +536,23 @@ export default function UserDetailsScreen() {
     
     const currentUserId = localStorage.getItem('pulse_user_id');
     
+    // Add to blocked users in localStorage for Settings page
+    const blockedUser = {
+      id: user.id,
+      name: user.firstName || user.name || 'User',
+      photo: user.photos?.[0] || user.photoUrl || '',
+      source: 'profile',
+      blockedAt: new Date().toISOString().split('T')[0],
+    };
+    try {
+      const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+      if (!existing.find(u => u.id === blockedUser.id)) {
+        localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
+      }
+    } catch (e) {
+      console.error('Failed to save blocked user to localStorage:', e);
+    }
+    
     try {
       await fetch('/api/blocks', {
         method: 'POST',

@@ -61,6 +61,10 @@ import {
   Navigation,
   AlertTriangle,
   Lock,
+  Minimize2,
+  HelpCircle,
+  User,
+  Settings,
 } from "lucide-react";
 // Chat Gates - ready for integration when needed
 // import ChatGateBanner from "../components/ChatGateBanner";
@@ -80,6 +84,7 @@ import useGestureMessagesStore from '../store/gestureMessagesStore';
 import useChatStore from '../store/chatStore';
 import useEventInvitesStore from '../store/eventInvitesStore';
 import { useAuth } from "../context/AuthContext";
+import { useMeeting, MEETING_STATE as GLOBAL_MEETING_STATE, SOS_STATE as GLOBAL_SOS_STATE } from "../context/MeetingContext";
 
 /* ----------------- helpers ----------------- */
 const fmtHM = (ts) =>
@@ -290,10 +295,10 @@ const AGENT_ROW = {
       from: "them",
       type: "text",
       text:
-        "היי! 👋 אני כאן בשבילך.\n\n" +
-        "💬 צריך/ה עזרה בניסוח הודעה? פשוט תאר/י את המצב.\n" +
-        "💙 רוצה לדבר על משהו שמעיק? אני כאן להקשיב.\n\n" +
-        "איך אפשר לעזור?",
+        "Hey! 👋 I'm here for you.\n\n" +
+        "💬 Need help crafting a message? Just describe the situation.\n" +
+        "💙 Want to talk about something on your mind? I'm here to listen.\n\n" +
+        "How can I help?",
       timestamp: Date.now() - 120000,
       status: "read",
       reactions: {},
@@ -1140,11 +1145,18 @@ function EmojiBottomSheet({ open, onClose, onPick }) {
       open={open}
       onClose={onClose}
       ModalProps={{ keepMounted: true }}
+      sx={{ zIndex: 9999 }}
       PaperProps={{
-        sx: { height: 360, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
+        sx: { 
+          height: 'auto',
+          maxHeight: '50vh',
+          borderTopLeftRadius: 16, 
+          borderTopRightRadius: 16,
+          mb: 7,
+        },
       }}
     >
-      <Box sx={{ p: 1.5 }}>
+      <Box sx={{ p: 1.5, pb: 2, overflowY: 'auto' }}>
         <Box
           sx={{
             width: 36,
@@ -1162,8 +1174,6 @@ function EmojiBottomSheet({ open, onClose, onPick }) {
           display: 'grid', 
           gridTemplateColumns: 'repeat(8, 1fr)', 
           gap: 0.5,
-          maxHeight: 280,
-          overflowY: 'auto',
         }}>
           {COMMON_EMOJIS.map((emoji, i) => (
             <Button
@@ -1361,17 +1371,17 @@ function isCrisis(text = "") {
 
 function genTherapyReply(userText = "") {
   const base =
-    "תודה ששיתפת. אני כאן להקשיב. מה שאת/ה מרגיש/ה חשוב. נוכל לנסות צעד קטן מידי: ";
+    "Thank you for sharing. I'm here to listen. What you're feeling matters. Let's try a small step: ";
   const suggestions = [
-    "לנשום 4-7-8 פעמיים ולהרגיש איך הגוף נרגע.",
-    "לתאר במילים מה קורה לי עכשיו (מחשבות/רגשות/תחושות גוף).",
-    "לבחור פעולה קטנה אחת שתיטיב איתי ב־15 הדקות הקרובות.",
+    "Try breathing 4-7-8 twice and notice how your body relaxes.",
+    "Describe in words what's happening right now (thoughts/feelings/body sensations).",
+    "Choose one small action that will help you in the next 15 minutes.",
   ];
   const pick = suggestions[Math.floor(Math.random() * suggestions.length)];
   let reply = `${base}${pick}`;
   if (isCrisis(userText)) {
     reply =
-      "מצטער/ת לשמוע שזה כל כך קשה עכשיו. אם יש סכנה מיידית או תחושת משבר, חשוב לפנות לעזרה דחופה באזורך (חירום/מוקד משברי/אדם קרוב). אני כאן לשיחה תומכת, לא במקום טיפול או סיוע חירום.";
+      "I'm sorry to hear things are so difficult right now. If you're in immediate danger or crisis, please reach out to emergency services or a crisis hotline in your area. I'm here for supportive conversation, not as a replacement for professional help or emergency assistance.";
   }
   return reply;
 }
@@ -1382,23 +1392,23 @@ function genCoachReply(userText = "") {
   const name = nameMatch ? nameMatch[1] : "them";
   
   const tipSets = [
-    `הנה כמה רעיונות לשיחה עם ${name}:\n\n` +
-    `1️⃣ "היי ${name}! מה עשית היום שגרם לך לחייך?"\n` +
-    `2️⃣ "ראיתי שאת/ה אוהב/ת [תחום מהפרופיל] - מה הסיפור?"\n` +
-    `3️⃣ "יש לך תוכניות מעניינות לסופ\"ש?"\n\n` +
-    `💡 טיפ: שאלות פתוחות עובדות טוב יותר מכן/לא!`,
+    `Here are some conversation ideas for ${name}:\n\n` +
+    `1️⃣ "Hey ${name}! What made you smile today?"\n` +
+    `2️⃣ "I noticed you're into [something from their profile] - what's the story?"\n` +
+    `3️⃣ "Any fun plans for the weekend?"\n\n` +
+    `💡 Tip: Open-ended questions work better than yes/no!`,
     
-    `כמה גישות שעובדות:\n\n` +
-    `🎯 פתיחה קלילה: "היי! איך השבוע שלך?"\n` +
-    `🎯 משהו ספציפי: התייחס/י לפרטים מהפרופיל\n` +
-    `🎯 הומור קל: "אז מי מנצח בדיון על [נושא]? 😄"\n\n` +
-    `⚡ זכור/י: אותנטיות > ניסיון להרשים`,
+    `Some approaches that work:\n\n` +
+    `🎯 Light opener: "Hey! How's your week going?"\n` +
+    `🎯 Something specific: Reference details from their profile\n` +
+    `🎯 Light humor: "So who wins the debate about [topic]? 😄"\n\n` +
+    `⚡ Remember: Authenticity > Trying to impress`,
     
-    `טיפים לשיחה עם ${name}:\n\n` +
-    `✨ תתחיל/י בקל - לא צריך להיות מושלם\n` +
-    `✨ שאל/י משהו שמעניין אותך באמת\n` +
-    `✨ תגיב/י למה שהם אומרים, לא רק תשאל/י שאלות\n\n` +
-    `דוגמה: "נשמע מעניין! ואיך הגעת לזה?"`,
+    `Tips for chatting with ${name}:\n\n` +
+    `✨ Start easy - you don't have to be perfect\n` +
+    `✨ Ask something you're genuinely curious about\n` +
+    `✨ Respond to what they say, don't just ask questions\n\n` +
+    `Example: "That sounds interesting! How did you get into that?"`,
   ];
   
   return tipSets[Math.floor(Math.random() * tipSets.length)];
@@ -2087,6 +2097,32 @@ export default function ChatScreen() {
     };
   }, [meetingState, locationSharing]);
 
+  // Get global meeting context
+  const globalMeeting = useMeeting();
+
+  // Sync local showMeetingScreen with global context
+  useEffect(() => {
+    if (globalMeeting.showMeetingScreen && globalMeeting.meetingState === GLOBAL_MEETING_STATE.ACTIVE) {
+      // If global context says to show meeting screen and we're in the right chat
+      // Compare matchId loosely (could be number or string)
+      const globalMatchId = globalMeeting.meetingWith?.matchId;
+      const chatMatchId = chat?.matchId;
+      const isMatchingChat = chat && (
+        globalMatchId === chatMatchId || 
+        String(globalMatchId) === String(chatMatchId)
+      );
+      
+      if (isMatchingChat) {
+        setShowMeetingScreen(true);
+        setMeetingState(MEETING_STATE.ACTIVE);
+        setMeetingWith(chat.user);
+        if (!meetingStartTime) {
+          setMeetingStartTime(globalMeeting.meetingStartTime || Date.now());
+        }
+      }
+    }
+  }, [globalMeeting.showMeetingScreen, globalMeeting.meetingState, globalMeeting.meetingWith, chat, meetingStartTime, globalMeeting.meetingStartTime]);
+
   // Start Meeting handler
   const handleStartMeeting = useCallback(() => {
     if (!chat || chat.matchId === AGENT_ID) return;
@@ -2104,7 +2140,10 @@ export default function ChatScreen() {
     setLocationSharing(true);
     setShowMeetingScreen(true);
     setContactsNotifiedThisMeeting([]);
-  }, [chat, meetingContacts]);
+    
+    // Update global meeting context so bar shows on all pages
+    globalMeeting.startMeeting({ ...chat.user, matchId: chat.matchId });
+  }, [chat, meetingContacts, globalMeeting]);
 
   // Continue without contacts (WhatsApp only)
   const handleContinueWithoutContacts = useCallback(() => {
@@ -2116,7 +2155,10 @@ export default function ChatScreen() {
     setLocationSharing(true);
     setShowMeetingScreen(true);
     setContactsNotifiedThisMeeting([]);
-  }, [chat]);
+    
+    // Update global meeting context
+    globalMeeting.startMeeting({ ...chat.user, matchId: chat.matchId });
+  }, [chat, globalMeeting]);
 
   // End Meeting handler
   const handleEndMeeting = useCallback(() => {
@@ -2155,9 +2197,12 @@ export default function ChatScreen() {
     setContactsNotifiedThisMeeting([]);
     setCurrentLocation(null);
     
+    // End global meeting context
+    globalMeeting.endMeeting();
+    
     // Show Safety Summary (as per spec section 10)
     setShowSafetySummary(true);
-  }, [sosState, meetingWith]);
+  }, [sosState, meetingWith, globalMeeting]);
 
   // SOS Handlers - Per corrected spec:
   // - One helper only (first accept wins)
@@ -2247,13 +2292,26 @@ export default function ChatScreen() {
 
   // Share via WhatsApp
   const shareViaWhatsApp = useCallback(() => {
+    const meetingPersonName = meetingWith?.name || 'someone';
     const locationUrl = currentLocation 
       ? `https://maps.google.com/?q=${currentLocation.lat},${currentLocation.lng}`
       : '';
-    const message = `I'm meeting someone from Pulse. Here's my live location: ${locationUrl}`;
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    
+    const message = `Hey! 👋
+I'm heading out to meet ${meetingPersonName} from Pulse.
+
+📍 Location: ${locationUrl || 'Not available yet'}
+🕐 Time: ${timeStr}
+📅 Date: ${dateStr}
+
+If you don't hear from me within 2 hours, please reach out! 💜`;
+
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
-  }, [currentLocation]);
+  }, [currentLocation, meetingWith]);
 
   const handleOwnStoryClick = () => fileInputRef.current?.click();
   const handleOwnPhotoUpload = (e) => {
@@ -2394,6 +2452,9 @@ export default function ChatScreen() {
 
   // gallery
   const [gallery, setGallery] = useState({ open: false, images: [] });
+  
+  // report user popup
+  const [reportPopup, setReportPopup] = useState({ open: false, reason: '', details: '' });
   const openGallery = () =>
     setGallery({
       open: true,
@@ -3006,12 +3067,12 @@ export default function ChatScreen() {
         } else if (res.decision === "suggest" && payload.suggestions?.length > 0) {
           // Coach mode - format suggestions
           const sug = payload.suggestions;
-          responseText = "הנה כמה רעיונות:\n\n" + 
+          responseText = "Here are some ideas:\n\n" + 
             sug.map((s, i) => `${i + 1}️⃣ "${s.text}"`).join("\n\n") +
-            "\n\n💡 לחץ/י על Regenerate לעוד אפשרויות";
+            "\n\n💡 Click Regenerate for more options";
         } else {
           // Fallback
-          responseText = "אני כאן לעזור. ספר/י לי עוד על מה שקורה?";
+          responseText = "I'm here to help. Tell me more about what's going on?";
         }
 
         setChats((prev) =>
@@ -3053,6 +3114,8 @@ export default function ChatScreen() {
   const recTimerRef = useRef(null);
   const streamRef = useRef(null);
 
+  const pendingSendRef = useRef(false);
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -3062,12 +3125,21 @@ export default function ChatScreen() {
         : "audio/webm";
       const mr = new MediaRecorder(stream, { mimeType: mime });
       chunksRef.current = [];
+      pendingSendRef.current = false;
       mr.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
       mr.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
+        // Only create and send blob if pendingSend is true (not cancelled)
+        if (pendingSendRef.current && chunksRef.current.length > 0) {
+          const blob = new Blob(chunksRef.current, { type: mime });
+          const url = URL.createObjectURL(blob);
+          sendVoiceMessage(url);
+        }
+        chunksRef.current = [];
+        pendingSendRef.current = false;
       };
       mr.start();
       mrRef.current = mr;
@@ -3085,27 +3157,16 @@ export default function ChatScreen() {
     clearInterval(recTimerRef.current);
     setRecActive(false);
     setRecMs(0);
+    pendingSendRef.current = false;
     try {
       if (mrRef.current && mrRef.current.state !== "inactive") mrRef.current.stop();
     } catch {}
     mrRef.current = null;
-    chunksRef.current = [];
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
   };
 
-  const stopAndSendRecording = () => {
-    clearInterval(recTimerRef.current);
-    setRecActive(false);
-    try {
-      if (mrRef.current && mrRef.current.state !== "inactive") mrRef.current.stop();
-    } catch {}
-    const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-    const url = URL.createObjectURL(blob);
+  // Helper to actually send the voice message (called from onstop)
+  const sendVoiceMessage = (audioUrl) => {
     const durationMs = recMs;
-
     const id = Date.now();
     setChats((prev) =>
       prev.map((c) =>
@@ -3119,7 +3180,7 @@ export default function ChatScreen() {
                   id,
                   from: "me",
                   type: "voice",
-                  audioUrl: url,
+                  audioUrl,
                   durationMs,
                   timestamp: Date.now(),
                   status: "sent",
@@ -3133,14 +3194,17 @@ export default function ChatScreen() {
     const disappearAfterMs = (chat?.disappearingSeconds ?? DEFAULT_DISAPPEARING_SECONDS) * 1000;
     const update = (patch) => updateMessageById(id, patch);
     scheduleDeliveryFlow(update, disappearAfterMs);
-
-    mrRef.current = null;
-    chunksRef.current = [];
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
     setRecMs(0);
+  };
+
+  const stopAndSendRecording = () => {
+    clearInterval(recTimerRef.current);
+    setRecActive(false);
+    pendingSendRef.current = true; // Signal onstop to send the message
+    try {
+      if (mrRef.current && mrRef.current.state !== "inactive") mrRef.current.stop();
+    } catch {}
+    mrRef.current = null;
   };
 
   /* ================== LIST VIEW ================== */
@@ -3148,11 +3212,16 @@ export default function ChatScreen() {
     return (
       <Box 
         sx={{ 
-          display: "flex",
-          flexDirection: "column",
           height: "100vh",
           bgcolor: "#fff",
           position: "relative",
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          /* Hide scrollbar but allow scrolling */
+          scrollbarWidth: "none", /* Firefox */
+          msOverflowStyle: "none", /* IE/Edge */
+          "&::-webkit-scrollbar": { display: "none" }, /* Chrome/Safari */
         }}
       >
         {/* Global Meeting Top Bar - Also shown in list view */}
@@ -3269,16 +3338,15 @@ export default function ChatScreen() {
           </Box>
         )}
 
-        {/* Header */}
+        {/* Header - Fixed at top */}
         <Box
           sx={{
             px: 2,
             py: 1.5,
             borderBottom: "1px solid #eee",
-            position: "sticky",
-            top: meetingState === MEETING_STATE.ACTIVE ? 56 : 0,
             bgcolor: "#fff",
-            zIndex: 2,
+            zIndex: 10,
+            flexShrink: 0,
           }}
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -3290,33 +3358,35 @@ export default function ChatScreen() {
             {t('startConversation')}
           </Typography>
           
-          {/* Pulse spec: Sort tabs */}
+          {/* Pulse spec: Sort tabs - Purple style like date pill */}
           <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
             <Chip 
               label={t('online')} 
               onClick={() => setChatListSort('active')}
               sx={{ 
-                fontWeight: 600,
-                bgcolor: chatListSort === 'active' ? '#222' : '#f5f5f5',
-                color: chatListSort === 'active' ? '#fff' : '#666',
-                '&:hover': { bgcolor: chatListSort === 'active' ? '#333' : '#e5e5e5' },
+                fontWeight: '600 !important',
+                bgcolor: chatListSort === 'active' ? 'rgba(108, 92, 231, 0.14) !important' : 'rgba(108, 92, 231, 0.08) !important',
+                color: '#4B3DB6 !important',
+                border: chatListSort === 'active' ? '1.5px solid rgba(108, 92, 231, 0.4) !important' : '1px solid rgba(108, 92, 231, 0.18) !important',
+                '&:hover': { bgcolor: 'rgba(108, 92, 231, 0.18) !important' },
               }}
             />
             <Chip 
               label={t('newMatch')} 
               onClick={() => setChatListSort('new')}
               sx={{ 
-                fontWeight: 600,
-                bgcolor: chatListSort === 'new' ? '#222' : '#f5f5f5',
-                color: chatListSort === 'new' ? '#fff' : '#666',
-                '&:hover': { bgcolor: chatListSort === 'new' ? '#333' : '#e5e5e5' },
+                fontWeight: '600 !important',
+                bgcolor: chatListSort === 'new' ? 'rgba(108, 92, 231, 0.14) !important' : 'rgba(108, 92, 231, 0.08) !important',
+                color: '#4B3DB6 !important',
+                border: chatListSort === 'new' ? '1.5px solid rgba(108, 92, 231, 0.4) !important' : '1px solid rgba(108, 92, 231, 0.18) !important',
+                '&:hover': { bgcolor: 'rgba(108, 92, 231, 0.18) !important' },
               }}
             />
           </Box>
         </Box>
 
         {/* Chat List (כולל כפתורי “בקש AI” ו“תמיכה”) */}
-        <Box sx={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", pt: 1 }}>
+        <Box sx={{ pt: 1, flex: 1, overflowY: "auto", scrollbarWidth: "none", msOverflowStyle: "none", "&::-webkit-scrollbar": { display: "none" } }}>
           {sortedChats.map((c) => (
             <Box
               key={c.matchId}
@@ -3502,7 +3572,7 @@ export default function ChatScreen() {
                     </Typography>
                     {c.pinned && <span style={{ fontSize: 12 }}>📌</span>}
                     {c.muted && <span style={{ fontSize: 12 }}>🔕</span>}
-                    {/* Pulse spec: Connection source badge */}
+                    {/* Pulse spec: Connection source badge - Purple style */}
                     {c.connectionSource && (
                       <Chip
                         size="small"
@@ -3511,10 +3581,12 @@ export default function ChatScreen() {
                           height: 18,
                           fontSize: '0.65rem',
                           fontWeight: 600,
-                          bgcolor: c.connectionSource === CONNECTION_SOURCE.EVENT ? '#dcfce7' : 
-                                   c.connectionSource === CONNECTION_SOURCE.NEARBY ? '#fef3c7' : '#e0f2fe',
-                          color: c.connectionSource === CONNECTION_SOURCE.EVENT ? '#166534' :
-                                 c.connectionSource === CONNECTION_SOURCE.NEARBY ? '#92400e' : '#075985',
+                          bgcolor: 'rgba(108, 92, 231, 0.14) !important',
+                          color: '#4B3DB6 !important',
+                          border: '1px solid rgba(108, 92, 231, 0.18) !important',
+                          '& .MuiChip-label': {
+                            color: '#4B3DB6 !important',
+                          },
                         }}
                       />
                     )}
@@ -3623,7 +3695,7 @@ export default function ChatScreen() {
         bgcolor: "#fff",
       }}
     >
-      {/* In-chat header - positioned below main app header (56px) */}
+      {/* In-chat header - fixed below main app header */}
       <Box
         sx={{
           position: "fixed",
@@ -3668,7 +3740,7 @@ export default function ChatScreen() {
           {/* Pulse spec: Quick vibe line or softer presence */}
           {chat.quickVibe ? (
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
-              <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#6C5CE7", animation: "subtlePulse 2s ease-in-out infinite" }} />
+              <Box sx={{ width: 6, height: 6, minWidth: 6, minHeight: 6, borderRadius: "50%", bgcolor: "#6C5CE7", flexShrink: 0, animation: "subtlePulse 2s ease-in-out infinite" }} />
               <Typography variant="caption" sx={{ color: "#6C5CE7", fontWeight: 600, fontSize: "0.8rem" }}>
                 {chat.quickVibe}
               </Typography>
@@ -3899,13 +3971,13 @@ export default function ChatScreen() {
             position: 'fixed',
             left: 0,
             right: 0,
-            top: 56,
-            zIndex: 1500,
+            top: 0,
+            height: 56,
+            zIndex: 2001,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             px: 2,
-            py: 1,
             bgcolor: sosState === SOS_STATE.NONE ? '#6C5CE7' : 
                      sosState === SOS_STATE.SEARCHING ? '#8B5CF6' :
                      sosState === SOS_STATE.HELPER_ARRIVED ? '#6C5CE7' : '#8B5CF6',
@@ -3914,19 +3986,30 @@ export default function ChatScreen() {
             transition: 'background-color 0.3s ease',
           }}
         >
-          {/* Meeting Status Icon - Click to return to Meeting Time screen */}
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1, 
-              cursor: 'pointer',
-              '&:hover': { opacity: 0.9 },
-            }}
-            onClick={() => setShowMeetingScreen(true)}
-            role="button"
-            aria-label="Return to Meeting Time"
-          >
+          {/* Left side: Back button + Meeting info */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Back button */}
+            <IconButton
+              size="small"
+              sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}
+              onClick={() => navigate(-1)}
+            >
+              <ArrowLeft size={20} />
+            </IconButton>
+            
+            {/* Meeting Status Icon - Click to return to Meeting Time screen */}
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1, 
+                cursor: 'pointer',
+                '&:hover': { opacity: 0.9 },
+              }}
+              onClick={() => setShowMeetingScreen(true)}
+              role="button"
+              aria-label="Return to Meeting Time"
+            >
             {/* Animated Meeting Status Icon */}
             <Box
               sx={{
@@ -3981,9 +4064,10 @@ export default function ChatScreen() {
               </Typography>
             </Box>
           </Box>
+          </Box>
 
-          {/* SOS Button */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Right side: SOS + Nav buttons */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {sosState !== SOS_STATE.NONE && (
               <Button
                 size="small"
@@ -3992,10 +4076,14 @@ export default function ChatScreen() {
                 sx={{ 
                   color: '#fff', 
                   borderColor: 'rgba(255,255,255,0.5)',
+                  fontSize: '0.7rem',
+                  py: 0.25,
+                  px: 1,
+                  minWidth: 'auto',
                   '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' },
                 }}
               >
-                Cancel SOS
+                Cancel
               </Button>
             )}
             {/* SOS Button - Per spec: calm UI, no panic red flashing */}
@@ -4003,21 +4091,41 @@ export default function ChatScreen() {
               aria-label="SOS"
               onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined}
               disabled={sosState !== SOS_STATE.NONE}
+              size="small"
               sx={{
-                bgcolor: sosState === SOS_STATE.NONE ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.2)',
+                bgcolor: 'rgba(255,255,255,0.15)',
                 color: '#fff',
-                width: 44,
-                height: 44,
+                width: 36,
+                height: 36,
                 border: '2px solid rgba(255,255,255,0.4)',
-                transition: 'all 0.2s ease',
-                '&:hover': { 
-                  bgcolor: sosState === SOS_STATE.NONE ? 'rgba(255,255,255,0.25)' : undefined,
-                  borderColor: 'rgba(255,255,255,0.6)',
-                },
-                '&:disabled': { color: 'rgba(255,255,255,0.7)' },
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' },
               }}
             >
-              <Shield size={22} />
+              <Shield size={18} />
+            </IconButton>
+            {/* Help button */}
+            <IconButton
+              size="small"
+              sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}
+              onClick={() => {/* Help action */}}
+            >
+              <HelpCircle size={20} />
+            </IconButton>
+            {/* Profile button */}
+            <IconButton
+              size="small"
+              sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}
+              onClick={() => navigate('/profile')}
+            >
+              <User size={20} />
+            </IconButton>
+            {/* Settings button */}
+            <IconButton
+              size="small"
+              sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}
+              onClick={() => navigate('/settings')}
+            >
+              <Settings size={20} />
             </IconButton>
           </Box>
         </Box>
@@ -4097,37 +4205,6 @@ export default function ChatScreen() {
           <>
             <MenuItem
               onClick={() => {
-                const color =
-                  prompt("Enter theme color (hex / css)", chat.themeColor || "#ECE5DD") ||
-                  chat.themeColor;
-                setChats((prev) =>
-                  prev.map((c) =>
-                    c.matchId === openChat ? { ...c, themeColor: color } : c
-                  )
-                );
-                setMenuEl(null);
-              }}
-            >
-              Set chat color
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                const ttl =
-                  Number(
-                    prompt("Disappearing messages (seconds, 0=off)", `${chat.disappearingSeconds || 0}`)
-                  ) || 0;
-                setChats((prev) =>
-                  prev.map((c) =>
-                    c.matchId === openChat ? { ...c, disappearingSeconds: ttl } : c
-                  )
-                );
-                setMenuEl(null);
-              }}
-            >
-              Disappearing messages…
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
                 openGallery();
                 setMenuEl(null);
               }}
@@ -4137,8 +4214,30 @@ export default function ChatScreen() {
             <Divider />
           </>
         )}
-        <MenuItem onClick={() => setMenuEl(null)}>Clear chat</MenuItem>
-        <MenuItem onClick={() => setMenuEl(null)}>Delete chat</MenuItem>
+        <MenuItem 
+          onClick={() => {
+            if (window.confirm('Are you sure you want to clear all messages in this chat?')) {
+              setChats(prev => prev.map(c => 
+                c.matchId === openChat ? { ...c, messages: [] } : c
+              ));
+            }
+            setMenuEl(null);
+          }}
+        >
+          Clear chat
+        </MenuItem>
+        <MenuItem 
+          onClick={() => {
+            if (window.confirm('Are you sure you want to delete this chat? This cannot be undone.')) {
+              setChats(prev => prev.filter(c => c.matchId !== openChat));
+              setOpenChat(null);
+              navigate('/chat', { replace: true });
+            }
+            setMenuEl(null);
+          }}
+        >
+          Delete chat
+        </MenuItem>
         {/* Pulse spec: Mute/Block/Report options */}
         {chat.matchId !== AGENT_ID && (
           <>
@@ -4156,10 +4255,28 @@ export default function ChatScreen() {
             <MenuItem 
               onClick={() => {
                 if (window.confirm('Are you sure you want to block this user?')) {
+                  // Add to blocked users in localStorage
+                  const blockedUser = {
+                    id: chat.matchId,
+                    name: chat.user?.name || 'User',
+                    photo: chat.user?.photoUrl || '',
+                    source: 'chat',
+                    blockedAt: new Date().toISOString().split('T')[0],
+                  };
+                  try {
+                    const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+                    if (!existing.find(u => u.id === blockedUser.id)) {
+                      localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
+                    }
+                  } catch (e) {
+                    console.error('Failed to save blocked user:', e);
+                  }
+                  // Mark chat as blocked and close
                   setChats(prev => prev.map(c => 
                     c.matchId === openChat ? { ...c, blocked: true } : c
                   ));
                   setOpenChat(null);
+                  navigate('/chat', { replace: true });
                 }
                 setMenuEl(null);
               }}
@@ -4169,7 +4286,7 @@ export default function ChatScreen() {
             </MenuItem>
             <MenuItem 
               onClick={() => {
-                alert('Report submitted. Thank you for helping keep Pulse safe.');
+                setReportPopup({ open: true, reason: '', details: '' });
                 setMenuEl(null);
               }}
               sx={{ color: '#dc2626' }}
@@ -4201,49 +4318,57 @@ export default function ChatScreen() {
         onScroll={handleScroll}
         sx={{
           position: 'fixed',
-          top: 126,
+          top: 120,
           left: 0,
           right: 0,
-          bottom: footerH,
+          bottom: footerH + 56,
           overflowY: 'auto',
           overflowX: 'hidden',
           px: 1.25,
           pt: 1,
-          pb: `46px`,
+          pb: `24px`,
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
           '&::-webkit-scrollbar': { display: 'none' },
           backgroundColor: chat.themeColor || "#ECE5DD",
-          backgroundImage: doodleBg,
-          backgroundAttachment: 'fixed',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
         }}
       >
-        <Box>
+        <Box sx={{ pt: 0 }}>
           {/* Unified Agent Panel */}
           {chat.matchId === AGENT_ID && (
-            <Box sx={{ mt: 5, mb: 1, p: 1, bgcolor: "#F0F7FF", border: "1px solid #E0E7FF", borderRadius: 2 }}>
+            <Box sx={{ mt: 2, mb: 1, p: 1.5, bgcolor: "#F0F7FF", border: "1px solid #E0E7FF", borderRadius: 2 }}>
               {/* Mode Selector */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                  💬 Pulse | Coach
-                </Typography>
-                <Box sx={{ ml: "auto", display: "flex", gap: 0.5 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 1.5 }}>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    💬 Pulse | Coach
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", gap: 0.5, justifyContent: "center" }}>
                   {[
-                    { key: "auto", label: "🔄 Auto", desc: "זיהוי אוטומטי" },
-                    { key: "coach", label: "📝 Coach", desc: "עזרה בניסוח" },
-                    { key: "therapist", label: "💙 Support", desc: "שיחה תומכת" },
+                    { key: "auto", label: "🔄 Auto" },
+                    { key: "coach", label: "📝 Coach" },
+                    { key: "therapist", label: "💙 Support" },
                   ].map((m) => (
                     <Chip
                       key={m.key}
                       size="small"
                       label={m.label}
-                      color={getAgentMode(chat.matchId) === m.key ? "primary" : "default"}
+                      variant="outlined"
                       onClick={() => setAgentMode(chat.matchId, m.key)}
                       sx={{ 
                         fontWeight: getAgentMode(chat.matchId) === m.key ? 700 : 400,
-                        cursor: "pointer"
+                        cursor: "pointer",
+                        bgcolor: getAgentMode(chat.matchId) === m.key ? '#6C5CE7 !important' : 'rgba(108, 92, 231, 0.08) !important',
+                        borderColor: getAgentMode(chat.matchId) === m.key ? '#6C5CE7 !important' : 'rgba(108, 92, 231, 0.3) !important',
+                        color: getAgentMode(chat.matchId) === m.key ? '#fff !important' : '#6C5CE7 !important',
+                        '& .MuiChip-label': {
+                          color: getAgentMode(chat.matchId) === m.key ? '#fff !important' : '#6C5CE7 !important',
+                        },
+                        '&:hover': {
+                          bgcolor: getAgentMode(chat.matchId) === m.key ? '#5B4BD5 !important' : 'rgba(108, 92, 231, 0.15) !important',
+                          borderColor: '#6C5CE7 !important',
+                        },
                       }}
                     />
                   ))}
@@ -4251,28 +4376,71 @@ export default function ChatScreen() {
               </Box>
               
               {/* Quick actions based on current mode */}
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: 1.5, justifyContent: "center", alignItems: "center" }}>
                 {getAgentMode(chat.matchId) !== "therapist" && [
-                  { k: "📝 ניסוח הודעה", v: "עזור לי לנסח הודעה ל..." },
-                  { k: "💡 טיפים", v: "מה כדאי לכתוב כשרוצים..." },
+                  { k: "📝 Draft message", v: "Help me write a message to..." },
+                  { k: "💡 Tips", v: "What should I write when I want to..." },
                 ].map((o) => (
-                  <Chip key={o.k} size="small" label={o.k} onClick={() => setInput(o.v)} variant="outlined" />
+                  <Chip 
+                    key={o.k} 
+                    size="small" 
+                    label={o.k} 
+                    onClick={() => setInput(o.v)} 
+                    variant="outlined"
+                    sx={{
+                      bgcolor: 'rgba(108, 92, 231, 0.08) !important',
+                      borderColor: 'rgba(108, 92, 231, 0.3) !important',
+                      color: '#6C5CE7 !important',
+                      '& .MuiChip-label': {
+                        color: '#6C5CE7 !important',
+                      },
+                      '&:hover': {
+                        bgcolor: 'rgba(108, 92, 231, 0.15) !important',
+                        borderColor: '#6C5CE7 !important',
+                      },
+                    }}
+                  />
                 ))}
                 {getAgentMode(chat.matchId) !== "coach" && [
-                  { k: "💙 צריך/ה לדבר", v: "קשה לי עכשיו, צריך/ה לדבר..." },
-                  { k: "🌬️ נשימה", v: "עזור לי להירגע" },
+                  { k: "💙 Need to talk", v: "I'm struggling right now, need to talk..." },
+                  { k: "🌬️ Breathing", v: "Help me calm down" },
                 ].map((o) => (
-                  <Chip key={o.k} size="small" label={o.k} onClick={() => setInput(o.v)} variant="outlined" />
+                  <Chip 
+                    key={o.k} 
+                    size="small" 
+                    label={o.k} 
+                    onClick={() => setInput(o.v)} 
+                    variant="outlined"
+                    sx={{
+                      bgcolor: 'rgba(108, 92, 231, 0.08) !important',
+                      borderColor: 'rgba(108, 92, 231, 0.3) !important',
+                      color: '#6C5CE7 !important',
+                      '& .MuiChip-label': {
+                        color: '#6C5CE7 !important',
+                      },
+                      '&:hover': {
+                        bgcolor: 'rgba(108, 92, 231, 0.15) !important',
+                        borderColor: '#6C5CE7 !important',
+                      },
+                    }}
+                  />
                 ))}
-                <Button size="small" sx={{ ml: "auto" }} onClick={() => setHelpOpen(true)}>
-                  🆘 עזרה
+                <Button 
+                  size="small" 
+                  sx={{ 
+                    color: '#6C5CE7',
+                    '&:hover': { bgcolor: 'rgba(108, 92, 231, 0.08)' },
+                  }} 
+                  onClick={() => setHelpOpen(true)}
+                >
+                  🆘 Help
                 </Button>
               </Box>
               
-              <Typography variant="caption" sx={{ display: "block", color: "#6b7280" }}>
-                {getAgentMode(chat.matchId) === "auto" && "אני מזהה אוטומטית את מה שאת/ה צריך/ה."}
-                {getAgentMode(chat.matchId) === "coach" && "מצב Coach - עזרה בניסוח הודעות."}
-                {getAgentMode(chat.matchId) === "therapist" && "מצב Support - שיחה תומכת. במצב חירום — פנו לעזרה מקצועית."}
+              <Typography variant="caption" sx={{ display: "block", color: "#6b7280", textAlign: "center" }}>
+                {getAgentMode(chat.matchId) === "auto" && "I automatically detect what you need."}
+                {getAgentMode(chat.matchId) === "coach" && "Coach mode - help with crafting messages."}
+                {getAgentMode(chat.matchId) === "therapist" && "Support mode - supportive conversation. In emergencies, seek professional help."}
               </Typography>
             </Box>
           )}
@@ -4423,15 +4591,13 @@ export default function ChatScreen() {
           position: "fixed",
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: 56,
           zIndex: 1500,
-          background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%)",
-          borderTop: "1px solid #E5E7EB",
-          boxShadow: "0 -4px 16px rgba(0,0,0,0.04)",
-          backdropFilter: "blur(10px)",
+          backgroundColor: chat.themeColor || "#ECE5DD",
+          borderTop: "1px solid rgba(0,0,0,0.08)",
           px: 2,
-          pt: replyDraft || editDraft ? 0.75 : 1.5,
-          pb: `calc(1.5rem + env(safe-area-inset-bottom, 0px))`,
+          pt: replyDraft || editDraft ? 0.75 : 1,
+          pb: 1,
         }}
       >
         {/* Smart replies - sticky above input */}
@@ -4692,7 +4858,7 @@ export default function ChatScreen() {
             <InputBase
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={chat.matchId === AGENT_ID ? "שאל/י אותי משהו…" : "Type a message"}
+              placeholder={chat.matchId === AGENT_ID ? "Ask me anything…" : "Type a message"}
               multiline
               maxRows={4}
               fullWidth
@@ -4766,54 +4932,56 @@ export default function ChatScreen() {
                 {Math.floor(recMs / 1000)}s
               </Box>
             )}
-            <IconButton
-              aria-label="Voice message"
-              sx={{
-                background: recActive 
-                  ? "linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)"
-                  : "linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)",
-                color: "#fff",
-                width: 44,
-                height: 44,
-                borderRadius: "50%",
-                boxShadow: recActive 
-                  ? "0 4px 12px rgba(220, 38, 38, 0.4)"
-                  : "0 4px 12px rgba(128, 90, 213, 0.3)",
-                border: "none",
-                transition: "all 0.2s ease",
-                "&:hover": { 
-                  background: recActive
-                    ? "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)"
-                    : "linear-gradient(135deg, #B794F4 0%, #9F7AEA 100%)",
-                  boxShadow: "0 6px 16px rgba(128, 90, 213, 0.4)",
-                  transform: "scale(1.05)",
-                },
-                "&:active": {
-                  transform: "scale(0.95)",
-                }
-              }}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                startRecording();
-              }}
-              onMouseUp={(e) => {
-                e.preventDefault();
-                if (recActive) stopAndSendRecording();
-              }}
-              onMouseLeave={() => {
-                if (recActive) cancelRecording();
-              }}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                startRecording();
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                if (recActive) stopAndSendRecording();
-              }}
-            >
-              <Mic size={22} />
-            </IconButton>
+            <Tooltip title={recActive ? "" : "Hold to record"} placement="top">
+              <IconButton
+                aria-label="Voice message"
+                sx={{
+                  background: recActive 
+                    ? "linear-gradient(135deg, #6C5CE7 0%, #5B4BC4 100%)"
+                    : "linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)",
+                  color: "#fff",
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  boxShadow: recActive 
+                    ? "0 4px 12px rgba(108, 92, 231, 0.5)"
+                    : "0 4px 12px rgba(128, 90, 213, 0.3)",
+                  border: "none",
+                  transition: "all 0.2s ease",
+                  "&:hover": { 
+                    background: recActive
+                      ? "linear-gradient(135deg, #7C6DF7 0%, #6C5CE7 100%)"
+                      : "linear-gradient(135deg, #B794F4 0%, #9F7AEA 100%)",
+                    boxShadow: "0 6px 16px rgba(108, 92, 231, 0.5)",
+                    transform: "scale(1.05)",
+                  },
+                  "&:active": {
+                    transform: "scale(0.95)",
+                  }
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  startRecording();
+                }}
+                onMouseUp={(e) => {
+                  e.preventDefault();
+                  if (recActive) stopAndSendRecording();
+                }}
+                onMouseLeave={() => {
+                  if (recActive) cancelRecording();
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  startRecording();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  if (recActive) stopAndSendRecording();
+                }}
+              >
+                <Mic size={22} />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
       </Box>
@@ -4997,15 +5165,129 @@ export default function ChatScreen() {
       />
 
       {/* Media Gallery */}
-      <Modal open={gallery.open} onClose={() => setGallery({ open: false, images: [] })}>
-        <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,.8)", p: 3, overflow: "auto" }}>
-          <Grid container spacing={2}>
-            {gallery.images.map((src, i) => (
-              <Grid key={i} item xs={6} sm={4} md={3}>
-                <img src={src} alt="" style={{ width: "100%", borderRadius: 8 }} />
-              </Grid>
-            ))}
-          </Grid>
+      <Modal open={gallery.open} onClose={() => setGallery({ open: false, images: [] })} sx={{ zIndex: 9999 }}>
+        <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,.95)", p: 3, overflow: "auto", zIndex: 9999 }}>
+          {/* Close button */}
+          <IconButton
+            onClick={() => setGallery({ open: false, images: [] })}
+            sx={{
+              position: "fixed",
+              top: 16,
+              right: 16,
+              color: "#fff",
+              bgcolor: "rgba(255,255,255,0.15)",
+              zIndex: 10000,
+              "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
+            }}
+          >
+            <X size={24} />
+          </IconButton>
+          
+          {/* Title */}
+          <Typography variant="h6" sx={{ color: "#fff", mb: 3, textAlign: "center" }}>
+            Media Gallery
+          </Typography>
+          
+          {gallery.images.length === 0 ? (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh" }}>
+              <Typography sx={{ color: "rgba(255,255,255,0.6)", fontSize: "1.1rem" }}>
+                No media in this chat yet
+              </Typography>
+              <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: "0.9rem", mt: 1 }}>
+                Photos and videos you share will appear here
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={2}>
+              {gallery.images.map((src, i) => (
+                <Grid key={i} item xs={6} sm={4} md={3}>
+                  <img src={src} alt="" style={{ width: "100%", borderRadius: 8 }} />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Box>
+      </Modal>
+
+      {/* Report User Modal */}
+      <Modal open={reportPopup.open} onClose={() => setReportPopup({ open: false, reason: '', details: '' })} sx={{ zIndex: 9999 }}>
+        <Box sx={{ position: "fixed", inset: 0, display: "grid", placeItems: "center", bgcolor: "rgba(0,0,0,.5)" }}>
+          <Box sx={{ bgcolor: "#fff", borderRadius: 3, width: 320, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", p: 2.5 }}>
+            <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: "#1a1a1a", fontSize: "1.1rem" }}>
+              Report User
+            </Typography>
+            <Typography sx={{ mb: 1.5, color: "#666", fontSize: "0.85rem" }}>
+              Why are you reporting {chat?.user?.name || "this user"}?
+            </Typography>
+            
+            {/* Report reasons */}
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mb: 1.5 }}>
+              {[
+                { value: "inappropriate", label: "Inappropriate content" },
+                { value: "harassment", label: "Harassment or bullying" },
+                { value: "fake", label: "Fake profile / Catfishing" },
+                { value: "spam", label: "Spam or scam" },
+                { value: "other", label: "Other" },
+              ].map((option) => (
+                <Box
+                  key={option.value}
+                  onClick={() => setReportPopup(prev => ({ ...prev, reason: option.value }))}
+                  sx={{
+                    p: 1,
+                    borderRadius: 1.5,
+                    border: reportPopup.reason === option.value ? "2px solid #6C5CE7" : "1px solid #E5E7EB",
+                    bgcolor: reportPopup.reason === option.value ? "rgba(108, 92, 231, 0.08)" : "#fff",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    "&:hover": { bgcolor: "rgba(108, 92, 231, 0.05)" },
+                  }}
+                >
+                  <Typography sx={{ fontSize: "0.85rem", color: reportPopup.reason === option.value ? "#6C5CE7" : "#333" }}>
+                    {option.label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+            
+            {/* Additional details */}
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="Additional details (optional)"
+              value={reportPopup.details}
+              onChange={(e) => setReportPopup(prev => ({ ...prev, details: e.target.value }))}
+              sx={{ mb: 1.5 }}
+              size="small"
+            />
+            
+            {/* Buttons */}
+            <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+              <Button
+                size="small"
+                onClick={() => setReportPopup({ open: false, reason: '', details: '' })}
+                sx={{ color: "#666" }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                disabled={!reportPopup.reason}
+                onClick={() => {
+                  alert('Report submitted. Thank you for helping keep Pulse safe.');
+                  setReportPopup({ open: false, reason: '', details: '' });
+                }}
+                sx={{
+                  bgcolor: "#dc2626",
+                  "&:hover": { bgcolor: "#b91c1c" },
+                  "&:disabled": { bgcolor: "#fca5a5" },
+                }}
+              >
+                Submit
+              </Button>
+            </Box>
+          </Box>
         </Box>
       </Modal>
 
@@ -5295,6 +5577,7 @@ export default function ChatScreen() {
         open={showMeetingScreen && meetingState === MEETING_STATE.ACTIVE} 
         onClose={() => setShowMeetingScreen(false)}
         sx={{
+          zIndex: 9999,
           '& .MuiModal-backdrop': {
             backgroundColor: 'transparent',
           },
@@ -5325,20 +5608,48 @@ export default function ChatScreen() {
             borderBottom: '1px solid #E5E7EB',
             flexShrink: 0,
           }}>
-            <IconButton onClick={() => setShowMeetingScreen(false)} size="small" sx={{ color: '#6B7280' }}>
-              <X size={20} />
+            <IconButton 
+              onClick={() => {
+                setShowMeetingScreen(false);
+                // Navigate back to previous page if we came from another page
+                if (globalMeeting.previousPath && globalMeeting.previousPath !== location.pathname) {
+                  navigate(globalMeeting.previousPath);
+                  globalMeeting.setPreviousPath(null);
+                }
+              }} 
+              size="small" 
+              sx={{ 
+                color: '#6C5CE7',
+                bgcolor: 'rgba(108, 92, 231, 0.1)',
+                '&:hover': { bgcolor: 'rgba(108, 92, 231, 0.2)' },
+              }}
+            >
+              <Minimize2 size={18} />
             </IconButton>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#6C5CE7', boxShadow: '0 0 6px #6C5CE7' }} />
               <Typography variant="body2" sx={{ fontWeight: 600, color: '#1F2937' }}>Meeting Time</Typography>
             </Box>
-            <Button variant="text" color="error" size="small" onClick={handleEndMeeting} sx={{ fontWeight: 600, fontSize: '0.8rem', minWidth: 'auto' }}>
-              End
+            <Button 
+              variant="text" 
+              size="small" 
+              onClick={handleEndMeeting} 
+              sx={{ 
+                fontWeight: 600, 
+                fontSize: '0.8rem', 
+                minWidth: 'auto',
+                color: '#DC2626 !important',
+                '&:hover': {
+                  bgcolor: 'rgba(220, 38, 38, 0.1)',
+                },
+              }}
+            >
+              END
             </Button>
           </Box>
 
           {/* Meeting Quick Actions Block - At top, below header */}
-          <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', px: 1.5, pt: 10, pb: 1, overflowY: 'auto' }}>
+          <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', px: 1.5, pt: 3, pb: 10, overflowY: 'auto' }}>
             <Box sx={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
               {/* 1. Meeting Status with motivational message */}
               <Box sx={{ 
@@ -5640,41 +5951,42 @@ export default function ChatScreen() {
       <Modal 
         open={showContactsSetupModal} 
         onClose={() => setShowContactsSetupModal(false)}
+        sx={{ zIndex: 9999 }}
       >
         <Box
           sx={{
             position: 'absolute',
-            top: '45%',
+            top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
             bgcolor: '#fff',
             borderRadius: 2,
-            p: 1.5,
-            maxWidth: 260,
+            p: 2,
+            maxWidth: 300,
             width: 'calc(100% - 32px)',
             textAlign: 'center',
             outline: 'none',
-            maxHeight: '90vh',
+            maxHeight: '80vh',
             overflow: 'auto',
             boxShadow: 24,
           }}
         >
             <Box
               sx={{
-                width: 36,
-                height: 36,
+                width: 40,
+                height: 40,
                 borderRadius: '50%',
                 bgcolor: '#F3E8FF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 mx: 'auto',
-                mb: 1,
+                mb: 1.5,
               }}
             >
-              <Users size={18} color="#6C5CE7" />
+              <Users size={20} color="#6C5CE7" />
             </Box>
-            <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.25 }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
               Want to set up meeting contacts?
             </Typography>
             <Typography variant="caption" sx={{ color: '#6B7280', mb: 1.5, display: 'block', fontSize: '0.7rem', lineHeight: 1.3 }}>
@@ -5711,20 +6023,21 @@ export default function ChatScreen() {
       <Modal 
         open={showQuickAddContact} 
         onClose={() => setShowQuickAddContact(false)}
+        sx={{ zIndex: 9999 }}
       >
           <Box
             sx={{
               position: 'absolute',
-              top: '45%',
+              top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
               bgcolor: '#fff',
               borderRadius: 2,
               p: 2,
-              maxWidth: 280,
+              maxWidth: 320,
               width: 'calc(100% - 32px)',
               outline: 'none',
-              maxHeight: '90vh',
+              maxHeight: '80vh',
               overflow: 'auto',
               boxShadow: 24,
             }}
@@ -5799,7 +6112,7 @@ export default function ChatScreen() {
       </Modal>
 
       {/* ==================== End Meeting Confirmation (During SOS) ==================== */}
-      <Modal open={showEndMeetingConfirm} onClose={() => setShowEndMeetingConfirm(false)}>
+      <Modal open={showEndMeetingConfirm} onClose={() => setShowEndMeetingConfirm(false)} sx={{ zIndex: 9999 }}>
         <Box
           sx={{
             position: 'fixed',
@@ -5865,7 +6178,7 @@ export default function ChatScreen() {
       </Modal>
 
       {/* ==================== Safety Summary (After Meeting Ends) ==================== */}
-      <Modal open={showSafetySummary} onClose={() => setShowSafetySummary(false)}>
+      <Modal open={showSafetySummary} onClose={() => setShowSafetySummary(false)} sx={{ zIndex: 9999 }}>
         <Box
           sx={{
             position: 'fixed',
@@ -5938,7 +6251,7 @@ export default function ChatScreen() {
                                   id: Date.now() + 1,
                                   from: "them",
                                   type: "text",
-                                  text: `איך היה? אני כאן אם רוצה לשתף או לדבר על הפגישה עם ${meetingEndedWith?.name || 'האדם שפגשת'}.`,
+                                  text: `How did it go? I'm here if you want to share or talk about your meeting with ${meetingEndedWith?.name || 'your date'}.`,
                                   timestamp: Date.now(),
                                   status: "read",
                                   reactions: {},
@@ -6039,6 +6352,7 @@ export default function ChatScreen() {
           setShowContactNotifyModal(false);
           setContactToNotify(null);
         }}
+        sx={{ zIndex: 9999 }}
       >
         <Box
           sx={{

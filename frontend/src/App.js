@@ -1,5 +1,6 @@
 import React from 'react';
 import './index.css';
+import './global-theme.css';
 import './pages/global-theme.css';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -105,6 +106,8 @@ import UserDetailsScreen from './pages/UserDetailsScreen';
 import { GlobalErrorProvider } from './components/GlobalErrorBanner';
 import SessionExpiredModal from './components/SessionExpiredModal';
 import { getPageHelpContent } from './config/pageHelpContent';
+import { MeetingProvider } from './context/MeetingContext';
+import GlobalMeetingBar from './components/GlobalMeetingBar';
 
 const theme = createTheme({
   palette: {
@@ -1030,14 +1033,17 @@ function App() {
         <AuthProvider>
           <ActivityProvider>
             <NotificationsProvider>
-              <GlobalErrorProvider>
-                <Router>
-                  <InAppNotificationBanner />
-                  <GlobalEventInvitePopups />
-                  <DevEventInviteDemoButtons />
-                  <AppShell />
-                </Router>
-              </GlobalErrorProvider>
+              <MeetingProvider>
+                <GlobalErrorProvider>
+                  <Router>
+                    <GlobalMeetingBar />
+                    <InAppNotificationBanner />
+                    <GlobalEventInvitePopups />
+                    <DevEventInviteDemoButtons />
+                    <AppShell />
+                  </Router>
+                </GlobalErrorProvider>
+              </MeetingProvider>
             </NotificationsProvider>
           </ActivityProvider>
         </AuthProvider>
