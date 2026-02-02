@@ -463,9 +463,6 @@ const LikesYouScreen = () => {
           py: 1.5,
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton disabled sx={{ color: '#e2e8f0' }}>
-              <ArrowLeft size={24} />
-            </IconButton>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
               {t('likesYou') || 'Likes You'}
             </Typography>
@@ -496,9 +493,6 @@ const LikesYouScreen = () => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton onClick={() => navigate(-1)} sx={{ color: '#1a1a2e' }}>
-            <ArrowLeft size={24} />
-          </IconButton>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
               {t('likesYou') || 'Likes You'}

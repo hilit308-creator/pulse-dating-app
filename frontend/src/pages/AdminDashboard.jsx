@@ -246,9 +246,6 @@ const AdminDashboard = () => {
           gap: 2,
         }}
       >
-        <IconButton onClick={() => navigate(-1)} sx={{ color: '#fff' }}>
-          <ArrowLeft size={24} />
-        </IconButton>
         <Shield size={28} />
         <Box>
           <Typography sx={{ fontSize: 20, fontWeight: 700 }}>

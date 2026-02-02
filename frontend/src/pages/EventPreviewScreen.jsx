@@ -132,9 +132,6 @@ export default function EventPreviewScreen() {
           zIndex: 10,
         }}
       >
-        <IconButton onClick={handleBack} sx={{ color: "#1a1a2e" }}>
-          <ArrowLeft size={22} />
-        </IconButton>
         <Typography
           variant="h6"
           sx={{

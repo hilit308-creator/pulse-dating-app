@@ -27,9 +27,17 @@ import {
   InputBase,
   Checkbox,
   FormControlLabel,
+  FormControl,
+  InputLabel,
+  Select,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Tooltip,
   Alert,
+  Snackbar,
 } from "@mui/material";
 import { useLanguage } from '../context/LanguageContext';
 import { ChatPointsStickyBanner } from '../components/PointsPromoBanner';
@@ -65,6 +73,7 @@ import {
   HelpCircle,
   User,
   Settings,
+  BarChart2,
 } from "lucide-react";
 // Chat Gates - ready for integration when needed
 // import ChatGateBanner from "../components/ChatGateBanner";
@@ -710,13 +719,14 @@ function ChatBubble({
       <Box
         sx={{
           position: "relative",
-          px: 1.5,
-          py: 1,
+          px: 2,
+          py: 1.25,
           bgcolor: bg,
           borderRadius: 3,
           borderTopRightRadius: isMe ? 4 : 12,
           borderTopLeftRadius: isMe ? 12 : 4,
-          maxWidth: 360,
+          maxWidth: "min(85vw, 320px)",
+          minWidth: 60,
           boxShadow: "0 1px 0 rgba(0,0,0,0.06)",
           opacity: msg.type === "deleted" ? 0.7 : 1,
           "&::after": {
@@ -772,26 +782,72 @@ function ChatBubble({
             {msg.text && <Typography sx={{ mt: 0.5 }}>{msg.text}</Typography>}
           </Box>
         ) : msg.type === "place_invite" ? (
-          <Box sx={{ mt: 0.25, p: 1, border: "1px solid #e5e7eb", borderRadius: 2, bgcolor: "#fff" }}>
+          <Box 
+            sx={{ 
+              p: 2, 
+              borderRadius: 3, 
+              bgcolor: msg.from === "me" ? "rgba(236,72,153,0.08)" : "#fff",
+              border: "1px solid rgba(236,72,153,0.15)",
+              minWidth: 200,
+              maxWidth: 280,
+            }}
+          >
             {msg.place?.image && (
-              <img src={msg.place.image} alt={msg.place.name} style={{ width: "100%", borderRadius: 8, marginBottom: 8 }} />
+              <img src={msg.place.image} alt={msg.place.name} style={{ width: "100%", borderRadius: 12, marginBottom: 12 }} />
             )}
-            <Typography sx={{ fontWeight: 800 }}>{msg.place?.name || "Place"}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+              <Box sx={{ 
+                width: 40, height: 40, borderRadius: '12px', 
+                bgcolor: 'rgba(236,72,153,0.15)', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {msg.place?.type === 'cafe' && <span style={{ fontSize: 20 }}>☕</span>}
+                {msg.place?.type === 'bar' && <span style={{ fontSize: 20 }}>🍷</span>}
+                {msg.place?.type === 'restaurant' && <span style={{ fontSize: 20 }}>🍽️</span>}
+                {msg.place?.type === 'park' && <span style={{ fontSize: 20 }}>🌳</span>}
+                {msg.place?.type === 'museum' && <span style={{ fontSize: 20 }}>🏛️</span>}
+                {(!msg.place?.type || msg.place?.type === 'other' || msg.place?.type === 'place') && <MapPin size={20} color="#EC4899" />}
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem', lineHeight: 1.3 }}>
+                  {msg.place?.name || "Place"}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.25 }}>
+                  {msg.place?.type && msg.place.type !== 'other' && msg.place.type !== 'place' 
+                    ? msg.place.type.charAt(0).toUpperCase() + msg.place.type.slice(1) 
+                    : 'Place'}
+                  {typeof msg.place?.distance === "number" && ` • ${msg.place.distance.toFixed(1)} km away`}
+                </Typography>
+              </Box>
+            </Box>
             {msg.text && (
-              <Typography variant="body2" sx={{ color: "#555", mt: 0.25 }}>
-                {msg.text}
+              <Typography variant="body2" sx={{ color: '#475569', mt: 1.5, fontStyle: 'italic' }}>
+                "{msg.text}"
               </Typography>
             )}
-            <Typography variant="caption" sx={{ color: "#6b7280" }}>
-              {msg.place?.type ? `${msg.place.type} • ` : ""}
-              {typeof msg.place?.distance === "number" ? `${msg.place.distance.toFixed(1)} km` : ""}
-            </Typography>
             {msg.place?.maps && (
-              <Box sx={{ mt: 0.75 }}>
-                <Button size="small" variant="outlined" href={msg.place.maps} target="_blank" rel="noreferrer" sx={{ borderRadius: 999 }}>
-                  Open map
-                </Button>
-              </Box>
+              <Button 
+                size="small" 
+                variant="outlined" 
+                href={msg.place.maps} 
+                target="_blank" 
+                rel="noreferrer" 
+                startIcon={<Navigation size={14} />}
+                sx={{ 
+                  mt: 1.5, 
+                  borderRadius: 2, 
+                  borderColor: 'rgba(236,72,153,0.3)',
+                  color: '#EC4899',
+                  textTransform: 'none',
+                  '&:hover': {
+                    borderColor: '#EC4899',
+                    bgcolor: 'rgba(236,72,153,0.08)',
+                  },
+                }}
+              >
+                Open in Maps
+              </Button>
             )}
           </Box>
         ) : msg.type === "contact" ? (
@@ -821,24 +877,54 @@ function ChatBubble({
           </Box>
         ) : msg.type === "poll" ? (
           <Box
-            sx={{ p: 1, border: "1px solid #e5e7eb", borderRadius: 2, bgcolor: "#fff" }}
+            sx={{ 
+              p: 2, 
+              borderRadius: 3, 
+              bgcolor: msg.from === "me" ? "rgba(108,92,231,0.08)" : "#fff",
+              border: "1px solid rgba(108,92,231,0.15)",
+              minWidth: 200,
+              maxWidth: 280,
+            }}
           >
-            <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
-              {msg.poll.question}
-            </Typography>
-            {(msg.poll.options || []).map((opt, i) => (
-              <Button
-                key={i}
-                size="small"
-                variant={msg.poll.voted === i ? "contained" : "outlined"}
-                onClick={() =>
-                  msg.onVote?.(i) || null
-                }
-                sx={{ mr: 0.5, mb: 0.5 }}
-              >
-                {opt}
-              </Button>
-            ))}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <BarChart2 size={18} color="#6C5CE7" />
+              <Typography sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem' }}>
+                {msg.poll.question}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {(msg.poll.options || []).map((opt, i) => (
+                <Button
+                  key={i}
+                  size="small"
+                  variant={msg.poll.voted === i ? "contained" : "outlined"}
+                  onClick={() => msg.onVote?.(i) || null}
+                  sx={{ 
+                    justifyContent: 'flex-start',
+                    textAlign: 'left',
+                    borderRadius: 2,
+                    py: 1,
+                    px: 2,
+                    textTransform: 'none',
+                    fontWeight: msg.poll.voted === i ? 600 : 400,
+                    bgcolor: msg.poll.voted === i ? '#6C5CE7' : 'transparent',
+                    borderColor: 'rgba(108,92,231,0.3)',
+                    color: msg.poll.voted === i ? '#fff' : '#1a1a2e',
+                    '&:hover': {
+                      bgcolor: msg.poll.voted === i ? '#5A4BD8' : 'rgba(108,92,231,0.08)',
+                      borderColor: '#6C5CE7',
+                    },
+                  }}
+                >
+                  {opt}
+                </Button>
+              ))}
+            </Box>
+            {msg.poll.votes > 0 && (
+              <Typography variant="caption" sx={{ color: '#64748b', mt: 1.5, display: 'block' }}>
+                {msg.poll.votes} vote{msg.poll.votes > 1 ? 's' : ''}
+              </Typography>
+            )}
           </Box>
         ) : msg.type === "gesture" && msg.gestureType === "event_invite" ? (
           <Box sx={{ mt: 0.25 }}>
@@ -1070,11 +1156,12 @@ function ChatBubble({
             alignItems: "center",
             justifyContent: "flex-end",
             gap: 0.5,
-            mt: 0.25,
+            mt: 0.75,
+            pt: 0.5,
           }}
         >
           {msg.starred && <span title="Starred">⭐</span>}
-          <Typography variant="caption" sx={{ color: "#6B7280" }}>
+          <Typography variant="caption" sx={{ color: "#6B7280", fontSize: "0.7rem", whiteSpace: "nowrap" }}>
             {fmtHM(msg.timestamp)}
             {msg.edited && " · edited"}
           </Typography>
@@ -1149,14 +1236,16 @@ function EmojiBottomSheet({ open, onClose, onPick }) {
       PaperProps={{
         sx: { 
           height: 'auto',
-          maxHeight: '50vh',
+          maxHeight: '40vh',
           borderTopLeftRadius: 16, 
           borderTopRightRadius: 16,
           mb: 7,
+          display: 'flex',
+          flexDirection: 'column',
         },
       }}
     >
-      <Box sx={{ p: 1.5, pb: 2, overflowY: 'auto' }}>
+      <Box sx={{ p: 1.5, pb: 2, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <Box
           sx={{
             width: 36,
@@ -1165,15 +1254,19 @@ function EmojiBottomSheet({ open, onClose, onPick }) {
             borderRadius: 999,
             mx: "auto",
             mb: 1,
+            flexShrink: 0,
           }}
         />
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, flexShrink: 0 }}>
           Choose an emoji
         </Typography>
         <Box sx={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(8, 1fr)', 
           gap: 0.5,
+          overflowY: 'auto',
+          flex: 1,
+          minHeight: 0,
         }}>
           {COMMON_EMOJIS.map((emoji, i) => (
             <Button
@@ -1601,7 +1694,7 @@ export default function ChatScreen() {
     [openChat, setChats]
   );
   
-  // Auto-open chat if matchId is in URL (e.g., from "Go to Chat" button)
+  // Auto-open chat if matchId is in URL (e.g., from "Go to Chat" button or GlobalMeetingBar)
   useEffect(() => {
     if (urlMatchId) {
       const matchIdNum = parseInt(urlMatchId, 10);
@@ -1614,10 +1707,13 @@ export default function ChatScreen() {
         String(c.user?.id) === urlMatchId
       );
       if (foundChat) {
-        openChatWithNav(foundChat.matchId);
+        // Set openChat directly without navigation to avoid loops
+        if (openChat !== foundChat.matchId) {
+          setOpenChat(foundChat.matchId);
+        }
       }
     }
-  }, [urlMatchId, chats]);
+  }, [urlMatchId, chats, openChat]);
   
   // Workshop reminders from localStorage
   const [workshopReminders, setWorkshopReminders] = useState([]);
@@ -2000,23 +2096,8 @@ export default function ChatScreen() {
     );
   }, [chats, chatListSort]);
 
-  useEffect(() => {
-    if (typeof document !== "undefined" && document.body) {
-      document.body.dataset.hideTabBar = openChat ? "true" : "false";
-      // Hide page scrollbar when in chat view
-      if (openChat) {
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.body.style.overflow = '';
-      }
-    }
-    return () => {
-      if (typeof document !== "undefined" && document.body) {
-        delete document.body.dataset.hideTabBar;
-        document.body.style.overflow = '';
-      }
-    };
-  }, [openChat]);
+  // Note: Removed body overflow manipulation - it was causing scroll issues on other pages
+  // The ChatScreen now uses its own container with overflow control
 
   // --- Stories state (שמירה לתאימות) ---
   const currentUserPhotoUrl =
@@ -2030,11 +2111,29 @@ export default function ChatScreen() {
   });
   const [viewProfile, setViewProfile] = useState({ open: false, user: null });
 
+  // Get global meeting context (must be before useMemo that uses it)
+  const globalMeeting = useMeeting();
+
   // ==================== Meeting Time + SOS State ====================
-  const [meetingState, setMeetingState] = useState(MEETING_STATE.INACTIVE);
-  const [meetingWith, setMeetingWith] = useState(null); // The user we're meeting with
-  const [meetingStartTime, setMeetingStartTime] = useState(null);
-  const [showMeetingScreen, setShowMeetingScreen] = useState(false);
+  // Check URL param on initial render to prevent flickering - use lazy initializer
+  const shouldShowMeetingOnLoad = (() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('showMeeting') === 'true' && globalMeeting.meetingState === GLOBAL_MEETING_STATE.ACTIVE;
+  })();
+  
+  // Track if we're waiting for meeting screen to load (to prevent flickering)
+  const [waitingForMeetingScreen, setWaitingForMeetingScreen] = useState(shouldShowMeetingOnLoad);
+  
+  const [meetingState, setMeetingState] = useState(() => 
+    shouldShowMeetingOnLoad ? MEETING_STATE.ACTIVE : MEETING_STATE.INACTIVE
+  );
+  const [meetingWith, setMeetingWith] = useState(() =>
+    shouldShowMeetingOnLoad ? globalMeeting.meetingWith : null
+  ); // The user we're meeting with
+  const [meetingStartTime, setMeetingStartTime] = useState(() =>
+    shouldShowMeetingOnLoad ? (globalMeeting.meetingStartTime || Date.now()) : null
+  );
+  const [showMeetingScreen, setShowMeetingScreen] = useState(shouldShowMeetingOnLoad);
   
   // Meeting contacts (in-app circles)
   const [meetingContacts, setMeetingContacts] = useState(() => {
@@ -2061,10 +2160,24 @@ export default function ChatScreen() {
   const [showEndMeetingConfirm, setShowEndMeetingConfirm] = useState(false);
   const [showSupportChat, setShowSupportChat] = useState(false);
   const [showQuickAddContact, setShowQuickAddContact] = useState(false);
+  const [showMeetingHelpDialog, setShowMeetingHelpDialog] = useState(false);
   const [showSafetySummary, setShowSafetySummary] = useState(false);
   const [meetingEndedWith, setMeetingEndedWith] = useState(null); // Store who we met with for Safety Summary
   const [showContactNotifyModal, setShowContactNotifyModal] = useState(false);
   const [contactToNotify, setContactToNotify] = useState(null); // Contact pending confirmation
+
+  // Poll dialog state
+  const [showPollDialog, setShowPollDialog] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState(['', '']);
+
+  // Place invite dialog state
+  const [showPlaceInviteDialog, setShowPlaceInviteDialog] = useState(false);
+  const [placeInviteName, setPlaceInviteName] = useState('');
+  const [placeInviteType, setPlaceInviteType] = useState('cafe');
+  const [placeInviteDistance, setPlaceInviteDistance] = useState('0.5');
+  const [placeInviteMessage, setPlaceInviteMessage] = useState('');
+  const [placeInviteMaps, setPlaceInviteMaps] = useState('');
 
   // Save meeting contacts to localStorage
   useEffect(() => {
@@ -2097,9 +2210,6 @@ export default function ChatScreen() {
     };
   }, [meetingState, locationSharing]);
 
-  // Get global meeting context
-  const globalMeeting = useMeeting();
-
   // Sync local showMeetingScreen with global context
   useEffect(() => {
     if (globalMeeting.showMeetingScreen && globalMeeting.meetingState === GLOBAL_MEETING_STATE.ACTIVE) {
@@ -2113,6 +2223,7 @@ export default function ChatScreen() {
       );
       
       if (isMatchingChat) {
+        console.log('[ChatScreen] Syncing meeting screen from global context');
         setShowMeetingScreen(true);
         setMeetingState(MEETING_STATE.ACTIVE);
         setMeetingWith(chat.user);
@@ -2122,6 +2233,55 @@ export default function ChatScreen() {
       }
     }
   }, [globalMeeting.showMeetingScreen, globalMeeting.meetingState, globalMeeting.meetingWith, chat, meetingStartTime, globalMeeting.meetingStartTime]);
+
+  // Also sync when chat loads and global meeting is active
+  useEffect(() => {
+    if (chat && globalMeeting.meetingState === GLOBAL_MEETING_STATE.ACTIVE && globalMeeting.showMeetingScreen) {
+      const globalMatchId = globalMeeting.meetingWith?.matchId;
+      const chatMatchId = chat.matchId;
+      if (globalMatchId === chatMatchId || String(globalMatchId) === String(chatMatchId)) {
+        console.log('[ChatScreen] Chat loaded, showing meeting screen');
+        setShowMeetingScreen(true);
+        setMeetingState(MEETING_STATE.ACTIVE);
+        setMeetingWith(chat.user);
+        if (!meetingStartTime) {
+          setMeetingStartTime(globalMeeting.meetingStartTime || Date.now());
+        }
+      }
+    }
+  }, [chat, globalMeeting.showMeetingScreen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle showMeeting URL parameter from GlobalMeetingBar click
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('showMeeting') === 'true' && chat && globalMeeting.meetingState === GLOBAL_MEETING_STATE.ACTIVE) {
+      const globalMatchId = globalMeeting.meetingWith?.matchId;
+      const chatMatchId = chat.matchId;
+      if (globalMatchId === chatMatchId || String(globalMatchId) === String(chatMatchId)) {
+        console.log('[ChatScreen] URL param showMeeting=true, opening meeting screen');
+        setShowMeetingScreen(true);
+        setMeetingState(MEETING_STATE.ACTIVE);
+        setMeetingWith(chat.user);
+        setWaitingForMeetingScreen(false); // Meeting screen is now ready
+        if (!meetingStartTime) {
+          setMeetingStartTime(globalMeeting.meetingStartTime || Date.now());
+        }
+        // Clean up URL param
+        navigate(`/chat/${chat.matchId}`, { replace: true });
+      }
+    }
+  }, [location.search, chat, globalMeeting.meetingState, globalMeeting.meetingWith, globalMeeting.meetingStartTime, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // Clear waiting state when chat opens (in case meeting screen doesn't load)
+  useEffect(() => {
+    if (openChat && waitingForMeetingScreen) {
+      // Give a small delay to allow meeting screen to render first
+      const timer = setTimeout(() => {
+        setWaitingForMeetingScreen(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [openChat, waitingForMeetingScreen]);
 
   // Start Meeting handler
   const handleStartMeeting = useCallback(() => {
@@ -2275,6 +2435,9 @@ export default function ChatScreen() {
     setShowContactNotifyModal(true);
   }, [contactsNotifiedThisMeeting]);
 
+  // State for contact notification success message
+  const [contactNotifySuccess, setContactNotifySuccess] = useState(null);
+
   // Confirm and send notification to contact
   const confirmNotifyContact = useCallback(() => {
     if (!contactToNotify) return;
@@ -2285,9 +2448,13 @@ export default function ChatScreen() {
     // In real app: send notification with location
     console.log(`Notifying ${contactToNotify.name} with location:`, currentLocation);
     
-    // Close modal
+    // Close modal and show success message
     setShowContactNotifyModal(false);
+    setContactNotifySuccess(`Update sent to ${contactToNotify.name}. Your location is now shared.`);
     setContactToNotify(null);
+    
+    // Auto-clear success message after 4s
+    setTimeout(() => setContactNotifySuccess(null), 4000);
   }, [contactToNotify, currentLocation]);
 
   // Share via WhatsApp
@@ -2341,7 +2508,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
   const fileAttachInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [toolIndex, setToolIndex] = useState(1);
+  const [toolIndex, setToolIndex] = useState(1); // 0=AI, 1=emoji, 2=camera
   const getToolColor = (i) => (i === 0 ? "#4B3DB6" : i === 1 ? "#B45309" : "#BE185D");
   const getToolBg = (i) =>
     i === 0
@@ -2361,12 +2528,6 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
       : i === 1
         ? "rgba(245, 158, 11, 0.18)"
         : "rgba(236, 72, 153, 0.18)";
-  const getToolGlow = (i) =>
-    i === 0
-      ? "none"
-      : i === 1
-        ? "0 0 0 3px rgba(245, 158, 11, 0.10), 0 6px 14px rgba(245, 158, 11, 0.16)"
-        : "0 0 0 3px rgba(236, 72, 153, 0.10), 0 6px 14px rgba(236, 72, 153, 0.16)";
 
   // reactions popper
   const reactPop = useReactionPopper();
@@ -2735,15 +2896,20 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
       contact: { name, phone },
     });
   };
-  const createPoll = async () => {
-    const q = prompt("Poll question");
+  // Open Poll dialog
+  const openPollDialog = () => {
+    setPollQuestion('');
+    setPollOptions(['', '']);
+    setShowPollDialog(true);
+  };
+
+  // Submit Poll
+  const submitPoll = () => {
+    const q = pollQuestion.trim();
     if (!q) return;
-    const opts = prompt("Comma separated options (2-5)")
-      ?.split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .slice(0, 5);
-    if (!opts || opts.length < 2) return;
+    const opts = pollOptions.map(s => s.trim()).filter(Boolean);
+    if (opts.length < 2) return;
+    
     const id = Date.now();
     setChats((prev) =>
       prev.map((c) =>
@@ -2776,14 +2942,24 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
     const disappearAfterMs = (chat?.disappearingSeconds ?? DEFAULT_DISAPPEARING_SECONDS) * 1000;
     const update = (patch) => updateMessageById(id, patch);
     scheduleDeliveryFlow(update, disappearAfterMs);
+    setShowPollDialog(false);
   };
-  const createPlaceInvite = async () => {
-    const name = prompt("Place name");
+
+  // Open Place Invite dialog
+  const openPlaceInviteDialog = () => {
+    setPlaceInviteName('');
+    setPlaceInviteType('cafe');
+    setPlaceInviteDistance('0.5');
+    setPlaceInviteMessage('');
+    setPlaceInviteMaps('');
+    setShowPlaceInviteDialog(true);
+  };
+
+  // Submit Place Invite
+  const submitPlaceInvite = () => {
+    const name = placeInviteName.trim();
     if (!name) return;
-    const type = prompt("Type (cafe/bar/restaurant)") || "place";
-    const distanceKm = Number(prompt("Distance in km (e.g. 0.6)") || "0.6");
-    const text = prompt("Message (optional)") || "";
-    const maps = prompt("Google Maps URL (optional)") || "";
+    
     const id = Date.now();
     setChats((prev) =>
       prev.map((c) =>
@@ -2797,8 +2973,13 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                   id,
                   from: "me",
                   type: "place_invite",
-                  text,
-                  place: { name, type, distance: distanceKm, maps },
+                  text: placeInviteMessage.trim(),
+                  place: { 
+                    name, 
+                    type: placeInviteType, 
+                    distance: Number(placeInviteDistance) || 0.5, 
+                    maps: placeInviteMaps.trim() 
+                  },
                   timestamp: Date.now(),
                   status: "sent",
                   reactions: {},
@@ -2811,6 +2992,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
     const disappearAfterMs = (chat?.disappearingSeconds ?? DEFAULT_DISAPPEARING_SECONDS) * 1000;
     const update = (patch) => updateMessageById(id, patch);
     scheduleDeliveryFlow(update, disappearAfterMs);
+    setShowPlaceInviteDialog(false);
   };
 
   /* ================== AI: state & prefs ================== */
@@ -2820,13 +3002,6 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
   const [aiIntent, setAiIntent] = useState("open");
   const [aiActiveGroup, setAiActiveGroup] = useState(null);
   const [aiShowOptions, setAiShowOptions] = useState(false);
-
-  // When rotating the triangle, close any currently open tool UI
-  useEffect(() => {
-    setAiAnchor(null);
-    setEmojiOpen(false);
-    setCameraOpen(false);
-  }, [toolIndex]);
 
   useEffect(() => {
     if (aiAnchor) return;
@@ -3208,11 +3383,26 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
   };
 
   /* ================== LIST VIEW ================== */
+  // If waiting for meeting screen to load from URL param, show blank screen
+  if (waitingForMeetingScreen && !openChat) {
+    return (
+      <Box sx={{ 
+        height: "calc(100vh - 56px)", 
+        bgcolor: "linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        {/* Loading state while waiting for chat to open */}
+      </Box>
+    );
+  }
+  
   if (!openChat) {
     return (
       <Box 
         sx={{ 
-          height: "100vh",
+          height: "calc(100vh - 56px)",
           bgcolor: "#fff",
           position: "relative",
           overflowY: "auto",
@@ -3224,119 +3414,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
           "&::-webkit-scrollbar": { display: "none" }, /* Chrome/Safari */
         }}
       >
-        {/* Global Meeting Top Bar - Also shown in list view */}
-        {meetingState === MEETING_STATE.ACTIVE && (
-          <Box
-            sx={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 1500,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 2,
-              py: 1,
-              bgcolor: sosState === SOS_STATE.NONE ? '#6C5CE7' : 
-                       sosState === SOS_STATE.SEARCHING ? '#8B5CF6' :
-                       sosState === SOS_STATE.HELPER_ARRIVED ? '#6C5CE7' : '#8B5CF6',
-              color: '#fff',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              transition: 'background-color 0.3s ease',
-            }}
-          >
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1, 
-                cursor: 'pointer',
-                '&:hover': { opacity: 0.9 },
-              }}
-              onClick={() => setShowMeetingScreen(true)}
-              role="button"
-              aria-label="Return to Meeting Time"
-            >
-              <Box
-                sx={{
-                  position: 'relative',
-                  width: 32,
-                  height: 32,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: '50%',
-                  bgcolor: 'rgba(255,255,255,0.2)',
-                  ...(sosState === SOS_STATE.SEARCHING && {
-                    animation: 'pulseGlow 2s ease-in-out infinite',
-                  }),
-                }}
-              >
-                <Users size={18} />
-                {sosState === SOS_STATE.HELPER_ARRIVED && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      bottom: -2,
-                      right: -2,
-                      bgcolor: '#fff',
-                      borderRadius: '50%',
-                      width: 14,
-                      height: 14,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Check size={10} color="#8B9467" />
-                  </Box>
-                )}
-              </Box>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                  {sosState === SOS_STATE.NONE && 'Meeting in progress'}
-                  {sosState === SOS_STATE.SEARCHING && 'Finding helper...'}
-                  {sosState === SOS_STATE.HELPER_FOUND && `Helper found`}
-                  {sosState === SOS_STATE.HELPER_APPROACHING && `Helper approaching`}
-                  {sosState === SOS_STATE.HELPER_ARRIVED && 'Helper arrived'}
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1 }}>
-                  {meetingWith?.name && `with ${meetingWith.name}`}
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {sosState !== SOS_STATE.NONE && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={cancelSOS}
-                  sx={{ 
-                    color: '#fff', 
-                    borderColor: 'rgba(255,255,255,0.5)',
-                    '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' },
-                  }}
-                >
-                  Cancel SOS
-                </Button>
-              )}
-              <IconButton
-                aria-label="SOS"
-                onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined}
-                disabled={sosState !== SOS_STATE.NONE}
-                sx={{
-                  bgcolor: sosState === SOS_STATE.NONE ? '#DC2626' : 'rgba(255,255,255,0.2)',
-                  color: '#fff',
-                  width: 44,
-                  height: 44,
-                  '&:hover': { bgcolor: sosState === SOS_STATE.NONE ? '#B91C1C' : undefined },
-                  '&:disabled': { color: 'rgba(255,255,255,0.7)' },
-                }}
-              >
-                <Shield size={22} />
-              </IconButton>
-            </Box>
-          </Box>
-        )}
+        {/* Meeting bar is now global - rendered in GlobalMeetingBar component */}
 
         {/* Header - Fixed at top */}
         <Box
@@ -3691,7 +3769,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
       sx={{ 
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: "calc(100vh - 56px)",
         bgcolor: "#fff",
       }}
     >
@@ -3704,224 +3782,291 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
           top: 56,
           zIndex: 1400,
           display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          px: 2,
-          py: 1.5,
+          flexDirection: "column",
+          px: 1.5,
+          py: 1,
           borderBottom: "1px solid #E5E7EB",
           background: "linear-gradient(180deg, #FFFFFF 0%, #FAFBFC 100%)",
           backdropFilter: "blur(10px)",
           boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         }}
       >
-        <Avatar
-          src={chat.user.photoUrl}
-          sx={{ 
-            width: 44, 
-            height: 44, 
-            cursor: "pointer",
-            border: "3px solid #fff",
-            boxShadow: "0 4px 12px rgba(108, 92, 231, 0.2), 0 0 0 1px rgba(108, 92, 231, 0.1)",
-            transition: "all 0.3s ease",
-            "&:hover": {
-              transform: "scale(1.08)",
-              boxShadow: "0 6px 16px rgba(108, 92, 231, 0.3), 0 0 0 2px rgba(108, 92, 231, 0.2)"
-            }
-          }}
-          onClick={() => setViewProfile({ open: true, user: chat.user })}
-        />
-        <Box
-          sx={{ flex: 1, minWidth: 0, cursor: "pointer" }}
-          onClick={() => setViewProfile({ open: true, user: chat.user })}
-        >
-          <Typography noWrap sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2, color: "#1F2937" }}>
-            {chat.user.name}{chat.user.age ? `, ${chat.user.age}` : ""}
-          </Typography>
-          {/* Pulse spec: Quick vibe line or softer presence */}
-          {chat.quickVibe ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
-              <Box sx={{ width: 6, height: 6, minWidth: 6, minHeight: 6, borderRadius: "50%", bgcolor: "#6C5CE7", flexShrink: 0, animation: "subtlePulse 2s ease-in-out infinite" }} />
-              <Typography variant="caption" sx={{ color: "#6C5CE7", fontWeight: 600, fontSize: "0.8rem" }}>
-                {chat.quickVibe}
-              </Typography>
-            </Box>
-          ) : (
-            <Typography variant="caption" sx={{ color: "#9CA3AF", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
-              {chat.matchId === AGENT_ID
-                ? "online"
-                : "Recently active"} {/* Pulse spec: softer presence without exact time */}
-              {typing && chat.matchId !== AGENT_ID && (
-                <>
-                  <span>·</span>
-                  <span style={{ color: "#6C5CE7", fontWeight: 600 }}>typing…</span>
-                </>
-              )}
+        {/* First row: Avatar, Name, Icons */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Avatar
+            src={chat.user.photoUrl}
+            sx={{ 
+              width: 36, 
+              height: 36, 
+              flexShrink: 0,
+              cursor: "pointer",
+              border: "2px solid #fff",
+              boxShadow: "0 2px 8px rgba(108, 92, 231, 0.15)",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                transform: "scale(1.05)",
+                boxShadow: "0 4px 12px rgba(108, 92, 231, 0.25)"
+              }
+            }}
+            onClick={() => setViewProfile({ open: true, user: chat.user })}
+          />
+          <Box
+            sx={{ flex: 1, minWidth: 0, cursor: "pointer" }}
+            onClick={() => setViewProfile({ open: true, user: chat.user })}
+          >
+            <Typography noWrap sx={{ fontWeight: 700, fontSize: "0.95rem", lineHeight: 1.2, color: "#1F2937" }}>
+              {chat.user.name}{chat.user.age ? `, ${chat.user.age}` : ""}
             </Typography>
-          )}
-        </Box>
-        {/* Event Countdown Capsule - Per spec section 8 */}
-        {chat.sharedEvent && (
-          <Chip
-            size="small"
-            label={getEventCountdownText(chat.sharedEvent.date)}
-            sx={{
-              height: 28,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-              color: '#fff',
-              borderRadius: '14px',
-              px: 1,
-              boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              '& .MuiChip-label': { px: 1.5 },
-            }}
-          />
-        )}
-        {/* Workshop Countdown Capsule */}
-        {currentWorkshopReminder && (
-          <Chip
-            size="small"
-            icon={<Box sx={{ fontSize: '0.7rem', ml: 0.5 }}>🎨</Box>}
-            label={`${getWorkshopCountdown(currentWorkshopReminder.workshopDate)}`}
-            sx={{
-              height: 28,
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              background: 'linear-gradient(135deg, #a855f7 0%, #6C5CE7 100%)',
-              color: '#fff',
-              borderRadius: '14px',
-              px: 0.5,
-              boxShadow: '0 4px 14px rgba(168, 85, 247, 0.3)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              '& .MuiChip-label': { px: 1 },
-            }}
-          />
-        )}
-        {chat.matchId !== AGENT_ID && (
-          <>
-            <IconButton 
-              aria-label="Video call" 
-              onClick={() => startCall("video")}
-              sx={{
-                bgcolor: "rgba(108, 92, 231, 0.08)",
-                color: "#6C5CE7",
-                width: 40,
-                height: 40,
-                transition: "all 0.2s ease",
-                "&:hover": { 
-                  bgcolor: "rgba(108, 92, 231, 0.15)",
-                  transform: "scale(1.05)"
-                }
-              }}
-            >
-              <Video size={20} />
-            </IconButton>
-            <IconButton 
-              aria-label="Voice call" 
-              onClick={() => startCall("voice")}
-              sx={{
-                bgcolor: "rgba(108, 92, 231, 0.08)",
-                color: "#6C5CE7",
-                width: 40,
-                height: 40,
-                transition: "all 0.2s ease",
-                "&:hover": { 
-                  bgcolor: "rgba(108, 92, 231, 0.15)",
-                  transform: "scale(1.05)"
-                }
-              }}
-            >
-              <Phone size={20} />
-            </IconButton>
-            {/* Start Meeting Button - Only in 1-on-1 chats, visible label per spec */}
-            {meetingState === MEETING_STATE.INACTIVE && (
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      bgcolor: 'rgba(255,255,255,0.3)',
-                      boxShadow: '0 0 10px rgba(52, 211, 153, 0.5)',
-                    }}
-                  >
-                    <Users size={14} />
-                  </Box>
-                }
-                onClick={handleStartMeeting}
-                aria-label="Start Meeting"
+            {/* Pulse spec: Quick vibe line or softer presence */}
+            {chat.quickVibe ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Box sx={{ width: 5, height: 5, minWidth: 5, minHeight: 5, borderRadius: "50%", bgcolor: "#6C5CE7", flexShrink: 0, animation: "subtlePulse 2s ease-in-out infinite" }} />
+                <Typography variant="caption" noWrap sx={{ color: "#6C5CE7", fontWeight: 600, fontSize: "0.7rem" }}>
+                  {chat.quickVibe}
+                </Typography>
+              </Box>
+            ) : (
+              <Typography variant="caption" sx={{ color: "#9CA3AF", fontSize: "0.7rem", display: "flex", alignItems: "center", gap: 0.5 }}>
+                {chat.matchId === AGENT_ID
+                  ? "online"
+                  : "Recently active"} {/* Pulse spec: softer presence without exact time */}
+                {typing && chat.matchId !== AGENT_ID && (
+                  <>
+                    <span>·</span>
+                    <span style={{ color: "#6C5CE7", fontWeight: 600 }}>typing…</span>
+                  </>
+                )}
+              </Typography>
+            )}
+          </Box>
+          {chat.matchId !== AGENT_ID && (
+            <>
+              <IconButton 
+                aria-label="Video call" 
+                onClick={() => startCall("video")}
                 sx={{
-                  background: 'linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)',
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                  textTransform: 'none',
-                  borderRadius: 24,
-                  px: 2.5,
-                  py: 1,
-                  minWidth: 'auto',
-                  boxShadow: '0 4px 14px rgba(128, 90, 213, 0.3)',
-                  border: 'none',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': { 
-                    background: 'linear-gradient(135deg, #B794F4 0%, #9F7AEA 100%)',
-                    boxShadow: '0 6px 20px rgba(128, 90, 213, 0.4)',
-                    transform: 'translateY(-2px)',
-                  },
-                  '&:active': {
-                    transform: 'translateY(0)',
-                    boxShadow: '0 2px 8px rgba(128, 90, 213, 0.3)',
-                  },
+                  bgcolor: "rgba(108, 92, 231, 0.08)",
+                  color: "#6C5CE7",
+                  width: 32,
+                  height: 32,
+                  p: 0,
+                  transition: "all 0.2s ease",
+                  "&:hover": { 
+                    bgcolor: "rgba(108, 92, 231, 0.15)",
+                  }
                 }}
               >
-                Start Meeting
-              </Button>
+                <Video size={16} />
+              </IconButton>
+              <IconButton 
+                aria-label="Voice call" 
+                onClick={() => startCall("voice")}
+                sx={{
+                  bgcolor: "rgba(108, 92, 231, 0.08)",
+                  color: "#6C5CE7",
+                  width: 32,
+                  height: 32,
+                  p: 0,
+                  transition: "all 0.2s ease",
+                  "&:hover": { 
+                    bgcolor: "rgba(108, 92, 231, 0.15)",
+                  }
+                }}
+              >
+                <Phone size={16} />
+              </IconButton>
+              {/* Start Meeting Button - Only in 1-on-1 chats, visible label per spec */}
+              {meetingState === MEETING_STATE.INACTIVE && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<Users size={12} />}
+                  onClick={handleStartMeeting}
+                  aria-label="Start Meeting"
+                  sx={{
+                    background: 'linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)',
+                    color: '#fff',
+                    fontWeight: 600,
+                    fontSize: '0.65rem',
+                    textTransform: 'none',
+                    borderRadius: 14,
+                    px: 1,
+                    py: 0.25,
+                    minWidth: 'auto',
+                    height: 26,
+                    boxShadow: '0 2px 8px rgba(128, 90, 213, 0.25)',
+                    border: 'none',
+                    whiteSpace: 'nowrap',
+                    '& .MuiButton-startIcon': { mr: 0.25 },
+                    '&:hover': { 
+                      background: 'linear-gradient(135deg, #B794F4 0%, #9F7AEA 100%)',
+                    },
+                  }}
+                >
+                  Start Meeting
+                </Button>
+              )}
+            </>
+          )}
+          <Box sx={{ position: 'relative' }}>
+            <IconButton 
+              aria-label="More" 
+              onClick={(e) => setMenuEl(menuEl ? null : e.currentTarget)}
+              sx={{
+                bgcolor: menuEl ? "rgba(108, 92, 231, 0.12)" : "rgba(0,0,0,0.04)",
+                color: menuEl ? "#6C5CE7" : "#6B7280",
+                width: 32,
+                height: 32,
+                p: 0,
+                flexShrink: 0,
+                transition: "all 0.2s ease",
+                "&:hover": { 
+                  bgcolor: "rgba(0,0,0,0.08)",
+                  color: "#1F2937",
+                }
+              }}
+            >
+              <MoreVertical size={16} />
+            </IconButton>
+            {/* Inline dropdown menu */}
+            {menuEl && (
+              <>
+                <Box 
+                  onClick={() => setMenuEl(null)}
+                  sx={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    mt: 0.5,
+                    bgcolor: '#fff',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    minWidth: 160,
+                    py: 0.5,
+                    zIndex: 9999,
+                  }}
+                >
+                <MenuItem onClick={() => { setSearchOpen(true); setMenuEl(null); }}>
+                  <Search size={16} style={{ marginRight: 8 }} />
+                  Search in chat
+                </MenuItem>
+                {chat.matchId !== AGENT_ID && (
+                  <>
+                    <MenuItem onClick={() => { openGallery(); setMenuEl(null); }}>
+                      Media gallery
+                    </MenuItem>
+                    <Divider sx={{ my: 0.25 }} />
+                  </>
+                )}
+                <MenuItem onClick={() => {
+                  if (window.confirm('Are you sure you want to clear all messages in this chat?')) {
+                    setChats(prev => prev.map(c => c.matchId === openChat ? { ...c, messages: [] } : c));
+                  }
+                  setMenuEl(null);
+                }}>
+                  Clear chat
+                </MenuItem>
+                <MenuItem onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this chat? This cannot be undone.')) {
+                    setChats(prev => prev.filter(c => c.matchId !== openChat));
+                    setOpenChat(null);
+                    navigate('/chat', { replace: true });
+                  }
+                  setMenuEl(null);
+                }}>
+                  Delete chat
+                </MenuItem>
+                {chat.matchId !== AGENT_ID && (
+                  <>
+                    <Divider sx={{ my: 0.25 }} />
+                    <MenuItem onClick={() => {
+                      setChats(prev => prev.map(c => c.matchId === openChat ? { ...c, muted: !c.muted } : c));
+                      setMenuEl(null);
+                    }}>
+                      {chat.muted ? 'Unmute chat' : 'Mute chat'}
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to block this user?')) {
+                          const blockedUser = {
+                            id: chat.user?.id || chat.matchId,
+                            name: chat.user?.name || 'Unknown',
+                            photoUrl: chat.user?.photoUrl || '',
+                            blockedAt: Date.now(),
+                          };
+                          try {
+                            const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+                            if (!existing.some(u => u.id === blockedUser.id)) {
+                              localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
+                            }
+                          } catch {}
+                          setChats(prev => prev.filter(c => c.matchId !== openChat));
+                          setOpenChat(null);
+                          navigate('/chat', { replace: true });
+                        }
+                        setMenuEl(null);
+                      }}
+                      sx={{ color: '#dc2626' }}
+                    >
+                      Block user
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={() => {
+                        setReportPopup({ open: true, reason: '', details: '' });
+                        setMenuEl(null);
+                      }}
+                      sx={{ color: '#dc2626' }}
+                    >
+                      Report user
+                    </MenuItem>
+                  </>
+                )}
+                </Box>
+            </>
+          )}
+          </Box>
+        </Box>
+        {/* Second row: Countdown badges (if any) */}
+        {(chat.sharedEvent || currentWorkshopReminder) && (
+          <Box sx={{ display: "flex", gap: 0.75, mt: 0.75, ml: 5.5 }}>
+            {/* Event Countdown Capsule - Per spec section 8 */}
+            {chat.sharedEvent && (
+              <Chip
+                size="small"
+                label={getEventCountdownText(chat.sharedEvent.date)}
+                sx={{
+                  height: 22,
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                  color: '#fff',
+                  borderRadius: '11px',
+                  '& .MuiChip-label': { px: 1 },
+                }}
+              />
             )}
-          </>
+            {/* Workshop Countdown Capsule */}
+            {currentWorkshopReminder && (
+              <Chip
+                size="small"
+                icon={<Box sx={{ fontSize: '0.6rem', ml: 0.25 }}>🎨</Box>}
+                label={`${getWorkshopCountdown(currentWorkshopReminder.workshopDate)}`}
+                sx={{
+                  height: 22,
+                  fontSize: '0.6rem',
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #a855f7 0%, #6C5CE7 100%)',
+                  color: '#fff',
+                  borderRadius: '11px',
+                  '& .MuiChip-label': { px: 0.75 },
+                }}
+              />
+            )}
+          </Box>
         )}
-        <IconButton 
-          aria-label="Search" 
-          onClick={() => setSearchOpen((v) => !v)}
-          sx={{
-            bgcolor: searchOpen ? "rgba(108, 92, 231, 0.12)" : "rgba(0,0,0,0.04)",
-            color: searchOpen ? "#6C5CE7" : "#6B7280",
-            width: 40,
-            height: 40,
-            transition: "all 0.2s ease",
-            "&:hover": { 
-              bgcolor: "rgba(108, 92, 231, 0.12)",
-              color: "#6C5CE7",
-              transform: "scale(1.05)"
-            }
-          }}
-        >
-          <Search size={20} />
-        </IconButton>
-        <IconButton 
-          aria-label="More" 
-          onClick={(e) => setMenuEl(e.currentTarget)}
-          sx={{
-            bgcolor: "rgba(0,0,0,0.04)",
-            color: "#6B7280",
-            width: 40,
-            height: 40,
-            transition: "all 0.2s ease",
-            "&:hover": { 
-              bgcolor: "rgba(0,0,0,0.08)",
-              color: "#1F2937",
-              transform: "rotate(90deg)"
-            }
-          }}
-        >
-          <MoreVertical size={20} />
-        </IconButton>
       </Box>
       <Box sx={{ height: 56 }} />
 
@@ -3964,172 +4109,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
         </Box>
       )}
 
-      {/* ==================== Global Meeting Top Bar ==================== */}
-      {meetingState === MEETING_STATE.ACTIVE && (
-        <Box
-          sx={{
-            position: 'fixed',
-            left: 0,
-            right: 0,
-            top: 0,
-            height: 56,
-            zIndex: 2001,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: 2,
-            bgcolor: sosState === SOS_STATE.NONE ? '#6C5CE7' : 
-                     sosState === SOS_STATE.SEARCHING ? '#8B5CF6' :
-                     sosState === SOS_STATE.HELPER_ARRIVED ? '#6C5CE7' : '#8B5CF6',
-            color: '#fff',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            transition: 'background-color 0.3s ease',
-          }}
-        >
-          {/* Left side: Back button + Meeting info */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Back button */}
-            <IconButton
-              size="small"
-              sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft size={20} />
-            </IconButton>
-            
-            {/* Meeting Status Icon - Click to return to Meeting Time screen */}
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1, 
-                cursor: 'pointer',
-                '&:hover': { opacity: 0.9 },
-              }}
-              onClick={() => setShowMeetingScreen(true)}
-              role="button"
-              aria-label="Return to Meeting Time"
-            >
-            {/* Animated Meeting Status Icon */}
-            <Box
-              sx={{
-                position: 'relative',
-                width: 32,
-                height: 32,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '50%',
-                bgcolor: 'rgba(255,255,255,0.2)',
-                ...(sosState === SOS_STATE.SEARCHING && {
-                  animation: 'pulseGlow 2s ease-in-out infinite',
-                }),
-                ...(sosState === SOS_STATE.HELPER_APPROACHING && {
-                  animation: 'smoothMove 1.5s ease-in-out infinite',
-                }),
-              }}
-            >
-              <Users size={18} />
-              {sosState === SOS_STATE.HELPER_ARRIVED && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: -2,
-                    right: -2,
-                    bgcolor: '#fff',
-                    borderRadius: '50%',
-                    width: 14,
-                    height: 14,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Check size={10} color="#6C5CE7" />
-                </Box>
-              )}
-            </Box>
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                {sosState === SOS_STATE.NONE && 'Meeting in progress'}
-                {sosState === SOS_STATE.SEARCHING && 'Finding helper...'}
-                {sosState === SOS_STATE.HELPER_FOUND && `Helper found`}
-                {sosState === SOS_STATE.HELPER_APPROACHING && `Helper approaching`}
-                {sosState === SOS_STATE.HELPER_ARRIVED && 'Helper arrived'}
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1 }}>
-                {meetingWith?.name && `with ${meetingWith.name}`}
-                {sosHelperDistance !== null && sosState !== SOS_STATE.NONE && 
-                  ` • ${sosHelperDistance < 0.1 ? '<100m' : `${sosHelperDistance.toFixed(1)}km`}`}
-              </Typography>
-            </Box>
-          </Box>
-          </Box>
-
-          {/* Right side: SOS + Nav buttons */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            {sosState !== SOS_STATE.NONE && (
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={cancelSOS}
-                sx={{ 
-                  color: '#fff', 
-                  borderColor: 'rgba(255,255,255,0.5)',
-                  fontSize: '0.7rem',
-                  py: 0.25,
-                  px: 1,
-                  minWidth: 'auto',
-                  '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' },
-                }}
-              >
-                Cancel
-              </Button>
-            )}
-            {/* SOS Button - Per spec: calm UI, no panic red flashing */}
-            <IconButton
-              aria-label="SOS"
-              onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined}
-              disabled={sosState !== SOS_STATE.NONE}
-              size="small"
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.15)',
-                color: '#fff',
-                width: 36,
-                height: 36,
-                border: '2px solid rgba(255,255,255,0.4)',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' },
-              }}
-            >
-              <Shield size={18} />
-            </IconButton>
-            {/* Help button */}
-            <IconButton
-              size="small"
-              sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}
-              onClick={() => {/* Help action */}}
-            >
-              <HelpCircle size={20} />
-            </IconButton>
-            {/* Profile button */}
-            <IconButton
-              size="small"
-              sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}
-              onClick={() => navigate('/profile')}
-            >
-              <User size={20} />
-            </IconButton>
-            {/* Settings button */}
-            <IconButton
-              size="small"
-              sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}
-              onClick={() => navigate('/settings')}
-            >
-              <Settings size={20} />
-            </IconButton>
-          </Box>
-        </Box>
-      )}
+      {/* Meeting bar is now global - rendered in GlobalMeetingBar component */}
 
       {/* Search bar - compact, fixed below in-chat header */}
       {searchOpen && (
@@ -4194,109 +4174,6 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
         </Box>
       )}
 
-      <Menu
-        anchorEl={menuEl}
-        open={Boolean(menuEl)}
-        onClose={() => setMenuEl(null)}
-        keepMounted
-        sx={{ zIndex: 9999 }}
-      >
-        {chat.matchId !== AGENT_ID && (
-          <>
-            <MenuItem
-              onClick={() => {
-                openGallery();
-                setMenuEl(null);
-              }}
-            >
-              Media gallery
-            </MenuItem>
-            <Divider />
-          </>
-        )}
-        <MenuItem 
-          onClick={() => {
-            if (window.confirm('Are you sure you want to clear all messages in this chat?')) {
-              setChats(prev => prev.map(c => 
-                c.matchId === openChat ? { ...c, messages: [] } : c
-              ));
-            }
-            setMenuEl(null);
-          }}
-        >
-          Clear chat
-        </MenuItem>
-        <MenuItem 
-          onClick={() => {
-            if (window.confirm('Are you sure you want to delete this chat? This cannot be undone.')) {
-              setChats(prev => prev.filter(c => c.matchId !== openChat));
-              setOpenChat(null);
-              navigate('/chat', { replace: true });
-            }
-            setMenuEl(null);
-          }}
-        >
-          Delete chat
-        </MenuItem>
-        {/* Pulse spec: Mute/Block/Report options */}
-        {chat.matchId !== AGENT_ID && (
-          <>
-            <Divider />
-            <MenuItem 
-              onClick={() => {
-                setChats(prev => prev.map(c => 
-                  c.matchId === openChat ? { ...c, muted: !c.muted } : c
-                ));
-                setMenuEl(null);
-              }}
-            >
-              {chat.muted ? 'Unmute chat' : 'Mute chat'}
-            </MenuItem>
-            <MenuItem 
-              onClick={() => {
-                if (window.confirm('Are you sure you want to block this user?')) {
-                  // Add to blocked users in localStorage
-                  const blockedUser = {
-                    id: chat.matchId,
-                    name: chat.user?.name || 'User',
-                    photo: chat.user?.photoUrl || '',
-                    source: 'chat',
-                    blockedAt: new Date().toISOString().split('T')[0],
-                  };
-                  try {
-                    const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
-                    if (!existing.find(u => u.id === blockedUser.id)) {
-                      localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
-                    }
-                  } catch (e) {
-                    console.error('Failed to save blocked user:', e);
-                  }
-                  // Mark chat as blocked and close
-                  setChats(prev => prev.map(c => 
-                    c.matchId === openChat ? { ...c, blocked: true } : c
-                  ));
-                  setOpenChat(null);
-                  navigate('/chat', { replace: true });
-                }
-                setMenuEl(null);
-              }}
-              sx={{ color: '#dc2626' }}
-            >
-              Block user
-            </MenuItem>
-            <MenuItem 
-              onClick={() => {
-                setReportPopup({ open: true, reason: '', details: '' });
-                setMenuEl(null);
-              }}
-              sx={{ color: '#dc2626' }}
-            >
-              Report user
-            </MenuItem>
-          </>
-        )}
-      </Menu>
-
       {/* Crisis banner */}
       {chat.matchId === AGENT_ID && showCrisis && (
         <Alert
@@ -4318,7 +4195,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
         onScroll={handleScroll}
         sx={{
           position: 'fixed',
-          top: 120,
+          top: 112,
           left: 0,
           right: 0,
           bottom: footerH + 56,
@@ -4464,13 +4341,20 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                     <Box sx={{ my: 1.5, textAlign: "center" }}>
                       <Chip
                         size="small"
-                        label={new Date(m.timestamp).toLocaleDateString()}
+                        label={new Date(m.timestamp).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                         sx={{
                           bgcolor: "rgba(108, 92, 231, 0.14) !important",
                           color: "#4B3DB6 !important",
-                          fontWeight: 700,
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          height: 'auto',
+                          py: 0.5,
                           border: "1px solid rgba(108, 92, 231, 0.18) !important",
-                          '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                          '& .MuiChip-label': { 
+                            color: '#4B3DB6 !important',
+                            px: 1.5,
+                            whiteSpace: 'nowrap',
+                          },
                         }}
                       />
                     </Box>
@@ -4600,15 +4484,19 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
           pb: 1,
         }}
       >
-        {/* Smart replies - sticky above input */}
+        {/* Smart replies - compact row above input */}
         {chat.matchId !== AGENT_ID && smart.length > 0 && (
           <Box sx={{ 
             display: "flex", 
-            gap: 0.75, 
-            flexWrap: "wrap", 
-            mb: 1,
-            pb: 1,
-            borderBottom: "1px solid #E5E7EB",
+            gap: 0.5, 
+            flexWrap: "nowrap",
+            overflowX: "auto",
+            mb: 0.75,
+            pb: 0.5,
+            mx: -0.5,
+            px: 0.5,
+            "&::-webkit-scrollbar": { display: "none" },
+            scrollbarWidth: "none",
           }}>
             {smart.map((s, i) => (
               <Chip 
@@ -4619,25 +4507,19 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                 sx={{
                   background: "none !important",
                   backgroundImage: "none !important",
-                  bgcolor: "rgba(108, 92, 231, 0.14) !important",
+                  bgcolor: "rgba(108, 92, 231, 0.12) !important",
                   color: "#4B3DB6 !important",
-                  fontWeight: 700,
-                  fontSize: '0.8rem',
-                  height: 32,
-                  px: 1.5,
-                  borderRadius: 999,
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  height: 28,
+                  px: 1,
+                  borderRadius: 14,
                   boxShadow: "none !important",
-                  border: "1px solid rgba(108, 92, 231, 0.18) !important",
-                  transition: 'all 0.2s ease',
-                  '& .MuiChip-label': { color: '#4B3DB6 !important' },
+                  border: "1px solid rgba(108, 92, 231, 0.15) !important",
+                  flexShrink: 0,
+                  '& .MuiChip-label': { color: '#4B3DB6 !important', px: 0.75 },
                   '&:hover': {
-                    background: "none !important",
-                    backgroundImage: "none !important",
                     bgcolor: "rgba(108, 92, 231, 0.18) !important",
-                    transform: 'translateY(-2px)',
-                  },
-                  '&:active': {
-                    transform: 'translateY(0)',
                   },
                 }}
               />
@@ -4714,7 +4596,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
           </Box>
         )}
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
           {/* Attach menu trigger - toggles open/close */}
           <IconButton
             aria-label="Open attachments"
@@ -4723,8 +4605,9 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
             sx={{
               bgcolor: "rgba(108, 92, 231, 0.08)",
               color: "#6C5CE7",
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
+              p: 0,
               transition: "all 0.2s ease",
               "&:hover": {
                 bgcolor: "rgba(108, 92, 231, 0.15)",
@@ -4732,7 +4615,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
               }
             }}
           >
-            <Plus size={20} />
+            <Plus size={18} />
           </IconButton>
 
           <Box
@@ -4754,7 +4637,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
             }}
           >
             {/* Triangle tool selector: AI on top, emoji and camera below */}
-            <Box sx={{ position: "relative", width: 56, height: 48, mr: 0.75 }}>
+            <Box sx={{ position: "relative", width: 52, height: 40, ml: 0.5, flexShrink: 0 }}>
               <IconButton
                 aria-label={toolIndex === 0 ? "AI Suggestions" : toolIndex === 1 ? "Open emoji" : "Take photo"}
                 size="small"
@@ -4782,24 +4665,22 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                 }}
                 sx={{
                   position: "absolute",
-                  top: -10,
+                  top: 0,
                   left: "50%",
                   transform: "translateX(-50%)",
                   bgcolor: getToolBg(toolIndex),
                   color: getToolColor(toolIndex),
-                  width: 34,
-                  height: 34,
+                  width: 30,
+                  height: 30,
                   boxShadow: "none",
                   border: `1px solid ${getToolBorder(toolIndex)}`,
                   transition: "all 0.2s ease",
                   "&:hover": {
                     bgcolor: getToolBgHover(toolIndex),
-                    boxShadow: "none",
-                    transform: "translateX(-50%) scale(1.05)",
                   }
                 }}
               >
-                {toolIndex === 0 ? <Wand2 size={18} /> : toolIndex === 1 ? <Smile size={18} /> : <Camera size={18} />}
+                {toolIndex === 0 ? <Wand2 size={16} /> : toolIndex === 1 ? <Smile size={16} /> : <Camera size={16} />}
               </IconButton>
 
               <IconButton
@@ -4808,24 +4689,23 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                 onClick={() => setToolIndex((toolIndex + 1) % 3)}
                 sx={{
                   position: "absolute",
-                  bottom: 2,
-                  left: 2,
+                  bottom: 0,
+                  left: 0,
                   color: "#6B7280",
                   bgcolor: "transparent",
                   border: "1px solid #E5E7EB",
                   borderRadius: 999,
-                  opacity: 0.75,
-                  width: 26,
-                  height: 26,
+                  opacity: 0.7,
+                  width: 22,
+                  height: 22,
                   transition: "all 0.2s ease",
                   "&:hover": {
                     opacity: 1,
                     bgcolor: "rgba(17, 24, 39, 0.04)",
-                    transform: "scale(1.06)",
                   }
                 }}
               >
-                {toolIndex === 0 ? <Smile size={16} /> : toolIndex === 1 ? <Camera size={16} /> : <Wand2 size={16} />}
+                {toolIndex === 0 ? <Smile size={12} /> : toolIndex === 1 ? <Camera size={12} /> : <Wand2 size={12} />}
               </IconButton>
 
               <IconButton
@@ -4834,24 +4714,23 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                 onClick={() => setToolIndex((toolIndex + 2) % 3)}
                 sx={{
                   position: "absolute",
-                  bottom: 2,
-                  right: 2,
+                  bottom: 0,
+                  right: 0,
                   color: "#6B7280",
                   bgcolor: "transparent",
                   border: "1px solid #E5E7EB",
                   borderRadius: 999,
-                  opacity: 0.75,
-                  width: 26,
-                  height: 26,
+                  opacity: 0.7,
+                  width: 22,
+                  height: 22,
                   transition: "all 0.2s ease",
                   "&:hover": {
                     opacity: 1,
                     bgcolor: "rgba(17, 24, 39, 0.04)",
-                    transform: "scale(1.06)",
                   }
                 }}
               >
-                {toolIndex === 0 ? <Camera size={16} /> : toolIndex === 1 ? <Wand2 size={16} /> : <Smile size={16} />}
+                {toolIndex === 0 ? <Camera size={12} /> : toolIndex === 1 ? <Wand2 size={12} /> : <Smile size={12} />}
               </IconButton>
             </Box>
 
@@ -4987,22 +4866,49 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
       </Box>
 
       {/* Attachments popper */}
-      <Popper
-        open={Boolean(attachMenu?.open)}
-        anchorEl={attachMenu?.anchor}
-        placement="top-start"
-        modifiers={[{ name: "offset", options: { offset: [0, 8] } }]}
-        sx={{ zIndex: 1601 }}
-      >
-        <Box sx={{ p: 1, bgcolor: "#fff", border: "1px solid #E5E7EB", borderRadius: 2, boxShadow: 3, display: "flex", gap: 1 }}>
-          <Button size="small" onClick={() => { imageInputRef.current?.click(); setAttachMenu(null); }}>Photo/Video</Button>
-          <Button size="small" onClick={() => { fileAttachInputRef.current?.click(); setAttachMenu(null); }}>File</Button>
-          <Button size="small" onClick={() => { shareLocation(); setAttachMenu(null); }}>Location</Button>
-          <Button size="small" onClick={() => { shareContact(); setAttachMenu(null); }}>Contact</Button>
-          <Button size="small" onClick={() => { createPoll(); setAttachMenu(null); }}>Poll</Button>
-          <Button size="small" onClick={() => { createPlaceInvite(); setAttachMenu(null); }}>Place invite</Button>
-        </Box>
-      </Popper>
+      {attachMenu?.open && attachMenu?.anchor && document.body.contains(attachMenu.anchor) && (
+        <>
+          {/* Backdrop to close menu when clicking outside */}
+          <Box
+            onClick={() => setAttachMenu(null)}
+            sx={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1600,
+              bgcolor: 'transparent',
+            }}
+          />
+          <Popper
+            open={true}
+            anchorEl={attachMenu.anchor}
+            placement="top-start"
+            modifiers={[{ name: "offset", options: { offset: [0, 8] } }]}
+            sx={{ zIndex: 1601 }}
+          >
+            <Box sx={{ 
+              p: 1.5, 
+              bgcolor: "#fff", 
+              border: "1px solid #E5E7EB", 
+              borderRadius: 3, 
+              boxShadow: '0 4px 20px rgba(0,0,0,0.15)', 
+              display: "flex", 
+              flexWrap: "wrap",
+              gap: 1,
+              maxWidth: 280,
+            }}>
+              <Button size="small" variant="outlined" sx={{ borderRadius: 2, fontSize: '0.75rem' }} onClick={() => { imageInputRef.current?.click(); setAttachMenu(null); }}>📷 Photo</Button>
+              <Button size="small" variant="outlined" sx={{ borderRadius: 2, fontSize: '0.75rem' }} onClick={() => { fileAttachInputRef.current?.click(); setAttachMenu(null); }}>📎 File</Button>
+              <Button size="small" variant="outlined" sx={{ borderRadius: 2, fontSize: '0.75rem' }} onClick={() => { shareLocation(); setAttachMenu(null); }}>📍 Location</Button>
+              <Button size="small" variant="outlined" sx={{ borderRadius: 2, fontSize: '0.75rem' }} onClick={() => { shareContact(); setAttachMenu(null); }}>👤 Contact</Button>
+              <Button size="small" variant="outlined" sx={{ borderRadius: 2, fontSize: '0.75rem' }} onClick={() => { openPollDialog(); setAttachMenu(null); }}>📊 Poll</Button>
+              <Button size="small" variant="outlined" sx={{ borderRadius: 2, fontSize: '0.75rem' }} onClick={() => { openPlaceInviteDialog(); setAttachMenu(null); }}>🏠 Place</Button>
+            </Box>
+          </Popper>
+        </>
+      )}
 
       {/* Reactions bar */}
       <Popper
@@ -5210,9 +5116,8 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
       </Modal>
 
       {/* Report User Modal */}
-      <Modal open={reportPopup.open} onClose={() => setReportPopup({ open: false, reason: '', details: '' })} sx={{ zIndex: 9999 }}>
-        <Box sx={{ position: "fixed", inset: 0, display: "grid", placeItems: "center", bgcolor: "rgba(0,0,0,.5)" }}>
-          <Box sx={{ bgcolor: "#fff", borderRadius: 3, width: 320, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", p: 2.5 }}>
+      <Modal open={reportPopup.open} onClose={() => setReportPopup({ open: false, reason: '', details: '' })}>
+        <Box sx={{ bgcolor: "#fff", borderRadius: 3, width: 320, maxWidth: "90vw", maxHeight: "70vh", overflowY: "auto", p: 2.5 }}>
             <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: "#1a1a1a", fontSize: "1.1rem" }}>
               Report User
             </Typography>
@@ -5287,7 +5192,6 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                 Submit
               </Button>
             </Box>
-          </Box>
         </Box>
       </Modal>
 
@@ -5330,7 +5234,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
 
       {/* AI suggestions popover */}
       <Popover
-        open={Boolean(aiAnchor)}
+        open={Boolean(aiAnchor) && aiAnchor && document.body.contains(aiAnchor)}
         anchorEl={aiAnchor}
         onClose={() => setAiAnchor(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
@@ -5573,28 +5477,22 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
       </Popover>
 
       {/* ==================== Meeting Time Screen ==================== */}
-      <Modal 
-        open={showMeetingScreen && meetingState === MEETING_STATE.ACTIVE} 
-        onClose={() => setShowMeetingScreen(false)}
-        sx={{
-          zIndex: 9999,
-          '& .MuiModal-backdrop': {
-            backgroundColor: 'transparent',
-          },
-        }}
-      >
+      {showMeetingScreen && meetingState === MEETING_STATE.ACTIVE && (
         <Box
           sx={{
-            position: 'absolute',
+            position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
+            width: '100vw',
+            height: '100vh',
             background: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
+            overflow: 'auto',
             outline: 'none',
+            zIndex: 100000,
           }}
         >
           {/* Header Bar */}
@@ -5699,10 +5597,36 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                     Meeting with {meetingWith?.name} ✓
                   </Typography>
                 </Box>
+                {/* Encouraging copy - rotates through messages */}
                 <Typography variant="body2" sx={{ color: '#5B21B6', fontStyle: 'italic', textAlign: 'center', fontWeight: 500, fontSize: '0.9rem' }}>
-                  ✨ Be yourself, stay safe, and enjoy the moment
+                  {(() => {
+                    const messages = [
+                      "✨ Be yourself, stay safe, and enjoy the moment",
+                      "💜 This is a moment to pause and stay present",
+                      "🌟 The meeting happens at your pace, without pressure",
+                      "💫 We're here in the background so you can feel safe",
+                    ];
+                    // Use meeting start time to pick a consistent message
+                    const index = meetingStartTime ? Math.floor((meetingStartTime / 1000) % messages.length) : 0;
+                    return messages[index];
+                  })()}
                 </Typography>
               </Box>
+
+              {/* Explanation Line - per spec */}
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#6B7280', 
+                  textAlign: 'center', 
+                  fontSize: '0.75rem', 
+                  lineHeight: 1.4,
+                  px: 2,
+                  mb: 1,
+                }}
+              >
+                Good to know - the buttons below are available at any time. There's no need to use them unless you want to.
+              </Typography>
 
               {/* 2. Quick Actions */}
               <Box sx={{ width: '100%' }}>
@@ -5937,7 +5861,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
               </Box>
 
               {/* 3. Need Support */}
-              <Box onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined} sx={{ width: '100%', p: 1, borderRadius: 2, bgcolor: '#F9FAFB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+              <Box onClick={() => setShowMeetingHelpDialog(true)} sx={{ width: '100%', p: 1, borderRadius: 2, bgcolor: '#F9FAFB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', '&:hover': { bgcolor: '#F3F4F6' } }}>
                 <Shield size={18} color="#6B7280" />
                 <Typography variant="caption" sx={{ color: '#6B7280', flex: 1 }}>Need support? Tap for help</Typography>
                 <Typography variant="caption" sx={{ color: '#9CA3AF' }}>→</Typography>
@@ -5945,7 +5869,94 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
             </Box>
           </Box>
         </Box>
-      </Modal>
+      )}
+
+      {/* ==================== Meeting Help Dialog ==================== */}
+      <Dialog
+        open={showMeetingHelpDialog}
+        onClose={() => setShowMeetingHelpDialog(false)}
+        sx={{ zIndex: 100001 }}
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            p: 0,
+            maxWidth: 320,
+            width: '90%',
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, pb: 0.5, pt: 2, textAlign: 'center', fontSize: '1.05rem' }}>
+          🛡️ Meeting Support
+        </DialogTitle>
+        <DialogContent sx={{ py: 1, px: 2.5 }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <Box sx={{ mb: 1.5 }}>
+              <Typography sx={{ fontSize: 22, mb: 0.25 }}>🆘</Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.85rem' }}>
+                Emergency SOS
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+                Tap the shield icon to alert your emergency contacts
+              </Typography>
+            </Box>
+            <Box sx={{ mb: 1.5 }}>
+              <Typography sx={{ fontSize: 22, mb: 0.25 }}>💬</Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.85rem' }}>
+                Support Chat
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+                Chat with our support team anytime
+              </Typography>
+            </Box>
+            <Box sx={{ mb: 0.5 }}>
+              <Typography sx={{ fontSize: 22, mb: 0.25 }}>📍</Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.85rem' }}>
+                Share Location
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+                Your contacts can see your location during the meeting
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2, pt: 0.5, flexDirection: 'column', gap: 1 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => {
+              setShowMeetingHelpDialog(false);
+              triggerSOS();
+            }}
+            sx={{
+              py: 1,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              background: '#DC2626',
+              '&:hover': { background: '#B91C1C' },
+            }}
+          >
+            🆘 Activate SOS
+          </Button>
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={() => setShowMeetingHelpDialog(false)}
+            sx={{
+              py: 1,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              borderColor: '#6C5CE7',
+              color: '#6C5CE7',
+            }}
+          >
+            Got it
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ==================== Missing Contacts Setup Modal ==================== */}
       <Modal 
@@ -6023,7 +6034,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
       <Modal 
         open={showQuickAddContact} 
         onClose={() => setShowQuickAddContact(false)}
-        sx={{ zIndex: 9999 }}
+        sx={{ zIndex: 100001 }}
       >
           <Box
             sx={{
@@ -6112,7 +6123,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
       </Modal>
 
       {/* ==================== End Meeting Confirmation (During SOS) ==================== */}
-      <Modal open={showEndMeetingConfirm} onClose={() => setShowEndMeetingConfirm(false)} sx={{ zIndex: 9999 }}>
+      <Modal open={showEndMeetingConfirm} onClose={() => setShowEndMeetingConfirm(false)} sx={{ zIndex: 100001 }}>
         <Box
           sx={{
             position: 'fixed',
@@ -6178,7 +6189,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
       </Modal>
 
       {/* ==================== Safety Summary (After Meeting Ends) ==================== */}
-      <Modal open={showSafetySummary} onClose={() => setShowSafetySummary(false)} sx={{ zIndex: 9999 }}>
+      <Modal open={showSafetySummary} onClose={() => setShowSafetySummary(false)} sx={{ zIndex: 100001 }}>
         <Box
           sx={{
             position: 'fixed',
@@ -6352,7 +6363,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
           setShowContactNotifyModal(false);
           setContactToNotify(null);
         }}
-        sx={{ zIndex: 9999 }}
+        sx={{ zIndex: 100001 }}
       >
         <Box
           sx={{
@@ -6467,6 +6478,220 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
           </Box>
         </Box>
       </Modal>
+
+      {/* Contact Notification Success Snackbar */}
+      <Snackbar
+        open={!!contactNotifySuccess}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: 120, zIndex: 99999 }}
+      >
+        <Alert 
+          severity="success" 
+          sx={{ 
+            width: '100%',
+            bgcolor: '#10B981',
+            color: '#fff',
+            '& .MuiAlert-icon': { color: '#fff' },
+          }}
+        >
+          {contactNotifySuccess}
+        </Alert>
+      </Snackbar>
+
+      {/* ==================== Poll Creation Dialog ==================== */}
+      <Dialog
+        open={showPollDialog}
+        onClose={() => setShowPollDialog(false)}
+        fullWidth
+        maxWidth="xs"
+        PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ 
+            width: 36, height: 36, borderRadius: '10px', 
+            bgcolor: 'rgba(108,92,231,0.1)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center' 
+          }}>
+            <BarChart2 size={20} color="#6C5CE7" />
+          </Box>
+          Create Poll
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            <TextField
+              fullWidth
+              label="Poll Question"
+              placeholder="What do you want to ask?"
+              value={pollQuestion}
+              onChange={(e) => setPollQuestion(e.target.value)}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+            />
+            
+            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+              Options (2-5)
+            </Typography>
+            
+            {pollOptions.map((opt, idx) => (
+              <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder={`Option ${idx + 1}`}
+                  value={opt}
+                  onChange={(e) => {
+                    const newOpts = [...pollOptions];
+                    newOpts[idx] = e.target.value;
+                    setPollOptions(newOpts);
+                  }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+                />
+                {pollOptions.length > 2 && (
+                  <IconButton 
+                    size="small" 
+                    onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== idx))}
+                    sx={{ color: '#ef4444' }}
+                  >
+                    <X size={16} />
+                  </IconButton>
+                )}
+              </Box>
+            ))}
+            
+            {pollOptions.length < 5 && (
+              <Button
+                size="small"
+                startIcon={<Plus size={16} />}
+                onClick={() => setPollOptions([...pollOptions, ''])}
+                sx={{ alignSelf: 'flex-start', color: '#6C5CE7' }}
+              >
+                Add option
+              </Button>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ pt: 2, px: 3, pb: 2 }}>
+          <Button 
+            onClick={() => setShowPollDialog(false)} 
+            sx={{ color: '#64748b', borderRadius: '12px', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={submitPoll}
+            disabled={!pollQuestion.trim() || pollOptions.filter(o => o.trim()).length < 2}
+            sx={{
+              bgcolor: '#6C5CE7',
+              '&:hover': { bgcolor: '#5A4BD8' },
+              borderRadius: '12px',
+              fontWeight: 600,
+            }}
+          >
+            Send Poll
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ==================== Place Invite Dialog ==================== */}
+      <Dialog
+        open={showPlaceInviteDialog}
+        onClose={() => setShowPlaceInviteDialog(false)}
+        fullWidth
+        maxWidth="xs"
+        PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ 
+            width: 36, height: 36, borderRadius: '10px', 
+            bgcolor: 'rgba(236,72,153,0.1)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center' 
+          }}>
+            <MapPin size={20} color="#EC4899" />
+          </Box>
+          Invite to a Place
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            <TextField
+              fullWidth
+              label="Place Name"
+              placeholder="e.g. Café Roma"
+              value={placeInviteName}
+              onChange={(e) => setPlaceInviteName(e.target.value)}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+            />
+            
+            <FormControl fullWidth size="small">
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={placeInviteType}
+                label="Type"
+                onChange={(e) => setPlaceInviteType(e.target.value)}
+                sx={{ borderRadius: '12px' }}
+              >
+                <MenuItem value="cafe">☕ Café</MenuItem>
+                <MenuItem value="bar">🍷 Bar</MenuItem>
+                <MenuItem value="restaurant">🍽️ Restaurant</MenuItem>
+                <MenuItem value="park">🌳 Park</MenuItem>
+                <MenuItem value="museum">🏛️ Museum</MenuItem>
+                <MenuItem value="other">📍 Other</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <TextField
+              fullWidth
+              size="small"
+              label="Distance (km)"
+              type="number"
+              value={placeInviteDistance}
+              onChange={(e) => setPlaceInviteDistance(e.target.value)}
+              inputProps={{ step: 0.1, min: 0 }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+            />
+            
+            <TextField
+              fullWidth
+              size="small"
+              label="Message (optional)"
+              placeholder="I found this amazing spot!"
+              value={placeInviteMessage}
+              onChange={(e) => setPlaceInviteMessage(e.target.value)}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+            />
+            
+            <TextField
+              fullWidth
+              size="small"
+              label="Google Maps Link (optional)"
+              placeholder="https://maps.google.com/..."
+              value={placeInviteMaps}
+              onChange={(e) => setPlaceInviteMaps(e.target.value)}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ pt: 2, px: 3, pb: 2 }}>
+          <Button 
+            onClick={() => setShowPlaceInviteDialog(false)} 
+            sx={{ color: '#64748b', borderRadius: '12px', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={submitPlaceInvite}
+            disabled={!placeInviteName.trim()}
+            sx={{
+              bgcolor: '#EC4899',
+              '&:hover': { bgcolor: '#DB2777' },
+              borderRadius: '12px',
+              fontWeight: 600,
+            }}
+          >
+            Send Invite
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* keyframes */}
       <Box

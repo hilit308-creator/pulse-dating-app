@@ -57,7 +57,23 @@ export default function TabNavigation() {
   }, [location.pathname, hasUnreadActivity, markActivityAsRead]);
 
   return (
-    <nav className="tab-bar">
+    <nav 
+      className="tab-bar"
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 99999,
+        height: 56,
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        background: '#ffffff',
+        borderTop: '1px solid rgba(0,0,0,0.08)',
+        boxShadow: '0 -2px 8px rgba(0,0,0,0.05)',
+      }}
+    >
       {tabs.map((tab) => (
         <NavLink
           key={tab.key}

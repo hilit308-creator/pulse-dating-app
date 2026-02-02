@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Box, Typography, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Typography, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Shield, HelpCircle, User, Settings, Users, Check, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Shield, HelpCircle, User, Settings, ChevronRight } from 'lucide-react';
 import { useMeeting, MEETING_STATE, SOS_STATE } from '../context/MeetingContext';
+import MeetingStatusIcon from './MeetingStatusIcon';
 
 function GlobalMeetingBar() {
   const navigate = useNavigate();
@@ -13,17 +14,30 @@ function GlobalMeetingBar() {
     meetingWith,
     showMeetingScreen,
     setShowMeetingScreen,
+    triggerShowMeetingScreen,
     setPreviousPath,
     sosState,
     sosHelperDistance,
+    sosMessage,
     triggerSOS,
     cancelSOS,
   } = useMeeting();
 
-  // Don't render if no active meeting
-  if (meetingState !== MEETING_STATE.ACTIVE) {
+  // Don't render if no active meeting (but show during ENDING state)
+  if (meetingState !== MEETING_STATE.ACTIVE && meetingState !== MEETING_STATE.ENDING) {
     return null;
   }
+
+  // Determine background color based on state
+  const getBackgroundColor = () => {
+    if (meetingState === MEETING_STATE.ENDING) {
+      return '#DC2626'; // Brief red for ending
+    }
+    if (sosState === SOS_STATE.NONE) return '#6C5CE7';
+    if (sosState === SOS_STATE.SEARCHING) return '#8B5CF6';
+    if (sosState === SOS_STATE.HELPER_ARRIVED) return '#6C5CE7';
+    return '#8B5CF6';
+  };
 
   return (
     <Box
@@ -38,12 +52,20 @@ function GlobalMeetingBar() {
         alignItems: 'center',
         justifyContent: 'space-between',
         px: 2,
-        bgcolor: sosState === SOS_STATE.NONE ? '#6C5CE7' : 
-                 sosState === SOS_STATE.SEARCHING ? '#8B5CF6' :
-                 sosState === SOS_STATE.HELPER_ARRIVED ? '#6C5CE7' : '#8B5CF6',
+        bgcolor: getBackgroundColor(),
         color: '#fff',
         boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-        transition: 'background-color 0.3s ease',
+        transition: 'all 0.3s ease',
+        // Fade out animation for ending state
+        ...(meetingState === MEETING_STATE.ENDING && {
+          opacity: 0.9,
+          animation: 'meetingBarFadeOut 1.5s ease-out forwards',
+        }),
+        '@keyframes meetingBarFadeOut': {
+          '0%': { opacity: 1 },
+          '70%': { opacity: 0.8 },
+          '100%': { opacity: 0 },
+        },
       }}
     >
       {/* Left side: Back button + Meeting info */}
@@ -77,65 +99,27 @@ function GlobalMeetingBar() {
             // Save current path before navigating to meeting screen
             setPreviousPath(location.pathname);
             
-            // Navigate to chat with the meeting user and show meeting screen
+            // Use trigger function to reliably show meeting screen
+            triggerShowMeetingScreen();
+            
+            // Navigate to chat with meeting param to force show meeting screen
             if (meetingWith?.matchId) {
-              navigate(`/chat/${meetingWith.matchId}`);
-              // Small delay to ensure navigation completes before setting state
-              setTimeout(() => {
-                setShowMeetingScreen(true);
-              }, 100);
-            } else {
-              setShowMeetingScreen(true);
+              const targetPath = `/chat/${meetingWith.matchId}?showMeeting=true&t=${Date.now()}`;
+              navigate(targetPath, { replace: true });
             }
           }}
           role="button"
           aria-label="Return to Meeting Time"
         >
-          {/* Animated Meeting Status Icon */}
-          <Box
-            sx={{
-              position: 'relative',
-              width: 32,
-              height: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
-              bgcolor: 'rgba(255,255,255,0.2)',
-              ...(sosState === SOS_STATE.SEARCHING && {
-                animation: 'pulseGlow 2s ease-in-out infinite',
-              }),
-              ...(sosState === SOS_STATE.HELPER_APPROACHING && {
-                animation: 'smoothMove 1.5s ease-in-out infinite',
-              }),
-            }}
-          >
-            <Users size={18} />
-            {sosState === SOS_STATE.HELPER_ARRIVED && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: -2,
-                  right: -2,
-                  bgcolor: '#fff',
-                  borderRadius: '50%',
-                  width: 14,
-                  height: 14,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Check size={10} color="#6C5CE7" />
-              </Box>
-            )}
-          </Box>
+          {/* Meeting Status Icon with connecting line states */}
+          <MeetingStatusIcon sosState={sosState} size={32} />
           <Box>
             <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-              {sosState === SOS_STATE.NONE && 'Meeting in progress'}
-              {sosState === SOS_STATE.SEARCHING && 'Finding helper...'}
-              {sosState === SOS_STATE.HELPER_FOUND && 'Helper found'}
-              {sosState === SOS_STATE.HELPER_APPROACHING && 'Helper approaching'}
+              {meetingState === MEETING_STATE.ENDING && 'Meeting ended'}
+              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.NONE && 'Meeting in progress'}
+              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.SEARCHING && 'Finding helper...'}
+              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.HELPER_FOUND && 'Helper found'}
+              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.HELPER_APPROACHING && 'Helper approaching'}
               {sosState === SOS_STATE.HELPER_ARRIVED && 'Helper arrived'}
             </Typography>
             <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -280,6 +264,25 @@ function GlobalMeetingBar() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* SOS Message Toast */}
+      <Snackbar
+        open={!!sosMessage}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: 70, zIndex: 99999 }}
+      >
+        <Alert 
+          severity="info" 
+          sx={{ 
+            width: '100%',
+            bgcolor: '#6C5CE7',
+            color: '#fff',
+            '& .MuiAlert-icon': { color: '#fff' },
+          }}
+        >
+          {sosMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

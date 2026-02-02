@@ -418,9 +418,6 @@ const EventAttendeesScreen = () => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <IconButton onClick={handleBack} sx={{ color: '#1a1a2e' }}>
-            <ArrowLeft size={22} />
-          </IconButton>
           <Box sx={{ flex: 1 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e', lineHeight: 1.2 }}>
               {event.title}

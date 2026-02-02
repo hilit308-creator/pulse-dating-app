@@ -38,6 +38,9 @@ const useHomeDeckStore = create(
       // Full profile data for liked users (for YOU LIKE tab in Matches)
       likedProfiles: [],
       
+      // Mutual matches (for MUTUAL MATCHES tab in Matches)
+      mutualMatches: [],
+      
       // Navigation anchor - the userId that should be visible after Back
       anchorUserId: null,
       anchorIdsHash: null,
@@ -66,6 +69,19 @@ const useHomeDeckStore = create(
       removeLikedProfile: (userId) => set((state) => {
         const arr = Array.isArray(state.likedProfiles) ? state.likedProfiles : [];
         return { likedProfiles: arr.filter(p => p.id !== userId) };
+      }),
+      
+      // Mutual matches management (for MUTUAL MATCHES tab)
+      setMutualMatches: (matches) => set({ mutualMatches: Array.isArray(matches) ? matches : [] }),
+      addMutualMatch: (profile) => set((state) => {
+        const arr = Array.isArray(state.mutualMatches) ? state.mutualMatches : [];
+        // Don't add duplicates
+        if (arr.some(p => p.id === profile.id)) return state;
+        return { mutualMatches: [...arr, { ...profile, matchedAt: Date.now(), status: 'mutual', chatActive: true, chatTimeLeft: 900 }] };
+      }),
+      removeMutualMatch: (userId) => set((state) => {
+        const arr = Array.isArray(state.mutualMatches) ? state.mutualMatches : [];
+        return { mutualMatches: arr.filter(p => p.id !== userId) };
       }),
       
       setPassedUsers: (passedUsers) => set({ passedUsers: Array.isArray(passedUsers) ? passedUsers : [] }),
@@ -103,6 +119,7 @@ const useHomeDeckStore = create(
         passedUsers: [],
         swipeHistory: [],
         likedProfiles: [],
+        mutualMatches: [],
         anchorUserId: null,
         anchorIdsHash: null,
       }),
@@ -115,6 +132,7 @@ const useHomeDeckStore = create(
         passedUsers: [],
         swipeHistory: [],
         likedProfiles: [],
+        mutualMatches: [],
         anchorUserId: null,
         anchorIdsHash: null,
       }),
@@ -134,6 +152,7 @@ const useHomeDeckStore = create(
               if (!Array.isArray(parsed.state.swipeHistory)) parsed.state.swipeHistory = [];
               if (!Array.isArray(parsed.state.users)) parsed.state.users = [];
               if (!Array.isArray(parsed.state.likedProfiles)) parsed.state.likedProfiles = [];
+              if (!Array.isArray(parsed.state.mutualMatches)) parsed.state.mutualMatches = [];
             }
             return parsed;
           } catch (e) {
@@ -157,6 +176,7 @@ const useHomeDeckStore = create(
         passedUsers: state.passedUsers,
         swipeHistory: state.swipeHistory,
         likedProfiles: state.likedProfiles,
+        mutualMatches: state.mutualMatches,
         anchorUserId: state.anchorUserId,
         anchorIdsHash: state.anchorIdsHash,
       }),

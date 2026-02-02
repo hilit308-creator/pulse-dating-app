@@ -150,9 +150,6 @@ We're here to help and will respond to inquiries as quickly as possible.`
         backgroundColor: '#fff',
         zIndex: 10,
       }}>
-        <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }}>
-          <ArrowLeft size={22} color="#1a1a2e" />
-        </IconButton>
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
           Terms of Service
         </Typography>

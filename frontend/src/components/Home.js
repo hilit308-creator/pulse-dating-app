@@ -785,6 +785,7 @@ export default function Home({ onOpenTutorial }) {
     resetDeck,
     addLikedProfile,
     removeLikedProfile,
+    addMutualMatch,
   } = useHomeDeckStore();
 
   // Use cached users if available, otherwise local state for loading
@@ -1793,6 +1794,22 @@ export default function Home({ onOpenTutorial }) {
                     console.log('[Home] Triggering match popup for:', topUser.name);
                     // Remove from YOU LIKE tab since it's now a match
                     removeLikedProfile(topUser.id);
+                    // Add to MUTUAL MATCHES tab
+                    addMutualMatch({
+                      id: topUser.id,
+                      name: topUser.name || topUser.firstName,
+                      age: topUser.age,
+                      distance: topUser.distance,
+                      city: topUser.city,
+                      photoUrl: topUser.photos?.[0] || topUser.photoUrl || '',
+                      photos: topUser.photos || [],
+                      verified: topUser.verified,
+                      interests: topUser.interests || topUser.tags || [],
+                      profession: topUser.profession,
+                      tagline: topUser.tagline || topUser.bio,
+                      aboutMe: topUser.aboutMe || [],
+                      lookingFor: topUser.lookingFor || [],
+                    });
                     setMatchUser(topUser);
                   }
                   

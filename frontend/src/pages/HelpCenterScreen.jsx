@@ -77,9 +77,6 @@ const HelpCenterScreen = () => {
         backgroundColor: '#fff',
         zIndex: 10,
       }}>
-        <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }}>
-          <ArrowLeft size={22} color="#1a1a2e" />
-        </IconButton>
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
           Help Center
         </Typography>

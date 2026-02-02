@@ -93,9 +93,10 @@ const MeetingsSafetyScreen = () => {
     return localStorage.getItem('pulse_whatsapp_message') || DEFAULT_WHATSAPP_MESSAGE;
   });
   
-  // SOS gender preference
+  // SOS gender preference - ensure always has a value (not undefined/null)
   const [sosGenderPreference, setSosGenderPreference] = useState(() => {
-    return localStorage.getItem('pulse_sos_gender') || 'all';
+    const saved = localStorage.getItem('pulse_sos_gender');
+    return saved && saved !== 'null' ? saved : 'all';
   });
   
   // Dialog states
@@ -215,9 +216,6 @@ const MeetingsSafetyScreen = () => {
           zIndex: 10,
         }}
       >
-        <IconButton onClick={handleBack} sx={{ mr: 1 }}>
-          <ArrowLeft size={22} color="#1a1a2e" />
-        </IconButton>
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
           {t('meetingsSafety') || 'Meetings & Safety'}
         </Typography>
@@ -290,14 +288,14 @@ const MeetingsSafetyScreen = () => {
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Avatar sx={{ width: 36, height: 36, bgcolor: '#6C5CE7', fontSize: 14 }}>
-                        {contact.name.charAt(0).toUpperCase()}
+                        {(contact.name || 'U').charAt(0).toUpperCase()}
                       </Avatar>
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e' }}>
-                          {contact.name}
+                          {contact.name || 'Unknown'}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                          {contact.message.slice(0, 40)}...
+                          {(contact.message || '').slice(0, 40)}...
                         </Typography>
                       </Box>
                     </Box>
@@ -464,6 +462,10 @@ const MeetingsSafetyScreen = () => {
                 value={sosGenderPreference}
                 onChange={(e) => setSosGenderPreference(e.target.value)}
                 sx={{ borderRadius: '12px' }}
+                MenuProps={{
+                  anchorOrigin: { vertical: 'top', horizontal: 'left' },
+                  transformOrigin: { vertical: 'bottom', horizontal: 'left' },
+                }}
               >
                 {SOS_GENDER_OPTIONS.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
@@ -482,6 +484,7 @@ const MeetingsSafetyScreen = () => {
         onClose={handleCloseDialog}
         fullWidth
         maxWidth="xs"
+        sx={{ zIndex: 9999 }}
         PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>

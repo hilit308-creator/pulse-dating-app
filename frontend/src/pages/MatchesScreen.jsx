@@ -993,11 +993,10 @@ export default function MatchesScreen() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   
-  // Global store for liked profiles (YOU LIKE tab)
-  const { likedProfiles, removeLikedProfile } = useHomeDeckStore();
+  // Global store for liked profiles (YOU LIKE tab) and mutual matches (MUTUAL MATCHES tab)
+  const { likedProfiles, removeLikedProfile, mutualMatches, removeMutualMatch, addMutualMatch } = useHomeDeckStore();
 
   const [tab, setTab] = useState(0);
-  const [matches, setMatches] = useState([]);
   const [likes, setLikes] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -1078,7 +1077,7 @@ export default function MatchesScreen() {
     return R * c; // Distance in km
   }, []);
 
-  // Google Account Sync: Load fresh data on mount/reload
+  // Load "Interested in You" data (likes) on mount
   useEffect(() => {
     let isMounted = true;
     
@@ -1086,17 +1085,17 @@ export default function MatchesScreen() {
       try {
         setLoading(true);
         
-        // Sync from Google account
+        // Sync likes from Google account (matches now come from global store)
         const syncedData = await syncFromGoogleAccount(GOOGLE_USER_EMAIL);
         
         if (isMounted) {
-          setMatches(syncedData.matches);
           setLikes(syncedData.likes);
           setLoading(false);
           
           // Log sync info
           const lastSync = getLastSyncTime();
-          console.log('[MatchesScreen] Data loaded from Google account');
+          console.log('[MatchesScreen] Likes loaded from Google account');
+          console.log('[MatchesScreen] Mutual matches from store:', mutualMatches.length);
           console.log('[MatchesScreen] Last sync:', lastSync);
         }
       } catch (error) {
@@ -1112,25 +1111,16 @@ export default function MatchesScreen() {
     return () => {
       isMounted = false;
     };
-  }, []); // Runs on every page load/reload
-
-  // countdown for active chats
-  useEffect(() => {
-    if (!loading) {
-      const interval = setInterval(() => {
-        setMatches((prev) =>
-          prev.map((m) => (m.chatActive && m.chatTimeLeft > 0 ? { ...m, chatTimeLeft: m.chatTimeLeft - 1 } : m))
-        );
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [loading]);
+  }, [mutualMatches.length]); // Re-run when mutualMatches changes
 
   // persist blocks & reports
   useEffect(() => saveBlocks(blocked), [blocked]);
   useEffect(() => saveReports(reports), [reports]);
 
   const filteredMatches = useMemo(() => {
+    // Use mutualMatches from global store
+    const matches = mutualMatches || [];
+    
     // Calculate real distance from GPS if available, otherwise use static distance
     const matchesWithDistance = matches.map((m) => {
       if (userLocation && m.lat && m.lng) {
@@ -1144,7 +1134,11 @@ export default function MatchesScreen() {
 
     let res = matchesWithDistance
       .filter((m) => !blocked.has(m.id))
-      .filter((m) => m.age >= ageRange[0] && m.age <= ageRange[1])
+      .filter((m) => {
+        // Only filter by age if age is defined
+        if (!m.age) return true;
+        return m.age >= ageRange[0] && m.age <= ageRange[1];
+      })
       .filter((m) => {
         // Only filter by distance if we have GPS location
         if (!userLocation) return true; // No GPS = show all
@@ -1154,10 +1148,10 @@ export default function MatchesScreen() {
 
     if (sortBy === "distance") return [...res].sort((a, b) => a.calculatedDistance - b.calculatedDistance);
     if (sortBy === "compat") return [...res].sort((a, b) => (b.compatibility ?? 0) - (a.compatibility ?? 0));
-    return [...res].sort((a, b) => b.matchedAt - a.matchedAt);
-  }, [matches, blocked, ageRange, maxDistance, onlyActiveChats, sortBy, userLocation, calculateDistance]);
+    return [...res].sort((a, b) => (b.matchedAt || 0) - (a.matchedAt || 0));
+  }, [mutualMatches, blocked, ageRange, maxDistance, onlyActiveChats, sortBy, userLocation, calculateDistance]);
 
-  const handlePass = (p) => setMatches((prev) => prev.filter((x) => x.id !== p.id));
+  const handlePass = (p) => removeMutualMatch(p.id);
   const handleOpenChat = (p) => {
     // Navigate to chat screen with match data
     window.location.href = `/chat?matchId=${p.id}`;
@@ -1225,7 +1219,7 @@ export default function MatchesScreen() {
   async function adminBanUser(profileId) {
     // await fetch(`/api/moderation/ban/${profileId}`, { method: "POST" })
     // In UI we can also hide immediately:
-    setMatches((prev) => prev.filter((m) => m.id !== profileId));
+    removeMutualMatch(profileId);
     setLikes((prev) => prev.filter((l) => l.id !== profileId));
   }
 
@@ -1244,14 +1238,14 @@ export default function MatchesScreen() {
       chatTimeLeft: 900, // 15 min window
     };
     
-    // Remove from likes, add to matches
+    // Remove from likes, add to mutual matches store
     setLikes(prev => prev.filter(l => l.id !== profile.id));
-    setMatches(prev => [newMatch, ...prev]);
+    addMutualMatch(newMatch);
     
     // Close profile card and show celebration
     setSelectedLikeProfile(null);
     setMatchCelebration(profile);
-  }, []);
+  }, [addMutualMatch]);
 
   const handlePassFromInterested = useCallback((profile) => {
     // Profile removed permanently per spec - no notification, no match
@@ -1350,7 +1344,7 @@ export default function MatchesScreen() {
       sx={{
         minHeight: '100vh',
         backgroundColor: '#fafbfc',
-        pb: "calc(10px + env(safe-area-inset-bottom, 0))",
+        pb: "calc(80px + env(safe-area-inset-bottom, 0))",
         position: 'relative',
       }}
     >
@@ -1447,17 +1441,20 @@ export default function MatchesScreen() {
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
+          variant="scrollable"
+          scrollButtons={false}
           sx={{ 
-            px: 2,
+            px: 1,
             minHeight: 44,
             ".MuiTab-root": { 
               minWidth: 'auto',
               minHeight: 44,
-              px: 2,
+              px: 1.25,
               py: 1,
-              textTransform: 'none',
+              textTransform: 'uppercase',
               fontWeight: 600,
-              fontSize: '0.9rem',
+              fontSize: '0.75rem',
+              letterSpacing: '0.02em',
               color: '#64748b',
               '&.Mui-selected': { color: '#6C5CE7' },
             },
@@ -1466,7 +1463,7 @@ export default function MatchesScreen() {
               height: 3,
               borderRadius: '3px 3px 0 0',
             },
-            "& .MuiTabs-flexContainer": { gap: 1 },
+            "& .MuiTabs-flexContainer": { gap: 0.5 },
           }}
         >
           <Tab 
@@ -1607,7 +1604,7 @@ export default function MatchesScreen() {
                 >
                   <CompactMatchCard
                     profile={m}
-                    onPass={(p) => setMatches((prev) => prev.filter((x) => x.id !== p.id))}
+                    onPass={(p) => removeMutualMatch(p.id)}
                     onOpenChat={(p) => navigate(`/chat?matchId=${p.id}`)}
                     onBlock={handleBlock}
                     onReport={handleReport}

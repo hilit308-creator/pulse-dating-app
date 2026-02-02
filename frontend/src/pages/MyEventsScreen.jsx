@@ -102,9 +102,6 @@ const MyEventsScreen = () => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton onClick={handleBack} sx={{ color: '#1a1a2e' }}>
-            <ArrowLeft size={22} />
-          </IconButton>
           <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
             My Events
           </Typography>
