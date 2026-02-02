@@ -795,26 +795,35 @@ function PlaceCard({ place, onViewPlace, onSave, onScanQR, onSeeBenefits, isSave
         <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 2, display: 'flex', gap: 1 }}>
           {place.hasActiveBenefit && (
             <Chip
-              icon={<Gift size={14} />}
+              icon={<Gift size={12} style={{ color: '#6C5CE7' }} />}
               label="Perk"
               size="small"
               sx={{
-                bgcolor: 'rgba(108,92,231,0.9)',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: '0.7rem',
+                bgcolor: 'rgba(255, 255, 255, 0.95)',
+                color: '#6C5CE7',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(108, 92, 231, 0.3)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                '& .MuiChip-icon': { color: '#6C5CE7' },
               }}
             />
           )}
           {place.isNew && (
             <Chip
+              icon={<Heart size={12} fill="#6C5CE7" style={{ color: '#6C5CE7' }} />}
               label="New"
               size="small"
               sx={{
-                bgcolor: 'rgba(108,92,231,0.9)',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: '0.7rem',
+                bgcolor: 'rgba(255, 255, 255, 0.95)',
+                color: '#6C5CE7',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(108, 92, 231, 0.3)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                '& .MuiChip-icon': { color: '#6C5CE7' },
               }}
             />
           )}
@@ -1595,8 +1604,8 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 2,
-                p: 2,
+                justifyContent: 'space-between',
+                p: 1.5,
                 bgcolor: '#fff',
                 borderRadius: '16px',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
@@ -1607,52 +1616,55 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
                 },
               }}
             >
-              {/* Avatar */}
-              <Box sx={{ position: 'relative', flexShrink: 0 }}>
-                <Box
-                  component="img"
-                  src={person.avatar}
-                  alt={person.name}
-                  sx={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: '16px',
-                    objectFit: 'cover',
-                    border: '3px solid #fff',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  }}
-                />
-                {person.isOnline && (
+              {/* Left side: Avatar + Info */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, maxWidth: '45%' }}>
+                {/* Avatar */}
+                <Box sx={{ position: 'relative', flexShrink: 0 }}>
                   <Box
+                    component="img"
+                    src={person.avatar}
+                    alt={person.name}
                     sx={{
-                      position: 'absolute',
-                      bottom: -2,
-                      right: -2,
-                      width: 16,
-                      height: 16,
-                      borderRadius: '50%',
-                      bgcolor: '#22c55e',
-                      border: '3px solid #fff',
+                      width: 48,
+                      height: 48,
+                      borderRadius: '14px',
+                      objectFit: 'cover',
+                      border: '2px solid #fff',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                     }}
                   />
-                )}
-              </Box>
+                  {person.isOnline && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        bottom: -2,
+                        right: -2,
+                        width: 14,
+                        height: 14,
+                        borderRadius: '50%',
+                        bgcolor: '#22c55e',
+                        border: '2px solid #fff',
+                      }}
+                    />
+                  )}
+                </Box>
 
-              {/* Info */}
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-                  {person.name}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <MapPin size={12} color="#64748b" />
-                  <Typography variant="caption" sx={{ color: '#64748b' }}>
-                    {person.distance} {person.unit} away
+                {/* Info */}
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.85rem' }}>
+                    {person.name}
                   </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <MapPin size={10} color="#64748b" style={{ flexShrink: 0 }} />
+                    <Typography variant="caption" noWrap sx={{ color: '#64748b', fontSize: '0.7rem' }}>
+                      {person.distance} {person.unit}
+                    </Typography>
+                  </Box>
                 </Box>
               </Box>
 
-              {/* Gesture Buttons */}
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              {/* Gesture Buttons - Right side */}
+              <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
                 {GESTURE_TYPES.map((gesture) => {
                   const Icon = gesture.icon;
                   const isMain = gesture.id === 'coffee';
@@ -1676,9 +1688,9 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
                             }}
                             disabled={isSent}
                             sx={{
-                              width: isMain ? 52 : 40,
-                              height: isMain ? 52 : 40,
-                              borderRadius: isMain ? '16px' : '12px',
+                              width: isMain ? 44 : 34,
+                              height: isMain ? 44 : 34,
+                              borderRadius: isMain ? '12px' : '10px',
                               background: isMain ? gesture.gradient : 'transparent',
                               border: isMain ? 'none' : '1.5px solid #e2e8f0',
                               boxShadow: isMain ? `0 4px 16px ${gesture.shadowColor}` : 'none',
@@ -1696,7 +1708,7 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
                             }}
                           >
                             <Icon 
-                              size={isMain ? 22 : 18} 
+                              size={isMain ? 18 : 14} 
                               color={isMain ? '#fff' : '#64748b'} 
                             />
                           </IconButton>
@@ -5286,13 +5298,13 @@ export default function ExploreScreen() {
                     flexShrink: 0,
                     fontWeight: 600,
                     borderRadius: '18px',
-                    bgcolor: isActive ? '#6C5CE7' : '#f1f5f9',
+                    bgcolor: isActive ? '#0EA5E9' : '#f1f5f9',
                     color: isActive ? '#fff' : '#64748b',
                     '& .MuiChip-icon': {
                       color: isActive ? '#fff' : '#64748b',
                     },
                     '&:hover': {
-                      bgcolor: isActive ? '#5b4cdb' : '#e2e8f0',
+                      bgcolor: isActive ? '#0284C7' : '#e2e8f0',
                     },
                   }}
                 />
@@ -5323,13 +5335,13 @@ export default function ExploreScreen() {
                     flexShrink: 0,
                     fontWeight: 500,
                     borderRadius: '14px',
-                    bgcolor: isActive ? '#6C5CE7' : '#f8fafc',
+                    bgcolor: isActive ? '#0EA5E9' : '#f8fafc',
                     color: isActive ? '#fff' : '#94a3b8',
                     '& .MuiChip-icon': {
                       color: isActive ? '#fff' : '#94a3b8',
                     },
                     '&:hover': {
-                      bgcolor: isActive ? '#5b4cdb' : '#f1f5f9',
+                      bgcolor: isActive ? '#0284C7' : '#f1f5f9',
                     },
                   }}
                 />

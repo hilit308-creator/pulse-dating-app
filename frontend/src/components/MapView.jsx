@@ -23,7 +23,7 @@ function CurrentLocationMarker({ position }) {
     map.setView(position, 15);
   }, [position, map]);
   return (
-    <Marker position={position} icon={L.divIcon({ className: 'user-marker', html: '<div style="background:#ffb357;width:22px;height:22px;border-radius:50%;border:3px solid #fff;"></div>' })}>
+    <Marker position={position} icon={L.divIcon({ className: 'user-marker', html: '<div style="background:#6C5CE7;width:22px;height:22px;border-radius:50%;border:3px solid #fff;"></div>' })}>
       <Popup>You are here</Popup>
     </Marker>
   );

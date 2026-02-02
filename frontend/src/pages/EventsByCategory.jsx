@@ -544,13 +544,13 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
   // Check if event is past
   const isPast = isEventPast(ev);
   
-  // Status badge logic - Past takes priority
+  // Status badge logic - Past takes priority - white bg with purple text/border style
   const getStatusBadge = () => {
-    if (isPast) return { label: "Past", color: "#6b7280", bg: "rgba(107,114,128,0.15)" };
-    if (isHappeningTonight(ev.date)) return { label: "Happening tonight", color: "#dc2626", bg: "rgba(220,38,38,0.1)" };
-    if (ev.soldOut) return { label: "Sold out", color: "#6b7280", bg: "rgba(107,114,128,0.1)" };
-    if (ev.price === 0) return { label: "Free", color: "#16a34a", bg: "rgba(22,163,74,0.1)" };
-    return { label: "Paid", color: "#7c3aed", bg: "rgba(124,58,237,0.1)" };
+    if (isPast) return { label: "Past", color: "#6b7280", bg: "rgba(255,255,255,0.95)" };
+    if (isHappeningTonight(ev.date)) return { label: "Happening tonight", color: "#6C5CE7", bg: "rgba(255,255,255,0.95)" };
+    if (ev.soldOut) return { label: "Sold out", color: "#6b7280", bg: "rgba(255,255,255,0.95)" };
+    if (ev.price === 0) return { label: "Free", color: "#6C5CE7", bg: "rgba(255,255,255,0.95)" };
+    return { label: "Paid", color: "#6C5CE7", bg: "rgba(255,255,255,0.95)" };
   };
   const status = getStatusBadge();
 

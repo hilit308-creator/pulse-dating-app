@@ -119,7 +119,7 @@ const GLOBAL_OVERLAY_ZINDEX = 10000;
 
 const theme = createTheme({
   palette: {
-    primary: { main: '#ff4081' },
+    primary: { main: '#6C5CE7' },
     secondary: { main: '#3f51b5' },
   },
   components: {
