@@ -12,8 +12,13 @@ import json
 import os
 import re
 import uuid
+import requests
+
+from dotenv import load_dotenv
 
 from agent import agent_bp
+
+load_dotenv()
 
 # Admin emails - these users get admin role automatically
 ADMIN_EMAILS = [
@@ -110,6 +115,20 @@ class VenuePartnerTier(db.Model):
     ends_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ExternalApiUsage(db.Model):
+    __tablename__ = 'external_api_usage'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    api_name = db.Column(db.String(60), nullable=False)
+    day = db.Column(db.Date, nullable=False)
+    count = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('api_name', 'day', name='uniq_external_api_usage_api_day'),
+    )
 
 
 class PaymentHold(db.Model):
@@ -407,6 +426,68 @@ def _payments_enabled():
     )
 
 
+def _get_google_places_key():
+    return (os.getenv('GOOGLE_PLACES_API_KEY') or '').strip() or None
+
+
+def _get_google_places_daily_quota():
+    raw = os.getenv('GOOGLE_PLACES_DAILY_QUOTA')
+    if raw is None or str(raw).strip() == '':
+        return 50
+    try:
+        n = int(raw)
+        return n if n > 0 else 0
+    except Exception:
+        return 50
+
+
+def _enforce_daily_quota(api_name, daily_limit):
+    if daily_limit is None:
+        return True, None
+    if daily_limit <= 0:
+        return False, (jsonify({'error': 'quota_disabled', 'api': api_name}), 503)
+
+    today = datetime.utcnow().date()
+    try:
+        row = (
+            ExternalApiUsage.query
+            .filter_by(api_name=api_name, day=today)
+            .with_for_update()
+            .first()
+        )
+        if not row:
+            row = ExternalApiUsage(api_name=api_name, day=today, count=0, created_at=datetime.utcnow(), updated_at=datetime.utcnow())
+            db.session.add(row)
+            db.session.flush()
+
+        if row.count >= daily_limit:
+            db.session.rollback()
+            return False, (jsonify({'error': 'quota_exceeded', 'api': api_name, 'dailyLimit': daily_limit}), 429)
+
+        row.count = int(row.count or 0) + 1
+        row.updated_at = datetime.utcnow()
+        db.session.commit()
+        return True, None
+    except Exception:
+        db.session.rollback()
+        return False, (jsonify({'error': 'quota_check_failed', 'api': api_name}), 503)
+
+
+def _map_venue_category_to_places_type(category):
+    if not category:
+        return None
+    c = str(category).strip().lower()
+    if c in ('coffee', 'cafe'):
+        return 'cafe'
+    if c in ('drinks', 'bar'):
+        return 'bar'
+    if c in ('food', 'restaurant'):
+        return 'restaurant'
+    if c in ('outdoors', 'park'):
+        return 'park'
+    return None
+
+
 def get_feature_flag_value(key, default_value=False):
     env_name = _get_env_name()
     row = FeatureFlag.query.filter_by(env=env_name, key=key).first()
@@ -549,7 +630,81 @@ def api_v1_nearby_venues():
     user, err = require_auth()
     if err:
         return err
-    return jsonify({'items': []})
+    if not get_feature_flag_value('nearby_phase4_venues', False):
+        return jsonify({'items': []})
+
+    key = _get_google_places_key()
+    if not key:
+        return jsonify({'error': 'places_not_configured'}), 503
+
+    try:
+        lat = request.args.get('lat', type=float)
+        lng = request.args.get('lng', type=float)
+    except Exception:
+        lat = None
+        lng = None
+
+    if lat is None or lng is None:
+        if user.latitude is None or user.longitude is None:
+            return jsonify({'error': 'lat_lng_required'}), 400
+        lat = float(user.latitude)
+        lng = float(user.longitude)
+
+    radius_m = request.args.get('radiusMeters', default=1200, type=int)
+    radius_m = max(100, min(int(radius_m or 1200), 2000))
+    category = request.args.get('category')
+    places_type = _map_venue_category_to_places_type(category)
+
+    ok, quota_err = _enforce_daily_quota('google_places_nearbysearch', _get_google_places_daily_quota())
+    if not ok:
+        return quota_err
+
+    url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+    params = {
+        'key': key,
+        'location': f'{lat},{lng}',
+        'radius': radius_m,
+    }
+    if places_type:
+        params['type'] = places_type
+
+    try:
+        resp = requests.get(url, params=params, timeout=6)
+    except Exception:
+        return jsonify({'error': 'places_request_failed'}), 502
+
+    if resp.status_code != 200:
+        return jsonify({'error': 'places_http_error'}), 502
+
+    try:
+        payload = resp.json()
+    except Exception:
+        return jsonify({'error': 'places_bad_response'}), 502
+
+    status = payload.get('status')
+    if status not in ('OK', 'ZERO_RESULTS'):
+        return jsonify({'error': 'places_error', 'status': status}), 502
+
+    results = payload.get('results') or []
+    items = []
+    for r in results[:20]:
+        place_id = r.get('place_id')
+        if not place_id:
+            continue
+        opening_hours = r.get('opening_hours') or {}
+        snapshot = {
+            'name': r.get('name'),
+            'rating': r.get('rating'),
+            'userRatingsTotal': r.get('user_ratings_total'),
+            'types': r.get('types') or [],
+            'openNow': bool(opening_hours.get('open_now')) if 'open_now' in opening_hours else None,
+        }
+        items.append({
+            'googlePlaceId': place_id,
+            'snapshot': snapshot,
+        })
+
+    return jsonify({'items': items})
 
 
 @app.route('/api/v1/nearby/invites', methods=['GET'])

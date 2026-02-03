@@ -24,6 +24,14 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# Python
+__pycache__/
+*.pyc
+
+# Local backend state
+backend/instance/
+backend/dating_app.db
+
 # IDE
 .vscode/
 .idea/
