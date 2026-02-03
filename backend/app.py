@@ -917,6 +917,139 @@ def api_v1_end_meeting(meeting_id):
     return jsonify({'meeting': {'id': meeting.id, 'status': meeting.status}})
 
 
+# In-memory store for real-time location tracking (in production, use Redis)
+_meeting_locations = {}  # {meeting_id: {user_id: {lat, lng, updated_at}}}
+
+
+@app.route('/api/v1/meetings/<string:meeting_id>/location', methods=['POST'])
+def api_v1_update_meeting_location(meeting_id):
+    """Update user's location for a meeting (approaching the meeting spot)"""
+    user, err = require_auth()
+    if err:
+        return err
+    meeting = Meeting.query.get(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'not_found'}), 404
+    if user.id not in (meeting.inviter_user_id, meeting.invitee_user_id):
+        return jsonify({'error': 'forbidden'}), 403
+    if meeting.status not in ('scheduled', 'active'):
+        return jsonify({'error': 'meeting_not_active'}), 400
+
+    body = request.json or {}
+    lat = body.get('lat')
+    lng = body.get('lng')
+    if lat is None or lng is None:
+        return jsonify({'error': 'missing_coordinates'}), 400
+
+    try:
+        lat = float(lat)
+        lng = float(lng)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'invalid_coordinates'}), 400
+
+    if meeting_id not in _meeting_locations:
+        _meeting_locations[meeting_id] = {}
+
+    _meeting_locations[meeting_id][str(user.id)] = {
+        'lat': lat,
+        'lng': lng,
+        'updatedAt': datetime.utcnow().isoformat(),
+    }
+
+    return jsonify({'ok': True})
+
+
+@app.route('/api/v1/meetings/<string:meeting_id>/location', methods=['GET'])
+def api_v1_get_meeting_locations(meeting_id):
+    """Get both participants' locations for a meeting"""
+    user, err = require_auth()
+    if err:
+        return err
+    meeting = Meeting.query.get(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'not_found'}), 404
+    if user.id not in (meeting.inviter_user_id, meeting.invitee_user_id):
+        return jsonify({'error': 'forbidden'}), 403
+
+    # Get meeting spot coordinates
+    meeting_spot = None
+    if meeting.venue_snapshot_json:
+        try:
+            snapshot = json.loads(meeting.venue_snapshot_json)
+            if snapshot.get('coordinates'):
+                meeting_spot = snapshot['coordinates']
+        except Exception:
+            pass
+
+    locations = _meeting_locations.get(meeting_id, {})
+    
+    # Determine which user is which
+    other_user_id = str(meeting.invitee_user_id if user.id == meeting.inviter_user_id else meeting.inviter_user_id)
+    my_location = locations.get(str(user.id))
+    other_location = locations.get(other_user_id)
+
+    return jsonify({
+        'meetingSpot': meeting_spot,
+        'myLocation': my_location,
+        'otherLocation': other_location,
+        'meetingStatus': meeting.status,
+    })
+
+
+@app.route('/api/v1/meetings/<string:meeting_id>', methods=['GET'])
+def api_v1_get_meeting(meeting_id):
+    """Get meeting details"""
+    user, err = require_auth()
+    if err:
+        return err
+    meeting = Meeting.query.get(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'not_found'}), 404
+    if user.id not in (meeting.inviter_user_id, meeting.invitee_user_id):
+        return jsonify({'error': 'forbidden'}), 403
+
+    venue = None
+    meeting_spot = None
+    if meeting.venue_google_place_id:
+        try:
+            snapshot = json.loads(meeting.venue_snapshot_json) if meeting.venue_snapshot_json else None
+            venue = {
+                'googlePlaceId': meeting.venue_google_place_id,
+                'snapshot': snapshot,
+            }
+            if snapshot and snapshot.get('coordinates'):
+                meeting_spot = snapshot['coordinates']
+        except Exception:
+            venue = {'googlePlaceId': meeting.venue_google_place_id, 'snapshot': None}
+    elif meeting.venue_snapshot_json:
+        try:
+            snapshot = json.loads(meeting.venue_snapshot_json)
+            if snapshot.get('isMapPicked'):
+                venue = {
+                    'googlePlaceId': None,
+                    'snapshot': snapshot,
+                    'isMapPicked': True,
+                }
+                meeting_spot = snapshot.get('coordinates')
+        except Exception:
+            pass
+
+    return jsonify({
+        'meeting': {
+            'id': meeting.id,
+            'status': meeting.status,
+            'inviterUserId': meeting.inviter_user_id,
+            'inviteeUserId': meeting.invitee_user_id,
+            'venue': venue,
+            'meetingSpot': meeting_spot,
+            'scheduledFor': meeting.scheduled_for.isoformat() if meeting.scheduled_for else None,
+            'startedAt': meeting.started_at.isoformat() if meeting.started_at else None,
+            'endedAt': meeting.ended_at.isoformat() if meeting.ended_at else None,
+            'createdAt': meeting.created_at.isoformat() if meeting.created_at else None,
+        }
+    })
+
+
 @app.route('/api/v1/meetings/<string:meeting_id>/feedback', methods=['POST'])
 def api_v1_meeting_feedback(meeting_id):
     user, err = require_auth()

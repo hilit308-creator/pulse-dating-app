@@ -3,13 +3,56 @@
 // A. Invite for a Drink (With Payment) - gesture, not transaction
 // B. Suggest Meeting (No Payment) - social initiative without financial framing
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Box, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wine, MessageCircle, MapPin, Clock, CreditCard, Shield } from 'lucide-react';
+import { X, Wine, MessageCircle, MapPin, Clock, CreditCard, Shield, Map, Navigation, Check } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import SuggestedVenues from './SuggestedVenues';
 import { getFeatureFlag } from '../../utils/featureFlags';
 import { saveMeetingDraft } from '../../utils/nearbyMeetingDrafts';
+
+// Fix Leaflet default marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Custom marker for selected meeting spot
+const createMeetingSpotIcon = () => new L.DivIcon({
+  className: 'meeting-spot-marker',
+  html: `<div style="background: linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%); width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 12px rgba(108,92,231,0.4); display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+});
+
+// Location picker component for map
+const LocationPicker = ({ onLocationSelect, selectedLocation }) => {
+  useMapEvents({
+    click: (e) => {
+      onLocationSelect({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+
+  return selectedLocation ? (
+    <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={createMeetingSpotIcon()} />
+  ) : null;
+};
+
+// Map center updater
+const MapCenterUpdater = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView([center.lat, center.lng], 15);
+    }
+  }, [center, map]);
+  return null;
+};
 
 const PAYMENT_HOLDS_STORAGE_KEY = 'pulse_nearby_payment_holds';
 
@@ -52,6 +95,40 @@ export default function InvitationModal({
   const [message, setMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentConfirmOpen, setPaymentConfirmOpen] = useState(false);
+  const [mapPickerOpen, setMapPickerOpen] = useState(false);
+  const [mapSelectedLocation, setMapSelectedLocation] = useState(null);
+  const [userLocation, setUserLocation] = useState({ lat: 32.0853, lng: 34.7818 }); // Default Tel Aviv
+
+  // Get user's current location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        () => console.log('Location permission denied'),
+        { timeout: 10000 }
+      );
+    }
+  }, []);
+
+  const handleConfirmMapLocation = useCallback(() => {
+    if (mapSelectedLocation) {
+      const mapVenue = {
+        id: 'map_custom_' + Date.now(),
+        googlePlaceId: null,
+        name: 'Meeting spot',
+        category: 'outdoors',
+        isMapPicked: true,
+        coordinates: mapSelectedLocation,
+      };
+      setSelectedVenue(mapVenue);
+      setMapPickerOpen(false);
+    }
+  }, [mapSelectedLocation]);
 
   const venuesEnabled = getFeatureFlag('nearby_phase4_venues', false);
   const paymentsEnabled = getFeatureFlag('nearby_phase6_payments', false);
@@ -517,6 +594,40 @@ export default function InvitationModal({
                         onSelectVenue={setSelectedVenue}
                         selectedVenue={selectedVenue}
                       />
+
+                      {/* Pick a spot on map - for free meeting spots like parks */}
+                      <Box
+                        onClick={() => setMapPickerOpen(true)}
+                        sx={{
+                          mt: 2,
+                          p: 1.5,
+                          borderRadius: '12px',
+                          border: selectedVenue?.isMapPicked 
+                            ? '2px solid #6C5CE7' 
+                            : '2px dashed rgba(108,92,231,0.3)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 1,
+                          backgroundColor: selectedVenue?.isMapPicked ? 'rgba(108,92,231,0.08)' : 'transparent',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            borderColor: '#6C5CE7',
+                            backgroundColor: 'rgba(108,92,231,0.04)',
+                          },
+                        }}
+                      >
+                        <Map size={18} color="#6C5CE7" />
+                        <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 600 }}>
+                          {selectedVenue?.isMapPicked ? 'Custom spot selected ✓' : 'Or pick a spot on the map'}
+                        </Typography>
+                      </Box>
+                      {selectedVenue?.isMapPicked && (
+                        <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 1, textAlign: 'center' }}>
+                          Perfect for parks, beaches, or any outdoor spot
+                        </Typography>
+                      )}
                     </>
                   )}
                 </>
@@ -586,6 +697,106 @@ export default function InvitationModal({
           </Box>
         </motion.div>
       </motion.div>
+
+      {/* Map Picker Modal */}
+      <Dialog
+        open={mapPickerOpen}
+        onClose={() => setMapPickerOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            overflow: 'hidden',
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Map size={20} color="#6C5CE7" />
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+              Pick a meeting spot
+            </Typography>
+          </Box>
+          <IconButton onClick={() => setMapPickerOpen(false)} size="small">
+            <X size={20} color="#64748b" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <Typography variant="body2" sx={{ color: '#64748b', px: 3, pb: 2 }}>
+            Tap on the map to select where you'd like to meet
+          </Typography>
+          <Box sx={{ height: 350, width: '100%' }}>
+            <MapContainer
+              center={[userLocation.lat, userLocation.lng]}
+              zoom={15}
+              style={{ width: '100%', height: '100%' }}
+              scrollWheelZoom={true}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              />
+              <MapCenterUpdater center={userLocation} />
+              <LocationPicker
+                onLocationSelect={setMapSelectedLocation}
+                selectedLocation={mapSelectedLocation}
+              />
+              {/* User's current location marker */}
+              <Marker
+                position={[userLocation.lat, userLocation.lng]}
+                icon={new L.DivIcon({
+                  className: 'user-location-marker',
+                  html: `<div style="background: #10b981; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>`,
+                  iconSize: [16, 16],
+                  iconAnchor: [8, 8],
+                })}
+              />
+            </MapContainer>
+          </Box>
+          {mapSelectedLocation && (
+            <Box sx={{ px: 3, py: 2, backgroundColor: 'rgba(108,92,231,0.06)', borderTop: '1px solid rgba(108,92,231,0.1)' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <MapPin size={16} color="#6C5CE7" />
+                <Typography variant="body2" sx={{ color: '#1a1a2e', fontWeight: 600 }}>
+                  Meeting spot selected
+                </Typography>
+              </Box>
+              <Typography variant="caption" sx={{ color: '#64748b' }}>
+                {mapSelectedLocation.lat.toFixed(5)}, {mapSelectedLocation.lng.toFixed(5)}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1 }}>
+          <Button
+            variant="text"
+            onClick={() => {
+              setMapSelectedLocation(null);
+              setMapPickerOpen(false);
+            }}
+            sx={{ textTransform: 'none', color: '#64748b' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmMapLocation}
+            disabled={!mapSelectedLocation}
+            startIcon={<Check size={18} />}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: '10px',
+              bgcolor: '#6C5CE7',
+              '&:hover': { bgcolor: '#5a4ee0' },
+              '&:disabled': { bgcolor: '#e2e8f0' },
+            }}
+          >
+            Confirm spot
+          </Button>
+        </DialogActions>
+      </Dialog>
     </AnimatePresence>
   );
 }

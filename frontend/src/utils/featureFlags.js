@@ -1,7 +1,7 @@
 const FEATURE_FLAGS_STORAGE_KEY = 'pulse_feature_flags';
 
 export const DEFAULT_FEATURE_FLAGS = {
-  nearby_phase4_venues: false,
+  nearby_phase4_venues: true,  // Enabled for venues integration
   nearby_phase6_payments: false,
   nearby_phase7_meeting_setup: false,
   nearby_phase8_post_meeting_rating: false,

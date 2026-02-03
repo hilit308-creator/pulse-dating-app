@@ -1005,6 +1005,19 @@ export default function ViewNearbyPeopleScreen() {
     runScan();
   }, [runScan]);
 
+  // DEV: Force Maya to appear first for testing venues integration
+  useEffect(() => {
+    const maya = MOCK_NEARBY_PEOPLE.find(p => p.firstName === 'Maya' && p.likesYou);
+    if (maya) {
+      const normalized = normalizeNearbyPerson(maya, 0);
+      const testPeople = [normalized, ...MOCK_NEARBY_PEOPLE.filter(p => p.id !== maya.id).map((p, i) => normalizeNearbyPerson(p, i + 1))];
+      setPeople(testPeople);
+      setCurrentIndex(0);
+      setHasScanned(true);
+      setLiveCount(testPeople.length);
+    }
+  }, []);
+
   useEffect(() => {
     const cachedResults = scan?.results;
     const hasCached = Array.isArray(cachedResults) && cachedResults.length > 0;
@@ -1013,7 +1026,8 @@ export default function ViewNearbyPeopleScreen() {
       (typeof scan?.lastScanAt !== 'number' || scanRequestedAt > scan.lastScanAt);
 
     if (shouldAttemptNewScan) {
-      runScan();
+      // Skip auto-scan for dev testing
+      // runScan();
       return;
     }
 

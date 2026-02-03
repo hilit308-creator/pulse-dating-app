@@ -96,7 +96,7 @@ import { useAuth } from "../context/AuthContext";
 import { useMeeting, MEETING_STATE as GLOBAL_MEETING_STATE, SOS_STATE as GLOBAL_SOS_STATE } from "../context/MeetingContext";
 import { getFeatureFlag } from "../utils/featureFlags";
 import { getMeetingDraft, clearMeetingDraft } from "../utils/nearbyMeetingDrafts";
-import { PostMeetingFeedback } from "../components/nearby";
+import { PostMeetingFeedback, MeetingTracker } from "../components/nearby";
 
 const POST_MEETING_FEEDBACK_STORAGE_KEY = 'pulse_post_meeting_feedback_history';
 
@@ -2192,6 +2192,7 @@ export default function ChatScreen() {
   const [showPostMeetingFeedback, setShowPostMeetingFeedback] = useState(false);
   const [postMeetingFeedbackMeeting, setPostMeetingFeedbackMeeting] = useState(null);
   const [activeMeetingDraft, setActiveMeetingDraft] = useState(null);
+  const [showMeetingTracker, setShowMeetingTracker] = useState(false);
   const [showContactNotifyModal, setShowContactNotifyModal] = useState(false);
   const [contactToNotify, setContactToNotify] = useState(null); // Contact pending confirmation
 
@@ -6280,6 +6281,20 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
         meeting={postMeetingFeedbackMeeting}
         onSubmit={handleSubmitPostMeetingFeedback}
       />
+
+      {/* ==================== Meeting Tracker (Real-time location tracking) ==================== */}
+      {showMeetingTracker && activeMeetingDraft?.venue?.coordinates && (
+        <MeetingTracker
+          meetingId={activeMeetingDraft?.id || `draft_${chat?.matchId}`}
+          meetingSpot={activeMeetingDraft.venue.coordinates}
+          otherPersonName={chat?.user?.name || chat?.user?.firstName}
+          onClose={() => setShowMeetingTracker(false)}
+          onArrived={() => {
+            setShowMeetingTracker(false);
+            // Could trigger meeting start here
+          }}
+        />
+      )}
 
       {/* ==================== Safety Summary (After Meeting Ends) ==================== */}
       <Modal open={showSafetySummary} onClose={() => setShowSafetySummary(false)} sx={{ zIndex: 100001 }}>
