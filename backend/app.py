@@ -659,45 +659,62 @@ def api_v1_nearby_venues():
     if not ok:
         return quota_err
 
-    url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-    params = {
-        'key': key,
-        'location': f'{lat},{lng}',
-        'radius': radius_m,
+    # Places API (New) - uses POST with JSON body and API key in header
+    url = 'https://places.googleapis.com/v1/places:searchNearby'
+    headers = {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': key,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.userRatingCount,places.types,places.currentOpeningHours',
+    }
+    body = {
+        'locationRestriction': {
+            'circle': {
+                'center': {'latitude': lat, 'longitude': lng},
+                'radius': float(radius_m),
+            }
+        },
+        'maxResultCount': 20,
     }
     if places_type:
-        params['type'] = places_type
+        body['includedTypes'] = [places_type]
 
     try:
-        resp = requests.get(url, params=params, timeout=6)
+        resp = requests.post(url, headers=headers, json=body, timeout=8)
     except Exception:
         return jsonify({'error': 'places_request_failed'}), 502
 
-    if resp.status_code != 200:
-        return jsonify({'error': 'places_http_error'}), 502
+    if resp.status_code == 400:
+        try:
+            err_data = resp.json()
+            return jsonify({'error': 'places_bad_request', 'details': err_data.get('error', {}).get('message')}), 400
+        except Exception:
+            return jsonify({'error': 'places_bad_request'}), 400
+
+    if resp.status_code not in (200, 204):
+        return jsonify({'error': 'places_http_error', 'status_code': resp.status_code}), 502
+
+    if resp.status_code == 204 or not resp.content:
+        return jsonify({'items': []})
 
     try:
         payload = resp.json()
     except Exception:
         return jsonify({'error': 'places_bad_response'}), 502
 
-    status = payload.get('status')
-    if status not in ('OK', 'ZERO_RESULTS'):
-        return jsonify({'error': 'places_error', 'status': status}), 502
-
-    results = payload.get('results') or []
+    places = payload.get('places') or []
     items = []
-    for r in results[:20]:
-        place_id = r.get('place_id')
+    for p in places:
+        place_id = p.get('id')
         if not place_id:
             continue
-        opening_hours = r.get('opening_hours') or {}
+        display_name = p.get('displayName') or {}
+        current_hours = p.get('currentOpeningHours') or {}
         snapshot = {
-            'name': r.get('name'),
-            'rating': r.get('rating'),
-            'userRatingsTotal': r.get('user_ratings_total'),
-            'types': r.get('types') or [],
-            'openNow': bool(opening_hours.get('open_now')) if 'open_now' in opening_hours else None,
+            'name': display_name.get('text'),
+            'rating': p.get('rating'),
+            'userRatingsTotal': p.get('userRatingCount'),
+            'types': p.get('types') or [],
+            'openNow': current_hours.get('openNow'),
         }
         items.append({
             'googlePlaceId': place_id,
