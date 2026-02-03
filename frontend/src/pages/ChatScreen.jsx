@@ -94,6 +94,32 @@ import useChatStore from '../store/chatStore';
 import useEventInvitesStore from '../store/eventInvitesStore';
 import { useAuth } from "../context/AuthContext";
 import { useMeeting, MEETING_STATE as GLOBAL_MEETING_STATE, SOS_STATE as GLOBAL_SOS_STATE } from "../context/MeetingContext";
+import { getFeatureFlag } from "../utils/featureFlags";
+import { getMeetingDraft, clearMeetingDraft } from "../utils/nearbyMeetingDrafts";
+import { PostMeetingFeedback } from "../components/nearby";
+
+const POST_MEETING_FEEDBACK_STORAGE_KEY = 'pulse_post_meeting_feedback_history';
+
+function readArraySafe(raw) {
+  try {
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function appendPostMeetingFeedbackRecord(record) {
+  try {
+    const current = readArraySafe(localStorage.getItem(POST_MEETING_FEEDBACK_STORAGE_KEY));
+    localStorage.setItem(
+      POST_MEETING_FEEDBACK_STORAGE_KEY,
+      JSON.stringify([record, ...current].slice(0, 100))
+    );
+  } catch {
+    // ignore
+  }
+}
 
 /* ----------------- helpers ----------------- */
 const fmtHM = (ts) =>
@@ -1720,7 +1746,7 @@ export default function ChatScreen() {
   
   // Load workshop reminders on mount
   useEffect(() => {
-    const reminders = JSON.parse(localStorage.getItem("workshop_reminders") || "[]");
+    const reminders = readArraySafe(localStorage.getItem("workshop_reminders"));
     setWorkshopReminders(reminders);
   }, []);
   
@@ -1756,7 +1782,7 @@ export default function ChatScreen() {
   
   // Load persisted gesture chats on mount
   useEffect(() => {
-    const persistedChats = Object.values(gestureChats);
+    const persistedChats = Object.values(gestureChats || {});
     if (persistedChats.length > 0) {
       setChats(prevChats => {
         // Add persisted chats that don't already exist
@@ -2163,6 +2189,9 @@ export default function ChatScreen() {
   const [showMeetingHelpDialog, setShowMeetingHelpDialog] = useState(false);
   const [showSafetySummary, setShowSafetySummary] = useState(false);
   const [meetingEndedWith, setMeetingEndedWith] = useState(null); // Store who we met with for Safety Summary
+  const [showPostMeetingFeedback, setShowPostMeetingFeedback] = useState(false);
+  const [postMeetingFeedbackMeeting, setPostMeetingFeedbackMeeting] = useState(null);
+  const [activeMeetingDraft, setActiveMeetingDraft] = useState(null);
   const [showContactNotifyModal, setShowContactNotifyModal] = useState(false);
   const [contactToNotify, setContactToNotify] = useState(null); // Contact pending confirmation
 
@@ -2286,6 +2315,14 @@ export default function ChatScreen() {
   // Start Meeting handler
   const handleStartMeeting = useCallback(() => {
     if (!chat || chat.matchId === AGENT_ID) return;
+
+    const meetingSetupEnabled = getFeatureFlag('nearby_phase7_meeting_setup', false);
+    if (meetingSetupEnabled) {
+      const draft = getMeetingDraft(chat.user?.id) || getMeetingDraft(chat.matchId);
+      if (draft) {
+        setActiveMeetingDraft(draft);
+      }
+    }
     
     // Check if meeting contacts are set up
     if (meetingContacts.length === 0) {
@@ -2308,6 +2345,15 @@ export default function ChatScreen() {
   // Continue without contacts (WhatsApp only)
   const handleContinueWithoutContacts = useCallback(() => {
     if (!chat) return;
+
+    const meetingSetupEnabled = getFeatureFlag('nearby_phase7_meeting_setup', false);
+    if (meetingSetupEnabled) {
+      const draft = getMeetingDraft(chat.user?.id) || getMeetingDraft(chat.matchId);
+      if (draft) {
+        setActiveMeetingDraft(draft);
+      }
+    }
+
     setShowContactsSetupModal(false);
     setMeetingState(MEETING_STATE.ACTIVE);
     setMeetingWith(chat.user);
@@ -2319,6 +2365,33 @@ export default function ChatScreen() {
     // Update global meeting context
     globalMeeting.startMeeting({ ...chat.user, matchId: chat.matchId });
   }, [chat, globalMeeting]);
+
+  const handleClosePostMeetingFeedback = useCallback(() => {
+    setShowPostMeetingFeedback(false);
+    setPostMeetingFeedbackMeeting(null);
+    setShowSafetySummary(true);
+  }, []);
+
+  const handleSubmitPostMeetingFeedback = useCallback((payload) => {
+    appendPostMeetingFeedbackRecord({
+      ...payload,
+      createdAt: Date.now(),
+      matchId: postMeetingFeedbackMeeting?.person?.id ?? postMeetingFeedbackMeeting?.person?.matchId ?? null,
+      venueId: postMeetingFeedbackMeeting?.venue?.id ?? null,
+      venueName: postMeetingFeedbackMeeting?.venue?.name ?? null,
+    });
+  }, [postMeetingFeedbackMeeting]);
+
+  const cancelSOS = useCallback(() => {
+    if (sosTimeoutRef.current) {
+      clearTimeout(sosTimeoutRef.current);
+      sosTimeoutRef.current = null;
+    }
+    setSosState(SOS_STATE.NONE);
+    setSosRequestId(null);
+    setSosHelper(null);
+    setSosHelperDistance(null);
+  }, []);
 
   // End Meeting handler
   const handleEndMeeting = useCallback(() => {
@@ -2345,8 +2418,11 @@ export default function ChatScreen() {
       locationWatchRef.current = null;
     }
     
+    const endedPerson = meetingWith;
+    const postMeetingRatingEnabled = getFeatureFlag('nearby_phase8_post_meeting_rating', false);
+
     // Store who we met with for Safety Summary
-    setMeetingEndedWith(meetingWith);
+    setMeetingEndedWith(endedPerson);
     
     // Reset meeting state
     setMeetingState(MEETING_STATE.INACTIVE);
@@ -2359,10 +2435,31 @@ export default function ChatScreen() {
     
     // End global meeting context
     globalMeeting.endMeeting();
-    
-    // Show Safety Summary (as per spec section 10)
-    setShowSafetySummary(true);
-  }, [sosState, meetingWith, globalMeeting]);
+
+    if (postMeetingRatingEnabled && endedPerson) {
+      const matchKey = endedPerson?.id ?? endedPerson?.matchId;
+      const draft = activeMeetingDraft || getMeetingDraft(matchKey);
+      if (draft) {
+        clearMeetingDraft(matchKey);
+      }
+
+      setPostMeetingFeedbackMeeting({
+        id: `meeting_${Date.now()}`,
+        person: endedPerson,
+        venue: draft?.venue || null,
+        type: draft?.type || null,
+        paymentHold: draft?.paymentHold || null,
+        createdAt: draft?.createdAt || null,
+      });
+      setShowPostMeetingFeedback(true);
+      setShowSafetySummary(false);
+    } else {
+      // Show Safety Summary (as per spec section 10)
+      setShowSafetySummary(true);
+    }
+
+    setActiveMeetingDraft(null);
+  }, [sosState, meetingWith, globalMeeting, activeMeetingDraft, cancelSOS]);
 
   // SOS Handlers - Per corrected spec:
   // - One helper only (first accept wins)
@@ -2413,17 +2510,6 @@ export default function ChatScreen() {
       setSosHelperDistance(0);
       setSosHelper(prev => prev ? { ...prev, lastHeartbeat: Date.now() } : null);
     }, 8000);
-  }, []);
-
-  const cancelSOS = useCallback(() => {
-    if (sosTimeoutRef.current) {
-      clearTimeout(sosTimeoutRef.current);
-      sosTimeoutRef.current = null;
-    }
-    setSosState(SOS_STATE.NONE);
-    setSosRequestId(null);
-    setSosHelper(null);
-    setSosHelperDistance(null);
   }, []);
 
   // Notify contact (in-app) - Show confirmation modal first (per spec section 5)
@@ -6187,6 +6273,13 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
           </Box>
         </Box>
       </Modal>
+
+      <PostMeetingFeedback
+        isOpen={showPostMeetingFeedback}
+        onClose={handleClosePostMeetingFeedback}
+        meeting={postMeetingFeedbackMeeting}
+        onSubmit={handleSubmitPostMeetingFeedback}
+      />
 
       {/* ==================== Safety Summary (After Meeting Ends) ==================== */}
       <Modal open={showSafetySummary} onClose={() => setShowSafetySummary(false)} sx={{ zIndex: 100001 }}>

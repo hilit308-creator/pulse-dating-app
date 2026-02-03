@@ -64,7 +64,7 @@ export default function PostMeetingFeedback({
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 1000,
+          zIndex: 10000,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -300,7 +300,7 @@ export default function PostMeetingFeedback({
                   >
                     <MapPin size={14} color="#64748b" />
                     <Typography variant="caption" sx={{ color: '#64748b' }}>
-                      {venue.name} · {venue.distance}
+                      {venue.name}
                     </Typography>
                   </Box>
 

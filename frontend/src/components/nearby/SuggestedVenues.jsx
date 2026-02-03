@@ -17,6 +17,28 @@ const VENUE_CATEGORIES = [
   { id: 'outdoors', label: 'Outdoors', icon: TreePine },
 ];
 
+const PARTNER_PLAN_RANK = {
+  platinum: 3,
+  gold: 2,
+  silver: 1,
+  basic: 0,
+};
+
+function parseMinutes(text) {
+  if (!text) return null;
+  const str = String(text);
+  const m = str.match(/(\d+)/);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+function isOpeningSoon(venue, thresholdMinutes = 40) {
+  if (venue?.isOpen) return false;
+  const minutes = parseMinutes(venue?.opensIn);
+  return typeof minutes === 'number' && minutes > 0 && minutes <= thresholdMinutes;
+}
+
 // Mock venues data - ordered per spec:
 // 1. Paid partnerships (highest plan first)
 // 2. Currently open venues
@@ -34,6 +56,7 @@ const MOCK_VENUES = [
     isOpen: true,
     openingSoon: false,
     isPaidPartner: true,
+    partnerPlan: 'gold',
     vibe: 'Cozy & quiet',
   },
   {
@@ -48,6 +71,7 @@ const MOCK_VENUES = [
     isOpen: true,
     openingSoon: false,
     isPaidPartner: true,
+    partnerPlan: 'platinum',
     vibe: 'Lively atmosphere',
   },
   {
@@ -220,20 +244,49 @@ export default function SuggestedVenues({ onSelectVenue, selectedVenue }) {
     ? MOCK_VENUES 
     : MOCK_VENUES.filter(v => v.category === activeCategory);
 
-  // Sort per spec: paid partners first, then open, then opening soon
-  const sortedVenues = [...filteredVenues].sort((a, b) => {
-    if (a.isPaidPartner && !b.isPaidPartner) return -1;
-    if (!a.isPaidPartner && b.isPaidPartner) return 1;
-    if (a.isOpen && !b.isOpen) return -1;
-    if (!a.isOpen && b.isOpen) return 1;
-    return 0;
-  });
+  // Sort per spec:
+  // 1) Paid partnerships (highest plan first)
+  // 2) Currently open venues
+  // 3) Opening soon (within ~40 minutes), soonest first
+  const sortedVenues = [...filteredVenues]
+    .map((v) => {
+      const soon = isOpeningSoon(v, 40);
+      return {
+        ...v,
+        openingSoon: soon,
+      };
+    })
+    .sort((a, b) => {
+      const aPartnerRank = a.isPaidPartner ? (PARTNER_PLAN_RANK[a.partnerPlan] ?? 0) : -1;
+      const bPartnerRank = b.isPaidPartner ? (PARTNER_PLAN_RANK[b.partnerPlan] ?? 0) : -1;
+      if (aPartnerRank !== bPartnerRank) return bPartnerRank - aPartnerRank;
+
+      const aPaid = !!a.isPaidPartner;
+      const bPaid = !!b.isPaidPartner;
+      if (aPaid !== bPaid) return aPaid ? -1 : 1;
+
+      const aOpen = !!a.isOpen;
+      const bOpen = !!b.isOpen;
+      if (aOpen !== bOpen) return aOpen ? -1 : 1;
+
+      const aSoon = !!a.openingSoon;
+      const bSoon = !!b.openingSoon;
+      if (aSoon !== bSoon) return aSoon ? -1 : 1;
+
+      if (aSoon && bSoon) {
+        const aMin = parseMinutes(a.opensIn) ?? 999;
+        const bMin = parseMinutes(b.opensIn) ?? 999;
+        if (aMin !== bMin) return aMin - bMin;
+      }
+
+      return 0;
+    });
 
   return (
     <Box>
       {/* Header - neutral tone */}
       <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1 }}>
-        Places nearby
+        Places to meet
       </Typography>
       <Typography variant="body2" sx={{ color: '#64748b', mb: 2, fontSize: '0.85rem' }}>
         A few options if you'd like to meet up

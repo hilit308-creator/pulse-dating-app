@@ -1,0 +1,3 @@
+Generic single-database configuration.
+
+This folder is managed by Alembic / Flask-Migrate.

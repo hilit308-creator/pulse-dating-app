@@ -3,11 +3,34 @@
 // A. Invite for a Drink (With Payment) - gesture, not transaction
 // B. Suggest Meeting (No Payment) - social initiative without financial framing
 
-import React, { useState } from 'react';
-import { Box, Typography, Button, TextField, IconButton } from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Box, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wine, MessageCircle, MapPin, Clock, CreditCard, Shield } from 'lucide-react';
 import SuggestedVenues from './SuggestedVenues';
+import { getFeatureFlag } from '../../utils/featureFlags';
+import { saveMeetingDraft } from '../../utils/nearbyMeetingDrafts';
+
+const PAYMENT_HOLDS_STORAGE_KEY = 'pulse_nearby_payment_holds';
+
+function getPaymentHolds() {
+  try {
+    const raw = localStorage.getItem(PAYMENT_HOLDS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePaymentHold(hold) {
+  try {
+    const current = getPaymentHolds();
+    localStorage.setItem(PAYMENT_HOLDS_STORAGE_KEY, JSON.stringify([hold, ...current].slice(0, 50)));
+  } catch {
+    // ignore
+  }
+}
 
 /**
  * InvitationModal - Two equal paths to suggest meeting
@@ -28,15 +51,47 @@ export default function InvitationModal({
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [message, setMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentConfirmOpen, setPaymentConfirmOpen] = useState(false);
+
+  const venuesEnabled = getFeatureFlag('nearby_phase4_venues', false);
+  const paymentsEnabled = getFeatureFlag('nearby_phase6_payments', false);
+  const meetingSetupEnabled = getFeatureFlag('nearby_phase7_meeting_setup', false);
+  const drinkPathEnabled = paymentsEnabled && venuesEnabled;
+
+  const holdAmountNis = useMemo(() => 60, []);
+  const maskedCard = useMemo(() => 'VISA •••• 4242', []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (selectedPath === 'drink' && !drinkPathEnabled) {
+      setSelectedPath(null);
+      setSelectedVenue(null);
+    }
+  }, [isOpen, selectedPath, drinkPathEnabled]);
 
   if (!isOpen || !person) return null;
 
   const handleSend = async () => {
+    if (selectedPath === 'drink' && paymentsEnabled) {
+      setPaymentConfirmOpen(true);
+      return;
+    }
+
     setIsProcessing(true);
     
     // Simulate processing
     await new Promise(resolve => setTimeout(resolve, 1000));
     
+    if (meetingSetupEnabled && person?.id != null) {
+      saveMeetingDraft(person.id, {
+        createdAt: Date.now(),
+        type: selectedPath,
+        venue: selectedVenue || null,
+        paymentHold: null,
+        personId: person.id,
+      });
+    }
+
     onSendInvitation({
       type: selectedPath,
       venue: selectedVenue,
@@ -48,6 +103,48 @@ export default function InvitationModal({
     onClose();
   };
 
+  const handleConfirmHoldAndSend = async () => {
+    setIsProcessing(true);
+
+    // Simulate pre-auth hold
+    await new Promise(resolve => setTimeout(resolve, 650));
+
+    const hold = {
+      id: String(Date.now()),
+      createdAt: Date.now(),
+      status: 'held',
+      amountNis: holdAmountNis,
+      card: maskedCard,
+      venueId: selectedVenue?.id ?? null,
+      venueName: selectedVenue?.name ?? null,
+      personId: person?.id ?? null,
+    };
+
+    savePaymentHold(hold);
+
+    if (meetingSetupEnabled && person?.id != null) {
+      saveMeetingDraft(person.id, {
+        createdAt: Date.now(),
+        type: selectedPath,
+        venue: selectedVenue || null,
+        paymentHold: hold,
+        personId: person.id,
+      });
+    }
+
+    onSendInvitation({
+      type: selectedPath,
+      venue: selectedVenue,
+      message: message || getDefaultMessage(),
+      person,
+      paymentHold: hold,
+    });
+
+    setIsProcessing(false);
+    setPaymentConfirmOpen(false);
+    onClose();
+  };
+
   const getDefaultMessage = () => {
     if (selectedPath === 'drink') {
       return selectedVenue 
@@ -56,7 +153,7 @@ export default function InvitationModal({
     }
     return selectedVenue
       ? `Hey! Want to meet up at ${selectedVenue.name}?`
-      : "Hey! Want to meet up somewhere nearby?";
+      : "Hey! Want to meet up sometime?";
   };
 
   const canSend = selectedPath && (selectedPath === 'meet' || selectedVenue);
@@ -70,7 +167,7 @@ export default function InvitationModal({
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 1000,
+          zIndex: 10000,
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'center',
@@ -78,8 +175,47 @@ export default function InvitationModal({
           backdropFilter: 'blur(4px)',
           paddingTop: 70,
         }}
-        onClick={onClose}
+        onClick={() => {
+          if (paymentConfirmOpen) return;
+          onClose();
+        }}
       >
+        <Dialog
+          open={paymentConfirmOpen}
+          onClose={() => setPaymentConfirmOpen(false)}
+          sx={{ zIndex: 10000 }}
+        >
+          <DialogTitle sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+            Confirm payment hold
+          </DialogTitle>
+          <DialogContent sx={{ pt: 0.5 }}>
+            <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>
+              We’ll place a temporary hold of ₪{holdAmountNis} on your card.
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b' }}>
+              Card: {maskedCard}
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ px: 2.5, pb: 2 }}>
+            <Button
+              variant="text"
+              onClick={() => setPaymentConfirmOpen(false)}
+              sx={{ textTransform: 'none', fontWeight: 600, color: '#64748b' }}
+              disabled={isProcessing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleConfirmHoldAndSend}
+              sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 999, bgcolor: '#6C5CE7', '&:hover': { bgcolor: '#5a4ee0' } }}
+              disabled={isProcessing}
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <motion.div
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
@@ -141,12 +277,14 @@ export default function InvitationModal({
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
                     {person.firstName}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <MapPin size={12} color="#6C5CE7" />
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>
-                      {person.distance ? `${person.distance.toFixed(1)} km away` : 'Nearby'}
-                    </Typography>
-                  </Box>
+                  {!!person.city && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <MapPin size={12} color="#6C5CE7" />
+                      <Typography variant="caption" sx={{ color: '#64748b' }}>
+                        {person.city}
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               </Box>
 
@@ -159,45 +297,47 @@ export default function InvitationModal({
 
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {/* Path A: Invite for a Drink */}
-                    <Box
-                      onClick={() => setSelectedPath('drink')}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: '12px',
-                        border: '2px solid rgba(108,92,231,0.2)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          borderColor: '#6C5CE7',
-                          backgroundColor: 'rgba(108,92,231,0.04)',
-                        },
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                        <Box
-                          sx={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: '10px',
-                            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                          }}
-                        >
-                          <Wine size={18} color="#fff" />
-                        </Box>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.25 }}>
-                            Invite for a drink
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', lineHeight: 1.3 }}>
-                            A gesture of initiative — you'll only be charged if they accept and you both show up
-                          </Typography>
+                    {drinkPathEnabled && (
+                      <Box
+                        onClick={() => setSelectedPath('drink')}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: '12px',
+                          border: '2px solid rgba(108,92,231,0.2)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            borderColor: '#6C5CE7',
+                            backgroundColor: 'rgba(108,92,231,0.04)',
+                          },
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                          <Box
+                            sx={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: '10px',
+                              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Wine size={18} color="#fff" />
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.25 }}>
+                              Invite for a drink
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', lineHeight: 1.3 }}>
+                              A gesture of initiative — you'll only be charged if they accept and you both show up
+                            </Typography>
+                          </Box>
                         </Box>
                       </Box>
-                    </Box>
+                    )}
 
                     {/* Path B: Suggest Meeting */}
                     <Box
@@ -293,10 +433,12 @@ export default function InvitationModal({
                     </Box>
 
                     {/* Venue selection - required for drink */}
-                    <SuggestedVenues
-                      onSelectVenue={setSelectedVenue}
-                      selectedVenue={selectedVenue}
-                    />
+                    {venuesEnabled && (
+                      <SuggestedVenues
+                        onSelectVenue={setSelectedVenue}
+                        selectedVenue={selectedVenue}
+                      />
+                    )}
                   </Box>
 
                   {/* Payment info - transparent */}
@@ -366,13 +508,17 @@ export default function InvitationModal({
                   </Box>
 
                   {/* Optional venue selection */}
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1a1a2e', mb: 1 }}>
-                    Suggest a place? (optional)
-                  </Typography>
-                  <SuggestedVenues
-                    onSelectVenue={setSelectedVenue}
-                    selectedVenue={selectedVenue}
-                  />
+                  {venuesEnabled && (
+                    <>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1a1a2e', mb: 1 }}>
+                        Suggest a place? (optional)
+                      </Typography>
+                      <SuggestedVenues
+                        onSelectVenue={setSelectedVenue}
+                        selectedVenue={selectedVenue}
+                      />
+                    </>
+                  )}
                 </>
               )}
 

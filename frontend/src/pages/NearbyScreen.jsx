@@ -205,6 +205,7 @@ export default function NearbyScreen() {
 
   // Start scan action - show 3-second scanning animation
   const startScan = useCallback(() => {
+    const scanRequestedAt = Date.now();
     if (!hasLocationPermission) {
       requestLocationPermission();
       return;
@@ -224,6 +225,7 @@ export default function NearbyScreen() {
           liveNowCount,
           scanCompleted: true,
           radiusMeters,
+          scanRequestedAt,
         },
       });
     }, SCAN_DURATION);
@@ -240,6 +242,7 @@ export default function NearbyScreen() {
         liveNowCount,
         scanCompleted: true,
         radiusMeters,
+        scanRequestedAt: Date.now(),
       },
     });
   }, [navigate, liveNowCount, radiusMeters]);
@@ -269,16 +272,16 @@ export default function NearbyScreen() {
     
     switch (scanState) {
       case SCAN_STATE.IDLE:
-        return "Tap to scan and see who's around";
+        return "Tap to scan and see who's active";
       case SCAN_STATE.SCANNING:
-        return "Scanning nearby…";
+        return "Scanning…";
       case SCAN_STATE.COMPLETED:
         if (liveNowCount > 0) {
-          return `${liveNowCount} people nearby`;
+          return `${liveNowCount} people active`;
         }
         return "It's quiet right now. Try again in a bit.";
       default:
-        return "Tap to scan and see who's around";
+        return "Tap to scan and see who's active";
     }
   };
 
@@ -318,7 +321,7 @@ export default function NearbyScreen() {
           mb: 1.5,
         }}
       >
-        Enable location to see who's nearby
+        Enable location to use Pulse
       </Typography>
       
       <Typography
@@ -329,7 +332,7 @@ export default function NearbyScreen() {
           maxWidth: 300,
         }}
       >
-        Pulse uses your location to show nearby activity.
+        Pulse uses your location to tailor this screen.
         Your exact location is never shown.
       </Typography>
       
@@ -612,13 +615,13 @@ export default function NearbyScreen() {
                           </Typography>
                           <Typography
                             sx={{
-                              fontWeight: 700,
-                              fontSize: '18px',
-                              lineHeight: 1.3,
+                              color: '#64748b',
+                              fontWeight: 500,
+                              fontSize: '0.9rem',
                               textAlign: 'center',
                             }}
                           >
-                            One tap — discover who's nearby
+                            One tap — see who's active
                           </Typography>
                         </>
                       )}
@@ -733,7 +736,7 @@ export default function NearbyScreen() {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ color: '#64748b' }}>
-            Location access is required to see what's happening around you.
+            Location access is required to see what's happening.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
@@ -783,7 +786,7 @@ export default function NearbyScreen() {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ color: '#64748b', textAlign: 'center', mb: 3 }}>
-            Set how far you want to search for people nearby
+            Set how far you want to search
           </Typography>
           
           {/* Current value display */}

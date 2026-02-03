@@ -592,6 +592,54 @@ const AdminDashboard = () => {
             <Alert severity="warning" sx={{ borderRadius: '12px' }}>
               Settings panel coming soon. Contact super admin for changes.
             </Alert>
+
+            <Box sx={{ mt: 3 }}>
+              <Paper sx={{ p: 3, borderRadius: '16px', bgcolor: '#fff' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 1.5 }}>
+                  <Box>
+                    <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#1e293b' }}>
+                      External Services & Infrastructure
+                    </Typography>
+                    <Typography sx={{ fontSize: 13, color: '#64748b' }}>
+                      Third-party services and core infrastructure used by the product
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<ExternalLink size={16} />}
+                    onClick={() => window.open('https://github.com/hilit308-creator/pulse-dating-app/blob/main/docs/EXTERNAL_SERVICES.md', '_blank')}
+                    sx={{ textTransform: 'none', borderRadius: 999 }}
+                  >
+                    Open doc
+                  </Button>
+                </Box>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Typography sx={{ fontSize: 13, color: '#334155' }}>
+                    <strong>Database</strong>: PostgreSQL (invites, meetings, payments state, feedback, ledger)
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, color: '#334155' }}>
+                    <strong>Payments</strong>: Stripe (holds/capture/release) + webhooks + internal ledger
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, color: '#334155' }}>
+                    <strong>Venues</strong>: Google Places API + internal partner venue tiers table
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, color: '#334155' }}>
+                    <strong>Authentication</strong>: JWT (single source of truth for userId)
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, color: '#334155' }}>
+                    <strong>Real-time</strong>: socket updates (invites, meeting state) + polling fallback
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, color: '#334155' }}>
+                    <strong>Feature Flags</strong>: remote-config (admin-only) with audit logging per environment
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, color: '#334155' }}>
+                    <strong>Observability</strong>: error logging + event tracking for scan → invite → meeting → payment → feedback
+                  </Typography>
+                </Box>
+              </Paper>
+            </Box>
           </Paper>
         )}
       </Box>

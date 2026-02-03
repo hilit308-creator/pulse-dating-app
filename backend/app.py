@@ -2,11 +2,16 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from datetime import datetime, date, timedelta
 import jwt
 import bcrypt
 import math
 from geopy.distance import geodesic
+import json
+import os
+import re
+import uuid
 
 from agent import agent_bp
 
@@ -27,12 +32,16 @@ def after_request(response):
     return response
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Configure SQLite database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dating_app.db'
+database_url = os.getenv('DATABASE_URL')
+if database_url and database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///dating_app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your-secret-key'  # Change this in production
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 app.register_blueprint(agent_bp)
 
@@ -60,6 +69,142 @@ class User(db.Model):
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     last_active = db.Column(db.DateTime)
+
+
+class FeatureFlag(db.Model):
+    __tablename__ = 'feature_flags'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    env = db.Column(db.String(20), nullable=False)
+    key = db.Column(db.String(120), nullable=False)
+    value_json = db.Column(db.Text, nullable=False)
+    updated_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('env', 'key', name='uniq_feature_flag_env_key'),
+    )
+
+
+class FeatureFlagAuditLog(db.Model):
+    __tablename__ = 'feature_flag_audit_logs'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    env = db.Column(db.String(20), nullable=False)
+    key = db.Column(db.String(120), nullable=False)
+    old_value_json = db.Column(db.Text)
+    new_value_json = db.Column(db.Text)
+    updated_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    reason = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class VenuePartnerTier(db.Model):
+    __tablename__ = 'venue_partner_tiers'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    google_place_id = db.Column(db.String(255), unique=True, nullable=False)
+    partner_name = db.Column(db.String(255))
+    plan_tier = db.Column(db.String(20), nullable=False)
+    priority_override = db.Column(db.Integer)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    starts_at = db.Column(db.DateTime)
+    ends_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class PaymentHold(db.Model):
+    __tablename__ = 'payment_holds'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    provider = db.Column(db.String(30), nullable=False, default='mock')
+    status = db.Column(db.String(30), nullable=False)
+    currency = db.Column(db.String(10), default='ils', nullable=False)
+    amount_cents = db.Column(db.Integer, nullable=False)
+    provider_hold_id = db.Column(db.String(255), unique=True)
+    provider_customer_id = db.Column(db.String(255))
+    provider_payment_method_id = db.Column(db.String(255))
+    stripe_payment_intent_id = db.Column(db.String(255), unique=True)
+    stripe_customer_id = db.Column(db.String(255))
+    stripe_payment_method_id = db.Column(db.String(255))
+    failure_code = db.Column(db.String(120))
+    failure_message = db.Column(db.Text)
+    expires_at = db.Column(db.DateTime)
+    captured_at = db.Column(db.DateTime)
+    released_at = db.Column(db.DateTime)
+    metadata_json = db.Column(db.Text, default='{}', nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class LedgerEntry(db.Model):
+    __tablename__ = 'ledger_entries'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    invite_id = db.Column(db.String(36), db.ForeignKey('nearby_invites.id'))
+    meeting_id = db.Column(db.String(36), db.ForeignKey('meetings.id'))
+    hold_id = db.Column(db.String(36), db.ForeignKey('payment_holds.id'))
+    provider = db.Column(db.String(30))
+    event_type = db.Column(db.String(60), nullable=False)
+    amount_cents = db.Column(db.Integer)
+    currency = db.Column(db.String(10))
+    provider_event_id = db.Column(db.String(255), unique=True)
+    stripe_event_id = db.Column(db.String(255), unique=True)
+    details_json = db.Column(db.Text, default='{}', nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class NearbyInvite(db.Model):
+    __tablename__ = 'nearby_invites'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    inviter_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    invitee_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    invite_type = db.Column(db.String(20), nullable=False)
+    status = db.Column(db.String(20), default='pending', nullable=False)
+    message_text = db.Column(db.Text)
+    venue_google_place_id = db.Column(db.String(255))
+    venue_snapshot_json = db.Column(db.Text)
+    payment_hold_id = db.Column(db.String(36), db.ForeignKey('payment_holds.id'))
+    expires_at = db.Column(db.DateTime, nullable=False)
+    responded_at = db.Column(db.DateTime)
+    idempotency_key = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('inviter_user_id', 'idempotency_key', name='uniq_nearby_invite_idempotency'),
+        db.CheckConstraint('inviter_user_id != invitee_user_id', name='chk_inviter_invitee_diff'),
+    )
+
+
+class Meeting(db.Model):
+    __tablename__ = 'meetings'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    invite_id = db.Column(db.String(36), db.ForeignKey('nearby_invites.id'), unique=True)
+    match_id = db.Column(db.String(255))
+    inviter_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    invitee_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    venue_google_place_id = db.Column(db.String(255))
+    venue_snapshot_json = db.Column(db.Text)
+    status = db.Column(db.String(20), default='scheduled', nullable=False)
+    scheduled_for = db.Column(db.DateTime)
+    started_at = db.Column(db.DateTime)
+    ended_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class MeetingFeedback(db.Model):
+    __tablename__ = 'meeting_feedback'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    meeting_id = db.Column(db.String(36), db.ForeignKey('meetings.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    meeting_feel = db.Column(db.String(20))
+    venue_rating = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('meeting_id', 'user_id', name='uniq_feedback_meeting_user'),
+    )
 
 
 # Like Model - tracks who liked whom
@@ -206,7 +351,612 @@ class Gesture(db.Model):
 
 # Create database tables
 with app.app_context():
-    db.create_all()
+    if os.getenv('PULSE_ENABLE_CREATE_ALL', 'false').lower() == 'true':
+        db.create_all()
+
+
+_NO_PROXIMITY_RE = re.compile(
+    r'((\bkm\b|\bkilometers?\b|\bmeters?\b|\bmetres?\b|\bmiles?\b)|'
+    r'(\baway\b|\bnearby\b)|'
+    r'(\b\d+\s*(km|kilometers?|m|meters?|metres?|mi|miles?)\b))',
+    re.IGNORECASE,
+)
+
+
+def _contains_proximity_language(value):
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(_NO_PROXIMITY_RE.search(value))
+    if isinstance(value, dict):
+        return any(_contains_proximity_language(v) for v in value.values())
+    if isinstance(value, list):
+        return any(_contains_proximity_language(v) for v in value)
+    return False
+
+
+def _get_env_name():
+    return os.getenv('PULSE_ENV', os.getenv('FLASK_ENV', 'dev'))
+
+
+def _default_feature_flags(env_name):
+    defaults = {
+        'nearby_phase4_venues': False,
+        'nearby_phase6_payments': False,
+        'nearby_phase7_meeting_setup': False,
+        'nearby_phase8_post_meeting_rating': False,
+        'payments_enabled': False,
+    }
+    if env_name in ('dev', 'development', 'local'):
+        return defaults
+    if env_name in ('stage', 'staging'):
+        return defaults
+    return defaults
+
+
+def _payments_provider_name():
+    return (os.getenv('PAYMENTS_PROVIDER') or 'mock').strip().lower()
+
+
+def _payments_enabled():
+    # Backward-compatible: older frontend code may still gate on nearby_phase6_payments.
+    # Safe defaults remain OFF because both defaults are False.
+    return bool(
+        get_feature_flag_value('payments_enabled', False)
+        or get_feature_flag_value('nearby_phase6_payments', False)
+    )
+
+
+def get_feature_flag_value(key, default_value=False):
+    env_name = _get_env_name()
+    row = FeatureFlag.query.filter_by(env=env_name, key=key).first()
+    if not row:
+        return _default_feature_flags(env_name).get(key, default_value)
+    try:
+        parsed = json.loads(row.value_json)
+        return bool(parsed)
+    except Exception:
+        return _default_feature_flags(env_name).get(key, default_value)
+
+
+def _get_bearer_token():
+    auth = request.headers.get('Authorization') or ''
+    if not auth.lower().startswith('bearer '):
+        return None
+    return auth.split(' ', 1)[1].strip()
+
+
+def get_current_user():
+    token = _get_bearer_token()
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        user_id = payload.get('user_id')
+        if user_id is None:
+            return None
+        return User.query.get(int(user_id))
+    except Exception:
+        return None
+
+
+def require_auth():
+    user = get_current_user()
+    if not user:
+        return None, (jsonify({'error': 'unauthorized'}), 401)
+    return user, None
+
+
+def require_admin():
+    user, err = require_auth()
+    if err:
+        return None, err
+    if (user.role or 'user') not in ('admin', 'super_admin'):
+        return None, (jsonify({'error': 'forbidden'}), 403)
+    return user, None
+
+
+@app.after_request
+def enforce_no_proximity_language(response):
+    if request.path.startswith('/api/v1/'):
+        try:
+            data = response.get_json(silent=True)
+            if _contains_proximity_language(data):
+                resp = jsonify({'error': 'server_policy_violation'})
+                resp.status_code = 500
+                return resp
+        except Exception:
+            resp = jsonify({'error': 'server_policy_violation'})
+            resp.status_code = 500
+            return resp
+    return response
+
+
+@app.route('/api/v1/config', methods=['GET'])
+def api_v1_config():
+    user, err = require_auth()
+    if err:
+        return err
+    env_name = _get_env_name()
+    defaults = _default_feature_flags(env_name)
+    rows = FeatureFlag.query.filter_by(env=env_name).all()
+    db_flags = {}
+    for r in rows:
+        try:
+            db_flags[r.key] = bool(json.loads(r.value_json))
+        except Exception:
+            continue
+    flags = {**defaults, **db_flags}
+    return jsonify({'featureFlags': flags})
+
+
+@app.route('/api/v1/admin/feature-flags/<string:key>', methods=['PUT'])
+def api_v1_admin_set_flag(key):
+    admin, err = require_admin()
+    if err:
+        return err
+    env_name = _get_env_name()
+    body = request.json or {}
+    value = body.get('value')
+    reason = body.get('reason')
+    if value is None:
+        return jsonify({'error': 'value_required'}), 400
+
+    existing = FeatureFlag.query.filter_by(env=env_name, key=key).first()
+    old_value_json = existing.value_json if existing else None
+    new_value_json = json.dumps(bool(value))
+
+    if existing:
+        existing.value_json = new_value_json
+        existing.updated_by_user_id = admin.id
+        existing.updated_at = datetime.utcnow()
+    else:
+        existing = FeatureFlag(
+            env=env_name,
+            key=key,
+            value_json=new_value_json,
+            updated_by_user_id=admin.id,
+            updated_at=datetime.utcnow(),
+            created_at=datetime.utcnow(),
+        )
+        db.session.add(existing)
+
+    audit = FeatureFlagAuditLog(
+        env=env_name,
+        key=key,
+        old_value_json=old_value_json,
+        new_value_json=new_value_json,
+        updated_by_user_id=admin.id,
+        reason=reason,
+        created_at=datetime.utcnow(),
+    )
+    db.session.add(audit)
+    db.session.commit()
+
+    return jsonify({'ok': True, 'key': key, 'value': bool(value)})
+
+
+@app.route('/api/v1/nearby/users', methods=['GET'])
+def api_v1_nearby_users():
+    user, err = require_auth()
+    if err:
+        return err
+    return jsonify({'items': [], 'nextCursor': None})
+
+
+@app.route('/api/v1/nearby/venues', methods=['GET'])
+def api_v1_nearby_venues():
+    user, err = require_auth()
+    if err:
+        return err
+    return jsonify({'items': []})
+
+
+@app.route('/api/v1/nearby/invites', methods=['GET'])
+def api_v1_list_invites():
+    user, err = require_auth()
+    if err:
+        return err
+    scope = request.args.get('scope', 'incoming')
+    status = request.args.get('status')
+    q = NearbyInvite.query
+    if scope == 'outgoing':
+        q = q.filter_by(inviter_user_id=user.id)
+    else:
+        q = q.filter_by(invitee_user_id=user.id)
+    if status:
+        q = q.filter_by(status=status)
+    items = q.order_by(NearbyInvite.created_at.desc()).limit(50).all()
+    out = []
+    for i in items:
+        venue = None
+        if i.venue_google_place_id:
+            try:
+                venue = {
+                    'googlePlaceId': i.venue_google_place_id,
+                    'snapshot': json.loads(i.venue_snapshot_json) if i.venue_snapshot_json else None,
+                }
+            except Exception:
+                venue = {'googlePlaceId': i.venue_google_place_id, 'snapshot': None}
+        out.append({
+            'id': i.id,
+            'status': i.status,
+            'type': i.invite_type,
+            'expiresAt': i.expires_at.isoformat() if i.expires_at else None,
+            'venue': venue,
+            'paymentHoldId': i.payment_hold_id,
+        })
+    return jsonify({'items': out})
+
+
+@app.route('/api/v1/nearby/invites', methods=['POST'])
+def api_v1_create_invite():
+    user, err = require_auth()
+    if err:
+        return err
+    body = request.json or {}
+    invitee_user_id = body.get('inviteeUserId')
+    invite_type = body.get('type')
+    message = body.get('message')
+    venue = body.get('venue') or None
+
+    if not invitee_user_id or not invite_type:
+        return jsonify({'error': 'invalid_request'}), 400
+
+    idem_key = request.headers.get('Idempotency-Key')
+    if idem_key:
+        existing = NearbyInvite.query.filter_by(inviter_user_id=user.id, idempotency_key=idem_key).first()
+        if existing:
+            return jsonify({'invite': {
+                'id': existing.id,
+                'status': existing.status,
+                'type': existing.invite_type,
+                'expiresAt': existing.expires_at.isoformat() if existing.expires_at else None,
+                'venue': venue,
+                'paymentHoldId': existing.payment_hold_id,
+            }}), 200
+
+    expires_at = datetime.utcnow() + timedelta(hours=2)
+    venue_google_place_id = None
+    venue_snapshot_json = None
+    if venue and isinstance(venue, dict):
+        venue_google_place_id = venue.get('googlePlaceId')
+        snapshot = venue.get('snapshot')
+        if snapshot is not None:
+            venue_snapshot_json = json.dumps(snapshot)
+
+    invite = NearbyInvite(
+        inviter_user_id=user.id,
+        invitee_user_id=int(invitee_user_id),
+        invite_type=invite_type,
+        status='pending',
+        message_text=message,
+        venue_google_place_id=venue_google_place_id,
+        venue_snapshot_json=venue_snapshot_json,
+        payment_hold_id=None,
+        expires_at=expires_at,
+        responded_at=None,
+        idempotency_key=idem_key,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    db.session.add(invite)
+    db.session.commit()
+
+    return jsonify({'invite': {
+        'id': invite.id,
+        'status': invite.status,
+        'type': invite.invite_type,
+        'expiresAt': invite.expires_at.isoformat() if invite.expires_at else None,
+        'venue': venue,
+        'paymentHoldId': invite.payment_hold_id,
+    }}), 201
+
+
+@app.route('/api/v1/nearby/invites/<string:invite_id>/accept', methods=['POST'])
+def api_v1_accept_invite(invite_id):
+    user, err = require_auth()
+    if err:
+        return err
+    invite = NearbyInvite.query.get(invite_id)
+    if not invite:
+        return jsonify({'error': 'not_found'}), 404
+    if invite.invitee_user_id != user.id:
+        return jsonify({'error': 'forbidden'}), 403
+
+    invite.status = 'accepted'
+    invite.responded_at = datetime.utcnow()
+    invite.updated_at = datetime.utcnow()
+
+    meeting = Meeting.query.filter_by(invite_id=invite.id).first()
+    if not meeting:
+        meeting = Meeting(
+            invite_id=invite.id,
+            match_id=None,
+            inviter_user_id=invite.inviter_user_id,
+            invitee_user_id=invite.invitee_user_id,
+            venue_google_place_id=invite.venue_google_place_id,
+            venue_snapshot_json=invite.venue_snapshot_json,
+            status='scheduled',
+            scheduled_for=None,
+            started_at=None,
+            ended_at=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        db.session.add(meeting)
+
+    db.session.commit()
+
+    return jsonify({
+        'invite': {'id': invite.id, 'status': invite.status},
+        'meeting': {'id': meeting.id, 'status': meeting.status},
+    })
+
+
+@app.route('/api/v1/nearby/invites/<string:invite_id>/decline', methods=['POST'])
+def api_v1_decline_invite(invite_id):
+    user, err = require_auth()
+    if err:
+        return err
+    invite = NearbyInvite.query.get(invite_id)
+    if not invite:
+        return jsonify({'error': 'not_found'}), 404
+    if invite.invitee_user_id != user.id:
+        return jsonify({'error': 'forbidden'}), 403
+    invite.status = 'declined'
+    invite.responded_at = datetime.utcnow()
+    invite.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'invite': {'id': invite.id, 'status': invite.status}})
+
+
+@app.route('/api/v1/meetings/<string:meeting_id>/start', methods=['POST'])
+def api_v1_start_meeting(meeting_id):
+    user, err = require_auth()
+    if err:
+        return err
+    meeting = Meeting.query.get(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'not_found'}), 404
+    if user.id not in (meeting.inviter_user_id, meeting.invitee_user_id):
+        return jsonify({'error': 'forbidden'}), 403
+    meeting.status = 'active'
+    meeting.started_at = datetime.utcnow()
+    meeting.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'meeting': {'id': meeting.id, 'status': meeting.status}})
+
+
+@app.route('/api/v1/meetings/<string:meeting_id>/end', methods=['POST'])
+def api_v1_end_meeting(meeting_id):
+    user, err = require_auth()
+    if err:
+        return err
+    meeting = Meeting.query.get(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'not_found'}), 404
+    if user.id not in (meeting.inviter_user_id, meeting.invitee_user_id):
+        return jsonify({'error': 'forbidden'}), 403
+    meeting.status = 'ended'
+    meeting.ended_at = datetime.utcnow()
+    meeting.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'meeting': {'id': meeting.id, 'status': meeting.status}})
+
+
+@app.route('/api/v1/meetings/<string:meeting_id>/feedback', methods=['POST'])
+def api_v1_meeting_feedback(meeting_id):
+    user, err = require_auth()
+    if err:
+        return err
+    meeting = Meeting.query.get(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'not_found'}), 404
+    if user.id not in (meeting.inviter_user_id, meeting.invitee_user_id):
+        return jsonify({'error': 'forbidden'}), 403
+    body = request.json or {}
+    meeting_feel = body.get('meetingFeel')
+    venue_rating = body.get('venueRating')
+
+    existing = MeetingFeedback.query.filter_by(meeting_id=meeting_id, user_id=user.id).first()
+    if existing:
+        return jsonify({'ok': True}), 200
+
+    fb = MeetingFeedback(
+        meeting_id=meeting_id,
+        user_id=user.id,
+        meeting_feel=meeting_feel,
+        venue_rating=venue_rating,
+        created_at=datetime.utcnow(),
+    )
+    db.session.add(fb)
+    db.session.commit()
+    return jsonify({'ok': True}), 201
+
+
+@app.route('/api/v1/payments/holds', methods=['POST'])
+def api_v1_create_hold():
+    user, err = require_auth()
+    if err:
+        return err
+    if not _payments_enabled():
+        return jsonify({'error': 'PAYMENTS_DISABLED'}), 409
+    body = request.json or {}
+    try:
+        amount_cents = int(body.get('amountCents'))
+    except Exception:
+        amount_cents = None
+    currency = (body.get('currency') or 'ils').strip().lower()
+    if not amount_cents or amount_cents <= 0:
+        return jsonify({'error': 'invalid_amount'}), 400
+
+    provider = _payments_provider_name()
+    if provider not in ('mock', 'test', 'stripe', 'payplus'):
+        return jsonify({'error': 'unsupported_provider'}), 503
+
+    # Mock/test only for now
+    if provider not in ('mock', 'test'):
+        return jsonify({'error': 'provider_not_activated'}), 503
+
+    hold = PaymentHold(
+        user_id=user.id,
+        provider=provider,
+        status='authorized',
+        currency=currency,
+        amount_cents=amount_cents,
+        provider_hold_id=f'{provider}_{uuid.uuid4()}',
+        expires_at=datetime.utcnow() + timedelta(minutes=15),
+        metadata_json=json.dumps({'mode': 'mock'}),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    db.session.add(hold)
+
+    le = LedgerEntry(
+        user_id=user.id,
+        invite_id=None,
+        meeting_id=None,
+        hold_id=hold.id,
+        provider=provider,
+        event_type='payment_hold_created',
+        amount_cents=amount_cents,
+        currency=currency,
+        details_json=json.dumps({'mode': 'mock'}),
+        created_at=datetime.utcnow(),
+    )
+    db.session.add(le)
+    db.session.commit()
+
+    return jsonify({
+        'hold': {
+            'id': hold.id,
+            'status': hold.status,
+            'currency': hold.currency,
+            'amountCents': hold.amount_cents,
+            'provider': hold.provider,
+            'expiresAt': hold.expires_at.isoformat() if hold.expires_at else None,
+        }
+    }), 201
+
+
+@app.route('/api/v1/payments/holds/<string:hold_id>/capture', methods=['POST'])
+def api_v1_capture_hold(hold_id):
+    user, err = require_auth()
+    if err:
+        return err
+    if not _payments_enabled():
+        return jsonify({'error': 'PAYMENTS_DISABLED'}), 409
+    hold = PaymentHold.query.get(hold_id)
+    if not hold:
+        return jsonify({'error': 'not_found'}), 404
+    if hold.user_id != user.id:
+        return jsonify({'error': 'forbidden'}), 403
+    if hold.status in ('captured', 'released', 'failed'):
+        return jsonify({'hold': {'id': hold.id, 'status': hold.status}}), 200
+    if hold.provider not in ('mock', 'test'):
+        return jsonify({'error': 'provider_not_activated'}), 503
+
+    hold.status = 'captured'
+    hold.captured_at = datetime.utcnow()
+    hold.updated_at = datetime.utcnow()
+
+    le = LedgerEntry(
+        user_id=user.id,
+        invite_id=None,
+        meeting_id=None,
+        hold_id=hold.id,
+        provider=hold.provider,
+        event_type='payment_hold_captured',
+        amount_cents=hold.amount_cents,
+        currency=hold.currency,
+        details_json=json.dumps({'mode': 'mock'}),
+        created_at=datetime.utcnow(),
+    )
+    db.session.add(le)
+    db.session.commit()
+    return jsonify({'hold': {'id': hold.id, 'status': hold.status}}), 200
+
+
+@app.route('/api/v1/payments/holds/<string:hold_id>/release', methods=['POST'])
+def api_v1_release_hold(hold_id):
+    user, err = require_auth()
+    if err:
+        return err
+    if not _payments_enabled():
+        return jsonify({'error': 'PAYMENTS_DISABLED'}), 409
+    hold = PaymentHold.query.get(hold_id)
+    if not hold:
+        return jsonify({'error': 'not_found'}), 404
+    if hold.user_id != user.id:
+        return jsonify({'error': 'forbidden'}), 403
+    if hold.status in ('released', 'failed'):
+        return jsonify({'hold': {'id': hold.id, 'status': hold.status}}), 200
+    if hold.provider not in ('mock', 'test'):
+        return jsonify({'error': 'provider_not_activated'}), 503
+
+    hold.status = 'released'
+    hold.released_at = datetime.utcnow()
+    hold.updated_at = datetime.utcnow()
+
+    le = LedgerEntry(
+        user_id=user.id,
+        invite_id=None,
+        meeting_id=None,
+        hold_id=hold.id,
+        provider=hold.provider,
+        event_type='payment_hold_released',
+        amount_cents=hold.amount_cents,
+        currency=hold.currency,
+        details_json=json.dumps({'mode': 'mock'}),
+        created_at=datetime.utcnow(),
+    )
+    db.session.add(le)
+    db.session.commit()
+    return jsonify({'hold': {'id': hold.id, 'status': hold.status}}), 200
+
+
+@app.route('/api/v1/payments/stripe/webhook', methods=['POST'])
+def api_v1_stripe_webhook():
+    if _payments_provider_name() != 'stripe':
+        return jsonify({'error': 'provider_not_enabled'}), 404
+    if not _payments_enabled():
+        return jsonify({'error': 'PAYMENTS_DISABLED'}), 409
+    try:
+        import stripe
+        payload = request.data
+        sig_header = request.headers.get('Stripe-Signature')
+        webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
+        if not webhook_secret:
+            return jsonify({'error': 'webhook_not_configured'}), 503
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+
+        event_id = event.get('id')
+        if event_id:
+            existing = LedgerEntry.query.filter_by(stripe_event_id=event_id).first()
+            if existing:
+                return jsonify({'ok': True}), 200
+
+        le = LedgerEntry(
+            user_id=None,
+            invite_id=None,
+            meeting_id=None,
+            hold_id=None,
+            provider='stripe',
+            event_type='stripe_webhook_received',
+            amount_cents=None,
+            currency=None,
+            provider_event_id=event_id,
+            stripe_event_id=event_id,
+            details_json=json.dumps({'type': event.get('type')}),
+            created_at=datetime.utcnow(),
+        )
+        db.session.add(le)
+        db.session.commit()
+
+        return jsonify({'ok': True}), 200
+    except Exception:
+        return jsonify({'error': 'webhook_error'}), 400
 
 @app.route('/api/register', methods=['POST'])
 def register():
