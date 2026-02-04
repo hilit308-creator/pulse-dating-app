@@ -617,33 +617,7 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
         </Tooltip>
       </motion.div>
 
-      {/* Status badge */}
-      <motion.div
-        initial={{ scale: 0, x: -20 }}
-        animate={{ scale: 1, x: 0 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-      >
-        <Box sx={{ 
-          position: "absolute", 
-          top: 8, 
-          left: 8, 
-          zIndex: 2, 
-          px: 1.5, 
-          py: 0.5, 
-          borderRadius: "8px", 
-          bgcolor: status.bg, 
-          color: status.color, 
-          fontSize: "0.75rem", 
-          fontWeight: 700,
-          backdropFilter: 'blur(8px)',
-          border: `1.5px solid ${status.color}30`,
-          boxShadow: `0 2px 8px ${status.color}20`,
-        }}>
-          {status.label}
-        </Box>
-      </motion.div>
-
-      {/* "Good Match for You" badge - subtle hint */}
+      {/* "Good Match for You" badge - at top of image */}
       {showGoodMatch && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8, y: -10 }}
@@ -652,7 +626,7 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
         >
           <Box sx={{ 
             position: "absolute", 
-            top: 44, 
+            top: 8, 
             left: 8, 
             zIndex: 2, 
             px: 1.5, 
@@ -673,6 +647,32 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
           </Box>
         </motion.div>
       )}
+
+      {/* Status badge - below save button */}
+      <motion.div
+        initial={{ scale: 0, x: -20 }}
+        animate={{ scale: 1, x: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+      >
+        <Box sx={{ 
+          position: "absolute", 
+          top: showGoodMatch ? 44 : 8, 
+          left: 8, 
+          zIndex: 2, 
+          px: 1.5, 
+          py: 0.5, 
+          borderRadius: "8px", 
+          bgcolor: status.bg, 
+          color: status.color, 
+          fontSize: "0.75rem", 
+          fontWeight: 700,
+          backdropFilter: 'blur(8px)',
+          border: `1.5px solid ${status.color}30`,
+          boxShadow: `0 2px 8px ${status.color}20`,
+        }}>
+          {status.label}
+        </Box>
+      </motion.div>
 
       <CardActionArea onClick={() => onViewDetails ? onViewDetails(ev) : setOpen((v) => !v)}>
         {/* Video loop (muted) or cover image per Pulse spec */}
