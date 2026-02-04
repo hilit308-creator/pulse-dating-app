@@ -578,8 +578,8 @@ function CompactMatchCard({ profile, onPass, onOpenChat, onBlock, onReport, pend
                 py: 0.75,
                 textTransform: "none",
                 fontWeight: 600,
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                "&:hover": { background: "linear-gradient(135deg, #059669 0%, #047857 100%)" },
+                background: "linear-gradient(135deg, #6C5CE7 0%, #8b5cf6 100%)",
+                "&:hover": { background: "linear-gradient(135deg, #5b4cdb 0%, #7c4ddb 100%)" },
               }}
             >
               🎟️ Invite to workshop
@@ -933,9 +933,9 @@ function FullProfileCard({ profile, onLike, onPass, onClose }) {
                   borderRadius: '14px',
                   fontWeight: 600,
                   textTransform: 'none',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  boxShadow: '0 4px 16px rgba(16,185,129,0.3)',
-                  '&:hover': { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' },
+                  background: 'linear-gradient(135deg, #6C5CE7 0%, #8b5cf6 100%)',
+                  boxShadow: '0 4px 16px rgba(108,92,231,0.3)',
+                  '&:hover': { background: 'linear-gradient(135deg, #5b4cdb 0%, #7c4ddb 100%)' },
                 }}
               >
                 Like
@@ -1516,7 +1516,7 @@ export default function MatchesScreen() {
                 <span>YOU LIKE</span>
                 {likedProfiles.filter(p => !blocked.has(p.id)).length > 0 && (
                   <Box sx={{ 
-                    backgroundColor: tab === 2 ? '#10b981' : '#e2e8f0',
+                    backgroundColor: tab === 2 ? '#6C5CE7' : '#e2e8f0',
                     color: tab === 2 ? '#fff' : '#64748b',
                     borderRadius: 999,
                     px: 0.75,
@@ -1688,11 +1688,11 @@ export default function MatchesScreen() {
                           px: 1.5,
                           py: 0.5,
                           borderRadius: 999,
-                          bgcolor: "rgba(16,185,129,0.1)",
+                          bgcolor: "rgba(108,92,231,0.1)",
                         }}
                       >
-                        <Heart size={14} color="#10b981" fill="#10b981" />
-                        <Typography variant="caption" sx={{ color: "#10b981", fontWeight: 600 }}>
+                        <Heart size={14} color="#6C5CE7" fill="#6C5CE7" />
+                        <Typography variant="caption" sx={{ color: "#6C5CE7", fontWeight: 600 }}>
                           View
                         </Typography>
                       </Box>
@@ -1774,14 +1774,14 @@ export default function MatchesScreen() {
                   width: 120,
                   height: 120,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(34,197,94,0.1) 100%)',
+                  background: 'linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(139,92,246,0.1) 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   mb: 3,
                 }}
               >
-                <Heart size={48} color="#10b981" />
+                <Heart size={48} color="#6C5CE7" />
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a2e", mb: 1 }}>
                 No likes yet
@@ -1800,8 +1800,8 @@ export default function MatchesScreen() {
                   textTransform: "none",
                   fontWeight: 600,
                   fontSize: '0.95rem',
-                  background: "linear-gradient(135deg, #10b981 0%, #22c55e 100%)",
-                  boxShadow: '0 4px 16px rgba(16,185,129,0.3)',
+                  background: "linear-gradient(135deg, #6C5CE7 0%, #8b5cf6 100%)",
+                  boxShadow: '0 4px 16px rgba(108,92,231,0.3)',
                 }}
               >
                 Start Swiping

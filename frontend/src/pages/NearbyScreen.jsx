@@ -562,8 +562,8 @@ export default function NearbyScreen() {
                       boxShadow: '0 26px 72px rgba(0,83,166,0.20)',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:active': {
-                        background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                        color: '#ffffff',
+                        opacity: 0.7,
+                        transform: 'scale(0.98)',
                       },
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
