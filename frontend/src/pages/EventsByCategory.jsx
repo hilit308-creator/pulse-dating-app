@@ -2018,7 +2018,7 @@ export default function EventsByCategory() {
             </Typography>
           </motion.div>
 
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2, flexWrap: 'nowrap', overflow: 'hidden' }}>
             <Button 
               startIcon={<Plus size={18} />} 
               onClick={() => navigate("/events/new")} 
@@ -2076,28 +2076,24 @@ export default function EventsByCategory() {
             </ToggleButtonGroup>
 
             <Badge color="error" badgeContent={activeFilterCount} invisible={activeFilterCount === 0}>
-              <Button 
-                variant="outlined" 
-                startIcon={<SlidersHorizontal size={16} />} 
+              <IconButton 
                 onClick={() => setFiltersOpen(true)}
                 sx={{
-                  borderColor: 'rgba(255,255,255,0.4)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.4)',
                   color: '#fff',
                   bgcolor: 'rgba(255,255,255,0.1)',
                   backdropFilter: 'blur(12px)',
-                  fontWeight: 600,
-                  px: { xs: 1.5, sm: 2 },
-                  minWidth: 'auto',
-                  whiteSpace: 'nowrap',
-                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                  px: 1.5,
+                  py: 1,
                   '&:hover': {
                     borderColor: 'rgba(255,255,255,0.6)',
                     bgcolor: 'rgba(255,255,255,0.2)',
                   },
                 }}
               >
-                Filters
-              </Button>
+                <SlidersHorizontal size={20} />
+              </IconButton>
             </Badge>
           </Stack>
         </Container>

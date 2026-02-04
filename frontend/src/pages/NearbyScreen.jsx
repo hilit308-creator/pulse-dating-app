@@ -1079,7 +1079,7 @@ function RadarRings({ size, categories, isScanning, isCompleted, hasResults }) {
             inset: 0,
             borderRadius: '50%',
             pointerEvents: 'none',
-            border: '3px solid rgba(108,92,231,0.3)',
+            border: '3px solid rgba(96,165,250,0.3)',
           }}
           initial={{ scale: 0.5, opacity: 0.8 }}
           animate={{ scale: 1.8, opacity: 0 }}
@@ -1117,7 +1117,7 @@ function LoadingStripes({ width = 220 }) {
         width: w,
         borderRadius: 999,
         background:
-          'linear-gradient(90deg, rgba(34,197,94,0.25), rgba(96,165,250,0.25), rgba(139,92,246,0.25))',
+          'linear-gradient(90deg, rgba(34,197,94,0.25), rgba(96,165,250,0.25), rgba(56,189,248,0.25))',
         backgroundSize: '200% 100%',
         animation: `shimmer 1.6s linear ${d}s infinite, hue 6s ease-in-out ${d}s infinite`,
         boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
