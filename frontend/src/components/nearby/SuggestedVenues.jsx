@@ -59,6 +59,7 @@ const FALLBACK_VENUES = [
     isPaidPartner: true,
     partnerPlan: 'gold',
     vibe: 'Cozy & quiet',
+    coordinates: { lat: 32.0623, lng: 34.7691 }, // Levinsky area, Tel Aviv
   },
   {
     id: 'mock_2',
@@ -74,6 +75,7 @@ const FALLBACK_VENUES = [
     isPaidPartner: true,
     partnerPlan: 'platinum',
     vibe: 'Lively atmosphere',
+    coordinates: { lat: 32.0731, lng: 34.7812 }, // Rothschild area, Tel Aviv
   },
   {
     id: 'mock_3',
@@ -88,6 +90,7 @@ const FALLBACK_VENUES = [
     openingSoon: false,
     isPaidPartner: false,
     vibe: 'Fresh air & views',
+    coordinates: { lat: 32.0853, lng: 34.7818 }, // Dizengoff area, Tel Aviv
   },
   {
     id: 'mock_4',
@@ -103,6 +106,7 @@ const FALLBACK_VENUES = [
     opensIn: '25 min',
     isPaidPartner: false,
     vibe: 'Casual & tasty',
+    coordinates: { lat: 32.0789, lng: 34.7745 }, // Carmel Market area, Tel Aviv
   },
 ];
 
@@ -327,7 +331,11 @@ export default function SuggestedVenues({ onSelectVenue, selectedVenue }) {
 
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('Not authenticated');
+        // No token - use fallback venues silently
+        setVenues(FALLBACK_VENUES);
+        setUsingFallback(true);
+        setLoading(false);
+        return;
       }
 
       const params = new URLSearchParams({
