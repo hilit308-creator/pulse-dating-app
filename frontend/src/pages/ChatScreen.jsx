@@ -926,22 +926,25 @@ function ChatBubble({
               maxWidth: 280,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, direction: detectTextDirection(msg.poll?.question), flexDirection: detectTextDirection(msg.poll?.question) === 'rtl' ? 'row-reverse' : 'row' }}>
               <BarChart2 size={18} color="#6C5CE7" />
-              <Typography sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem' }}>
+              <Typography sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem', direction: detectTextDirection(msg.poll?.question), textAlign: detectTextDirection(msg.poll?.question) === 'rtl' ? 'right' : 'left' }}>
                 {msg.poll.question}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {(msg.poll.options || []).map((opt, i) => (
+              {(msg.poll.options || []).map((opt, i) => {
+                const optDirection = detectTextDirection(opt);
+                return (
                 <Button
                   key={i}
                   size="small"
                   variant={msg.poll.voted === i ? "contained" : "outlined"}
                   onClick={() => msg.onVote?.(i) || null}
                   sx={{ 
-                    justifyContent: 'flex-start',
-                    textAlign: 'left',
+                    justifyContent: optDirection === 'rtl' ? 'flex-end' : 'flex-start',
+                    textAlign: optDirection === 'rtl' ? 'right' : 'left',
+                    direction: optDirection,
                     borderRadius: 2,
                     py: 1,
                     px: 2,
@@ -958,7 +961,7 @@ function ChatBubble({
                 >
                   {opt}
                 </Button>
-              ))}
+              )})}
             </Box>
             {msg.poll.votes > 0 && (
               <Typography variant="caption" sx={{ color: '#64748b', mt: 1.5, display: 'block' }}>
