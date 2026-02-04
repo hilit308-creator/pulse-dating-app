@@ -51,6 +51,10 @@ export default function MeetingInviteMessage({
   const { venue, message, person, createdAt } = invitation || {};
   const coordinates = venue?.coordinates || venue?.snapshot?.coordinates;
   const venueName = venue?.name || venue?.snapshot?.name || 'Meeting spot';
+  const venueImage = venue?.image || venue?.snapshot?.image;
+  const venueWalkTime = venue?.walkTime || venue?.snapshot?.walkTime;
+  const venueRating = venue?.pulseRating || venue?.rating || venue?.snapshot?.rating;
+  const venueVibe = venue?.vibe || venue?.snapshot?.vibe;
   const isMapPicked = venue?.isMapPicked;
 
   // Generate navigation URL (Google Maps / Waze)
@@ -150,8 +154,62 @@ export default function MeetingInviteMessage({
         )}
       </Box>
 
-      {/* Map preview */}
-      {coordinates && (
+      {/* Venue image (for selected venues) */}
+      {venueImage && !isMapPicked && (
+        <Box sx={{ position: 'relative', height: 140 }}>
+          <img
+            src={venueImage}
+            alt={venueName}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+          {/* Venue info overlay */}
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+              p: 1.5,
+              pt: 3,
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#fff', mb: 0.25 }}>
+              {venueName}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              {venueWalkTime && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Clock size={12} color="#fff" />
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                    {venueWalkTime}
+                  </Typography>
+                </Box>
+              )}
+              {venueRating && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box sx={{ color: '#f59e0b', fontSize: 12 }}>★</Box>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+                    {venueRating}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+            {venueVibe && (
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', display: 'block', mt: 0.5 }}>
+                {venueVibe}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* Map preview (for custom map-picked spots or as fallback) */}
+      {coordinates && (isMapPicked || !venueImage) && (
         <Box sx={{ height: 140, position: 'relative' }}>
           <MapContainer
             center={[coordinates.lat, coordinates.lng]}
