@@ -1487,17 +1487,7 @@ export default function ViewNearbyPeopleScreen() {
           </IconButton>
         </Box>
 
-        <ToggleButtonGroup
-          exclusive
-          value={viewMode}
-          onChange={(_, next) => {
-            if (next) setViewMode(next);
-          }}
-          size="small"
-        >
-          <ToggleButton value="browse">Browse</ToggleButton>
-          <ToggleButton value="map">Map</ToggleButton>
-        </ToggleButtonGroup>
+{/* Map toggle removed per user request */}
       </Box>
 
       {/* Scanning Overlay */}

@@ -557,8 +557,8 @@ export default function NearbyScreen() {
                       letterSpacing: 1,
                       textTransform: 'none',
                       background: scanState === SCAN_STATE.SCANNING 
-                        ? 'radial-gradient(circle, rgba(204,255,241,0.6) 0%, rgba(207,232,255,0.6) 50%, rgba(186,230,253,0.6) 100%)'
-                        : 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 50%, #bae6fd 100%)',
+                        ? 'radial-gradient(circle, rgba(204,255,241,0.7) 0%, rgba(186,230,253,0.7) 50%, rgba(167,243,208,0.5) 100%)'
+                        : 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #bae6fd 50%, #a7f3d0 100%)',
                       boxShadow: '0 26px 72px rgba(0,83,166,0.20)',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:active': {
