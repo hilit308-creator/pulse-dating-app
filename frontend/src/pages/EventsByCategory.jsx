@@ -2078,7 +2078,7 @@ export default function EventsByCategory() {
             <Badge color="error" badgeContent={activeFilterCount} invisible={activeFilterCount === 0}>
               <Button 
                 variant="outlined" 
-                startIcon={<SlidersHorizontal size={18} />} 
+                startIcon={<SlidersHorizontal size={16} />} 
                 onClick={() => setFiltersOpen(true)}
                 sx={{
                   borderColor: 'rgba(255,255,255,0.4)',
@@ -2086,6 +2086,10 @@ export default function EventsByCategory() {
                   bgcolor: 'rgba(255,255,255,0.1)',
                   backdropFilter: 'blur(12px)',
                   fontWeight: 600,
+                  px: { xs: 1.5, sm: 2 },
+                  minWidth: 'auto',
+                  whiteSpace: 'nowrap',
+                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
                   '&:hover': {
                     borderColor: 'rgba(255,255,255,0.6)',
                     bgcolor: 'rgba(255,255,255,0.2)',
