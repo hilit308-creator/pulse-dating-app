@@ -33,6 +33,17 @@ export const INVITE_STATUS = {
   CHAT_FIRST: 'chat_first',
 };
 
+// Detect text direction (RTL for Hebrew/Arabic, LTR for English)
+function detectTextDirection(text) {
+  if (!text) return 'ltr';
+  const rtlRegex = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F]/;
+  const firstLetterMatch = text.match(/[a-zA-Z\u0590-\u05FF\u0600-\u06FF\u0750-\u077F]/);
+  if (firstLetterMatch && rtlRegex.test(firstLetterMatch[0])) {
+    return 'rtl';
+  }
+  return 'ltr';
+}
+
 /**
  * MeetingInviteMessage - Displayed in chat when someone sends a meeting invitation
  * Shows map with location, navigation option, and response buttons
@@ -148,7 +159,16 @@ export default function MeetingInviteMessage({
         </Box>
         
         {message && (
-          <Typography variant="body2" sx={{ color: '#64748b', fontStyle: 'italic', mt: 1 }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: '#64748b', 
+              fontStyle: 'italic', 
+              mt: 1,
+              direction: detectTextDirection(message),
+              textAlign: detectTextDirection(message) === 'rtl' ? 'right' : 'left',
+            }}
+          >
             "{message}"
           </Typography>
         )}
