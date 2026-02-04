@@ -541,7 +541,7 @@ export default function NearbyScreen() {
                       scale: scanState === SCAN_STATE.IDLE ? 1.05 : 1,
                       boxShadow: scanState === SCAN_STATE.IDLE ? '0 32px 88px rgba(0,83,166,0.25)' : undefined,
                     }}
-                    whileTap={{ scale: scanState === SCAN_STATE.IDLE ? 0.96 : 1 }}
+                    whileTap={{ scale: scanState === SCAN_STATE.IDLE ? 0.97 : 1, opacity: scanState === SCAN_STATE.IDLE ? 0.8 : 1 }}
                     onClick={scanState === SCAN_STATE.IDLE ? startScan : undefined}
                     sx={{
                       pointerEvents: scanState === SCAN_STATE.IDLE ? 'auto' : 'none',
@@ -557,8 +557,8 @@ export default function NearbyScreen() {
                       letterSpacing: 1,
                       textTransform: 'none',
                       background: scanState === SCAN_STATE.SCANNING 
-                        ? 'radial-gradient(circle, rgba(204,255,241,0.4) 0%, rgba(207,232,255,0.4) 60%, rgba(214,211,255,0.4) 100%)'
-                        : 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 60%, #d6d3ff 100%)',
+                        ? 'radial-gradient(circle, rgba(204,255,241,0.5) 0%, rgba(207,232,255,0.5) 60%, rgba(220,230,250,0.5) 100%)'
+                        : 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 60%, #dce6fa 100%)',
                       boxShadow: '0 26px 72px rgba(0,83,166,0.20)',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:active': {
