@@ -1289,8 +1289,21 @@ export default function ViewNearbyPeopleScreen() {
       personId: invitation.person.id,
       hasVenue: !!invitation.venue,
     });
+    
+    // Store invitation in localStorage so ChatScreen can pick it up and create the message
+    const pendingInvite = {
+      id: `invite_${Date.now()}`,
+      type: invitation.type,
+      venue: invitation.venue,
+      message: invitation.message,
+      personId: invitation.person.id,
+      personName: invitation.person.firstName || invitation.person.name,
+      createdAt: Date.now(),
+    };
+    localStorage.setItem('pulse_pending_meeting_invite', JSON.stringify(pendingInvite));
+    
     // Navigate to chat with invitation context
-    navigate(`/chat/${invitation.person.id}`);
+    navigate(`/chat/${invitation.person.id}?meetingInvite=true`);
     setShowInvitationModal(false);
   }, [navigate]);
 

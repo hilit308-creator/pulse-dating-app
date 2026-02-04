@@ -96,7 +96,7 @@ import { useAuth } from "../context/AuthContext";
 import { useMeeting, MEETING_STATE as GLOBAL_MEETING_STATE, SOS_STATE as GLOBAL_SOS_STATE } from "../context/MeetingContext";
 import { getFeatureFlag } from "../utils/featureFlags";
 import { getMeetingDraft, clearMeetingDraft } from "../utils/nearbyMeetingDrafts";
-import { PostMeetingFeedback, MeetingTracker } from "../components/nearby";
+import { PostMeetingFeedback, MeetingTracker, MeetingInviteMessage, InviteResponseMessage, INVITE_STATUS } from "../components/nearby";
 
 const POST_MEETING_FEEDBACK_STORAGE_KEY = 'pulse_post_meeting_feedback_history';
 
@@ -1047,6 +1047,21 @@ function ChatBubble({
               </Box>
             </Box>
           </Box>
+        ) : msg.type === "meeting_invite" ? (
+          <MeetingInviteMessage
+            invitation={msg.meetingInvite}
+            isIncoming={!isMe}
+            status={msg.inviteStatus || 'pending'}
+            onAccept={() => msg.onMeetingAccept?.(msg)}
+            onDecline={() => msg.onMeetingDecline?.(msg)}
+            onChatFirst={() => msg.onMeetingChatFirst?.(msg)}
+          />
+        ) : msg.type === "meeting_response" ? (
+          <InviteResponseMessage
+            responseType={msg.responseType}
+            isInviter={isMe}
+            personName={msg.personName}
+          />
         ) : msg.type === "workshop_invite" ? (
           <Box sx={{ mt: 0.25 }}>
             <Box 
@@ -1680,6 +1695,118 @@ export default function ChatScreen() {
     [chat, openChat, setChats, urlMatchId]
   );
 
+  // Handle meeting invite responses (accept/decline/chat_first)
+  const handleMeetingInviteAccept = useCallback(
+    (msg) => {
+      if (!openChat) return;
+      
+      // Update message status
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat
+            ? {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === msg.id ? { ...m, inviteStatus: INVITE_STATUS.ACCEPTED } : m
+                ),
+              }
+            : c
+        )
+      );
+
+      // Add response message for the inviter
+      const responseMsg = {
+        id: `msg_${Date.now()}`,
+        from: 'me',
+        type: 'meeting_response',
+        responseType: INVITE_STATUS.ACCEPTED,
+        personName: chat?.user?.firstName || chat?.user?.name,
+        timestamp: Date.now(),
+        status: 'sent',
+      };
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat ? { ...c, messages: [...c.messages, responseMsg] } : c
+        )
+      );
+    },
+    [openChat, setChats, chat]
+  );
+
+  const handleMeetingInviteDecline = useCallback(
+    (msg) => {
+      if (!openChat) return;
+      
+      // Update message status
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat
+            ? {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === msg.id ? { ...m, inviteStatus: INVITE_STATUS.DECLINED } : m
+                ),
+              }
+            : c
+        )
+      );
+
+      // Add comforting response message for the inviter
+      const responseMsg = {
+        id: `msg_${Date.now()}`,
+        from: 'me',
+        type: 'meeting_response',
+        responseType: INVITE_STATUS.DECLINED,
+        personName: chat?.user?.firstName || chat?.user?.name,
+        timestamp: Date.now(),
+        status: 'sent',
+      };
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat ? { ...c, messages: [...c.messages, responseMsg] } : c
+        )
+      );
+    },
+    [openChat, setChats, chat]
+  );
+
+  const handleMeetingInviteChatFirst = useCallback(
+    (msg) => {
+      if (!openChat) return;
+      
+      // Update message status
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat
+            ? {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === msg.id ? { ...m, inviteStatus: INVITE_STATUS.CHAT_FIRST } : m
+                ),
+              }
+            : c
+        )
+      );
+
+      // Add response message
+      const responseMsg = {
+        id: `msg_${Date.now()}`,
+        from: 'me',
+        type: 'meeting_response',
+        responseType: INVITE_STATUS.CHAT_FIRST,
+        personName: chat?.user?.firstName || chat?.user?.name,
+        timestamp: Date.now(),
+        status: 'sent',
+      };
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat ? { ...c, messages: [...c.messages, responseMsg] } : c
+        )
+      );
+    },
+    [openChat, setChats, chat]
+  );
+
   // Handle workshop invite response (accept/decline)
   const handleWorkshopInviteRespond = useCallback(
     (messageId, status) => {
@@ -2280,6 +2407,50 @@ export default function ChatScreen() {
       }
     }
   }, [chat, globalMeeting.showMeetingScreen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle pending meeting invite from Nearby screen
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('meetingInvite') === 'true' && chat) {
+      try {
+        const pendingInvite = JSON.parse(localStorage.getItem('pulse_pending_meeting_invite') || 'null');
+        if (pendingInvite && String(pendingInvite.personId) === String(chat.user?.id || chat.matchId)) {
+          // Create meeting_invite message
+          const inviteMessage = {
+            id: `msg_${Date.now()}`,
+            from: 'me',
+            type: 'meeting_invite',
+            text: pendingInvite.message || '',
+            timestamp: Date.now(),
+            status: 'sent',
+            inviteStatus: 'pending',
+            meetingInvite: {
+              id: pendingInvite.id,
+              venue: pendingInvite.venue,
+              message: pendingInvite.message,
+              person: { id: pendingInvite.personId, firstName: pendingInvite.personName },
+              createdAt: pendingInvite.createdAt,
+            },
+          };
+          
+          // Add message to chat
+          setChats(prev => prev.map(c => 
+            c.matchId === openChat 
+              ? { ...c, messages: [...c.messages, inviteMessage] }
+              : c
+          ));
+          
+          // Clear pending invite
+          localStorage.removeItem('pulse_pending_meeting_invite');
+          
+          // Clean up URL param
+          navigate(`/chat/${chat.matchId}`, { replace: true });
+        }
+      } catch (e) {
+        console.error('[ChatScreen] Error processing pending meeting invite:', e);
+      }
+    }
+  }, [location.search, chat, openChat, setChats, navigate]);
 
   // Handle showMeeting URL parameter from GlobalMeetingBar click
   useEffect(() => {
@@ -4447,7 +4618,12 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                     </Box>
                   )}
                   <ChatBubble
-                    msg={m}
+                    msg={{
+                      ...m,
+                      onMeetingAccept: handleMeetingInviteAccept,
+                      onMeetingDecline: handleMeetingInviteDecline,
+                      onMeetingChatFirst: handleMeetingInviteChatFirst,
+                    }}
                     isMe={m.from === "me"}
                     onDoubleLike={() => toggleHeart(m.id)}
                     onLongPressStart={(anchorEl) => reactPop.openFor(m.id)}

@@ -235,9 +235,12 @@ export default function InvitationModal({
 
   const canSend = selectedPath && (selectedPath === 'meet' || selectedVenue);
 
+  if (!isOpen) return null;
+
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       <motion.div
+        key="invitation-modal-backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -294,6 +297,7 @@ export default function InvitationModal({
         </Dialog>
 
         <motion.div
+          key="invitation-modal-content"
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
