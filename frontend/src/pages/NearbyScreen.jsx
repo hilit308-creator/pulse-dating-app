@@ -981,7 +981,7 @@ function RadarRings({ size, categories, isScanning, isCompleted, hasResults }) {
             borderRadius: '50%',
             pointerEvents: 'none',
             background:
-              'conic-gradient(from 0deg, rgba(99,102,241,.25) 0 30deg, transparent 30deg 360deg)',
+              'conic-gradient(from 0deg, rgba(96,165,250,.25) 0 30deg, transparent 30deg 360deg)',
             WebkitMask: 'radial-gradient(circle at 50% 50%, transparent 0 40%, black 41% 100%)',
             mask: 'radial-gradient(circle at 50% 50%, transparent 0 40%, black 41% 100%)',
           }}
@@ -1045,7 +1045,7 @@ function RadarRings({ size, categories, isScanning, isCompleted, hasResults }) {
                     <linearGradient id="ringGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="#22c55e" stopOpacity="0.7" />
                       <stop offset="50%" stopColor="#60a5fa" stopOpacity="0.7" />
-                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.7" />
+                      <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.7" />
                     </linearGradient>
                   </defs>
                   <text
