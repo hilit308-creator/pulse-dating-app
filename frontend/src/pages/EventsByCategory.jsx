@@ -658,16 +658,15 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
             px: 1.5, 
             py: 0.5, 
             borderRadius: "8px", 
-            background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)", 
-            color: "#667eea", 
+            background: "#fff", 
+            color: "#6C5CE7", 
             fontSize: "0.7rem", 
             fontWeight: 600, 
             display: "flex", 
             alignItems: "center", 
             gap: 0.5,
-            backdropFilter: 'blur(8px)',
-            border: '1.5px solid rgba(102,126,234,0.3)',
-            boxShadow: '0 2px 8px rgba(102,126,234,0.2)',
+            border: '1.5px solid rgba(108,92,231,0.3)',
+            boxShadow: '0 2px 8px rgba(108,92,231,0.15)',
           }}>
             <Sparkles size={11} />
             {GOOD_MATCH_COPY[Math.floor(Math.random() * GOOD_MATCH_COPY.length)]}
@@ -2029,10 +2028,13 @@ export default function EventsByCategory() {
                 bgcolor: '#fff',
                 color: '#667eea',
                 fontWeight: 700,
-                px: 3,
+                px: { xs: 2, sm: 3 },
                 py: 1.5,
                 borderRadius: '16px',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                whiteSpace: 'nowrap',
+                minWidth: 'auto',
+                fontSize: { xs: '0.85rem', sm: '0.95rem' },
                 '&:hover': {
                   bgcolor: '#f8f9ff',
                   transform: 'translateY(-2px)',
@@ -2041,7 +2043,7 @@ export default function EventsByCategory() {
                 transition: 'all 0.3s ease',
               }}
             >
-              Create Event
+              Create
             </Button>
 
             <ToggleButtonGroup

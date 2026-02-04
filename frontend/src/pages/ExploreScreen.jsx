@@ -2043,16 +2043,16 @@ function FlowerSelectionDialog({ open, onClose, person, onConfirm }) {
 
   // Nearby flower shops
   const nearbyShops = [
-    { id: 1, name: 'Bloom & Wild', distance: '200m', image: 'https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=200&q=80' },
-    { id: 2, name: 'Flower Market', distance: '350m', image: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=200&q=80' },
-    { id: 3, name: 'Rose Garden', distance: '500m', image: 'https://images.unsplash.com/photo-1518882605630-8eb699b8a9c0?auto=format&fit=crop&w=200&q=80' },
+    { id: 1, name: 'Bloom & Wild', distance: '200m', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=200&q=80' },
+    { id: 2, name: 'Flower Market', distance: '350m', image: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=200&q=80' },
+    { id: 3, name: 'Rose Garden', distance: '500m', image: 'https://images.unsplash.com/photo-1455659817273-f96807779a8a?auto=format&fit=crop&w=200&q=80' },
   ];
 
   // Flower options - with real images
   const flowers = [
     { id: 1, name: 'Single Rose', image: 'https://images.unsplash.com/photo-1518882605630-8eb548e48020?auto=format&fit=crop&w=200&q=80', price: '₪25', priceNum: 25 },
-    { id: 2, name: 'Small Bouquet', image: 'https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=200&q=80', price: '₪65', priceNum: 65 },
-    { id: 3, name: 'Mixed Flowers', image: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=200&q=80', price: '₪85', priceNum: 85 },
+    { id: 2, name: 'Small Bouquet', image: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=200&q=80', price: '₪65', priceNum: 65 },
+    { id: 3, name: 'Mixed Flowers', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=200&q=80', price: '₪85', priceNum: 85 },
     { id: 4, name: 'Sunflower', image: 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?auto=format&fit=crop&w=200&q=80', price: '₪30', priceNum: 30 },
   ];
 
