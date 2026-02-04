@@ -1772,14 +1772,14 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
     { id: 3, name: 'Spicehaus', distance: '450m', image: 'https://images.unsplash.com/photo-1559329007-40df8a9345d8?auto=format&fit=crop&w=200&q=80' },
   ];
 
-  // Popular drinks
+  // Popular drinks - with real images
   const drinks = [
-    { id: 1, name: 'Espresso', icon: '☕', price: '₪12' },
-    { id: 2, name: 'Cappuccino', icon: '☕', price: '₪16' },
-    { id: 3, name: 'Latte', icon: '🥛', price: '₪18' },
-    { id: 4, name: 'Americano', icon: '☕', price: '₪14' },
-    { id: 5, name: 'Iced Coffee', icon: '🧊', price: '₪16' },
-    { id: 6, name: 'Flat White', icon: '☕', price: '₪17' },
+    { id: 1, name: 'Espresso', image: 'https://images.unsplash.com/photo-1510707577719-ae7c14805e3a?auto=format&fit=crop&w=200&q=80', price: '₪12' },
+    { id: 2, name: 'Cappuccino', image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=200&q=80', price: '₪16' },
+    { id: 3, name: 'Latte', image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=200&q=80', price: '₪18' },
+    { id: 4, name: 'Americano', image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=200&q=80', price: '₪14' },
+    { id: 5, name: 'Iced Coffee', image: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=200&q=80', price: '₪16' },
+    { id: 6, name: 'Flat White', image: 'https://images.unsplash.com/photo-1577968897966-3d4325b36b61?auto=format&fit=crop&w=200&q=80', price: '₪17' },
   ];
 
   const handleConfirm = () => {
@@ -1912,7 +1912,22 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
                   textAlign: 'center',
                 }}
               >
-                <Typography sx={{ fontSize: '28px', mb: 0.5 }}>{drink.icon}</Typography>
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    mx: 'auto',
+                    mb: 0.5,
+                  }}
+                >
+                  <img
+                    src={drink.image}
+                    alt={drink.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </Box>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', fontSize: '0.9rem' }}>
                   {drink.name}
                 </Typography>
@@ -2033,12 +2048,12 @@ function FlowerSelectionDialog({ open, onClose, person, onConfirm }) {
     { id: 3, name: 'Rose Garden', distance: '500m', image: 'https://images.unsplash.com/photo-1518882605630-8eb699b8a9c0?auto=format&fit=crop&w=200&q=80' },
   ];
 
-  // Flower options
+  // Flower options - with real images
   const flowers = [
-    { id: 1, name: 'Single Rose', icon: '🌹', price: '₪25', priceNum: 25 },
-    { id: 2, name: 'Small Bouquet', icon: '💐', price: '₪65', priceNum: 65 },
-    { id: 3, name: 'Mixed Flowers', icon: '🌸', price: '₪85', priceNum: 85 },
-    { id: 4, name: 'Sunflower', icon: '🌻', price: '₪30', priceNum: 30 },
+    { id: 1, name: 'Single Rose', image: 'https://images.unsplash.com/photo-1518882605630-8eb548e48020?auto=format&fit=crop&w=200&q=80', price: '₪25', priceNum: 25 },
+    { id: 2, name: 'Small Bouquet', image: 'https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=200&q=80', price: '₪65', priceNum: 65 },
+    { id: 3, name: 'Mixed Flowers', image: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=200&q=80', price: '₪85', priceNum: 85 },
+    { id: 4, name: 'Sunflower', image: 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?auto=format&fit=crop&w=200&q=80', price: '₪30', priceNum: 30 },
   ];
 
   // Default messages
@@ -2183,7 +2198,22 @@ function FlowerSelectionDialog({ open, onClose, person, onConfirm }) {
                   textAlign: 'center',
                 }}
               >
-                <Typography sx={{ fontSize: '28px', mb: 0.5 }}>{flower.icon}</Typography>
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    mx: 'auto',
+                    mb: 0.5,
+                  }}
+                >
+                  <img
+                    src={flower.image}
+                    alt={flower.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </Box>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', fontSize: '0.9rem' }}>
                   {flower.name}
                 </Typography>
@@ -2299,12 +2329,12 @@ function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
   const [message, setMessage] = React.useState('');
   const [useCustomMessage, setUseCustomMessage] = React.useState(false);
 
-  // Gift categories
+  // Gift categories - with real images
   const giftCategories = [
-    { id: 'chocolate', name: 'Chocolate', icon: '🍫' },
-    { id: 'icecream', name: 'Ice Cream', icon: '🍦' },
-    { id: 'dessert', name: 'Dessert', icon: '🧁' },
-    { id: 'digital', name: 'Digital', icon: '🎁' },
+    { id: 'chocolate', name: 'Chocolate', image: 'https://images.unsplash.com/photo-1481391319762-47dff72954d9?auto=format&fit=crop&w=200&q=80' },
+    { id: 'icecream', name: 'Ice Cream', image: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=200&q=80' },
+    { id: 'dessert', name: 'Dessert', image: 'https://images.unsplash.com/photo-1486427944544-d2c6e7e4d18a?auto=format&fit=crop&w=200&q=80' },
+    { id: 'digital', name: 'Digital', image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=200&q=80' },
   ];
 
   // Vendors by category
@@ -2327,16 +2357,25 @@ function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
     ],
   };
 
-  // Gifts by vendor
+  // Gifts by vendor - with real images
   const giftsByVendor = {
-    1: [{ id: 1, name: 'Chocolate Box', price: '₪45', priceNum: 45, icon: '🍫' }, { id: 2, name: 'Truffle Set', price: '₪65', priceNum: 65, icon: '🍬' }],
-    2: [{ id: 3, name: 'Premium Box', price: '₪85', priceNum: 85, icon: '🍫' }],
-    3: [{ id: 4, name: 'Ice Cream Cup', price: '₪28', priceNum: 28, icon: '🍨' }],
-    4: [{ id: 5, name: 'Gelato', price: '₪32', priceNum: 32, icon: '🍦' }],
-    5: [{ id: 6, name: 'Cupcake', price: '₪22', priceNum: 22, icon: '🧁' }, { id: 7, name: 'Croissant', price: '₪18', priceNum: 18, icon: '🥐' }],
-    6: [{ id: 8, name: 'Pain au Chocolat', price: '₪24', priceNum: 24, icon: '🥐' }],
-    7: [{ id: 9, name: 'Coffee Gift', price: '₪25', priceNum: 25, icon: '☕' }],
-    8: [{ id: 10, name: 'Gift Card ₪50', price: '₪50', priceNum: 50, icon: '💳' }, { id: 11, name: 'Gift Card ₪100', price: '₪100', priceNum: 100, icon: '💳' }],
+    1: [
+      { id: 1, name: 'Chocolate Box', price: '₪45', priceNum: 45, image: 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=200&q=80' },
+      { id: 2, name: 'Truffle Set', price: '₪65', priceNum: 65, image: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=200&q=80' }
+    ],
+    2: [{ id: 3, name: 'Premium Box', price: '₪85', priceNum: 85, image: 'https://images.unsplash.com/photo-1526081347589-7fa6e1e53f5b?auto=format&fit=crop&w=200&q=80' }],
+    3: [{ id: 4, name: 'Ice Cream Cup', price: '₪28', priceNum: 28, image: 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?auto=format&fit=crop&w=200&q=80' }],
+    4: [{ id: 5, name: 'Gelato', price: '₪32', priceNum: 32, image: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=200&q=80' }],
+    5: [
+      { id: 6, name: 'Cupcake', price: '₪22', priceNum: 22, image: 'https://images.unsplash.com/photo-1519869325930-281384150729?auto=format&fit=crop&w=200&q=80' },
+      { id: 7, name: 'Croissant', price: '₪18', priceNum: 18, image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=200&q=80' }
+    ],
+    6: [{ id: 8, name: 'Pain au Chocolat', price: '₪24', priceNum: 24, image: 'https://images.unsplash.com/photo-1530610476181-d83430b64dcd?auto=format&fit=crop&w=200&q=80' }],
+    7: [{ id: 9, name: 'Coffee Gift', price: '₪25', priceNum: 25, image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=200&q=80' }],
+    8: [
+      { id: 10, name: 'Gift Card ₪50', price: '₪50', priceNum: 50, image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=200&q=80' },
+      { id: 11, name: 'Gift Card ₪100', price: '₪100', priceNum: 100, image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=200&q=80' }
+    ],
   };
 
   const defaultMessages = [
@@ -2433,7 +2472,22 @@ function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
                   textAlign: 'center',
                 }}
               >
-                <Typography sx={{ fontSize: '24px' }}>{cat.icon}</Typography>
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                    mx: 'auto',
+                    mb: 0.5,
+                  }}
+                >
+                  <img
+                    src={cat.image}
+                    alt={cat.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </Box>
                 <Typography variant="caption" sx={{ fontWeight: 600, color: '#1a1a2e', fontSize: '0.8rem' }}>
                   {cat.name}
                 </Typography>
@@ -2514,7 +2568,22 @@ function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
                     textAlign: 'center',
                   }}
                 >
-                  <Typography sx={{ fontSize: '28px', mb: 0.5 }}>{gift.icon}</Typography>
+                  <Box
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      mx: 'auto',
+                      mb: 0.5,
+                    }}
+                  >
+                    <img
+                      src={gift.image}
+                      alt={gift.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </Box>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', display: 'block', fontSize: '0.9rem' }}>
                     {gift.name}
                   </Typography>
