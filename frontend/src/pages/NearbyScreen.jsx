@@ -971,21 +971,37 @@ function RadarRings({ size, categories, isScanning, isCompleted, hasResults }) {
     <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
       {/* Scanning animation overlay */}
       {isScanning && (
-        <motion.div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
-            pointerEvents: 'none',
-            background:
-              'conic-gradient(from 0deg, rgba(96,165,250,.25) 0 30deg, transparent 30deg 360deg)',
-            WebkitMask: 'radial-gradient(circle at 50% 50%, transparent 0 40%, black 41% 100%)',
-            mask: 'radial-gradient(circle at 50% 50%, transparent 0 40%, black 41% 100%)',
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-        />
+        <>
+          {/* Center fill to cover page background during scan */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '78%',
+              height: '78%',
+              borderRadius: '50%',
+              background: 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 50%, #bae6fd 100%)',
+              pointerEvents: 'none',
+            }}
+          />
+          <motion.div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              pointerEvents: 'none',
+              background:
+                'conic-gradient(from 0deg, rgba(96,165,250,.25) 0 30deg, transparent 30deg 360deg)',
+              WebkitMask: 'radial-gradient(circle at 50% 50%, transparent 0 40%, black 41% 100%)',
+              mask: 'radial-gradient(circle at 50% 50%, transparent 0 40%, black 41% 100%)',
+            }}
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+          />
+        </>
       )}
 
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: 'visible' }}>
