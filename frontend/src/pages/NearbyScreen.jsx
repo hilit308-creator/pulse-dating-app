@@ -585,7 +585,7 @@ export default function NearbyScreen() {
                         position: 'absolute',
                         inset: -2,
                         borderRadius: '50%',
-                        boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.55), 0 0 0 6px rgba(99,102,241,0.08)',
+                        boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.55), 0 0 0 6px rgba(96,165,250,0.08)',
                       }}
                     />
                     <Stack alignItems="center" spacing={1} sx={{ position: 'relative', zIndex: 1, px: 2 }}>
