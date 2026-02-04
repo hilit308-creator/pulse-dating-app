@@ -5018,6 +5018,10 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
               multiline
               maxRows={4}
               fullWidth
+              inputProps={{
+                dir: detectTextDirection(input) === 'rtl' ? 'rtl' : 'ltr',
+                style: { textAlign: detectTextDirection(input) === 'rtl' ? 'right' : 'left' },
+              }}
               sx={{ 
                 mx: 1,
                 fontSize: "0.95rem",

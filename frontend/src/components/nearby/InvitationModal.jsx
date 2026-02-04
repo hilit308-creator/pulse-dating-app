@@ -54,6 +54,17 @@ const MapCenterUpdater = ({ center }) => {
   return null;
 };
 
+// Detect text direction (RTL for Hebrew/Arabic, LTR for English)
+function detectTextDirection(text) {
+  if (!text) return 'ltr';
+  const rtlRegex = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F]/;
+  const firstLetterMatch = text.match(/[a-zA-Z\u0590-\u05FF\u0600-\u06FF\u0750-\u077F]/);
+  if (firstLetterMatch && rtlRegex.test(firstLetterMatch[0])) {
+    return 'rtl';
+  }
+  return 'ltr';
+}
+
 const PAYMENT_HOLDS_STORAGE_KEY = 'pulse_nearby_payment_holds';
 
 function getPaymentHolds() {
@@ -650,6 +661,10 @@ export default function InvitationModal({
                     placeholder={getDefaultMessage()}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
+                    inputProps={{
+                      dir: detectTextDirection(message) === 'rtl' ? 'rtl' : 'ltr',
+                      style: { textAlign: detectTextDirection(message) === 'rtl' ? 'right' : 'left' },
+                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '12px',
