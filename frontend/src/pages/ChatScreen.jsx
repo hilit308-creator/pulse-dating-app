@@ -692,6 +692,19 @@ function useReactionPopper() {
   return { registerAnchor, openFor, close, ...state };
 }
 
+/* ================== Text direction detection ================== */
+function detectTextDirection(text) {
+  if (!text) return 'ltr';
+  // Check first significant character for RTL languages (Hebrew, Arabic)
+  const rtlRegex = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F]/;
+  // Find first letter (skip spaces, numbers, punctuation)
+  const firstLetterMatch = text.match(/[a-zA-Z\u0590-\u05FF\u0600-\u06FF\u0750-\u077F]/);
+  if (firstLetterMatch && rtlRegex.test(firstLetterMatch[0])) {
+    return 'rtl';
+  }
+  return 'ltr';
+}
+
 /* ================== Chat bubble ================== */
 function ChatBubble({
   msg,
@@ -710,6 +723,7 @@ function ChatBubble({
     ([, c]) => c > 0
   );
   const match = (msg.text || "").match(URL_RE);
+  const textDirection = detectTextDirection(msg.text);
 
   return (
     <Box
@@ -848,7 +862,7 @@ function ChatBubble({
               </Box>
             </Box>
             {msg.text && (
-              <Typography variant="body2" sx={{ color: '#475569', mt: 1.5, fontStyle: 'italic' }}>
+              <Typography variant="body2" sx={{ color: '#475569', mt: 1.5, fontStyle: 'italic', direction: detectTextDirection(msg.text), textAlign: detectTextDirection(msg.text) === 'rtl' ? 'right' : 'left' }}>
                 "{msg.text}"
               </Typography>
             )}
@@ -954,7 +968,7 @@ function ChatBubble({
           </Box>
         ) : msg.type === "gesture" && msg.gestureType === "event_invite" ? (
           <Box sx={{ mt: 0.25 }}>
-            <Typography sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", mb: 1 }}>
+            <Typography sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", mb: 1, direction: textDirection, textAlign: textDirection === 'rtl' ? 'right' : 'left' }}>
               {msg.text}
             </Typography>
             {!!msg.gestureDetails?.paidByInviter && (
@@ -1183,7 +1197,7 @@ function ChatBubble({
           </Box>
         ) : (
           <>
-            <Typography sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+            <Typography sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", direction: textDirection, textAlign: textDirection === 'rtl' ? 'right' : 'left' }}>
               {msg.text}
             </Typography>
             {match && <LinkPreview url={match[0]} />}
