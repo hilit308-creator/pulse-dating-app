@@ -229,7 +229,7 @@ const inviteNeutralCtaSx = {
 };
 
 /* --------- Agent API Configuration --------- */
-const AGENT_URL = "http://localhost:5000";
+const AGENT_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 async function fetchAgentSuggestions({ chat, triggerType, currentDraft }) {
   const messages = (chat?.messages || []).slice(-30).map(m => ({

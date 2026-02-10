@@ -116,7 +116,7 @@ export default function MeetingTracker({
 
     try {
       await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/v1/meetings/${meetingId}/location`,
+        `${process.env.REACT_APP_API_URL}/api/v1/meetings/${meetingId}/location`,
         {
           method: 'POST',
           headers: {
@@ -138,7 +138,7 @@ export default function MeetingTracker({
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/v1/meetings/${meetingId}/location`,
+        `${process.env.REACT_APP_API_URL}/api/v1/meetings/${meetingId}/location`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

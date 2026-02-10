@@ -348,7 +348,7 @@ export default function SuggestedVenues({ onSelectVenue, selectedVenue }) {
       }
 
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/v1/nearby/venues?${params}`,
+        `${process.env.REACT_APP_API_URL}/api/v1/nearby/venues?${params}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

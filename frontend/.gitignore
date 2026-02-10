@@ -2,12 +2,14 @@ node_modules/
 build/
 dist/
 .env
+.env.local
+.env.*.local
+!.env.example
 .DS_Store
 *.log
 coverage/
 .next/
 .vercel/
-.env.*
 .idea/
 .vscode/
 yarn.lock
