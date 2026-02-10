@@ -2535,5 +2535,29 @@ def get_pending_gestures_to_user():
         return jsonify({'error': str(e)}), 500
 
 
+# ==================== Health Check Endpoints ====================
+
+@app.route('/health/db', methods=['GET'])
+def health_db():
+    """
+    Health check endpoint to verify Supabase Postgres connection.
+    Returns { "db": "ok" } on success, { "db": "error" } on failure.
+    """
+    try:
+        # Run a simple query to verify DB connection
+        result = db.session.execute(db.text('SELECT 1 as ok'))
+        result.fetchone()
+        return jsonify({'db': 'ok'}), 200
+    except Exception as e:
+        print(f'[Health] DB connection error: {str(e)}')
+        return jsonify({'db': 'error', 'message': str(e)}), 500
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Basic health check endpoint."""
+    return jsonify({'status': 'ok'}), 200
+
+
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
