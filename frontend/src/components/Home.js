@@ -1,7 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
 import useHomeDeckStore from "../store/homeDeckStore";
 import { resolvePrimaryPhoto } from "../utils/photoUtils";
 import {
@@ -66,6 +63,8 @@ import {
 import UserAvatarButton from "./UserAvatarButton";
 import UserCard from "./UserCard";
 import { PointsBannerCompact } from "./PointsBanner";
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 /* ---------------------------------------
    Photos helper (generate multiple crops)

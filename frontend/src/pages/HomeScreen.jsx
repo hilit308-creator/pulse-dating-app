@@ -15,8 +15,6 @@
  * It says: "These are your options right now."
  */
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -52,6 +50,8 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import UserAvatarButton from '../components/UserAvatarButton';
 import { UserCardStack } from '../components/UserCard';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // Safe bottom padding for tab bar
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';

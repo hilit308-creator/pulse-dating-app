@@ -6,8 +6,6 @@
  * Back button returns to previous screen (Home)
  */
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -58,6 +56,8 @@ import {
 } from 'lucide-react';
 import useHomeDeckStore from '../store/homeDeckStore';
 import { DEMO_ATTENDEES } from './EventsByCategory';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const formatDistance = (meters) => {
   if (meters === null || meters === undefined) return null;
