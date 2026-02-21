@@ -1,4 +1,6 @@
 // frontend/src/services/analytics.ts
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 export type AnalyticsEvent =
   | "message_sent"
   | "message_deleted"
@@ -27,7 +29,7 @@ export async function track(event: AnalyticsEvent, payload: Record<string, any> 
     };
     const appVersion = (window as any).__APP_VERSION__ || "0.1.0";
 
-    await fetch("/api/analytics", {
+    await fetch(`${API_URL}/api/analytics`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ event, payload, device, appVersion }),

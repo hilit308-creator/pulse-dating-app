@@ -20,6 +20,8 @@ import {
 import axios from 'axios';
 import io from 'socket.io-client';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [isActive, setIsActive] = useState(false);
@@ -34,8 +36,8 @@ export default function Dashboard() {
       return;
     }
 
-    // Connect to WebSocket (same-origin; dev proxy forwards to backend)
-    const newSocket = io();
+    // Connect to WebSocket
+    const newSocket = io(API_URL);
     setSocket(newSocket);
 
     // Get user's location and start updating
@@ -54,7 +56,7 @@ export default function Dashboard() {
 
   const updateLocation = async (coords) => {
     try {
-      await axios.post('/api/update-location', {
+      await axios.post(`${API_URL}/api/update-location`, {
         user_id: localStorage.getItem('userId'),
         latitude: coords.latitude,
         longitude: coords.longitude,
@@ -77,7 +79,7 @@ export default function Dashboard() {
 
   const fetchNearbyUsers = async () => {
     try {
-      const response = await axios.get('/api/nearby-users', {
+      const response = await axios.get(`${API_URL}/api/nearby-users`, {
         params: {
           user_id: localStorage.getItem('userId'),
           radius: 5 // 5km radius

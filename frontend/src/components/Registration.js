@@ -34,6 +34,8 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const HOBBY_OPTIONS = [
   'Reading', 'Writing', 'Gaming', 'Cooking', 'Traveling',
   'Photography', 'Music', 'Dancing', 'Hiking', 'Swimming',
@@ -138,7 +140,7 @@ const Registration = () => {
 
       console.log('Submitting data:', submissionData);
       
-      const response = await axios.post('/api/register', submissionData, {
+      const response = await axios.post(`${API_URL}/api/register`, submissionData, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'

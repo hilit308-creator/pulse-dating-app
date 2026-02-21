@@ -33,8 +33,7 @@
     "e2e": "npx playwright test",
     "e2e:headed": "npx playwright test --headed"
   },
-  "proxy": "http://localhost:5000",
-  "browserslist": {
+    "browserslist": {
     "production": [
       ">0.2%",
       "not dead",

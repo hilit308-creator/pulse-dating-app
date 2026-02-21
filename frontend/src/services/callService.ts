@@ -1,5 +1,8 @@
 // frontend/src/services/callService.ts
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const WS_URL = API_URL.replace(/^http/, 'ws');
+
 type Invite = { chatId: number; kind: 'audio'|'video'; sdpOffer: any };
 
 type Ringing = { callId: string };
@@ -19,7 +22,7 @@ export class CallService {
   private endHandlers: Array<(e: End) => void> = [];
   private errorHandlers: Array<(e: { callId?: string; code?: string; message?: string }) => void> = [];
 
-  constructor(url = 'wss://api.example.com/call', token = '') {
+  constructor(url = `${WS_URL}/call`, token = '') {
     this.url = url;
     this.token = token;
   }

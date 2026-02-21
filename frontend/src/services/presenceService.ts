@@ -1,5 +1,8 @@
 // frontend/src/services/presenceService.ts
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const WS_URL = API_URL.replace(/^http/, 'ws');
+
 type PresenceUpdate = { userId: number; isOnline: boolean; lastSeenIso?: string };
 
 type TypingEvent = { chatId: number; userId: number; isTyping: boolean };
@@ -12,7 +15,7 @@ export class PresenceService {
   private presenceHandlers: Array<(u: PresenceUpdate) => void> = [];
   private typingHandlers: Array<(t: TypingEvent) => void> = [];
 
-  constructor(url = "wss://api.example.com/presence", token = "") {
+  constructor(url = `${WS_URL}/presence`, token = "") {
     this.url = url;
     this.token = token;
   }

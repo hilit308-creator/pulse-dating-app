@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 import useHomeDeckStore from "../store/homeDeckStore";
 import { resolvePrimaryPhoto } from "../utils/photoUtils";
 import {
@@ -808,7 +811,7 @@ export default function Home({ onOpenTutorial }) {
     const fetchUsers = async () => {
       console.log('[Home] Fetching users from API...');
       try {
-        const response = await fetch('/api/nearby-users?limit=20');
+        const response = await fetch(`${API_URL}/api/nearby-users?limit=20`);
         console.log('[Home] API response status:', response.status);
         if (response.ok) {
           const data = await response.json();
@@ -1101,7 +1104,7 @@ export default function Home({ onOpenTutorial }) {
         setPicksLoading(true);
         // Demo: no user_id means server generates picks for anonymous user
         // Production: would include auth token
-        const response = await fetch('/api/todays-picks');
+        const response = await fetch(`${API_URL}/api/todays-picks`);
         if (response.ok) {
           const data = await response.json();
           // Transform to match expected format
@@ -1769,7 +1772,7 @@ export default function Home({ onOpenTutorial }) {
                   const currentUserId = localStorage.getItem('pulse_user_id');
                   let apiMatch = false;
                   try {
-                    const response = await fetch('/api/likes', {
+                    const response = await fetch(`${API_URL}/api/likes`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({

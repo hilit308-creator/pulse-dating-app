@@ -15,6 +15,8 @@
  * It says: "These are your options right now."
  */
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -304,7 +306,7 @@ const HomeScreen = () => {
       try {
         // Fetch nearby users from API
         console.log('[HomeScreen] Calling /api/nearby-users...');
-        const response = await fetch('/api/nearby-users?limit=10');
+        const response = await fetch(`${API_URL}/api/nearby-users?limit=10`);
         console.log('[HomeScreen] API response status:', response.status);
         if (response.ok) {
           const data = await response.json();

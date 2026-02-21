@@ -6,6 +6,8 @@
  * Back button returns to previous screen (Home)
  */
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -427,7 +429,7 @@ export default function UserDetailsScreen() {
     let apiMatch = false;
     let apiMatchId = null;
     try {
-      const response = await fetch('/api/likes', {
+      const response = await fetch(`${API_URL}/api/likes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -459,7 +461,7 @@ export default function UserDetailsScreen() {
     // If from Today's Picks, dismiss the pick (removes from Today's Picks UI)
     if (source === 'todays_picks') {
       try {
-        await fetch(`/api/todays-picks/${user.id}/dismiss`, { method: 'POST' });
+        await fetch(`${API_URL}/api/todays-picks/${user.id}/dismiss`, { method: 'POST' });
         console.log('[UserDetails] Dismissed Today\'s Pick:', user.id);
       } catch (err) {
         console.error('[UserDetails] Failed to dismiss pick:', err);
@@ -482,7 +484,7 @@ export default function UserDetailsScreen() {
     // If from Today's Picks, dismiss the pick (removes from Today's Picks UI)
     if (source === 'todays_picks') {
       try {
-        await fetch(`/api/todays-picks/${user.id}/dismiss`, { method: 'POST' });
+        await fetch(`${API_URL}/api/todays-picks/${user.id}/dismiss`, { method: 'POST' });
         console.log('[UserDetails] Dismissed Today\'s Pick:', user.id);
       } catch (err) {
         console.error('[UserDetails] Failed to dismiss pick:', err);
@@ -509,7 +511,7 @@ export default function UserDetailsScreen() {
     const currentUserId = localStorage.getItem('pulse_user_id');
     
     try {
-      await fetch('/api/reports', {
+      await fetch(`${API_URL}/api/reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -554,7 +556,7 @@ export default function UserDetailsScreen() {
     }
     
     try {
-      await fetch('/api/blocks', {
+      await fetch(`${API_URL}/api/blocks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
