@@ -27,6 +27,9 @@ ADMIN_EMAILS = [
 
 app = Flask(__name__)
 CORS(app)  # Allow all origins for development
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 # Manual CORS headers for all responses
 @app.after_request
