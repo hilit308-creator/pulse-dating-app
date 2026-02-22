@@ -2556,11 +2556,5 @@ def health_db():
         return jsonify({'db': 'error', 'message': str(e)}), 500
 
 
-@app.route('/health', methods=['GET'])
-def health():
-    """Basic health check endpoint."""
-    return jsonify({'status': 'ok'}), 200
-
-
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
