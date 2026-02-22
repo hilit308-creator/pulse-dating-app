@@ -10,6 +10,8 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -28,7 +30,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('/api/login', formData);
+      const response = await axios.post(`${API_URL}/api/login`, formData);
       localStorage.setItem('token', response.data.token);
       navigate('/dashboard');
     } catch (error) {

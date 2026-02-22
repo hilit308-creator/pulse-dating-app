@@ -1,7 +1,7 @@
 // ViewNearbyPeopleScreen.jsx - Swipeable Cards
 // Shows one card at a time - swipe right to like, left to pass
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
@@ -12,19 +12,54 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
-import { ArrowLeft, MapPin, Sparkles, X, Heart, Ruler, Wine, PawPrint, Baby, ShieldCheck, HeartHandshake, Sun, Smile, Radar, RefreshCw, MessageCircle, HelpCircle, Coffee } from "lucide-react";
+import { ArrowLeft, MapPin, Sparkles, X, Heart, Ruler, Wine, PawPrint, Baby, ShieldCheck, HeartHandshake, Sun, Smile, Radar, HelpCircle } from "lucide-react";
 import { NearbyMatchMoment, InvitationModal } from "../components/nearby";
+import MapView from "../components/MapView";
 import useHomeDeckStore from "../store/homeDeckStore";
+import useNearbyPeopleStore from "../store/nearbyPeopleStore";
+import { buildPulseMagic, getViewerSignalsFromStorage, sanitizeNoProximityText } from "../utils/pulseMagic";
 
 /* ------------------------------ Constants --------------------------------- */
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
 const SWIPE_THRESHOLD = 100; // px to trigger swipe action
+const NEARBY_MOMENT_KEEP_BROWSING_COUNT_KEY = 'pulse_nearby_moment_keep_browsing_count';
 
 // Analytics helper
 const trackEvent = (eventName, params = {}) => {
   console.log(`[Analytics] ${eventName}`, params);
+};
+
+const normalizeNearbyPerson = (user, index = 0) => {
+  const id = user?.id ?? index;
+  const firstName = user?.firstName || user?.first_name || user?.name || "";
+  const photos = Array.isArray(user?.photos) ? user.photos : [];
+  const interests = Array.isArray(user?.interests) ? user.interests : (Array.isArray(user?.tags) ? user.tags : []);
+  const lookingForRaw = user?.lookingFor ?? user?.looking_for;
+
+  return {
+    id,
+    firstName,
+    age: user?.age,
+    city: user?.location || user?.city || user?.residence || "",
+    tags: interests,
+    status: user?.status,
+    aboutMoment: user?.aboutMoment ?? null,
+    profession: user?.profession,
+    tagline: user?.tagline || user?.bio,
+    aboutMe: Array.isArray(user?.aboutMe) ? user.aboutMe : [],
+    lookingFor: Array.isArray(user?.lookingFor)
+      ? user.lookingFor
+      : (typeof lookingForRaw === 'string' && lookingForRaw ? [lookingForRaw] : []),
+    photos,
+    verified: !!user?.verified,
+    likesYou: !!user?.likesYou,
+    hasEvent: !!user?.hasEvent,
+    eventId: user?.eventId,
+  };
 };
 
 // Mock data for nearby people with full profile details
@@ -33,19 +68,17 @@ const MOCK_NEARBY_PEOPLE = [
     id: 1,
     firstName: "Maya",
     age: 27,
-    distanceRange: "< 1 km",
-    distance: 0.6,
     city: "Tel Aviv",
     tags: ["Yoga", "Design", "Coffee", "Music"],
     status: "Live now",
-    aboutMoment: "Looking for good coffee nearby",
+    aboutMoment: "Looking for good coffee",
     profession: "Product Designer",
     tagline: "Coffee, cats, and cozy playlists ☕️🐱",
     aboutMe: ["170 cm", "Sometimes drinks", "Likes pets"],
     lookingFor: ["A life partner", "Confidence", "Openness"],
     photos: [
       "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1400&h=1700&crop=faces&q=80",
-      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=1400&h=1700&q=80",
+      "https://images.unsplash.com/photo-1488426862026-ee32379fefbe?auto=format&fit=crop&w=1400&h=1700&q=80",
       "https://images.unsplash.com/photo-1496440737103-cd596325d314?auto=format&fit=crop&w=1400&h=1700&q=80",
     ],
     hasEvent: true,
@@ -57,8 +90,6 @@ const MOCK_NEARBY_PEOPLE = [
     id: 2,
     firstName: "Lior",
     age: 26,
-    distanceRange: "1–3 km",
-    distance: 1.2,
     city: "Givatayim",
     tags: ["Art", "Music", "Photography", "Pilates"],
     status: "Active today",
@@ -78,8 +109,6 @@ const MOCK_NEARBY_PEOPLE = [
     id: 3,
     firstName: "Noa",
     age: 29,
-    distanceRange: "< 1 km",
-    distance: 0.3,
     city: "Tel Aviv",
     tags: ["Photography", "Travel", "Hiking", "Wine"],
     status: "Live now",
@@ -102,8 +131,6 @@ const MOCK_NEARBY_PEOPLE = [
     id: 4,
     firstName: "Shira",
     age: 25,
-    distanceRange: "3–7 km",
-    distance: 4.5,
     city: "Ramat Gan",
     tags: ["Music", "Yoga", "Wellness", "Meditation"],
     status: "Active today",
@@ -123,8 +150,6 @@ const MOCK_NEARBY_PEOPLE = [
     id: 5,
     firstName: "Dana",
     age: 28,
-    distanceRange: "1–3 km",
-    distance: 2.1,
     city: "Tel Aviv",
     tags: ["Design", "Art", "Brunch", "Architecture"],
     status: "Live now",
@@ -146,8 +171,6 @@ const MOCK_NEARBY_PEOPLE = [
     id: 6,
     firstName: "Yael",
     age: 24,
-    distanceRange: "< 1 km",
-    distance: 0.7,
     city: "Tel Aviv",
     tags: ["Yoga", "Nature", "Cooking", "Reading"],
     status: "Live now",
@@ -271,15 +294,19 @@ function LookingForPill({ text }) {
 }
 
 // Swipeable Card Component with real photos
-function SwipeableCard({ person, onSwipe, isActive }) {
+function SwipeableCard({ person, onSwipe, isActive, viewerSignals }) {
   const isLive = person.status === "Live now";
   const photos = person.photos || [];
   const [photoIndex, setPhotoIndex] = useState(0);
-  
+  const [pulseMagicOpen, setPulseMagicOpen] = useState(false);
+  const pulseMagic = useMemo(() => buildPulseMagic(person, viewerSignals), [person, viewerSignals]);
+  const aboutMomentSafe = useMemo(() => sanitizeNoProximityText(person?.aboutMoment), [person?.aboutMoment]);
+
   // Motion values for drag
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-15, 15]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
+
   
   // Like/Nope indicator opacity
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
@@ -539,7 +566,7 @@ function SwipeableCard({ person, onSwipe, isActive }) {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
               <MapPin size={16} color="#fff" />
               <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.9)", fontWeight: 500 }}>
-                {person.city} · {person.distance ? `${person.distance.toFixed(1)} km away` : person.distanceRange}
+                {person.city}
               </Typography>
             </Box>
           </Box>
@@ -559,13 +586,36 @@ function SwipeableCard({ person, onSwipe, isActive }) {
                 {person.tagline}
               </Typography>
             )}
+            {pulseMagic?.vibeLine && (
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mt: 0.5 }}>
+                <Box sx={{ color: '#6C5CE7', display: 'flex', alignItems: 'center', pt: '2px' }}>
+                  <Sparkles size={14} />
+                </Box>
+                <Typography sx={{ color: '#1a1a2e', fontSize: '0.78rem', lineHeight: 1.25, flex: 1 }}>
+                  {pulseMagic.vibeLine}
+                </Typography>
+                {pulseMagic?.insights?.length > 0 && (
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPulseMagicOpen(true);
+                    }}
+                    sx={{ p: 0.25, mt: '-2px' }}
+                    aria-label="Pulse Magic details"
+                  >
+                    <HelpCircle size={16} color="#64748b" />
+                  </IconButton>
+                )}
+              </Box>
+            )}
           </Box>
 
           {/* Row 2: About the moment - inline */}
-          {person.aboutMoment && (
+          {aboutMomentSafe && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.5, px: 1, borderRadius: 2, bgcolor: 'rgba(34,197,94,0.08)' }}>
               <Typography sx={{ color: "#10b981", fontWeight: 600, fontSize: '0.7rem' }}>📍</Typography>
-              <Typography sx={{ color: "#1a1a2e", fontSize: '0.75rem' }}>{person.aboutMoment}</Typography>
+              <Typography sx={{ color: "#1a1a2e", fontSize: '0.75rem' }}>{aboutMomentSafe}</Typography>
             </Box>
           )}
 
@@ -597,6 +647,39 @@ function SwipeableCard({ person, onSwipe, isActive }) {
             </Box>
           )}
         </Box>
+
+        <Dialog
+          open={pulseMagicOpen}
+          onClose={() => setPulseMagicOpen(false)}
+          sx={{ zIndex: 10000 }}
+        >
+          <DialogTitle sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+            Pulse Magic
+          </DialogTitle>
+          <DialogContent
+            sx={{ pt: 0.5 }}
+          >
+            {pulseMagic?.vibeLine && (
+              <Typography sx={{ color: '#1a1a2e', fontWeight: 700, mb: 1 }}>
+                {pulseMagic.vibeLine}
+              </Typography>
+            )}
+            {(pulseMagic?.insights || []).slice(0, 3).map((t, idx) => (
+              <Typography key={idx} variant="body2" sx={{ color: '#64748b', mb: 0.75 }}>
+                {idx + 1}. {t}
+              </Typography>
+            ))}
+          </DialogContent>
+          <DialogActions sx={{ px: 2.5, pb: 2 }}>
+            <Button
+              variant="contained"
+              onClick={() => setPulseMagicOpen(false)}
+              sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 999, bgcolor: '#6C5CE7', '&:hover': { bgcolor: '#5a4ee0' } }}
+            >
+              Got it
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </motion.div>
   );
@@ -667,7 +750,7 @@ function EmptyState({ onBack }) {
           boxShadow: "0 4px 16px rgba(108,92,231,0.35)",
         }}
       >
-        Back to Nearby
+        Back
       </Button>
     </Box>
   );
@@ -730,7 +813,7 @@ function AllDoneState({ onBack, likedCount, passedCount }) {
           mb: 2,
         }}
       >
-        You've seen everyone nearby
+        You've seen everyone for now
       </Typography>
 
       {/* Stats */}
@@ -768,7 +851,7 @@ function AllDoneState({ onBack, likedCount, passedCount }) {
           boxShadow: "0 8px 24px rgba(108,92,231,0.4)",
         }}
       >
-        Back to Nearby
+        Back
       </Button>
     </Box>
   );
@@ -778,21 +861,25 @@ function AllDoneState({ onBack, likedCount, passedCount }) {
 export default function ViewNearbyPeopleScreen() {
   const navigate = useNavigate();
   const location = useLocation();
+  const viewerSignals = useMemo(() => getViewerSignalsFromStorage(), []);
+
+  const [nearbyMomentNudgeOpen, setNearbyMomentNudgeOpen] = useState(false);
+  const [nearbyMomentNudgePerson, setNearbyMomentNudgePerson] = useState(null);
   
   // Get data from NearbyScreen navigation (if coming from radar screen)
-  const { liveNowCount = 0, scanCompleted = false } = location.state || {};
+  const { liveNowCount = 0, scanCompleted = false, scanRequestedAt } = location.state || {};
   
   // Global store for liked profiles (YOU LIKE tab)
   const { addLikedProfile, addLikedUser, removeLikedProfile } = useHomeDeckStore();
   
   // States - load cards directly, no scanning
-  const [people, setPeople] = useState(MOCK_NEARBY_PEOPLE);
+  const [people, setPeople] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedPeople, setSwipedPeople] = useState({ liked: [], passed: [] });
   const [isEmpty, setIsEmpty] = useState(false);
   const [isAllDone, setIsAllDone] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [hasScanned, setHasScanned] = useState(true);
+  const [hasScanned, setHasScanned] = useState(false);
   const [liveCount, setLiveCount] = useState(MOCK_NEARBY_PEOPLE.length);
   const [matchPerson, setMatchPerson] = useState(null); // Person we matched with
   const [showTutorial, setShowTutorial] = useState(false); // Tutorial dialog
@@ -801,32 +888,163 @@ export default function ViewNearbyPeopleScreen() {
   const [showInvitationModal, setShowInvitationModal] = useState(false); // Invitation modal
   const [invitationPerson, setInvitationPerson] = useState(null);
 
-  // Scan for nearby people
-  const handleScan = useCallback(() => {
+  const [viewMode, setViewMode] = useState('browse');
+
+  const viewerId = String(localStorage.getItem('userId') || 'anonymous');
+  const scan = useNearbyPeopleStore((s) => s.scanByViewer?.[viewerId] || null);
+  const setScan = useNearbyPeopleStore((s) => s.setScan);
+  const isSuppressedStore = useNearbyPeopleStore((s) => s.isSuppressed);
+  const viewerExposure = useNearbyPeopleStore((s) => s.exposureByViewer?.[viewerId] || null);
+  const markShown = useNearbyPeopleStore((s) => s.markShown);
+  const markInteracted = useNearbyPeopleStore((s) => s.markInteracted);
+  const [radiusMeters, setRadiusMeters] = useState(() => {
+    const fromNav = location.state?.radiusMeters;
+    if (typeof fromNav === 'number') return fromNav;
+    if (typeof scan?.lastRadiusMeters === 'number') return scan.lastRadiusMeters;
+    return 1000;
+  });
+
+  useEffect(() => {
+    const nextRadius = location.state?.radiusMeters;
+    if (typeof nextRadius === 'number' && nextRadius !== radiusMeters) {
+      setRadiusMeters(nextRadius);
+    }
+  }, [location.state, radiusMeters]);
+
+  const isSuppressed = useCallback(
+    (candidateId) => isSuppressedStore(viewerId, candidateId),
+    [isSuppressedStore, viewerId]
+  );
+
+  const runScan = useCallback(async () => {
     if (isScanning) return;
-    
+
+    const now = Date.now();
+    const seenIds = new Set(
+      Object.entries(viewerExposure || {})
+        .filter(([, record]) => typeof record?.lastShownAt === 'number')
+        .map(([candidateId]) => String(candidateId))
+    );
     setIsScanning(true);
-    trackEvent("nearby_scan_started");
-    
+    trackEvent("nearby_scan_started", { radiusMeters });
     if (navigator?.vibrate) navigator.vibrate([10, 40, 10]);
-    
-    // Simulate scanning delay (1.5-2 seconds)
-    setTimeout(() => {
-      const foundCount = Math.floor(Math.random() * 4) + MOCK_NEARBY_PEOPLE.length - 2; // Random 4-8 people
-      const mockPeople = MOCK_NEARBY_PEOPLE.slice(0, Math.min(foundCount, MOCK_NEARBY_PEOPLE.length));
-      
-      setLiveCount(mockPeople.length);
-      setPeople(mockPeople);
+
+    try {
+      const params = new URLSearchParams();
+      params.set('limit', '50');
+      if (viewerId && viewerId !== 'anonymous') params.set('user_id', viewerId);
+      params.set('radius_meters', String(radiusMeters));
+
+      const response = await fetch(`/api/nearby-users?${params.toString()}`);
+      let nextPeople;
+
+      if (response.ok) {
+        const data = await response.json();
+        const rawUsers = Array.isArray(data?.users) ? data.users : [];
+        nextPeople = rawUsers
+          .map((u, i) => {
+            const normalized = normalizeNearbyPerson(u, i);
+            return {
+              ...normalized,
+              verified: normalized.verified || true,
+              likesYou: typeof normalized.likesYou === 'boolean' ? normalized.likesYou : (Number(normalized.id) % 5 === 0),
+            };
+          })
+          .filter((p) => p && p.id != null)
+          .filter((p) => !isSuppressed(p.id));
+      } else {
+        nextPeople = MOCK_NEARBY_PEOPLE.map((p, i) => normalizeNearbyPerson(p, i)).filter((p) => !isSuppressed(p.id));
+      }
+
+      if (!Array.isArray(nextPeople)) nextPeople = [];
+
+      const fresh = [];
+      const existing = [];
+      nextPeople.forEach((p) => {
+        const key = String(p?.id);
+        if (seenIds.has(key)) existing.push(p);
+        else fresh.push(p);
+      });
+      nextPeople = [...fresh, ...existing];
+
+      setLiveCount(nextPeople.length);
+      setPeople(nextPeople);
       setCurrentIndex(0);
       setSwipedPeople({ liked: [], passed: [] });
       setIsAllDone(false);
-      setIsEmpty(mockPeople.length === 0);
+      setIsEmpty(nextPeople.length === 0);
       setHasScanned(true);
+
+      setScan(viewerId, { lastScanAt: now, radiusMeters, results: nextPeople });
+      trackEvent("nearby_scan_completed", { count: nextPeople.length, radiusMeters });
+    } catch (error) {
+      console.error('[Nearby] scan failed', error);
+      const fallback = MOCK_NEARBY_PEOPLE.map((p, i) => normalizeNearbyPerson(p, i)).filter((p) => !isSuppressed(p.id));
+      const fresh = [];
+      const existing = [];
+      fallback.forEach((p) => {
+        const key = String(p?.id);
+        if (seenIds.has(key)) existing.push(p);
+        else fresh.push(p);
+      });
+      const orderedFallback = [...fresh, ...existing];
+      setLiveCount(fallback.length);
+      setPeople(orderedFallback);
+      setCurrentIndex(0);
+      setSwipedPeople({ liked: [], passed: [] });
+      setIsAllDone(false);
+      setIsEmpty(fallback.length === 0);
+      setHasScanned(true);
+      setScan(viewerId, { lastScanAt: now, radiusMeters, results: orderedFallback });
+    } finally {
       setIsScanning(false);
-      
-      trackEvent("nearby_scan_completed", { count: mockPeople.length });
-    }, 1800);
-  }, [isScanning]);
+    }
+  }, [isScanning, radiusMeters, viewerExposure, viewerId, setScan, isSuppressed]);
+
+  const handleScan = useCallback(() => {
+    runScan();
+  }, [runScan]);
+
+  // DEV: Force Maya to appear first for testing venues integration
+  useEffect(() => {
+    const maya = MOCK_NEARBY_PEOPLE.find(p => p.firstName === 'Maya' && p.likesYou);
+    if (maya) {
+      const normalized = normalizeNearbyPerson(maya, 0);
+      const testPeople = [normalized, ...MOCK_NEARBY_PEOPLE.filter(p => p.id !== maya.id).map((p, i) => normalizeNearbyPerson(p, i + 1))];
+      setPeople(testPeople);
+      setCurrentIndex(0);
+      setHasScanned(true);
+      setLiveCount(testPeople.length);
+    }
+  }, []);
+
+  useEffect(() => {
+    const cachedResults = scan?.results;
+    const hasCached = Array.isArray(cachedResults) && cachedResults.length > 0;
+    const shouldAttemptNewScan =
+      typeof scanRequestedAt === 'number' &&
+      (typeof scan?.lastScanAt !== 'number' || scanRequestedAt > scan.lastScanAt);
+
+    if (shouldAttemptNewScan) {
+      // Skip auto-scan for dev testing
+      // runScan();
+      return;
+    }
+
+    if (hasCached) {
+      setPeople(cachedResults);
+      setLiveCount(cachedResults.length);
+      setHasScanned(true);
+      return;
+    }
+
+    if (scanCompleted) {
+      runScan();
+      return;
+    }
+
+    setHasScanned(false);
+  }, [scanCompleted, scanRequestedAt, scan?.lastScanAt, scan?.results, runScan]);
 
   // Track page view
   useEffect(() => {
@@ -836,6 +1054,10 @@ export default function ViewNearbyPeopleScreen() {
   // Handle swipe action
   const handleSwipe = useCallback((direction, person) => {
     if (navigator?.vibrate) navigator.vibrate(10);
+
+    if (person?.id != null) {
+      markInteracted(viewerId, person.id);
+    }
     
     if (direction === 'right') {
       trackEvent("nearby_swipe_right", { personId: person.id });
@@ -892,7 +1114,13 @@ export default function ViewNearbyPeopleScreen() {
         return nextIndex;
       });
     }, 200);
-  }, [people.length, addLikedUser, addLikedProfile, removeLikedProfile]);
+  }, [people.length, addLikedUser, addLikedProfile, removeLikedProfile, markInteracted, viewerId]);
+
+  useEffect(() => {
+    const p = people?.[currentIndex];
+    if (!p || p.id == null) return;
+    markShown(viewerId, p.id);
+  }, [people, currentIndex, markShown, viewerId]);
 
   useEffect(() => {
     if (!matchPerson) return;
@@ -978,6 +1206,13 @@ export default function ViewNearbyPeopleScreen() {
     navigate("/nearby");
   }, [navigate]);
 
+  const mapProfiles = people.map((p) => ({
+    id: p.id,
+    name: p.firstName,
+    photo: p.photos?.[0] || '',
+    distance: Math.max(120, Math.min(400, Math.round(radiusMeters / 5))),
+  }));
+
   // Handle match screen actions
   const handleStartChat = useCallback(() => {
     if (matchPerson) {
@@ -1012,6 +1247,34 @@ export default function ViewNearbyPeopleScreen() {
   const handleNearbyMomentContinue = useCallback(() => {
     trackEvent("nearby_moment_continued_browsing");
     setShowNearbyMoment(false);
+
+    try {
+      const raw = localStorage.getItem(NEARBY_MOMENT_KEEP_BROWSING_COUNT_KEY);
+      const current = raw ? parseInt(raw, 10) : 0;
+      const next = Number.isFinite(current) ? current + 1 : 1;
+
+      if (next >= 2 && nearbyMomentPerson) {
+        localStorage.setItem(NEARBY_MOMENT_KEEP_BROWSING_COUNT_KEY, '0');
+        setNearbyMomentNudgePerson(nearbyMomentPerson);
+        setNearbyMomentNudgeOpen(true);
+      } else {
+        localStorage.setItem(NEARBY_MOMENT_KEEP_BROWSING_COUNT_KEY, String(next));
+      }
+    } catch {
+      // ignore
+    }
+  }, [nearbyMomentPerson]);
+
+  const handleNearbyMomentNudgeSayHello = useCallback(() => {
+    const p = nearbyMomentNudgePerson;
+    setNearbyMomentNudgeOpen(false);
+    if (p?.id != null) {
+      navigate(`/chat/${p.id}`);
+    }
+  }, [navigate, nearbyMomentNudgePerson]);
+
+  const handleNearbyMomentNudgeKeepBrowsing = useCallback(() => {
+    setNearbyMomentNudgeOpen(false);
   }, []);
 
   // Handle Invitation Modal - per spec: "two equal paths"
@@ -1026,8 +1289,21 @@ export default function ViewNearbyPeopleScreen() {
       personId: invitation.person.id,
       hasVenue: !!invitation.venue,
     });
+    
+    // Store invitation in localStorage so ChatScreen can pick it up and create the message
+    const pendingInvite = {
+      id: `invite_${Date.now()}`,
+      type: invitation.type,
+      venue: invitation.venue,
+      message: invitation.message,
+      personId: invitation.person.id,
+      personName: invitation.person.firstName || invitation.person.name,
+      createdAt: Date.now(),
+    };
+    localStorage.setItem('pulse_pending_meeting_invite', JSON.stringify(pendingInvite));
+    
     // Navigate to chat with invitation context
-    navigate(`/chat/${invitation.person.id}`);
+    navigate(`/chat/${invitation.person.id}?meetingInvite=true`);
     setShowInvitationModal(false);
   }, [navigate]);
 
@@ -1071,11 +1347,8 @@ export default function ViewNearbyPeopleScreen() {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton onClick={handleBack} sx={{ color: "#1a1a2e" }}>
-              <ArrowLeft size={22} />
-            </IconButton>
             <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a2e" }}>
-              People nearby
+              People
             </Typography>
           </Box>
           <IconButton
@@ -1133,6 +1406,37 @@ export default function ViewNearbyPeopleScreen() {
         onContinueBrowsing={handleNearbyMomentContinue}
       />
 
+      <Dialog
+        open={nearbyMomentNudgeOpen}
+        onClose={handleNearbyMomentNudgeKeepBrowsing}
+        sx={{ zIndex: 10000 }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+          Gentle nudge
+        </DialogTitle>
+        <DialogContent sx={{ pt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: '#64748b' }}>
+            No pressure. If you’re curious, one hello to {nearbyMomentNudgePerson?.firstName || 'them'} can be enough.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2 }}>
+          <Button
+            variant="text"
+            onClick={handleNearbyMomentNudgeKeepBrowsing}
+            sx={{ textTransform: 'none', fontWeight: 600, color: '#64748b' }}
+          >
+            Keep browsing
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleNearbyMomentNudgeSayHello}
+            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 999, bgcolor: '#6C5CE7', '&:hover': { bgcolor: '#5a4ee0' } }}
+          >
+            Say hello
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Invitation Modal - per spec: two equal paths */}
       <InvitationModal
         isOpen={showInvitationModal}
@@ -1182,6 +1486,8 @@ export default function ViewNearbyPeopleScreen() {
             </motion.div>
           </IconButton>
         </Box>
+
+{/* Map toggle removed per user request */}
       </Box>
 
       {/* Scanning Overlay */}
@@ -1212,13 +1518,13 @@ export default function ViewNearbyPeopleScreen() {
               variant="h6"
               sx={{ mt: 3, fontWeight: 700, color: '#1a1a2e' }}
             >
-              Scanning nearby...
+              Scanning...
             </Typography>
             <Typography
               variant="body2"
               sx={{ mt: 1, color: '#64748b' }}
             >
-              Looking for people around you
+              Finding people to browse
             </Typography>
           </motion.div>
         )}
@@ -1234,27 +1540,39 @@ export default function ViewNearbyPeopleScreen() {
           overflow: 'hidden',
         }}
       >
-        {/* Card container */}
-        <Box
-          sx={{
-            flex: 1,
-            position: 'relative',
-            maxWidth: 400,
-            width: '100%',
-            mx: 'auto',
-          }}
-        >
-          <AnimatePresence>
-            {currentPerson && (
-              <SwipeableCard
-                key={currentPerson.id}
-                person={currentPerson}
-                onSwipe={handleSwipe}
-                isActive={true}
-              />
+        {viewMode === 'map' ? (
+          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+            {hasScanned && people.length > 0 ? (
+              <MapView profiles={mapProfiles} showUserMarker={false} />
+            ) : (
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6 }}>
+                <Typography sx={{ color: '#64748b', fontWeight: 600 }}>Run a scan to see the map</Typography>
+              </Box>
             )}
-          </AnimatePresence>
-        </Box>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              flex: 1,
+              position: 'relative',
+              maxWidth: 400,
+              width: '100%',
+              mx: 'auto',
+            }}
+          >
+            <AnimatePresence>
+              {currentPerson && (
+                <SwipeableCard
+                  key={currentPerson.id}
+                  person={currentPerson}
+                  onSwipe={handleSwipe}
+                  isActive={true}
+                  viewerSignals={viewerSignals}
+                />
+              )}
+            </AnimatePresence>
+          </Box>
+        )}
 
         {/* Action buttons */}
         <Box
@@ -1269,6 +1587,7 @@ export default function ViewNearbyPeopleScreen() {
           {/* Pass button */}
           <IconButton
             onClick={handlePass}
+            disabled={viewMode === 'map'}
             sx={{
               width: 64,
               height: 64,
@@ -1287,6 +1606,7 @@ export default function ViewNearbyPeopleScreen() {
           {/* Like button */}
           <IconButton
             onClick={handleLike}
+            disabled={viewMode === 'map'}
             sx={{
               width: 64,
               height: 64,
@@ -1361,7 +1681,7 @@ export default function ViewNearbyPeopleScreen() {
                 Scan again
               </Typography>
               <Typography variant="body2" sx={{ color: '#64748b' }}>
-                Tap the radar icon to find more people nearby
+                Tap the radar icon to refresh results
               </Typography>
             </Box>
           </Box>

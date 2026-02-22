@@ -8,6 +8,17 @@ import { Box, Typography, Button, IconButton } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Wine, MessageCircle, Check, Clock, Shield } from 'lucide-react';
 
+// Detect text direction (RTL for Hebrew/Arabic, LTR for English)
+function detectTextDirection(text) {
+  if (!text) return 'ltr';
+  const rtlRegex = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F]/;
+  const firstLetterMatch = text.match(/[a-zA-Z\u0590-\u05FF\u0600-\u06FF\u0750-\u077F]/);
+  if (firstLetterMatch && rtlRegex.test(firstLetterMatch[0])) {
+    return 'rtl';
+  }
+  return 'ltr';
+}
+
 /**
  * InviteeExperience - Receiving an invitation
  * 
@@ -63,7 +74,7 @@ export default function InviteeExperience({
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 1000,
+          zIndex: 10000,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -190,7 +201,15 @@ export default function InviteeExperience({
                     mb: 3,
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: '#1a1a2e', fontStyle: 'italic' }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: '#1a1a2e', 
+                      fontStyle: 'italic',
+                      direction: detectTextDirection(message),
+                      textAlign: detectTextDirection(message) === 'rtl' ? 'right' : 'left',
+                    }}
+                  >
                     "{message}"
                   </Typography>
                 </Box>
@@ -341,7 +360,7 @@ export function DeclineConfirmation({ isOpen, onClose, person }) {
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 1000,
+          zIndex: 10000,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

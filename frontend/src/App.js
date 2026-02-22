@@ -1,5 +1,6 @@
 import React from 'react';
 import './index.css';
+import './global-theme.css';
 import './pages/global-theme.css';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -105,11 +106,87 @@ import UserDetailsScreen from './pages/UserDetailsScreen';
 import { GlobalErrorProvider } from './components/GlobalErrorBanner';
 import SessionExpiredModal from './components/SessionExpiredModal';
 import { getPageHelpContent } from './config/pageHelpContent';
+import { MeetingProvider } from './context/MeetingContext';
+import GlobalMeetingBar from './components/GlobalMeetingBar';
+
+// Safe area calculations for modals/dialogs
+const BOTTOM_NAV_HEIGHT = 56;
+const TOP_HEADER_HEIGHT = 56;
+const MODAL_VERTICAL_MARGIN = 24; // Consistent margin from top and bottom
+
+// Global overlay z-index - must be above all screen content
+const GLOBAL_OVERLAY_ZINDEX = 10000;
 
 const theme = createTheme({
   palette: {
-    primary: { main: '#ff4081' },
+    primary: { main: '#6C5CE7' },
     secondary: { main: '#3f51b5' },
+  },
+  components: {
+    // Global Modal Vertical Spacing & Centering Rule
+    // All dialogs/modals must:
+    // 1. Be rendered in app-level overlay portal (above all screen content)
+    // 2. Have consistent vertical spacing from top and bottom
+    // 3. Be visually centered within the safe viewport
+    // 4. Never touch or approach the bottom navigation bar
+    // 5. Use internal scrolling if content exceeds available height
+    MuiDialog: {
+      defaultProps: {
+        // Ensure dialogs are rendered at document.body level (portal)
+        disablePortal: false,
+      },
+      styleOverrides: {
+        root: {
+          // High z-index to sit above all screen content and UI chrome
+          zIndex: GLOBAL_OVERLAY_ZINDEX,
+          // Container handles centering and safe area padding
+          '& .MuiDialog-container': {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            // Safe area: header + margin at top, nav bar + margin at bottom
+            paddingTop: `${TOP_HEADER_HEIGHT + MODAL_VERTICAL_MARGIN}px`,
+            paddingBottom: `${BOTTOM_NAV_HEIGHT + MODAL_VERTICAL_MARGIN}px`,
+            paddingLeft: 16,
+            paddingRight: 16,
+            boxSizing: 'border-box',
+            minHeight: '100vh',
+          },
+        },
+        paper: {
+          // Dialog paper is a floating element, not screen-aligned
+          maxHeight: `calc(100vh - ${TOP_HEADER_HEIGHT + BOTTOM_NAV_HEIGHT + (MODAL_VERTICAL_MARGIN * 2)}px)`,
+          margin: 0, // Container handles spacing
+          overflowY: 'auto',
+          // Ensure it doesn't stretch to fill container
+          width: 'auto',
+          maxWidth: 'calc(100% - 32px)',
+        },
+      },
+    },
+    MuiModal: {
+      defaultProps: {
+        // Ensure modals are rendered at document.body level (portal)
+        disablePortal: false,
+      },
+      styleOverrides: {
+        root: {
+          // High z-index to sit above all screen content and UI chrome
+          zIndex: GLOBAL_OVERLAY_ZINDEX,
+          // For MUI Modal (used by some custom modals)
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          // Apply safe area to direct children (modal content)
+          '& > .MuiBox-root, & > div:not(.MuiBackdrop-root)': {
+            maxHeight: `calc(100vh - ${TOP_HEADER_HEIGHT + BOTTOM_NAV_HEIGHT + (MODAL_VERTICAL_MARGIN * 2)}px)`,
+            marginTop: `${TOP_HEADER_HEIGHT + MODAL_VERTICAL_MARGIN}px`,
+            marginBottom: `${BOTTOM_NAV_HEIGHT + MODAL_VERTICAL_MARGIN}px`,
+            overflowY: 'auto',
+          },
+        },
+      },
+    },
   },
 });
 
@@ -865,6 +942,7 @@ function AppShell() {
       <Dialog
         open={showHelpDialog}
         onClose={() => setShowHelpDialog(false)}
+        sx={{ zIndex: 99999 }}
         PaperProps={{
           sx: {
             borderRadius: '16px',
@@ -1030,14 +1108,17 @@ function App() {
         <AuthProvider>
           <ActivityProvider>
             <NotificationsProvider>
-              <GlobalErrorProvider>
-                <Router>
-                  <InAppNotificationBanner />
-                  <GlobalEventInvitePopups />
-                  <DevEventInviteDemoButtons />
-                  <AppShell />
-                </Router>
-              </GlobalErrorProvider>
+              <MeetingProvider>
+                <GlobalErrorProvider>
+                  <Router>
+                    <GlobalMeetingBar />
+                    <InAppNotificationBanner />
+                    <GlobalEventInvitePopups />
+                    <DevEventInviteDemoButtons />
+                    <AppShell />
+                  </Router>
+                </GlobalErrorProvider>
+              </MeetingProvider>
             </NotificationsProvider>
           </ActivityProvider>
         </AuthProvider>

@@ -57,6 +57,8 @@ import {
 import useHomeDeckStore from '../store/homeDeckStore';
 import { DEMO_ATTENDEES } from './EventsByCategory';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const formatDistance = (meters) => {
   if (meters === null || meters === undefined) return null;
   if (meters < 1000) return `${Math.round(meters)}m`;
@@ -427,7 +429,7 @@ export default function UserDetailsScreen() {
     let apiMatch = false;
     let apiMatchId = null;
     try {
-      const response = await fetch('/api/likes', {
+      const response = await fetch(`${API_URL}/api/likes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -459,7 +461,7 @@ export default function UserDetailsScreen() {
     // If from Today's Picks, dismiss the pick (removes from Today's Picks UI)
     if (source === 'todays_picks') {
       try {
-        await fetch(`/api/todays-picks/${user.id}/dismiss`, { method: 'POST' });
+        await fetch(`${API_URL}/api/todays-picks/${user.id}/dismiss`, { method: 'POST' });
         console.log('[UserDetails] Dismissed Today\'s Pick:', user.id);
       } catch (err) {
         console.error('[UserDetails] Failed to dismiss pick:', err);
@@ -482,7 +484,7 @@ export default function UserDetailsScreen() {
     // If from Today's Picks, dismiss the pick (removes from Today's Picks UI)
     if (source === 'todays_picks') {
       try {
-        await fetch(`/api/todays-picks/${user.id}/dismiss`, { method: 'POST' });
+        await fetch(`${API_URL}/api/todays-picks/${user.id}/dismiss`, { method: 'POST' });
         console.log('[UserDetails] Dismissed Today\'s Pick:', user.id);
       } catch (err) {
         console.error('[UserDetails] Failed to dismiss pick:', err);
@@ -509,7 +511,7 @@ export default function UserDetailsScreen() {
     const currentUserId = localStorage.getItem('pulse_user_id');
     
     try {
-      await fetch('/api/reports', {
+      await fetch(`${API_URL}/api/reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -536,8 +538,25 @@ export default function UserDetailsScreen() {
     
     const currentUserId = localStorage.getItem('pulse_user_id');
     
+    // Add to blocked users in localStorage for Settings page
+    const blockedUser = {
+      id: user.id,
+      name: user.firstName || user.name || 'User',
+      photo: user.photos?.[0] || user.photoUrl || '',
+      source: 'profile',
+      blockedAt: new Date().toISOString().split('T')[0],
+    };
     try {
-      await fetch('/api/blocks', {
+      const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+      if (!existing.find(u => u.id === blockedUser.id)) {
+        localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
+      }
+    } catch (e) {
+      console.error('Failed to save blocked user to localStorage:', e);
+    }
+    
+    try {
+      await fetch(`${API_URL}/api/blocks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

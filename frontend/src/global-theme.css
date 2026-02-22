@@ -1,11 +1,11 @@
 /* 🚀 Neon Glassy Theme for the Dating App */
 :root {
   --color-bg: #fff;
-  --color-bg-soft: #fff3e0;
+  --color-bg-soft: #F3F0FF;
   --color-text-main: #000;
   --color-text-subtle: #333;
-  --color-accent: #ffb357;
-  --color-accent-deep: #ff9800;
+  --color-accent: #6C5CE7;
+  --color-accent-deep: #5B4BD5;
   --color-border: #f5f5f5;
 }
 
@@ -24,16 +24,16 @@ body {
   border: 1px solid var(--color-border);
 }
 
-/* Chips & Status Labels */
-.MuiChip-root, .status-chip {
-  background: var(--color-accent) !important;
-  color: var(--color-text-main) !important;
+/* Chips & Status Labels - Only apply to chips with specific classes */
+.MuiChip-root.orange-chip, .status-chip {
+  background: var(--color-accent);
+  color: var(--color-text-main);
   font-weight: 500;
   border-radius: 12px;
 }
 .MuiChip-root[data-status="expired"], .status-chip.expired {
-  background: var(--color-accent-deep) !important;
-  color: #fff !important;
+  background: var(--color-accent-deep);
+  color: #fff;
 }
 
 /* Buttons */
@@ -51,21 +51,26 @@ button:hover, .MuiButton-root:hover {
   color: #fff !important;
 }
 
-/* Tab Bar */
+/* Tab Bar - ALWAYS visible at bottom */
 .tab-bar {
-  position: fixed;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  background: var(--color-bg);
-  border-top: 1px solid var(--color-border);
-  box-shadow: none;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 1000;
-  padding: 8px 0;
+  position: fixed !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  background: #ffffff !important;
+  border-top: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.05) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-around !important;
+  align-items: center !important;
+  z-index: 99999 !important;
+  padding: 8px 0 !important;
+  height: 56px !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 .tab-bar .tab-item {
   color: var(--color-text-subtle);

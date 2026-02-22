@@ -205,6 +205,7 @@ export default function NearbyScreen() {
 
   // Start scan action - show 3-second scanning animation
   const startScan = useCallback(() => {
+    const scanRequestedAt = Date.now();
     if (!hasLocationPermission) {
       requestLocationPermission();
       return;
@@ -224,6 +225,7 @@ export default function NearbyScreen() {
           liveNowCount,
           scanCompleted: true,
           radiusMeters,
+          scanRequestedAt,
         },
       });
     }, SCAN_DURATION);
@@ -240,6 +242,7 @@ export default function NearbyScreen() {
         liveNowCount,
         scanCompleted: true,
         radiusMeters,
+        scanRequestedAt: Date.now(),
       },
     });
   }, [navigate, liveNowCount, radiusMeters]);
@@ -269,16 +272,16 @@ export default function NearbyScreen() {
     
     switch (scanState) {
       case SCAN_STATE.IDLE:
-        return "Tap to scan and see who's around";
+        return "Tap to scan and see who's active";
       case SCAN_STATE.SCANNING:
-        return "Scanning nearby…";
+        return "Scanning…";
       case SCAN_STATE.COMPLETED:
         if (liveNowCount > 0) {
-          return `${liveNowCount} people nearby`;
+          return `${liveNowCount} people active`;
         }
         return "It's quiet right now. Try again in a bit.";
       default:
-        return "Tap to scan and see who's around";
+        return "Tap to scan and see who's active";
     }
   };
 
@@ -318,7 +321,7 @@ export default function NearbyScreen() {
           mb: 1.5,
         }}
       >
-        Enable location to see who's nearby
+        Enable location to use Pulse
       </Typography>
       
       <Typography
@@ -329,7 +332,7 @@ export default function NearbyScreen() {
           maxWidth: 300,
         }}
       >
-        Pulse uses your location to show nearby activity.
+        Pulse uses your location to tailor this screen.
         Your exact location is never shown.
       </Typography>
       
@@ -538,7 +541,7 @@ export default function NearbyScreen() {
                       scale: scanState === SCAN_STATE.IDLE ? 1.05 : 1,
                       boxShadow: scanState === SCAN_STATE.IDLE ? '0 32px 88px rgba(0,83,166,0.25)' : undefined,
                     }}
-                    whileTap={{ scale: scanState === SCAN_STATE.IDLE ? 0.96 : 1 }}
+                    whileTap={{ scale: scanState === SCAN_STATE.IDLE ? 0.97 : 1, opacity: scanState === SCAN_STATE.IDLE ? 0.8 : 1 }}
                     onClick={scanState === SCAN_STATE.IDLE ? startScan : undefined}
                     sx={{
                       pointerEvents: scanState === SCAN_STATE.IDLE ? 'auto' : 'none',
@@ -553,14 +556,12 @@ export default function NearbyScreen() {
                       fontWeight: 900,
                       letterSpacing: 1,
                       textTransform: 'none',
-                      background: scanState === SCAN_STATE.SCANNING 
-                        ? 'radial-gradient(circle, rgba(204,255,241,0.4) 0%, rgba(207,232,255,0.4) 60%, rgba(214,211,255,0.4) 100%)'
-                        : 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 60%, #d6d3ff 100%)',
+                      background: 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 50%, #bae6fd 100%)',
                       boxShadow: '0 26px 72px rgba(0,83,166,0.20)',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:active': {
-                        background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                        color: '#ffffff',
+                        opacity: 0.7,
+                        transform: 'scale(0.98)',
                       },
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
@@ -582,7 +583,7 @@ export default function NearbyScreen() {
                         position: 'absolute',
                         inset: -2,
                         borderRadius: '50%',
-                        boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.55), 0 0 0 6px rgba(99,102,241,0.08)',
+                        boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.55), 0 0 0 6px rgba(96,165,250,0.08)',
                       }}
                     />
                     <Stack alignItems="center" spacing={1} sx={{ position: 'relative', zIndex: 1, px: 2 }}>
@@ -612,13 +613,13 @@ export default function NearbyScreen() {
                           </Typography>
                           <Typography
                             sx={{
-                              fontWeight: 700,
-                              fontSize: '18px',
-                              lineHeight: 1.3,
+                              color: '#64748b',
+                              fontWeight: 500,
+                              fontSize: '0.9rem',
                               textAlign: 'center',
                             }}
                           >
-                            One tap — discover who's nearby
+                            One tap — see who's active
                           </Typography>
                         </>
                       )}
@@ -733,7 +734,7 @@ export default function NearbyScreen() {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ color: '#64748b' }}>
-            Location access is required to see what's happening around you.
+            Location access is required to see what's happening.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
@@ -783,7 +784,7 @@ export default function NearbyScreen() {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ color: '#64748b', textAlign: 'center', mb: 3 }}>
-            Set how far you want to search for people nearby
+            Set how far you want to search
           </Typography>
           
           {/* Current value display */}
@@ -970,21 +971,37 @@ function RadarRings({ size, categories, isScanning, isCompleted, hasResults }) {
     <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
       {/* Scanning animation overlay */}
       {isScanning && (
-        <motion.div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
-            pointerEvents: 'none',
-            background:
-              'conic-gradient(from 0deg, rgba(99,102,241,.25) 0 30deg, transparent 30deg 360deg)',
-            WebkitMask: 'radial-gradient(circle at 50% 50%, transparent 0 40%, black 41% 100%)',
-            mask: 'radial-gradient(circle at 50% 50%, transparent 0 40%, black 41% 100%)',
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-        />
+        <>
+          {/* Center fill to cover page background during scan */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '78%',
+              height: '78%',
+              borderRadius: '50%',
+              background: 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 50%, #bae6fd 100%)',
+              pointerEvents: 'none',
+            }}
+          />
+          <motion.div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              pointerEvents: 'none',
+              background:
+                'conic-gradient(from 0deg, rgba(96,165,250,.25) 0 30deg, transparent 30deg 360deg)',
+              WebkitMask: 'radial-gradient(circle at 50% 50%, transparent 0 40%, black 41% 100%)',
+              mask: 'radial-gradient(circle at 50% 50%, transparent 0 40%, black 41% 100%)',
+            }}
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+          />
+        </>
       )}
 
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: 'visible' }}>
@@ -1042,7 +1059,7 @@ function RadarRings({ size, categories, isScanning, isCompleted, hasResults }) {
                     <linearGradient id="ringGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="#22c55e" stopOpacity="0.7" />
                       <stop offset="50%" stopColor="#60a5fa" stopOpacity="0.7" />
-                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.7" />
+                      <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.7" />
                     </linearGradient>
                   </defs>
                   <text
@@ -1076,7 +1093,7 @@ function RadarRings({ size, categories, isScanning, isCompleted, hasResults }) {
             inset: 0,
             borderRadius: '50%',
             pointerEvents: 'none',
-            border: '3px solid rgba(108,92,231,0.3)',
+            border: '3px solid rgba(96,165,250,0.3)',
           }}
           initial={{ scale: 0.5, opacity: 0.8 }}
           animate={{ scale: 1.8, opacity: 0 }}
@@ -1114,7 +1131,7 @@ function LoadingStripes({ width = 220 }) {
         width: w,
         borderRadius: 999,
         background:
-          'linear-gradient(90deg, rgba(34,197,94,0.25), rgba(96,165,250,0.25), rgba(139,92,246,0.25))',
+          'linear-gradient(90deg, rgba(34,197,94,0.25), rgba(96,165,250,0.25), rgba(56,189,248,0.25))',
         backgroundSize: '200% 100%',
         animation: `shimmer 1.6s linear ${d}s infinite, hue 6s ease-in-out ${d}s infinite`,
         boxShadow: '0 1px 4px rgba(0,0,0,0.04)',

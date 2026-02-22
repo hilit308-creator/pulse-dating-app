@@ -2,10 +2,29 @@
 // Per spec: "A signal that something could happen now — not that it should."
 // This is an invitation, not a gate. No pressure, no urgency.
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box, Typography, Button, IconButton } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, MessageCircle, Sparkles } from 'lucide-react';
+import { sanitizeNoProximityText } from '../../utils/pulseMagic';
+
+const EMPOWERMENT_LINES = [
+  'If it feels right, a simple hello is enough.',
+  'You can keep it light — one message can start something real.',
+  'No pressure. If you’re curious, say hi.',
+  'Small step: send a warm hello.',
+  'If you want, start with one easy question.',
+];
+
+function hashToIndex(value, mod) {
+  const str = String(value ?? '0');
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h) % mod;
+}
 
 /**
  * NearbyMatchMoment - Calm invitation when proximity + match detected
@@ -22,6 +41,16 @@ export default function NearbyMatchMoment({
   onStartChat, 
   onContinueBrowsing 
 }) {
+  const aboutMomentSafe = useMemo(
+    () => sanitizeNoProximityText(person?.aboutMoment),
+    [person?.aboutMoment]
+  );
+
+  const empowermentLine = useMemo(
+    () => EMPOWERMENT_LINES[hashToIndex(person?.id, EMPOWERMENT_LINES.length)],
+    [person?.id]
+  );
+
   if (!isOpen || !person) return null;
 
   return (
@@ -33,7 +62,7 @@ export default function NearbyMatchMoment({
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 1000,
+          zIndex: 10000,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -119,7 +148,7 @@ export default function NearbyMatchMoment({
               >
                 <MapPin size={14} color="#6C5CE7" />
                 <Typography variant="caption" sx={{ fontWeight: 600, color: '#6C5CE7' }}>
-                  Nearby now
+                  Right now
                 </Typography>
               </Box>
             </Box>
@@ -145,12 +174,11 @@ export default function NearbyMatchMoment({
 
               {/* Name and context - warm, not pushy */}
               <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>
-                {person.firstName} is nearby
+                It's a Pulse
               </Typography>
               
               <Typography variant="body2" sx={{ color: '#64748b', mb: 3 }}>
-                {person.distance ? `${person.distance.toFixed(1)} km away` : person.distanceRange}
-                {person.aboutMoment && ` · ${person.aboutMoment}`}
+                {aboutMomentSafe || empowermentLine}
               </Typography>
 
               {/* Shared interests - connection points */}

@@ -21,6 +21,8 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [openEdit, setOpenEdit] = useState(false);
@@ -33,7 +35,7 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/profile', {
+      const response = await axios.get(`${API_URL}/api/profile`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
@@ -53,7 +55,7 @@ const Profile = () => {
   const handleSave = async () => {
     try {
       await axios.patch(
-        'http://localhost:5000/api/profile',
+        `${API_URL}/api/profile`,
         { [editField]: editValue },
         {
           headers: {

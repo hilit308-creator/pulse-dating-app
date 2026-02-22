@@ -64,6 +64,8 @@ import UserAvatarButton from "./UserAvatarButton";
 import UserCard from "./UserCard";
 import { PointsBannerCompact } from "./PointsBanner";
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 /* ---------------------------------------
    Photos helper (generate multiple crops)
 --------------------------------------- */
@@ -785,6 +787,7 @@ export default function Home({ onOpenTutorial }) {
     resetDeck,
     addLikedProfile,
     removeLikedProfile,
+    addMutualMatch,
   } = useHomeDeckStore();
 
   // Use cached users if available, otherwise local state for loading
@@ -807,7 +810,7 @@ export default function Home({ onOpenTutorial }) {
     const fetchUsers = async () => {
       console.log('[Home] Fetching users from API...');
       try {
-        const response = await fetch('/api/nearby-users?limit=20');
+        const response = await fetch(`${API_URL}/api/nearby-users?limit=20`);
         console.log('[Home] API response status:', response.status);
         if (response.ok) {
           const data = await response.json();
@@ -1100,7 +1103,7 @@ export default function Home({ onOpenTutorial }) {
         setPicksLoading(true);
         // Demo: no user_id means server generates picks for anonymous user
         // Production: would include auth token
-        const response = await fetch('/api/todays-picks');
+        const response = await fetch(`${API_URL}/api/todays-picks`);
         if (response.ok) {
           const data = await response.json();
           // Transform to match expected format
@@ -1768,7 +1771,7 @@ export default function Home({ onOpenTutorial }) {
                   const currentUserId = localStorage.getItem('pulse_user_id');
                   let apiMatch = false;
                   try {
-                    const response = await fetch('/api/likes', {
+                    const response = await fetch(`${API_URL}/api/likes`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
@@ -1793,6 +1796,22 @@ export default function Home({ onOpenTutorial }) {
                     console.log('[Home] Triggering match popup for:', topUser.name);
                     // Remove from YOU LIKE tab since it's now a match
                     removeLikedProfile(topUser.id);
+                    // Add to MUTUAL MATCHES tab
+                    addMutualMatch({
+                      id: topUser.id,
+                      name: topUser.name || topUser.firstName,
+                      age: topUser.age,
+                      distance: topUser.distance,
+                      city: topUser.city,
+                      photoUrl: topUser.photos?.[0] || topUser.photoUrl || '',
+                      photos: topUser.photos || [],
+                      verified: topUser.verified,
+                      interests: topUser.interests || topUser.tags || [],
+                      profession: topUser.profession,
+                      tagline: topUser.tagline || topUser.bio,
+                      aboutMe: topUser.aboutMe || [],
+                      lookingFor: topUser.lookingFor || [],
+                    });
                     setMatchUser(topUser);
                   }
                   

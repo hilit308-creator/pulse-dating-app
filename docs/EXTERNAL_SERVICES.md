@@ -5,6 +5,65 @@ This document lists all external services that Pulse may use, their purpose, cur
 
 ---
 
+## Core Infrastructure & External Services (Production)
+
+This section is the source of truth for **third-party services** and **core infrastructure** that Pulse relies on (current or planned). It exists so we can operate the system safely (debugging, incident response, rollouts, compliance).
+
+### Database
+
+- **PostgreSQL (primary persistent database)**
+- **Purpose**
+  - Nearby: invites, meetings, payments (holds/captures), feedback, partner venue tiers
+  - Internal ledger for payment-related actions and reconciliation
+
+### Payments
+
+- **Stripe**
+- **Usage**
+  - Pre-authorization (**hold**), capture, release
+  - Webhooks enabled for payment status updates
+  - Internal ledger maintained for all payment-related actions
+
+### Venues data
+
+- **Google Places API** (primary venue source)
+- **Internal DB table** for partner venues + plan tiers (paid prioritization) and manual overrides
+
+### Authentication
+
+- **JWT-based auth**
+- **Single source of truth** for `userId` across frontend + backend (derived from JWT claims)
+
+### Real-time / Notifications
+
+- **Socket-based updates**
+  - Invite accepted/declined
+  - Meeting state changes
+- **Polling fallback**
+  - Used when sockets are unavailable
+
+### Feature Flags
+
+- **Remote-config based flags** (not localStorage)
+- **Admin-only control**
+- **Logged per environment** (dev / stage / prod)
+- **Audit trail** for every flag change (who/when/from/to)
+
+### Observability
+
+- **Error logging**
+- **Event tracking** for core flows
+  - scan → invite → meeting → payment → feedback
+- **Server-side audit logs** for admin actions + feature flag changes
+
+### Policy: No Proximity Language (UI + API)
+
+- The **server must not return user-facing proximity strings** (e.g., "300m away", "nearby", "2 km").
+- The **frontend must not render proximity/distance copy**.
+- If internal distance is required for ranking, it must remain **internal-only numeric data** (e.g., meters) and never be passed as user copy.
+
+---
+
 ## 1. Location & Maps Services
 
 ### Current Status: **Built-in (Free)**

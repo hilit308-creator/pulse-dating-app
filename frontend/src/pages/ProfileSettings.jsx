@@ -808,9 +808,6 @@ export default function ProfileSettings({ onBack }) {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton onClick={handleBack}>
-              <ArrowLeft size={22} color="#1a1a2e" />
-            </IconButton>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
               Edit Profile
             </Typography>

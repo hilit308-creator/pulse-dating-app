@@ -51,6 +51,8 @@ import { useLanguage } from '../context/LanguageContext';
 import UserAvatarButton from '../components/UserAvatarButton';
 import { UserCardStack } from '../components/UserCard';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 // Safe bottom padding for tab bar
 const SAFE_BOTTOM = 'calc(88px + env(safe-area-inset-bottom, 0px))';
 const SWIPE_THRESHOLD = 100; // px to trigger swipe action
@@ -304,7 +306,7 @@ const HomeScreen = () => {
       try {
         // Fetch nearby users from API
         console.log('[HomeScreen] Calling /api/nearby-users...');
-        const response = await fetch('/api/nearby-users?limit=10');
+        const response = await fetch(`${API_URL}/api/nearby-users?limit=10`);
         console.log('[HomeScreen] API response status:', response.status);
         if (response.ok) {
           const data = await response.json();

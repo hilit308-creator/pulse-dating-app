@@ -355,9 +355,6 @@ const PointsHubScreen = () => {
           alignItems: 'center',
           gap: 2,
         }}>
-          <IconButton disabled sx={{ color: '#e2e8f0' }}>
-            <ArrowLeft size={24} />
-          </IconButton>
           <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
             {t('yourPoints') || 'Your Points'}
           </Typography>
@@ -391,9 +388,6 @@ const PointsHubScreen = () => {
         alignItems: 'center',
         gap: 2,
       }}>
-        <IconButton onClick={() => navigate(-1)} sx={{ color: '#fff' }}>
-          <ArrowLeft size={24} />
-        </IconButton>
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff' }}>
           {t('yourPoints') || 'Your Points'}
         </Typography>

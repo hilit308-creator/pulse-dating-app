@@ -544,13 +544,13 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
   // Check if event is past
   const isPast = isEventPast(ev);
   
-  // Status badge logic - Past takes priority
+  // Status badge logic - Past takes priority - white bg with purple text/border style
   const getStatusBadge = () => {
-    if (isPast) return { label: "Past", color: "#6b7280", bg: "rgba(107,114,128,0.15)" };
-    if (isHappeningTonight(ev.date)) return { label: "Happening tonight", color: "#dc2626", bg: "rgba(220,38,38,0.1)" };
-    if (ev.soldOut) return { label: "Sold out", color: "#6b7280", bg: "rgba(107,114,128,0.1)" };
-    if (ev.price === 0) return { label: "Free", color: "#16a34a", bg: "rgba(22,163,74,0.1)" };
-    return { label: "Paid", color: "#7c3aed", bg: "rgba(124,58,237,0.1)" };
+    if (isPast) return { label: "Past", color: "#6b7280", bg: "rgba(255,255,255,0.95)" };
+    if (isHappeningTonight(ev.date)) return { label: "Happening tonight", color: "#6C5CE7", bg: "rgba(255,255,255,0.95)" };
+    if (ev.soldOut) return { label: "Sold out", color: "#6b7280", bg: "rgba(255,255,255,0.95)" };
+    if (ev.price === 0) return { label: "Free", color: "#6C5CE7", bg: "rgba(255,255,255,0.95)" };
+    return { label: "Paid", color: "#6C5CE7", bg: "rgba(255,255,255,0.95)" };
   };
   const status = getStatusBadge();
 
@@ -617,7 +617,38 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
         </Tooltip>
       </motion.div>
 
-      {/* Status badge */}
+      {/* "Good Match for You" badge - at top of image */}
+      {showGoodMatch && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: -10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.2, type: 'spring', stiffness: 150 }}
+        >
+          <Box sx={{ 
+            position: "absolute", 
+            top: 8, 
+            left: 8, 
+            zIndex: 2, 
+            px: 1.5, 
+            py: 0.5, 
+            borderRadius: "8px", 
+            background: "#fff", 
+            color: "#6C5CE7", 
+            fontSize: "0.7rem", 
+            fontWeight: 600, 
+            display: "flex", 
+            alignItems: "center", 
+            gap: 0.5,
+            border: '1.5px solid rgba(108,92,231,0.3)',
+            boxShadow: '0 2px 8px rgba(108,92,231,0.15)',
+          }}>
+            <Sparkles size={11} />
+            {GOOD_MATCH_COPY[Math.floor(Math.random() * GOOD_MATCH_COPY.length)]}
+          </Box>
+        </motion.div>
+      )}
+
+      {/* Status badge - below save button */}
       <motion.div
         initial={{ scale: 0, x: -20 }}
         animate={{ scale: 1, x: 0 }}
@@ -625,7 +656,7 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
       >
         <Box sx={{ 
           position: "absolute", 
-          top: 8, 
+          top: showGoodMatch ? 44 : 8, 
           left: 8, 
           zIndex: 2, 
           px: 1.5, 
@@ -642,38 +673,6 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
           {status.label}
         </Box>
       </motion.div>
-
-      {/* "Good Match for You" badge - subtle hint */}
-      {showGoodMatch && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8, y: -10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: 0.2, type: 'spring', stiffness: 150 }}
-        >
-          <Box sx={{ 
-            position: "absolute", 
-            top: 44, 
-            left: 8, 
-            zIndex: 2, 
-            px: 1.5, 
-            py: 0.5, 
-            borderRadius: "8px", 
-            background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)", 
-            color: "#667eea", 
-            fontSize: "0.7rem", 
-            fontWeight: 600, 
-            display: "flex", 
-            alignItems: "center", 
-            gap: 0.5,
-            backdropFilter: 'blur(8px)',
-            border: '1.5px solid rgba(102,126,234,0.3)',
-            boxShadow: '0 2px 8px rgba(102,126,234,0.2)',
-          }}>
-            <Sparkles size={11} />
-            {GOOD_MATCH_COPY[Math.floor(Math.random() * GOOD_MATCH_COPY.length)]}
-          </Box>
-        </motion.div>
-      )}
 
       <CardActionArea onClick={() => onViewDetails ? onViewDetails(ev) : setOpen((v) => !v)}>
         {/* Video loop (muted) or cover image per Pulse spec */}
@@ -2019,7 +2018,7 @@ export default function EventsByCategory() {
             </Typography>
           </motion.div>
 
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2, flexWrap: 'nowrap', overflow: 'hidden' }}>
             <Button 
               startIcon={<Plus size={18} />} 
               onClick={() => navigate("/events/new")} 
@@ -2029,10 +2028,13 @@ export default function EventsByCategory() {
                 bgcolor: '#fff',
                 color: '#667eea',
                 fontWeight: 700,
-                px: 3,
+                px: { xs: 2, sm: 3 },
                 py: 1.5,
                 borderRadius: '16px',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                whiteSpace: 'nowrap',
+                minWidth: 'auto',
+                fontSize: { xs: '0.85rem', sm: '0.95rem' },
                 '&:hover': {
                   bgcolor: '#f8f9ff',
                   transform: 'translateY(-2px)',
@@ -2041,7 +2043,7 @@ export default function EventsByCategory() {
                 transition: 'all 0.3s ease',
               }}
             >
-              Create Event
+              Create
             </Button>
 
             <ToggleButtonGroup
@@ -2074,24 +2076,24 @@ export default function EventsByCategory() {
             </ToggleButtonGroup>
 
             <Badge color="error" badgeContent={activeFilterCount} invisible={activeFilterCount === 0}>
-              <Button 
-                variant="outlined" 
-                startIcon={<SlidersHorizontal size={18} />} 
+              <IconButton 
                 onClick={() => setFiltersOpen(true)}
                 sx={{
-                  borderColor: 'rgba(255,255,255,0.4)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.4)',
                   color: '#fff',
                   bgcolor: 'rgba(255,255,255,0.1)',
                   backdropFilter: 'blur(12px)',
-                  fontWeight: 600,
+                  px: 1.5,
+                  py: 1,
                   '&:hover': {
                     borderColor: 'rgba(255,255,255,0.6)',
                     bgcolor: 'rgba(255,255,255,0.2)',
                   },
                 }}
               >
-                Filters
-              </Button>
+                <SlidersHorizontal size={20} />
+              </IconButton>
             </Badge>
           </Stack>
         </Container>

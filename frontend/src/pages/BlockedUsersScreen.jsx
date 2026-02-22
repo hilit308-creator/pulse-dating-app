@@ -32,30 +32,24 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-// Mock blocked users data
-const MOCK_BLOCKED_USERS = [
-  {
-    id: 1,
-    name: 'Alex',
-    photo: 'https://i.pravatar.cc/150?img=1',
-    source: 'chat',
-    blockedAt: '2024-12-25',
-  },
-  {
-    id: 2,
-    name: 'Jordan',
-    photo: 'https://i.pravatar.cc/150?img=2',
-    source: 'profile',
-    blockedAt: '2024-12-20',
-  },
-  {
-    id: 3,
-    name: 'Sam',
-    photo: 'https://i.pravatar.cc/150?img=3',
-    source: 'event',
-    blockedAt: '2024-12-15',
-  },
-];
+// Load blocked users from localStorage or use empty array
+const getBlockedUsers = () => {
+  try {
+    const saved = localStorage.getItem('pulse_blocked_users');
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+};
+
+// Save blocked users to localStorage
+const saveBlockedUsers = (users) => {
+  try {
+    localStorage.setItem('pulse_blocked_users', JSON.stringify(users));
+  } catch (e) {
+    console.error('Failed to save blocked users:', e);
+  }
+};
 
 // Source icons mapping
 const SOURCE_CONFIG = {
@@ -67,14 +61,16 @@ const SOURCE_CONFIG = {
 export default function BlockedUsersScreen() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [blockedUsers, setBlockedUsers] = useState(MOCK_BLOCKED_USERS);
+  const [blockedUsers, setBlockedUsers] = useState(getBlockedUsers);
   const [unblockUser, setUnblockUser] = useState(null);
 
   const handleBack = () => navigate(-1);
 
   const handleUnblock = () => {
     if (unblockUser) {
-      setBlockedUsers(prev => prev.filter(u => u.id !== unblockUser.id));
+      const updated = blockedUsers.filter(u => u.id !== unblockUser.id);
+      setBlockedUsers(updated);
+      saveBlockedUsers(updated);
       setUnblockUser(null);
     }
   };
@@ -95,9 +91,6 @@ export default function BlockedUsersScreen() {
           zIndex: 10,
         }}
       >
-        <IconButton onClick={handleBack} sx={{ mr: 1 }}>
-          <ArrowLeft size={22} color="#1a1a2e" />
-        </IconButton>
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
           {t('blockedUsers')}
         </Typography>
