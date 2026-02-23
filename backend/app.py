@@ -540,6 +540,50 @@ def require_admin():
     return user, None
 
 
+# ============================================================================
+# LOCATION API
+# Update user's GPS coordinates (called on login or when entering Nearby)
+# ============================================================================
+
+@app.route('/api/location', methods=['POST'])
+def update_location():
+    """
+    Update current user's location.
+    Requires JWT authentication.
+    Body: { latitude: float, longitude: float }
+    """
+    user, err = require_auth()
+    if err:
+        return err
+    
+    data = request.json or {}
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+    
+    if latitude is None or longitude is None:
+        return jsonify({'error': 'latitude and longitude required'}), 400
+    
+    try:
+        lat = float(latitude)
+        lng = float(longitude)
+        if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+            return jsonify({'error': 'invalid coordinates'}), 400
+    except (TypeError, ValueError):
+        return jsonify({'error': 'invalid coordinates'}), 400
+    
+    user.latitude = lat
+    user.longitude = lng
+    user.last_active = datetime.utcnow()
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'latitude': lat,
+        'longitude': lng,
+        'last_active': user.last_active.isoformat()
+    }), 200
+
+
 @app.after_request
 def enforce_no_proximity_language(response):
     if request.path.startswith('/api/v1/'):

@@ -13,6 +13,7 @@ import { MapPin, WifiOff, HelpCircle, Settings, ChevronDown } from "lucide-react
 import { useAuth, PERMISSION_STATE } from "../context/AuthContext";
 import { useLanguage } from '../context/LanguageContext';
 import { NearbyStickyStickyBanner } from '../components/SubscriptionPromoBanner';
+import { updateUserLocation } from '../config/api';
 
 /* ------------------------------ Theme & tokens ----------------------------- */
 const APP_BG =
@@ -82,7 +83,7 @@ function useElementWidth() {
 /* -------------------------------- Main screen ------------------------------ */
 export default function NearbyScreen() {
   const navigate = useNavigate();
-  const { permissions, updatePermission } = useAuth();
+  const { permissions, updatePermission, token } = useAuth();
   const { t } = useLanguage();
   const [containerRef, containerW] = useElementWidth();
   const timersRef = useRef([]);
@@ -169,7 +170,7 @@ export default function NearbyScreen() {
     return () => clearInterval(id);
   }, []);
 
-  // Request location permission
+  // Request location permission and send coordinates to backend
   const requestLocationPermission = useCallback(async () => {
     trackEvent('nearby_location_request_clicked');
     setIsRequestingLocation(true);
@@ -177,20 +178,36 @@ export default function NearbyScreen() {
     try {
       const result = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
-          () => resolve('granted'),
+          (position) => resolve({ 
+            status: 'granted', 
+            coords: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            }
+          }),
           (error) => {
             if (error.code === error.PERMISSION_DENIED) {
-              resolve('denied');
+              resolve({ status: 'denied' });
             } else {
-              resolve('error');
+              resolve({ status: 'error' });
             }
           },
-          { timeout: 10000 }
+          { timeout: 10000, enableHighAccuracy: true }
         );
       });
 
-      if (result === 'granted') {
+      if (result.status === 'granted') {
         updatePermission('location', PERMISSION_STATE.GRANTED);
+        
+        // Send location to backend
+        if (result.coords && token) {
+          const { latitude, longitude } = result.coords;
+          trackEvent('nearby_location_sent', { latitude, longitude });
+          const locationResult = await updateUserLocation(latitude, longitude, token);
+          if (!locationResult.success) {
+            console.warn('[NearbyScreen] Failed to update location on server:', locationResult.error);
+          }
+        }
       } else {
         updatePermission('location', PERMISSION_STATE.DENIED);
         setShowLocationDeniedDialog(true);
@@ -201,7 +218,7 @@ export default function NearbyScreen() {
     } finally {
       setIsRequestingLocation(false);
     }
-  }, [updatePermission]);
+  }, [updatePermission, token]);
 
   // Start scan action - show 3-second scanning animation
   const startScan = useCallback(() => {
