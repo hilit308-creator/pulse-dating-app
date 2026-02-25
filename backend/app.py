@@ -573,6 +573,9 @@ def update_location():
     Requires JWT authentication.
     Body: { latitude: float, longitude: float }
     """
+    import time
+    start_time = time.time()
+    
     user, err = require_auth()
     if err:
         return err
@@ -592,15 +595,23 @@ def update_location():
     except (TypeError, ValueError):
         return jsonify({'error': 'invalid coordinates'}), 400
     
+    # Store as floats (not strings)
     user.latitude = lat
     user.longitude = lng
     user.last_active = datetime.utcnow()
     db.session.commit()
     
+    # Verify persistence by re-reading from DB
+    db.session.refresh(user)
+    
+    # Debug logging
+    latency_ms = int((time.time() - start_time) * 1000)
+    print(f'[Location] Updated: user_id={user.id}, lat={user.latitude} (type={type(user.latitude).__name__}), lng={user.longitude} (type={type(user.longitude).__name__}), last_active={user.last_active.isoformat()}, latency={latency_ms}ms')
+    
     return jsonify({
         'success': True,
-        'latitude': lat,
-        'longitude': lng,
+        'latitude': user.latitude,
+        'longitude': user.longitude,
         'last_active': user.last_active.isoformat()
     }), 200
 
@@ -685,12 +696,148 @@ def api_v1_admin_set_flag(key):
     return jsonify({'ok': True, 'key': key, 'value': bool(value)})
 
 
+# Default radius for nearby search (in km)
+DEFAULT_RADIUS_KM = 25
+
+def _calc_distance_meters(lat1, lng1, lat2, lng2):
+    """Calculate distance between two coordinates in meters.
+    Returns None if any coordinate is missing.
+    """
+    if lat1 is None or lng1 is None or lat2 is None or lng2 is None:
+        return None
+    try:
+        distance_km = geodesic((lat1, lng1), (lat2, lng2)).kilometers
+        return int(distance_km * 1000)
+    except Exception:
+        return None
+
 @app.route('/api/v1/nearby/users', methods=['GET'])
 def api_v1_nearby_users():
+    """
+    Get nearby users based on real GPS coordinates.
+    Query params:
+      - radius: max distance in km (default: 25)
+      - limit: max results (default: 50)
+    Returns: { success: bool, count: int, users: [...] }
+    """
+    import time
+    start_time = time.time()
+    
     user, err = require_auth()
     if err:
         return err
-    return jsonify({'items': [], 'nextCursor': None})
+    
+    # Get query params
+    radius_km = request.args.get('radius', DEFAULT_RADIUS_KM, type=float)
+    limit = request.args.get('limit', 50, type=int)
+    
+    # Validate radius
+    if radius_km <= 0 or radius_km > 100:
+        radius_km = DEFAULT_RADIUS_KM
+    
+    # Log request
+    print(f'[Nearby] Request from user_id={user.id}, lat={user.latitude}, lng={user.longitude}, radius={radius_km}km')
+    
+    # Check if requesting user has location
+    if user.latitude is None or user.longitude is None:
+        print(f'[Nearby] User {user.id} has no location set')
+        return jsonify({
+            'success': False,
+            'error': 'location_required',
+            'message': 'Please enable location to see nearby users',
+            'count': 0,
+            'users': []
+        }), 200
+    
+    # Get current user's gender preference
+    show_me_preference = user.show_me or 'Everyone'
+    
+    # Build base query - exclude self, only active users with location
+    query = User.query.filter(
+        User.id != user.id,
+        User.is_active == True,
+        User.latitude.isnot(None),
+        User.longitude.isnot(None)
+    )
+    
+    # Filter by gender preference
+    if show_me_preference == 'Men':
+        query = query.filter(User.gender == 'Man')
+    elif show_me_preference == 'Women':
+        query = query.filter(User.gender == 'Woman')
+    
+    # Get candidates (we'll filter by distance in Python for accuracy)
+    # First, do a rough bounding box filter in SQL for performance
+    lat_delta = radius_km / 111.0  # ~111km per degree latitude
+    lng_delta = radius_km / (111.0 * abs(math.cos(math.radians(user.latitude))))
+    
+    query = query.filter(
+        User.latitude.between(user.latitude - lat_delta, user.latitude + lat_delta),
+        User.longitude.between(user.longitude - lng_delta, user.longitude + lng_delta)
+    )
+    
+    candidates = query.order_by(User.last_active.desc()).limit(limit * 2).all()
+    
+    # Calculate actual distance and filter
+    results = []
+    for candidate in candidates:
+        try:
+            distance_km = geodesic(
+                (user.latitude, user.longitude),
+                (candidate.latitude, candidate.longitude)
+            ).kilometers
+        except Exception as e:
+            print(f'[Nearby] Distance calc error for user {candidate.id}: {e}')
+            continue
+        
+        # Filter by radius
+        if distance_km > radius_km:
+            continue
+        
+        # Convert to meters for response
+        distance_meters = int(distance_km * 1000)
+        
+        # Build user object
+        results.append({
+            'id': candidate.id,
+            'firstName': candidate.first_name or '',
+            'lastName': (candidate.last_name or '')[:1] + '.' if candidate.last_name else '',
+            'age': 25,  # TODO: calculate from DOB when available
+            'gender': candidate.gender or '',
+            'distanceMeters': distance_meters,
+            'distanceKm': round(distance_km, 2),
+            'bio': candidate.hobbies or '',
+            'interests': [s.strip() for s in (candidate.interests or '').split(',') if s.strip()][:5],
+            'isActive': candidate.is_active,
+            'lastActive': candidate.last_active.isoformat() if candidate.last_active else None,
+            'photos': [],  # TODO: add real photos
+            'primaryPhotoUrl': '',
+        })
+        
+        # Log each result
+        print(f'[Nearby]   - user_id={candidate.id}, distance={round(distance_km, 2)}km')
+        
+        if len(results) >= limit:
+            break
+    
+    # Sort by distance
+    results.sort(key=lambda x: x['distanceMeters'])
+    
+    # Log summary
+    latency_ms = int((time.time() - start_time) * 1000)
+    print(f'[Nearby] Response: user_id={user.id}, count={len(results)}, latency={latency_ms}ms')
+    
+    return jsonify({
+        'success': True,
+        'count': len(results),
+        'users': results,
+        'requestingUser': {
+            'id': user.id,
+            'latitude': user.latitude,
+            'longitude': user.longitude,
+        },
+        'radiusKm': radius_km,
+    }), 200
 
 
 @app.route('/api/v1/nearby/venues', methods=['GET'])
@@ -1789,20 +1936,28 @@ def get_nearby_users():
     This ensures the two surfaces serve different purposes:
     - Today's Picks = focused, intentional choice for today
     - Discover = exploration
+    
+    Now uses real GPS coordinates for distance calculation when available.
     """
     try:
         # Get query params
         limit = request.args.get('limit', 20, type=int)
         offset = request.args.get('offset', 0, type=int)
         user_id = request.args.get('user_id', type=int)  # Current user for exclusion
+        radius_km = request.args.get('radius', DEFAULT_RADIUS_KM, type=float)
         
-        # Get current user's gender preference (show_me)
+        # Get current user's gender preference (show_me) and location
         current_user = None
         show_me_preference = 'Everyone'
+        current_lat = None
+        current_lng = None
         if user_id:
             current_user = User.query.get(user_id)
-            if current_user and current_user.show_me:
-                show_me_preference = current_user.show_me
+            if current_user:
+                if current_user.show_me:
+                    show_me_preference = current_user.show_me
+                current_lat = current_user.latitude
+                current_lng = current_user.longitude
         
         # Get today's picks for this user (to exclude from Discover)
         today = date.today()
@@ -1892,7 +2047,7 @@ def get_nearby_users():
                 'gender': user.gender or '',
                 'location': user.residence or '',
                 'hometown': user.place_of_origin or '',
-                'distanceMeters': 100 + (user.id * 50) % 2000,  # Varied distance 100-2000m
+                'distanceMeters': _calc_distance_meters(current_lat, current_lng, user.latitude, user.longitude),
                 'bio': user.hobbies or f"Looking for {user.looking_for or 'connection'}",
                 'interests': interests[:5],  # Limit to 5 interests
                 'lookingFor': user.looking_for or '',
