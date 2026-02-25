@@ -49,7 +49,7 @@ def upgrade():
         sa.Column('partner_name', sa.String(length=255)),
         sa.Column('plan_tier', sa.String(length=20), nullable=False),
         sa.Column('priority_override', sa.Integer()),
-        sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.text('1')),
+        sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.text('true')),
         sa.Column('starts_at', sa.DateTime()),
         sa.Column('ends_at', sa.DateTime()),
         sa.Column('created_at', sa.DateTime(), nullable=False),
