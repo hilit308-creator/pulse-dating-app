@@ -564,6 +564,26 @@ def require_admin():
 
 
 # ============================================================================
+# HEALTH CHECK ENDPOINTS
+# ============================================================================
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Basic health check."""
+    return jsonify({'status': 'ok'}), 200
+
+
+@app.route('/health/db', methods=['GET'])
+def health_db():
+    """Database connection health check."""
+    try:
+        db.session.execute(db.text('SELECT 1'))
+        return jsonify({'db': 'ok'}), 200
+    except Exception as e:
+        return jsonify({'db': 'error', 'message': str(e)}), 500
+
+
+# ============================================================================
 # LOCATION API
 # Update user's GPS coordinates (called on login or when entering Nearby)
 # ============================================================================
