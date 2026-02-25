@@ -38,7 +38,7 @@ def upgrade():
         sa.Column('favorite_songs', sa.String(length=500), nullable=True),
         sa.Column('approach_preferences', sa.String(length=1000), nullable=True),
         sa.Column('custom_approach', sa.String(length=500), nullable=True),
-        sa.Column('is_active', sa.Boolean(), nullable=False, server_default='0'),
+        sa.Column('is_active', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('latitude', sa.Float(), nullable=True),
         sa.Column('longitude', sa.Float(), nullable=True),
         sa.Column('last_active', sa.DateTime(), nullable=True),
