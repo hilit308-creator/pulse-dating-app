@@ -37,7 +37,7 @@ const Profile = () => {
     try {
       const response = await axios.get(`${API_URL}/api/profile`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('pulse_access_token')}`,
         },
       });
       setProfile(response.data);
@@ -59,7 +59,7 @@ const Profile = () => {
         { [editField]: editValue },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('pulse_access_token')}`,
           },
         }
       );

@@ -29,7 +29,7 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('pulse_access_token');
     if (!token) {
       navigate('/login');
       return;
@@ -54,7 +54,7 @@ export default function Dashboard() {
   }, []);
 
   const updateLocation = async (coords) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('pulse_access_token');
     if (!token) {
       console.warn('[Dashboard] No token, skipping location update');
       return;

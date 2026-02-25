@@ -83,7 +83,7 @@ function useElementWidth() {
 /* -------------------------------- Main screen ------------------------------ */
 export default function NearbyScreen() {
   const navigate = useNavigate();
-  const { permissions, updatePermission, token } = useAuth();
+  const { permissions, updatePermission, accessToken } = useAuth();
   const { t } = useLanguage();
   const [containerRef, containerW] = useElementWidth();
   const timersRef = useRef([]);
@@ -173,7 +173,7 @@ export default function NearbyScreen() {
   // Request location permission and send coordinates to backend
   const requestLocationPermission = useCallback(async () => {
     console.log('[NearbyScreen] requestLocationPermission called');
-    console.log('[NearbyScreen] Token present:', !!token, token ? `(${token.substring(0, 20)}...)` : '(none)');
+    console.log('[NearbyScreen] Token present:', !!accessToken, accessToken ? `(${accessToken.substring(0, 20)}...)` : '(none)');
     trackEvent('nearby_location_request_clicked');
     setIsRequestingLocation(true);
     
@@ -209,18 +209,18 @@ export default function NearbyScreen() {
         updatePermission('location', PERMISSION_STATE.GRANTED);
         
         // Send location to backend
-        if (result.coords && token) {
+        if (result.coords && accessToken) {
           const { latitude, longitude } = result.coords;
-          console.log('[NearbyScreen] About to call updateUserLocation with:', { latitude, longitude, tokenPresent: !!token });
+          console.log('[NearbyScreen] About to call updateUserLocation with:', { latitude, longitude, accessTokenPresent: !!accessToken });
           trackEvent('nearby_location_sent', { latitude, longitude });
-          const locationResult = await updateUserLocation(latitude, longitude, token);
+          const locationResult = await updateUserLocation(latitude, longitude, accessToken);
           console.log('[NearbyScreen] updateUserLocation result:', locationResult);
           if (!locationResult.success) {
             console.warn('[NearbyScreen] Failed to update location on server:', locationResult.error);
           }
         } else {
-          console.warn('[NearbyScreen] Skipping API call - coords:', !!result.coords, 'token:', !!token);
-          if (!token) {
+          console.warn('[NearbyScreen] Skipping API call - coords:', !!result.coords, 'accessToken:', !!accessToken);
+          if (!accessToken) {
             console.error('[NearbyScreen] NO TOKEN - user may not be logged in!');
           }
         }
@@ -234,7 +234,7 @@ export default function NearbyScreen() {
     } finally {
       setIsRequestingLocation(false);
     }
-  }, [updatePermission, token]);
+  }, [updatePermission, accessToken]);
 
   // Start scan action - show 3-second scanning animation
   const startScan = useCallback(async () => {
@@ -263,10 +263,10 @@ export default function NearbyScreen() {
           console.log('[NearbyScreen] Geolocation success:', latitude, longitude);
           
           // Send location to backend
-          console.log('[NearbyScreen] Token present:', !!token);
-          if (token) {
+          console.log('[NearbyScreen] Token present:', !!accessToken);
+          if (accessToken) {
             console.log('[NearbyScreen] Before POST /api/location');
-            const locationResult = await updateUserLocation(latitude, longitude, token);
+            const locationResult = await updateUserLocation(latitude, longitude, accessToken);
             console.log('[NearbyScreen] Location updated, result:', locationResult);
           } else {
             console.error('[NearbyScreen] NO TOKEN - cannot send location to server!');
@@ -296,7 +296,7 @@ export default function NearbyScreen() {
     }, SCAN_DURATION);
     
     pushTimer(timerId);
-  }, [hasLocationPermission, requestLocationPermission, liveNowCount, navigate, radiusMeters, token]);
+  }, [hasLocationPermission, requestLocationPermission, liveNowCount, navigate, radiusMeters, accessToken]);
 
   // Handle "View nearby people" CTA
   const handleViewNearbyPeople = useCallback(() => {

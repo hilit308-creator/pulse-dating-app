@@ -112,7 +112,7 @@ export default function MeetingTracker({
 
   // Update my location to server
   const updateMyLocation = useCallback(async (lat, lng) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('pulse_access_token');
     if (!token || !meetingId) return;
 
     try {
@@ -134,7 +134,7 @@ export default function MeetingTracker({
 
   // Fetch locations from server
   const fetchLocations = useCallback(async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('pulse_access_token');
     if (!token || !meetingId) return;
 
     try {

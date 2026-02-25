@@ -330,7 +330,7 @@ export default function SuggestedVenues({ onSelectVenue, selectedVenue }) {
       const location = coords || (await getLocation());
       if (!coords) setCoords(location);
 
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('pulse_access_token');
       if (!token) {
         // No token - use fallback venues silently
         setVenues(FALLBACK_VENUES);
