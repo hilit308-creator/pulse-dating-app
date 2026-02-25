@@ -18,11 +18,19 @@ export const getWebSocketUrl = (path = '') => {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const updateUserLocation = async (latitude, longitude, token) => {
+  console.log('[updateUserLocation] Called with:', { latitude, longitude, tokenPresent: !!token });
+  console.log('[updateUserLocation] API_URL:', API_URL);
+  
   if (!token) {
+    console.error('[updateUserLocation] No token provided!');
     return { success: false, error: 'no_token' };
   }
+  
+  const url = `${API_URL}/api/location`;
+  console.log('[updateUserLocation] Fetching:', url);
+  
   try {
-    const response = await fetch(`${API_URL}/api/location`, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,13 +38,16 @@ export const updateUserLocation = async (latitude, longitude, token) => {
       },
       body: JSON.stringify({ latitude, longitude }),
     });
+    console.log('[updateUserLocation] Response status:', response.status);
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
+      console.error('[updateUserLocation] Request failed:', data);
       return { success: false, error: data.error || 'request_failed' };
     }
+    console.log('[updateUserLocation] Success!');
     return { success: true };
   } catch (err) {
-    console.error('[updateUserLocation] Error:', err);
+    console.error('[updateUserLocation] Network error:', err);
     return { success: false, error: 'network_error' };
   }
 };

@@ -172,20 +172,27 @@ export default function NearbyScreen() {
 
   // Request location permission and send coordinates to backend
   const requestLocationPermission = useCallback(async () => {
+    console.log('[NearbyScreen] requestLocationPermission called');
+    console.log('[NearbyScreen] Token present:', !!token, token ? `(${token.substring(0, 20)}...)` : '(none)');
     trackEvent('nearby_location_request_clicked');
     setIsRequestingLocation(true);
     
     try {
+      console.log('[NearbyScreen] Calling navigator.geolocation.getCurrentPosition...');
       const result = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
-          (position) => resolve({ 
-            status: 'granted', 
-            coords: {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            }
-          }),
+          (position) => {
+            console.log('[NearbyScreen] Geolocation SUCCESS:', position.coords.latitude, position.coords.longitude);
+            resolve({ 
+              status: 'granted', 
+              coords: {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude
+              }
+            });
+          },
           (error) => {
+            console.error('[NearbyScreen] Geolocation ERROR:', error.code, error.message);
             if (error.code === error.PERMISSION_DENIED) {
               resolve({ status: 'denied' });
             } else {
@@ -196,16 +203,25 @@ export default function NearbyScreen() {
         );
       });
 
+      console.log('[NearbyScreen] Geolocation result:', result);
+
       if (result.status === 'granted') {
         updatePermission('location', PERMISSION_STATE.GRANTED);
         
         // Send location to backend
         if (result.coords && token) {
           const { latitude, longitude } = result.coords;
+          console.log('[NearbyScreen] About to call updateUserLocation with:', { latitude, longitude, tokenPresent: !!token });
           trackEvent('nearby_location_sent', { latitude, longitude });
           const locationResult = await updateUserLocation(latitude, longitude, token);
+          console.log('[NearbyScreen] updateUserLocation result:', locationResult);
           if (!locationResult.success) {
             console.warn('[NearbyScreen] Failed to update location on server:', locationResult.error);
+          }
+        } else {
+          console.warn('[NearbyScreen] Skipping API call - coords:', !!result.coords, 'token:', !!token);
+          if (!token) {
+            console.error('[NearbyScreen] NO TOKEN - user may not be logged in!');
           }
         }
       } else {
@@ -213,7 +229,7 @@ export default function NearbyScreen() {
         setShowLocationDeniedDialog(true);
       }
     } catch (error) {
-      console.error('Location permission error:', error);
+      console.error('[NearbyScreen] Location permission error:', error);
       setShowLocationDeniedDialog(true);
     } finally {
       setIsRequestingLocation(false);
