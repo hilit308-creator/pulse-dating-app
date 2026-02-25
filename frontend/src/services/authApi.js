@@ -95,6 +95,10 @@ export const requestOtp = async (phoneE164) => {
     }
     
     console.log('[OTP] Request sent successfully');
+    // Show debug code in console for testing (remove when SMS is implemented)
+    if (data.debugCode) {
+      console.log(`%c[OTP] Your verification code is: ${data.debugCode}`, 'color: green; font-size: 16px; font-weight: bold;');
+    }
     return data;
   } catch (error) {
     if (error.code) throw error;

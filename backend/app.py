@@ -1425,10 +1425,12 @@ def request_otp():
     # In production, send SMS here
     print(f'[OTP] Code for {phone}: {otp}')
     
+    # Include OTP in response for testing (remove in production with real SMS)
     return jsonify({
         'verificationId': verification_id,
         'expiresInSec': 300,
         'resendInSec': 30,
+        'debugCode': otp,  # TODO: Remove when SMS is implemented
     }), 200
 
 @app.route('/api/auth/otp/verify', methods=['POST'])
