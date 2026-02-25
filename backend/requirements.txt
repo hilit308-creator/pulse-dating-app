@@ -10,7 +10,7 @@ geopy==2.2.0
 python-dotenv==1.0.1
 PyJWT==2.10.1
 bcrypt==4.2.1
-psycopg2-binary==2.9.9
+psycopg[binary]==3.2.4
 stripe==11.1.0
 requests==2.32.3
 gunicorn==21.2.0
