@@ -19,8 +19,7 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 import io from 'socket.io-client';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { API_URL, updateUserLocation } from '../config/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -55,15 +54,18 @@ export default function Dashboard() {
   }, []);
 
   const updateLocation = async (coords) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('[Dashboard] No token, skipping location update');
+      return;
+    }
     try {
-      await axios.post(`${API_URL}/api/update-location`, {
-        user_id: localStorage.getItem('userId'),
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        is_active: isActive
-      });
+      const result = await updateUserLocation(coords.latitude, coords.longitude, token);
+      if (!result.success) {
+        console.error('[Dashboard] Location update failed:', result.error);
+      }
     } catch (error) {
-      console.error('Error updating location:', error);
+      console.error('[Dashboard] Error updating location:', error);
     }
   };
 

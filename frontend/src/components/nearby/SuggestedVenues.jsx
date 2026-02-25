@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Button, Chip, CircularProgress } from '@mui/material';
 import { motion } from 'framer-motion';
 import { MapPin, Clock, Star, Coffee, Wine, Utensils, Music, TreePine, AlertCircle, RefreshCw } from 'lucide-react';
+import { API_URL } from '../../config/api';
 
 // Venue categories - neutral, low-pressure
 const VENUE_CATEGORIES = [
@@ -348,7 +349,7 @@ export default function SuggestedVenues({ onSelectVenue, selectedVenue }) {
       }
 
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/v1/nearby/venues?${params}`,
+        `${API_URL}/api/v1/nearby/venues?${params}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -8,6 +8,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { X, Navigation, MapPin, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_URL } from '../../config/api';
 
 // Fix Leaflet default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -116,7 +117,7 @@ export default function MeetingTracker({
 
     try {
       await fetch(
-        `${process.env.REACT_APP_API_URL}/api/v1/meetings/${meetingId}/location`,
+        `${API_URL}/api/v1/meetings/${meetingId}/location`,
         {
           method: 'POST',
           headers: {
@@ -138,7 +139,7 @@ export default function MeetingTracker({
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/v1/meetings/${meetingId}/location`,
+        `${API_URL}/api/v1/meetings/${meetingId}/location`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
