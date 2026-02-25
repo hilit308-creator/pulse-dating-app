@@ -1,29 +1,15 @@
 /**
- * Mock Auth API Service
- * Simulates backend authentication endpoints
- * Replace with real API calls when backend is ready
+ * Auth API Service
+ * Real backend authentication endpoints
  */
 
-// Simulated delay for realistic UX
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import { API_URL } from '../config/api';
 
-// Mock storage for verification codes (in real app, this is server-side)
-const mockOtpStorage = new Map();
-
-// Rate limiting simulation
+// Rate limiting (client-side tracking)
 const rateLimitStorage = new Map();
 const MAX_OTP_REQUESTS = 3;
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
 const MAX_VERIFY_ATTEMPTS = 5;
-
-// Generate random 6-digit code
-const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
-
-// Generate mock tokens
-const generateTokens = () => ({
-  accessToken: `mock_access_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-  refreshToken: `mock_refresh_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-});
 
 // Check rate limit
 const checkRateLimit = (phone, type) => {
@@ -68,11 +54,9 @@ export const formatPhoneForDisplay = (phone) => {
 
 /**
  * Request OTP
- * POST /auth/otp/request
+ * POST /api/auth/otp/request
  */
 export const requestOtp = async (phoneE164) => {
-  await delay(800 + Math.random() * 400); // Simulate network delay
-  
   // Validate phone
   if (!phoneE164 || !validatePhone(phoneE164)) {
     throw {
@@ -91,94 +75,63 @@ export const requestOtp = async (phoneE164) => {
     };
   }
   
-  // Generate and store OTP
-  const otp = generateOtp();
-  const verificationId = `verify_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-  
-  mockOtpStorage.set(verificationId, {
-    phone: phoneE164,
-    otp,
-    expiresAt,
-    attempts: 0,
-  });
-  
-  // In development, log the OTP for testing
-  console.log(`[Mock OTP] Code for ${phoneE164}: ${otp}`);
-  
-  return {
-    verificationId,
-    expiresInSec: 300, // 5 minutes
-    resendInSec: 30,
-  };
+  try {
+    const response = await fetch(`${API_URL}/api/auth/otp/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneE164 }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw {
+        code: data.error || 'request_failed',
+        message: data.message || 'Failed to send OTP',
+      };
+    }
+    
+    console.log('[OTP] Request sent successfully');
+    return data;
+  } catch (error) {
+    if (error.code) throw error;
+    throw {
+      code: 'network_error',
+      message: 'Network error. Please try again.',
+    };
+  }
 };
 
 /**
  * Verify OTP
- * POST /auth/otp/verify
+ * POST /api/auth/otp/verify
  */
 export const verifyOtp = async (verificationId, code) => {
-  await delay(600 + Math.random() * 300);
-  
-  const record = mockOtpStorage.get(verificationId);
-  
-  if (!record) {
-    throw {
-      code: 'expired_code',
-      message: 'Verification code expired. Please request a new one.',
-    };
-  }
-  
-  // Check rate limit for verification attempts
-  const rateCheck = checkRateLimit(record.phone, 'verify');
-  if (!rateCheck.allowed) {
-    throw {
-      code: 'too_many_attempts',
-      message: `Too many attempts. Try again in ${rateCheck.waitTime} seconds.`,
-      retryAfter: rateCheck.waitTime,
-    };
-  }
-  
-  // Check expiration
-  if (Date.now() > record.expiresAt) {
-    mockOtpStorage.delete(verificationId);
-    throw {
-      code: 'expired_code',
-      message: 'Verification code expired. Please request a new one.',
-    };
-  }
-  
-  // Verify code
-  if (record.otp !== code) {
-    record.attempts++;
-    if (record.attempts >= MAX_VERIFY_ATTEMPTS) {
-      mockOtpStorage.delete(verificationId);
+  try {
+    const response = await fetch(`${API_URL}/api/auth/otp/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verificationId, code }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
       throw {
-        code: 'too_many_attempts',
-        message: 'Too many incorrect attempts. Please request a new code.',
+        code: data.error || 'verification_failed',
+        message: data.message || 'Verification failed',
       };
     }
+    
+    console.log('[OTP] Verification successful, got JWT');
+    return data;
+  } catch (error) {
+    if (error.code) throw error;
     throw {
-      code: 'wrong_code',
-      message: 'Incorrect code. Please try again.',
-      attemptsRemaining: MAX_VERIFY_ATTEMPTS - record.attempts,
+      code: 'network_error',
+      message: 'Network error. Please try again.',
     };
   }
-  
-  // Success - clean up and return tokens
-  mockOtpStorage.delete(verificationId);
-  
-  // Check if user exists (mock - always new user for now)
-  const isNewUser = true;
-  
-  return {
-    ...generateTokens(),
-    user: {
-      id: `user_${Date.now()}`,
-      phoneE164: record.phone,
-      onboardingStatus: isNewUser ? 'NOT_STARTED' : 'COMPLETED',
-    },
-  };
 };
 
 /**
@@ -242,48 +195,15 @@ export const updateProfile = async (accessToken, profileData) => {
 // LOGIN FLOW (Existing Users Only)
 // ============================================
 
-// Mock users database for login simulation
-const mockUsersDb = new Map([
-  ['testuser', { 
-    id: 'user_1234567890',
-    username: 'testuser',
-    email: 'test@pulse.app',
-    password: 'password123', // In real app, this would be hashed
-    phoneE164: '+972501234567',
-    firstName: 'Test',
-    onboardingStatus: 'COMPLETED',
-  }],
-  ['demo', { 
-    id: 'user_0987654321',
-    username: 'demo',
-    email: 'demo@pulse.app',
-    password: 'demo123',
-    phoneE164: '+972509876543',
-    firstName: 'Demo',
-    onboardingStatus: 'COMPLETED',
-  }],
-]);
-
-// Also index by email for lookup
-const mockUsersByEmail = new Map([
-  ['test@pulse.app', 'testuser'],
-  ['demo@pulse.app', 'demo'],
-]);
-
-// Login verification storage (for secondary OTP)
-const loginVerificationStorage = new Map();
-
 /**
  * Login with Password (Primary Authentication)
- * POST /auth/login
+ * POST /api/auth/login
  * 
  * Returns:
- * - On success: { requiresOtp: boolean, verificationId?: string, user?: object }
+ * - On success: { requiresOtp: boolean, accessToken?: string, refreshToken?: string, user?: object }
  * - On failure: throws error
  */
 export const loginWithPassword = async (usernameOrEmail, password) => {
-  await delay(800 + Math.random() * 400);
-  
   // Validate inputs
   if (!usernameOrEmail || usernameOrEmail.trim().length < 3) {
     throw {
@@ -301,584 +221,127 @@ export const loginWithPassword = async (usernameOrEmail, password) => {
     };
   }
   
-  // Normalize input
-  const normalizedInput = usernameOrEmail.toLowerCase().trim();
-  
-  // Find user by username or email
-  let username = normalizedInput;
-  if (normalizedInput.includes('@')) {
-    username = mockUsersByEmail.get(normalizedInput);
-  }
-  
-  const user = mockUsersDb.get(username);
-  
-  // User not found
-  if (!user) {
-    throw {
-      code: 'user_not_found',
-      message: 'No account found with these details',
-    };
-  }
-  
-  // Check password
-  if (user.password !== password) {
-    throw {
-      code: 'invalid_credentials',
-      message: 'Incorrect username or password',
-    };
-  }
-  
-  // Check if secondary verification is needed
-  // For MVP, we'll require OTP on every login (can be changed to conditional)
-  const requiresOtp = true; // In production: check device, IP, etc.
-  
-  if (requiresOtp) {
-    // Generate OTP for login verification
-    const otp = generateOtp();
-    const verificationId = `login_verify_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-    
-    loginVerificationStorage.set(verificationId, {
-      userId: user.id,
-      phone: user.phoneE164,
-      otp,
-      expiresAt,
-      attempts: 0,
+  try {
+    const response = await fetch(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usernameOrEmail, password }),
     });
     
-    // Log OTP for testing
-    console.log(`[Mock Login OTP] Code for ${user.phoneE164}: ${otp}`);
+    const data = await response.json();
     
-    return {
-      requiresOtp: true,
-      verificationId,
-      maskedPhone: formatPhoneForDisplay(user.phoneE164),
-      expiresInSec: 300,
-      resendInSec: 30,
+    if (!response.ok) {
+      throw {
+        code: data.error || 'login_failed',
+        message: data.message || 'Login failed',
+      };
+    }
+    
+    console.log('[Auth] Login successful, got JWT');
+    return data;
+  } catch (error) {
+    if (error.code) throw error;
+    throw {
+      code: 'network_error',
+      message: 'Network error. Please try again.',
     };
   }
-  
-  // Direct login without OTP
-  return {
-    requiresOtp: false,
-    ...generateTokens(),
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      phoneE164: user.phoneE164,
-      firstName: user.firstName,
-      onboardingStatus: user.onboardingStatus,
-    },
-  };
 };
 
 /**
  * Verify Login OTP (Secondary Authentication)
- * POST /auth/login/verify
+ * POST /api/auth/login/verify - Not implemented in backend yet
+ * For now, login returns JWT directly without OTP
  */
 export const verifyLoginOtp = async (verificationId, code) => {
-  await delay(600 + Math.random() * 300);
-  
-  const record = loginVerificationStorage.get(verificationId);
-  
-  if (!record) {
-    throw {
-      code: 'expired_code',
-      message: 'Verification code expired. Please log in again.',
-    };
-  }
-  
-  // Check rate limit
-  const rateCheck = checkRateLimit(record.phone, 'login_verify');
-  if (!rateCheck.allowed) {
-    throw {
-      code: 'too_many_attempts',
-      message: `Too many attempts. Try again in ${rateCheck.waitTime} seconds.`,
-      retryAfter: rateCheck.waitTime,
-    };
-  }
-  
-  // Check expiration
-  if (Date.now() > record.expiresAt) {
-    loginVerificationStorage.delete(verificationId);
-    throw {
-      code: 'expired_code',
-      message: 'Verification code expired. Please log in again.',
-    };
-  }
-  
-  // Verify code
-  if (record.otp !== code) {
-    record.attempts++;
-    if (record.attempts >= MAX_VERIFY_ATTEMPTS) {
-      loginVerificationStorage.delete(verificationId);
-      throw {
-        code: 'too_many_attempts',
-        message: 'Too many incorrect attempts. Please log in again.',
-      };
-    }
-    throw {
-      code: 'wrong_code',
-      message: 'Incorrect code. Please try again.',
-      attemptsRemaining: MAX_VERIFY_ATTEMPTS - record.attempts,
-    };
-  }
-  
-  // Success - find user and generate tokens
-  loginVerificationStorage.delete(verificationId);
-  
-  // Find user by ID
-  let foundUser = null;
-  for (const user of mockUsersDb.values()) {
-    if (user.id === record.userId) {
-      foundUser = user;
-      break;
-    }
-  }
-  
-  if (!foundUser) {
-    throw {
-      code: 'user_not_found',
-      message: 'User not found. Please try again.',
-    };
-  }
-  
-  return {
-    ...generateTokens(),
-    user: {
-      id: foundUser.id,
-      username: foundUser.username,
-      email: foundUser.email,
-      phoneE164: foundUser.phoneE164,
-      firstName: foundUser.firstName,
-      onboardingStatus: foundUser.onboardingStatus,
-    },
+  // Backend login doesn't require secondary OTP, so this is a no-op
+  // Kept for compatibility with existing UI flow
+  throw {
+    code: 'not_implemented',
+    message: 'Secondary OTP not required - use direct login',
   };
 };
 
 /**
- * Resend Login OTP
- * POST /auth/login/resend-otp
+ * Resend Login OTP - Not implemented with real backend
  */
 export const resendLoginOtp = async (verificationId) => {
-  await delay(600 + Math.random() * 300);
-  
-  const record = loginVerificationStorage.get(verificationId);
-  
-  if (!record) {
-    throw {
-      code: 'session_expired',
-      message: 'Session expired. Please log in again.',
-    };
-  }
-  
-  // Check rate limit
-  const rateCheck = checkRateLimit(record.phone, 'login_request');
-  if (!rateCheck.allowed) {
-    throw {
-      code: 'rate_limited',
-      message: `Too many attempts. Try again in ${rateCheck.waitTime} seconds.`,
-      retryAfter: rateCheck.waitTime,
-    };
-  }
-  
-  // Generate new OTP
-  const newOtp = generateOtp();
-  record.otp = newOtp;
-  record.expiresAt = Date.now() + 5 * 60 * 1000;
-  record.attempts = 0;
-  
-  console.log(`[Mock Login OTP Resend] Code for ${record.phone}: ${newOtp}`);
-  
-  return {
-    success: true,
-    expiresInSec: 300,
-    resendInSec: 30,
+  throw {
+    code: 'not_implemented',
+    message: 'Resend OTP not implemented',
   };
 };
 
-// Password reset verification storage
-const passwordResetStorage = new Map();
-
 /**
- * Request Password Reset by Phone
- * POST /auth/forgot-password/phone
- * For existing users only
+ * Request Password Reset by Phone - Stub for now
  */
 export const requestPasswordResetByPhone = async (phoneE164) => {
-  await delay(800 + Math.random() * 400);
-  
-  if (!phoneE164 || !validatePhone(phoneE164)) {
-    throw {
-      code: 'invalid_phone',
-      message: 'Invalid phone number',
-    };
-  }
-  
-  // Check rate limit
-  const rateCheck = checkRateLimit(phoneE164, 'reset_request');
-  if (!rateCheck.allowed) {
-    throw {
-      code: 'rate_limited',
-      message: `Too many attempts. Try again in ${rateCheck.waitTime} seconds.`,
-      retryAfter: rateCheck.waitTime,
-    };
-  }
-  
-  // Find user by phone
-  let foundUser = null;
-  for (const user of mockUsersDb.values()) {
-    if (user.phoneE164 === phoneE164) {
-      foundUser = user;
-      break;
-    }
-  }
-  
-  if (!foundUser) {
-    throw {
-      code: 'user_not_found',
-      message: 'No account found with this phone number',
-    };
-  }
-  
-  // Generate OTP
-  const otp = generateOtp();
-  const verificationId = `reset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const expiresAt = Date.now() + 5 * 60 * 1000;
-  
-  passwordResetStorage.set(verificationId, {
-    userId: foundUser.id,
-    phone: phoneE164,
-    otp,
-    expiresAt,
-    attempts: 0,
-    verified: false,
-  });
-  
-  console.log(`[Mock Password Reset OTP] Code for ${phoneE164}: ${otp}`);
-  
-  return {
-    verificationId,
-    maskedPhone: formatPhoneForDisplay(phoneE164),
-    expiresInSec: 300,
-    resendInSec: 30,
+  throw {
+    code: 'not_implemented',
+    message: 'Password reset not implemented yet',
   };
 };
 
 /**
- * Verify Password Reset OTP
- * POST /auth/forgot-password/verify
+ * Verify Password Reset OTP - Stub
  */
 export const verifyPasswordResetOtp = async (verificationId, code) => {
-  await delay(600 + Math.random() * 300);
-  
-  const record = passwordResetStorage.get(verificationId);
-  
-  if (!record) {
-    throw {
-      code: 'expired_code',
-      message: 'Verification code expired. Please request a new one.',
-    };
-  }
-  
-  // Check rate limit
-  const rateCheck = checkRateLimit(record.phone, 'reset_verify');
-  if (!rateCheck.allowed) {
-    throw {
-      code: 'too_many_attempts',
-      message: `Too many attempts. Try again in ${rateCheck.waitTime} seconds.`,
-      retryAfter: rateCheck.waitTime,
-    };
-  }
-  
-  // Check expiration
-  if (Date.now() > record.expiresAt) {
-    passwordResetStorage.delete(verificationId);
-    throw {
-      code: 'expired_code',
-      message: 'Verification code expired. Please request a new one.',
-    };
-  }
-  
-  // Verify code
-  if (record.otp !== code) {
-    record.attempts++;
-    if (record.attempts >= MAX_VERIFY_ATTEMPTS) {
-      passwordResetStorage.delete(verificationId);
-      throw {
-        code: 'too_many_attempts',
-        message: 'Too many incorrect attempts. Please request a new code.',
-      };
-    }
-    throw {
-      code: 'wrong_code',
-      message: 'Incorrect code. Please try again.',
-      attemptsRemaining: MAX_VERIFY_ATTEMPTS - record.attempts,
-    };
-  }
-  
-  // Mark as verified (allows setting new password)
-  record.verified = true;
-  record.expiresAt = Date.now() + 10 * 60 * 1000; // 10 more minutes to set password
-  
-  return {
-    success: true,
-    verificationId,
-  };
+  throw { code: 'not_implemented', message: 'Not implemented' };
 };
 
 /**
- * Resend Password Reset OTP
- * POST /auth/forgot-password/resend
+ * Resend Password Reset OTP - Stub
  */
 export const resendPasswordResetOtp = async (verificationId) => {
-  await delay(600 + Math.random() * 300);
-  
-  const record = passwordResetStorage.get(verificationId);
-  
-  if (!record) {
-    throw {
-      code: 'session_expired',
-      message: 'Session expired. Please start over.',
-    };
-  }
-  
-  // Check rate limit
-  const rateCheck = checkRateLimit(record.phone, 'reset_request');
-  if (!rateCheck.allowed) {
-    throw {
-      code: 'rate_limited',
-      message: `Too many attempts. Try again in ${rateCheck.waitTime} seconds.`,
-      retryAfter: rateCheck.waitTime,
-    };
-  }
-  
-  // Generate new OTP
-  const newOtp = generateOtp();
-  record.otp = newOtp;
-  record.expiresAt = Date.now() + 5 * 60 * 1000;
-  record.attempts = 0;
-  record.verified = false;
-  
-  console.log(`[Mock Password Reset OTP Resend] Code for ${record.phone}: ${newOtp}`);
-  
-  return {
-    success: true,
-    expiresInSec: 300,
-    resendInSec: 30,
-  };
+  throw { code: 'not_implemented', message: 'Not implemented' };
 };
 
 /**
- * Set New Password
- * POST /auth/forgot-password/set
+ * Set New Password - Stub
  */
 export const setNewPassword = async (verificationId, newPassword, confirmPassword) => {
-  await delay(600 + Math.random() * 300);
-  
-  const record = passwordResetStorage.get(verificationId);
-  
-  if (!record || !record.verified) {
-    throw {
-      code: 'session_expired',
-      message: 'Session expired. Please start over.',
-    };
-  }
-  
-  // Check expiration
-  if (Date.now() > record.expiresAt) {
-    passwordResetStorage.delete(verificationId);
-    throw {
-      code: 'session_expired',
-      message: 'Session expired. Please start over.',
-    };
-  }
-  
-  // Validate password
-  if (!newPassword || newPassword.length < 6) {
-    throw {
-      code: 'validation_error',
-      message: 'Password must be at least 6 characters',
-      field: 'newPassword',
-    };
-  }
-  
-  if (newPassword !== confirmPassword) {
-    throw {
-      code: 'validation_error',
-      message: 'Passwords do not match',
-      field: 'confirmPassword',
-    };
-  }
-  
-  // Find and update user password (mock)
-  for (const [username, user] of mockUsersDb.entries()) {
-    if (user.id === record.userId) {
-      user.password = newPassword;
-      console.log(`[Mock] Password updated for user: ${username}`);
-      break;
-    }
-  }
-  
-  // Clean up
-  passwordResetStorage.delete(verificationId);
-  
-  return {
-    success: true,
-    message: 'Your password has been updated',
-  };
+  throw { code: 'not_implemented', message: 'Not implemented' };
 };
 
 /**
- * Delete Account
- * DELETE /users/me
+ * Delete Account - Stub
  */
 export const deleteAccount = async (accessToken) => {
-  await delay(800 + Math.random() * 400);
-  
-  if (!accessToken) {
-    throw {
-      code: 'unauthorized',
-      message: 'Please log in to continue.',
-    };
-  }
-  
-  // In real app, would delete user data from database
-  // For mock, just return success
-  console.log('[Mock] Account deleted');
-  
-  return {
-    success: true,
-    message: 'Your account has been deleted',
-  };
+  throw { code: 'not_implemented', message: 'Not implemented' };
 };
 
 /**
- * Request Password Reset (legacy - by username/email)
- * POST /auth/forgot-password
+ * Request Password Reset - Stub
  */
 export const requestPasswordReset = async (usernameOrEmail) => {
-  await delay(800 + Math.random() * 400);
-  
-  if (!usernameOrEmail || usernameOrEmail.trim().length < 3) {
-    throw {
-      code: 'validation_error',
-      message: 'Please enter a valid username or email',
-    };
-  }
-  
-  const normalizedInput = usernameOrEmail.toLowerCase().trim();
-  
-  let username = normalizedInput;
-  if (normalizedInput.includes('@')) {
-    username = mockUsersByEmail.get(normalizedInput);
-  }
-  
-  const user = mockUsersDb.get(username);
-  
-  // Always return success to prevent user enumeration
-  // In real app, only send OTP if user exists
-  if (user) {
-    const otp = generateOtp();
-    console.log(`[Mock Password Reset OTP] Code for ${user.phoneE164}: ${otp}`);
-  }
-  
-  return {
-    success: true,
-    message: 'If an account exists, a verification code has been sent.',
-  };
+  throw { code: 'not_implemented', message: 'Not implemented' };
 };
 
 /**
- * Login with Phone Number (Alternative Login)
- * POST /auth/login/phone
- * Only for existing users
+ * Login with Phone Number - Stub
  */
 export const loginWithPhone = async (phoneE164) => {
-  await delay(800 + Math.random() * 400);
-  
-  if (!phoneE164 || !validatePhone(phoneE164)) {
-    throw {
-      code: 'invalid_phone',
-      message: 'Invalid phone number',
-    };
-  }
-  
-  // Find user by phone
-  let foundUser = null;
-  for (const user of mockUsersDb.values()) {
-    if (user.phoneE164 === phoneE164) {
-      foundUser = user;
-      break;
-    }
-  }
-  
-  if (!foundUser) {
-    throw {
-      code: 'user_not_found',
-      message: 'No account found with this phone number',
-    };
-  }
-  
-  // Generate OTP
-  const otp = generateOtp();
-  const verificationId = `phone_login_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const expiresAt = Date.now() + 5 * 60 * 1000;
-  
-  loginVerificationStorage.set(verificationId, {
-    userId: foundUser.id,
-    phone: phoneE164,
-    otp,
-    expiresAt,
-    attempts: 0,
-    type: 'phone_login',
-  });
-  
-  console.log(`[Mock Phone Login OTP] Code for ${phoneE164}: ${otp}`);
-  
-  return {
-    verificationId,
-    maskedPhone: formatPhoneForDisplay(phoneE164),
-    expiresInSec: 300,
-    resendInSec: 30,
-  };
+  throw { code: 'not_implemented', message: 'Not implemented' };
 };
 
 /**
  * Confirm Age (complete onboarding)
- * POST /users/me/confirm-age
  */
 export const confirmAge = async (accessToken) => {
-  await delay(300);
-  
   if (!accessToken) {
-    throw {
-      code: 'unauthorized',
-      message: 'Please log in to continue.',
-    };
+    throw { code: 'unauthorized', message: 'Please log in to continue.' };
   }
-  
-  return {
-    onboardingStatus: 'COMPLETED',
-  };
+  return { onboardingStatus: 'COMPLETED' };
 };
 
 /**
  * Get Current User
- * GET /users/me
  */
 export const getCurrentUser = async (accessToken) => {
-  await delay(400);
-  
   if (!accessToken) {
-    throw {
-      code: 'unauthorized',
-      message: 'Please log in to continue.',
-    };
+    throw { code: 'unauthorized', message: 'Please log in to continue.' };
   }
   
-  // Return mock user data from localStorage if exists
   const storedUser = localStorage.getItem('pulse_user');
   if (storedUser) {
     return {
@@ -887,10 +350,7 @@ export const getCurrentUser = async (accessToken) => {
     };
   }
   
-  throw {
-    code: 'not_found',
-    message: 'User not found.',
-  };
+  throw { code: 'not_found', message: 'User not found.' };
 };
 
 /**

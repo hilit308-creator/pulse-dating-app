@@ -513,14 +513,35 @@ def _get_bearer_token():
 def get_current_user():
     token = _get_bearer_token()
     if not token:
+        print('[Auth] No bearer token in request')
         return None
     try:
+        # Debug: check if token looks like a JWT (has 2 dots)
+        if token.count('.') != 2:
+            print(f'[Auth] Token is NOT a JWT (no 2 dots): {token[:50]}...')
+            return None
         payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
         user_id = payload.get('user_id')
         if user_id is None:
+            print('[Auth] JWT valid but no user_id in payload')
             return None
-        return User.query.get(int(user_id))
-    except Exception:
+        user = User.query.get(int(user_id))
+        if user:
+            print(f'[Auth] Authenticated user_id={user_id}')
+        else:
+            print(f'[Auth] user_id={user_id} not found in DB')
+        return user
+    except jwt.ExpiredSignatureError:
+        print('[Auth] JWT expired')
+        return None
+    except jwt.InvalidSignatureError:
+        print('[Auth] JWT invalid signature - wrong secret?')
+        return None
+    except jwt.DecodeError as e:
+        print(f'[Auth] JWT decode error: {e}')
+        return None
+    except Exception as e:
+        print(f'[Auth] Unexpected error: {e}')
         return None
 
 
@@ -1366,6 +1387,204 @@ def register():
         return jsonify({'error': error_msg}), 500
     
     return jsonify({'message': 'User registered successfully'}), 201
+
+# ============================================================================
+# OTP AUTHENTICATION ENDPOINTS
+# These endpoints issue real JWTs for phone-based authentication
+# ============================================================================
+
+# In-memory OTP storage (use Redis in production)
+_otp_storage = {}
+
+@app.route('/api/auth/otp/request', methods=['POST'])
+def request_otp():
+    """
+    Request OTP for phone authentication.
+    Body: { phoneE164: string }
+    Returns: { verificationId: string, expiresInSec: int, resendInSec: int }
+    """
+    data = request.json or {}
+    phone = data.get('phoneE164')
+    
+    if not phone or not phone.startswith('+'):
+        return jsonify({'error': 'invalid_phone', 'message': 'Invalid phone number'}), 400
+    
+    # Generate OTP and verification ID
+    import random
+    otp = str(random.randint(100000, 999999))
+    verification_id = f"verify_{uuid.uuid4().hex[:16]}"
+    expires_at = datetime.utcnow() + timedelta(minutes=5)
+    
+    _otp_storage[verification_id] = {
+        'phone': phone,
+        'otp': otp,
+        'expires_at': expires_at,
+        'attempts': 0,
+    }
+    
+    # In production, send SMS here
+    print(f'[OTP] Code for {phone}: {otp}')
+    
+    return jsonify({
+        'verificationId': verification_id,
+        'expiresInSec': 300,
+        'resendInSec': 30,
+    }), 200
+
+@app.route('/api/auth/otp/verify', methods=['POST'])
+def verify_otp():
+    """
+    Verify OTP and return JWT tokens.
+    Body: { verificationId: string, code: string }
+    Returns: { accessToken: string, refreshToken: string, user: object }
+    """
+    data = request.json or {}
+    verification_id = data.get('verificationId')
+    code = data.get('code')
+    
+    if not verification_id or not code:
+        return jsonify({'error': 'missing_fields', 'message': 'verificationId and code required'}), 400
+    
+    record = _otp_storage.get(verification_id)
+    if not record:
+        return jsonify({'error': 'expired_code', 'message': 'Verification code expired'}), 400
+    
+    # Check expiration
+    if datetime.utcnow() > record['expires_at']:
+        del _otp_storage[verification_id]
+        return jsonify({'error': 'expired_code', 'message': 'Verification code expired'}), 400
+    
+    # Check attempts
+    record['attempts'] += 1
+    if record['attempts'] > 5:
+        del _otp_storage[verification_id]
+        return jsonify({'error': 'too_many_attempts', 'message': 'Too many attempts'}), 400
+    
+    # Verify code
+    if record['otp'] != code:
+        return jsonify({'error': 'wrong_code', 'message': 'Incorrect code'}), 400
+    
+    # Success - clean up
+    phone = record['phone']
+    del _otp_storage[verification_id]
+    
+    # Find or create user by phone
+    user = User.query.filter_by(phone_number=phone).first()
+    is_new_user = False
+    
+    if not user:
+        # Create new user with phone
+        is_new_user = True
+        user = User(
+            first_name='',
+            last_name='',
+            email=f'{phone.replace("+", "")}@phone.pulse.app',  # Placeholder email
+            phone_number=phone,
+            role='user',
+        )
+        db.session.add(user)
+        db.session.commit()
+        print(f'[OTP] Created new user id={user.id} for phone={phone}')
+    else:
+        print(f'[OTP] Found existing user id={user.id} for phone={phone}')
+    
+    # Generate real JWT tokens
+    access_token = jwt.encode(
+        {
+            'user_id': user.id,
+            'exp': datetime.utcnow() + timedelta(days=7),
+        },
+        app.config['SECRET_KEY'],
+        algorithm='HS256'
+    )
+    
+    refresh_token = jwt.encode(
+        {
+            'user_id': user.id,
+            'type': 'refresh',
+            'exp': datetime.utcnow() + timedelta(days=30),
+        },
+        app.config['SECRET_KEY'],
+        algorithm='HS256'
+    )
+    
+    return jsonify({
+        'accessToken': access_token,
+        'refreshToken': refresh_token,
+        'user': {
+            'id': user.id,
+            'phoneE164': user.phone_number,
+            'firstName': user.first_name,
+            'email': user.email,
+            'onboardingStatus': 'COMPLETED' if user.first_name else 'NOT_STARTED',
+        },
+    }), 200
+
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    """
+    Login with username/email and password.
+    Body: { usernameOrEmail: string, password: string }
+    Returns: { accessToken: string, refreshToken: string, user: object } or { requiresOtp: true, ... }
+    """
+    data = request.json or {}
+    username_or_email = data.get('usernameOrEmail', '').lower().strip()
+    password = data.get('password', '')
+    
+    if not username_or_email or not password:
+        return jsonify({'error': 'validation_error', 'message': 'Username and password required'}), 400
+    
+    # Find user by email
+    user = User.query.filter_by(email=username_or_email).first()
+    
+    if not user:
+        return jsonify({'error': 'user_not_found', 'message': 'No account found'}), 404
+    
+    # Check password
+    if not user.password_hash:
+        return jsonify({'error': 'invalid_credentials', 'message': 'Invalid credentials'}), 401
+    
+    try:
+        if not bcrypt.checkpw(password.encode('utf-8'), user.password_hash):
+            return jsonify({'error': 'invalid_credentials', 'message': 'Invalid credentials'}), 401
+    except Exception as e:
+        print(f'[Auth] Password check error: {e}')
+        return jsonify({'error': 'invalid_credentials', 'message': 'Invalid credentials'}), 401
+    
+    # Generate real JWT tokens
+    access_token = jwt.encode(
+        {
+            'user_id': user.id,
+            'exp': datetime.utcnow() + timedelta(days=7),
+        },
+        app.config['SECRET_KEY'],
+        algorithm='HS256'
+    )
+    
+    refresh_token = jwt.encode(
+        {
+            'user_id': user.id,
+            'type': 'refresh',
+            'exp': datetime.utcnow() + timedelta(days=30),
+        },
+        app.config['SECRET_KEY'],
+        algorithm='HS256'
+    )
+    
+    print(f'[Auth] Login success for user_id={user.id}')
+    
+    return jsonify({
+        'requiresOtp': False,
+        'accessToken': access_token,
+        'refreshToken': refresh_token,
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'phoneE164': user.phone_number,
+            'firstName': user.first_name,
+            'onboardingStatus': 'COMPLETED' if user.first_name else 'NOT_STARTED',
+        },
+    }), 200
 
 @app.route('/api/users/<int:user_id>', methods=['GET'])
 def get_user_by_id(user_id):
