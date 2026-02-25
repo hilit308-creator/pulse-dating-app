@@ -2366,24 +2366,28 @@ def get_blocks():
 
 
 @app.route('/api/update-location', methods=['POST'])
-def update_location():
+def update_location_legacy():
+    """Legacy endpoint - kept for backward compatibility with Dashboard.js"""
     data = request.json
     user = User.query.get(data['user_id'])
     
     if user:
         user.latitude = data['latitude']
         user.longitude = data['longitude']
-        user.is_active = data['is_active']
+        user.is_active = data.get('is_active', True)
         user.last_active = datetime.utcnow()
         db.session.commit()
         
         # Emit location update to nearby users
-        emit('user_location_update', {
-            'user_id': user.id,
-            'latitude': user.latitude,
-            'longitude': user.longitude,
-            'is_active': user.is_active
-        }, broadcast=True)
+        try:
+            emit('user_location_update', {
+                'user_id': user.id,
+                'latitude': user.latitude,
+                'longitude': user.longitude,
+                'is_active': user.is_active
+            }, broadcast=True)
+        except Exception:
+            pass  # emit may fail outside socket context
         
         return jsonify({'message': 'Location updated'}), 200
     
