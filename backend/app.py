@@ -519,6 +519,9 @@ def get_current_user():
         if token.count('.') != 2:
             print(f'[Auth] Token is NOT a JWT (no 2 dots): {token[:50]}...')
             return None
+        # Debug: log SECRET_KEY prefix to verify consistency across deploys
+        secret_prefix = app.config['SECRET_KEY'][:8] if len(app.config['SECRET_KEY']) >= 8 else 'SHORT'
+        print(f'[Auth] Decoding JWT with SECRET_KEY prefix: {secret_prefix}...')
         payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
         user_id = payload.get('user_id')
         if user_id is None:
@@ -1657,6 +1660,8 @@ def verify_otp():
         print(f'[OTP] Found existing user id={user.id} for phone={phone}')
     
     # Generate real JWT tokens
+    secret_prefix = app.config['SECRET_KEY'][:8] if len(app.config['SECRET_KEY']) >= 8 else 'SHORT'
+    print(f'[OTP] Generating JWT with SECRET_KEY prefix: {secret_prefix}...')
     access_token = jwt.encode(
         {
             'user_id': user.id,
