@@ -5,6 +5,9 @@
 
 import { API_URL } from '../config/api';
 
+// Simulated delay helper
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // Rate limiting (client-side tracking)
 const rateLimitStorage = new Map();
 const MAX_OTP_REQUESTS = 3;
