@@ -2081,6 +2081,117 @@ def get_nearby_users():
         traceback.print_exc()
         return jsonify({'error': f'Failed to fetch users: {str(e)}'}), 500
 
+@app.route('/api/dev/seed-nearby-users', methods=['POST'])
+def seed_nearby_users():
+    """
+    DEV ONLY: Create test users near the requesting user's location.
+    Guarded by ALLOW_DEV_SEED env flag.
+    
+    Body: { latitude: float, longitude: float } (optional - uses default Tel Aviv if not provided)
+    Creates 5 users at varying distances (0.5km, 1km, 2km, 5km, 15km)
+    """
+    # Guard: only allow in development or when explicitly enabled
+    allow_seed = os.getenv('ALLOW_DEV_SEED', 'false').lower() == 'true'
+    env = os.getenv('FLASK_ENV', os.getenv('ENV', 'production'))
+    
+    if env == 'production' and not allow_seed:
+        return jsonify({
+            'error': 'forbidden',
+            'message': 'Dev seed endpoint disabled in production. Set ALLOW_DEV_SEED=true to enable.'
+        }), 403
+    
+    data = request.json or {}
+    base_lat = data.get('latitude', 32.0853)  # Default: Tel Aviv
+    base_lng = data.get('longitude', 34.7818)
+    
+    # Define test users at different distances
+    # Each tuple: (name, gender, lat_offset, lng_offset, approx_distance_km)
+    test_users = [
+        ('Test User A', 'Woman', 0.0045, 0.0045, 0.5),   # ~0.5km
+        ('Test User B', 'Man', 0.009, 0.009, 1.0),       # ~1km
+        ('Test User C', 'Woman', 0.018, 0.018, 2.0),    # ~2km
+        ('Test User D', 'Man', 0.045, 0.045, 5.0),      # ~5km
+        ('Test User E', 'Woman', 0.135, 0.135, 15.0),   # ~15km
+    ]
+    
+    created_users = []
+    
+    for i, (name, gender, lat_off, lng_off, approx_dist) in enumerate(test_users):
+        # Check if test user already exists
+        email = f'test_nearby_{i+1}@pulse.dev'
+        existing = User.query.filter_by(email=email).first()
+        
+        if existing:
+            # Update existing user
+            existing.latitude = base_lat + lat_off
+            existing.longitude = base_lng + lng_off
+            existing.is_active = True
+            existing.last_active = datetime.utcnow() - timedelta(minutes=i * 5)  # Stagger last_active
+            existing.gender = gender
+            db.session.commit()
+            
+            # Calculate actual distance
+            actual_dist = geodesic(
+                (base_lat, base_lng),
+                (existing.latitude, existing.longitude)
+            ).kilometers
+            
+            created_users.append({
+                'id': existing.id,
+                'name': name,
+                'email': email,
+                'latitude': existing.latitude,
+                'longitude': existing.longitude,
+                'approxDistanceKm': approx_dist,
+                'actualDistanceKm': round(actual_dist, 2),
+                'lastActive': existing.last_active.isoformat(),
+                'status': 'updated'
+            })
+        else:
+            # Create new user
+            new_user = User(
+                first_name=name.split()[0],
+                last_name=name.split()[1] if len(name.split()) > 1 else 'Test',
+                email=email,
+                gender=gender,
+                latitude=base_lat + lat_off,
+                longitude=base_lng + lng_off,
+                is_active=True,
+                last_active=datetime.utcnow() - timedelta(minutes=i * 5),
+                residence='Tel Aviv',
+                looking_for='Relationship',
+                interests='Coffee, Music, Travel',
+                hobbies='Testing the Pulse app',
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            
+            # Calculate actual distance
+            actual_dist = geodesic(
+                (base_lat, base_lng),
+                (new_user.latitude, new_user.longitude)
+            ).kilometers
+            
+            created_users.append({
+                'id': new_user.id,
+                'name': name,
+                'email': email,
+                'latitude': new_user.latitude,
+                'longitude': new_user.longitude,
+                'approxDistanceKm': approx_dist,
+                'actualDistanceKm': round(actual_dist, 2),
+                'lastActive': new_user.last_active.isoformat(),
+                'status': 'created'
+            })
+    
+    return jsonify({
+        'success': True,
+        'message': f'Created/updated {len(created_users)} test users',
+        'baseLocation': {'latitude': base_lat, 'longitude': base_lng},
+        'users': created_users
+    }), 200
+
+
 @app.route('/api/dev/validate-diversity', methods=['GET'])
 def validate_diversity():
     """DEV ONLY: Sample 5 random users and return key fields to verify diversity."""
