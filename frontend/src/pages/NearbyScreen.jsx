@@ -237,21 +237,53 @@ export default function NearbyScreen() {
   }, [updatePermission, token]);
 
   // Start scan action - show 3-second scanning animation
-  const startScan = useCallback(() => {
+  const startScan = useCallback(async () => {
+    console.log('[NearbyScreen] startScan clicked');
     const scanRequestedAt = Date.now();
+    
     if (!hasLocationPermission) {
+      console.log('[NearbyScreen] No location permission, requesting...');
       requestLocationPermission();
       return;
     }
 
+    console.log('[NearbyScreen] Has location permission, starting scan');
     trackEvent('nearby_scan_started');
     if (navigator?.vibrate) navigator.vibrate([10, 40, 10]);
     
     // Start scanning state
     setScanState(SCAN_STATE.SCANNING);
     
+    // Get current location and send to backend
+    console.log('[NearbyScreen] Before geolocation getCurrentPosition');
+    try {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          console.log('[NearbyScreen] Geolocation success:', latitude, longitude);
+          
+          // Send location to backend
+          console.log('[NearbyScreen] Token present:', !!token);
+          if (token) {
+            console.log('[NearbyScreen] Before POST /api/location');
+            const locationResult = await updateUserLocation(latitude, longitude, token);
+            console.log('[NearbyScreen] Location updated, result:', locationResult);
+          } else {
+            console.error('[NearbyScreen] NO TOKEN - cannot send location to server!');
+          }
+        },
+        (error) => {
+          console.error('[NearbyScreen] Geolocation error:', error.code, error.message);
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+      );
+    } catch (err) {
+      console.error('[NearbyScreen] Geolocation exception:', err);
+    }
+    
     // After 3 seconds, navigate to results
     const timerId = setTimeout(() => {
+      console.log('[NearbyScreen] Scan complete, navigating to /nearby/people');
       setScanState(SCAN_STATE.COMPLETED);
       navigate('/nearby/people', {
         state: {
@@ -264,7 +296,7 @@ export default function NearbyScreen() {
     }, SCAN_DURATION);
     
     pushTimer(timerId);
-  }, [hasLocationPermission, requestLocationPermission, liveNowCount, navigate, radiusMeters]);
+  }, [hasLocationPermission, requestLocationPermission, liveNowCount, navigate, radiusMeters, token]);
 
   // Handle "View nearby people" CTA
   const handleViewNearbyPeople = useCallback(() => {
