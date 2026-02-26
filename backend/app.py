@@ -1690,7 +1690,55 @@ def verify_otp():
             'firstName': user.first_name,
             'email': user.email,
             'onboardingStatus': 'COMPLETED' if user.first_name else 'NOT_STARTED',
+            'hasPassword': user.password_hash is not None,
         },
+    }), 200
+
+@app.route('/api/auth/set-password', methods=['POST'])
+def set_password():
+    """
+    Set password for authenticated user (during signup flow).
+    Body: { password: string }
+    Requires: Bearer token
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'unauthorized', 'message': 'Authentication required'}), 401
+    
+    data = request.json or {}
+    password = data.get('password', '')
+    
+    if not password:
+        return jsonify({'error': 'validation_error', 'message': 'Password is required'}), 400
+    
+    if len(password) < 8:
+        return jsonify({'error': 'weak_password', 'message': 'Password must be at least 8 characters'}), 400
+    
+    # Check password strength
+    has_upper = any(c.isupper() for c in password)
+    has_lower = any(c.islower() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    has_special = any(c in '!@#$%^&*()_+-=[]{}|;:,.<>?' for c in password)
+    
+    strength_score = sum([has_upper, has_lower, has_digit, has_special])
+    
+    if strength_score < 2:
+        return jsonify({
+            'error': 'weak_password',
+            'message': 'Password must contain at least 2 of: uppercase, lowercase, number, special character'
+        }), 400
+    
+    # Hash and save password
+    password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    user.password_hash = password_hash
+    db.session.commit()
+    
+    print(f'[Auth] Password set for user_id={user.id}')
+    
+    return jsonify({
+        'success': True,
+        'message': 'Password set successfully',
+        'strengthScore': strength_score,
     }), 200
 
 @app.route('/api/auth/login', methods=['POST'])

@@ -1,6 +1,7 @@
 export { default as WelcomeScreen } from './WelcomeScreen';
 export { default as PhoneInputScreen } from './PhoneInputScreen';
 export { default as OtpVerificationScreen } from './OtpVerificationScreen';
+export { default as CreatePasswordScreen } from './CreatePasswordScreen';
 export { default as EnableLocationScreen } from './EnableLocationScreen';
 export { default as EnableNotificationsScreen } from './EnableNotificationsScreen';
 export { default as OnboardingScreen } from './OnboardingScreen';

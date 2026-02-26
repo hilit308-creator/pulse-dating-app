@@ -139,9 +139,15 @@ const OtpVerificationScreen = () => {
         result.user
       );
       
-      // Navigate to permissions flow
-      updateOnboardingStep('location');
-      navigate('/auth/location');
+      // Navigate to password creation if user doesn't have password yet
+      if (!result.user.hasPassword) {
+        updateOnboardingStep('password');
+        navigate('/auth/create-password');
+      } else {
+        // User already has password, go to location permissions
+        updateOnboardingStep('location');
+        navigate('/auth/location');
+      }
     } catch (err) {
       if (err.code === 'wrong_code') {
         setError(err.message);

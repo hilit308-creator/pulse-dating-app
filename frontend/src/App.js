@@ -22,6 +22,7 @@ import {
   WelcomeScreen,
   PhoneInputScreen,
   OtpVerificationScreen,
+  CreatePasswordScreen,
   EnableLocationScreen,
   EnableNotificationsScreen,
   OnboardingScreen,
@@ -999,6 +1000,7 @@ function AppShell() {
             <Route path="/auth/welcome" element={<WelcomeScreen />} />
             <Route path="/auth/phone" element={<PhoneInputScreen />} />
             <Route path="/auth/otp" element={<OtpVerificationScreen />} />
+            <Route path="/auth/create-password" element={<CreatePasswordScreen />} />
             <Route path="/auth/location" element={<EnableLocationScreen />} />
             <Route path="/auth/notifications" element={<EnableNotificationsScreen />} />
             <Route path="/auth/onboarding" element={<OnboardingScreen />} />

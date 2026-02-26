@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 export const ONBOARDING_STEPS = [
   { id: 'phone', label: 'Phone', path: '/auth/phone' },
   { id: 'otp', label: 'Verify', path: '/auth/otp' },
+  { id: 'password', label: 'Password', path: '/auth/create-password' },
   { id: 'location', label: 'Location', path: '/auth/location' },
   { id: 'notifications', label: 'Notifications', path: '/auth/notifications' },
   { id: 'onboarding', label: 'Basic Info', path: '/auth/onboarding' },
