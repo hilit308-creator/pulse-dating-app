@@ -76,6 +76,10 @@ class User(db.Model):
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     last_active = db.Column(db.DateTime)
+    # Spotify OAuth tokens
+    spotify_access_token = db.Column(db.Text)
+    spotify_refresh_token = db.Column(db.Text)
+    spotify_token_expires_at = db.Column(db.DateTime)
 
 
 class FeatureFlag(db.Model):
@@ -1806,6 +1810,414 @@ def auth_login():
             'onboardingStatus': 'COMPLETED' if user.first_name else 'NOT_STARTED',
         },
     }), 200
+
+# ============================================================================
+# SPOTIFY OAUTH ENDPOINTS
+# Authorization Code Flow for connecting user's Spotify account
+# ============================================================================
+
+# Spotify OAuth config
+SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
+SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
+SPOTIFY_REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'https://pulse-dating-app-1.onrender.com/callback')
+SPOTIFY_SCOPES = 'user-top-read user-read-email user-read-private'
+
+# In-memory state storage for CSRF protection (use Redis in production)
+_spotify_oauth_states = {}
+
+@app.route('/auth/spotify', methods=['GET'])
+def spotify_auth():
+    """
+    Initiate Spotify OAuth flow.
+    Redirects user to Spotify authorization page.
+    Requires: user_id query param or Bearer token to identify the user.
+    """
+    # Get user_id from query param or token
+    user_id = request.args.get('user_id')
+    if not user_id:
+        user = get_current_user()
+        if user:
+            user_id = str(user.id)
+    
+    if not user_id:
+        return jsonify({'error': 'unauthorized', 'message': 'User ID required'}), 401
+    
+    if not SPOTIFY_CLIENT_ID:
+        return jsonify({'error': 'config_error', 'message': 'Spotify not configured'}), 500
+    
+    # Generate random state for CSRF protection
+    state = f"{user_id}:{uuid.uuid4().hex}"
+    _spotify_oauth_states[state] = {
+        'user_id': int(user_id),
+        'created_at': datetime.utcnow(),
+    }
+    
+    # Clean up old states (older than 10 minutes)
+    cutoff = datetime.utcnow() - timedelta(minutes=10)
+    expired_states = [s for s, data in _spotify_oauth_states.items() if data['created_at'] < cutoff]
+    for s in expired_states:
+        del _spotify_oauth_states[s]
+    
+    # Build Spotify authorization URL
+    import urllib.parse
+    params = {
+        'client_id': SPOTIFY_CLIENT_ID,
+        'response_type': 'code',
+        'redirect_uri': SPOTIFY_REDIRECT_URI,
+        'scope': SPOTIFY_SCOPES,
+        'state': state,
+        'show_dialog': 'true',  # Always show dialog for re-auth
+    }
+    auth_url = f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}"
+    
+    print(f'[Spotify] Redirecting user_id={user_id} to Spotify auth')
+    
+    # Redirect to Spotify
+    from flask import redirect
+    return redirect(auth_url)
+
+@app.route('/callback', methods=['GET'])
+def spotify_callback():
+    """
+    Spotify OAuth callback.
+    Exchanges authorization code for access/refresh tokens.
+    """
+    from flask import redirect
+    import base64
+    
+    code = request.args.get('code')
+    state = request.args.get('state')
+    error = request.args.get('error')
+    
+    # Frontend URL for redirects
+    frontend_url = os.getenv('FRONTEND_URL', 'https://pulse-dating-app-1.onrender.com')
+    
+    # Handle error from Spotify
+    if error:
+        print(f'[Spotify] Auth error: {error}')
+        return redirect(f'{frontend_url}/settings?spotify=error&reason={error}')
+    
+    if not code or not state:
+        print('[Spotify] Missing code or state')
+        return redirect(f'{frontend_url}/settings?spotify=error&reason=missing_params')
+    
+    # Validate state (CSRF protection)
+    state_data = _spotify_oauth_states.get(state)
+    if not state_data:
+        print(f'[Spotify] Invalid or expired state: {state}')
+        return redirect(f'{frontend_url}/settings?spotify=error&reason=invalid_state')
+    
+    user_id = state_data['user_id']
+    del _spotify_oauth_states[state]  # Clear used state
+    
+    # Exchange code for tokens
+    try:
+        # Prepare token request
+        auth_header = base64.b64encode(f'{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}'.encode()).decode()
+        
+        token_response = requests.post(
+            'https://accounts.spotify.com/api/token',
+            headers={
+                'Authorization': f'Basic {auth_header}',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            data={
+                'grant_type': 'authorization_code',
+                'code': code,
+                'redirect_uri': SPOTIFY_REDIRECT_URI,
+            },
+            timeout=10,
+        )
+        
+        if token_response.status_code != 200:
+            print(f'[Spotify] Token exchange failed: {token_response.status_code} {token_response.text}')
+            return redirect(f'{frontend_url}/settings?spotify=error&reason=token_exchange_failed')
+        
+        token_data = token_response.json()
+        access_token = token_data.get('access_token')
+        refresh_token = token_data.get('refresh_token')
+        expires_in = token_data.get('expires_in', 3600)
+        
+        if not access_token:
+            print('[Spotify] No access token in response')
+            return redirect(f'{frontend_url}/settings?spotify=error&reason=no_token')
+        
+        # Store tokens for user
+        user = User.query.get(user_id)
+        if not user:
+            print(f'[Spotify] User not found: {user_id}')
+            return redirect(f'{frontend_url}/settings?spotify=error&reason=user_not_found')
+        
+        user.spotify_access_token = access_token
+        user.spotify_refresh_token = refresh_token
+        user.spotify_token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+        db.session.commit()
+        
+        print(f'[Spotify] Tokens stored for user_id={user_id}')
+        
+        return redirect(f'{frontend_url}/settings?spotify=connected')
+        
+    except requests.RequestException as e:
+        print(f'[Spotify] Request error: {e}')
+        return redirect(f'{frontend_url}/settings?spotify=error&reason=network_error')
+    except Exception as e:
+        print(f'[Spotify] Unexpected error: {e}')
+        return redirect(f'{frontend_url}/settings?spotify=error&reason=server_error')
+
+def refresh_spotify_token(user):
+    """
+    Refresh Spotify access token using refresh token.
+    Returns True if successful, False otherwise.
+    """
+    import base64
+    
+    if not user.spotify_refresh_token:
+        return False
+    
+    try:
+        auth_header = base64.b64encode(f'{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}'.encode()).decode()
+        
+        response = requests.post(
+            'https://accounts.spotify.com/api/token',
+            headers={
+                'Authorization': f'Basic {auth_header}',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            data={
+                'grant_type': 'refresh_token',
+                'refresh_token': user.spotify_refresh_token,
+            },
+            timeout=10,
+        )
+        
+        if response.status_code != 200:
+            print(f'[Spotify] Token refresh failed: {response.status_code}')
+            return False
+        
+        token_data = response.json()
+        user.spotify_access_token = token_data.get('access_token')
+        # Spotify may return a new refresh token
+        if token_data.get('refresh_token'):
+            user.spotify_refresh_token = token_data.get('refresh_token')
+        user.spotify_token_expires_at = datetime.utcnow() + timedelta(seconds=token_data.get('expires_in', 3600))
+        db.session.commit()
+        
+        print(f'[Spotify] Token refreshed for user_id={user.id}')
+        return True
+        
+    except Exception as e:
+        print(f'[Spotify] Token refresh error: {e}')
+        return False
+
+@app.route('/api/spotify/status', methods=['GET'])
+def spotify_status():
+    """
+    Check if current user has Spotify connected.
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'unauthorized'}), 401
+    
+    connected = bool(user.spotify_access_token and user.spotify_refresh_token)
+    
+    return jsonify({
+        'connected': connected,
+        'expiresAt': user.spotify_token_expires_at.isoformat() if user.spotify_token_expires_at else None,
+    }), 200
+
+@app.route('/api/spotify/disconnect', methods=['POST'])
+def spotify_disconnect():
+    """
+    Disconnect Spotify from user account.
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'unauthorized'}), 401
+    
+    user.spotify_access_token = None
+    user.spotify_refresh_token = None
+    user.spotify_token_expires_at = None
+    db.session.commit()
+    
+    print(f'[Spotify] Disconnected for user_id={user.id}')
+    
+    return jsonify({'success': True, 'message': 'Spotify disconnected'}), 200
+
+@app.route('/api/spotify/top-artists', methods=['GET'])
+def spotify_top_artists():
+    """
+    Get user's top artists from Spotify.
+    Requires user to have connected Spotify account.
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'unauthorized'}), 401
+    
+    if not user.spotify_access_token:
+        return jsonify({'error': 'spotify_not_connected', 'message': 'Please connect your Spotify account'}), 400
+    
+    # Check if token is expired and refresh if needed
+    if user.spotify_token_expires_at and user.spotify_token_expires_at < datetime.utcnow():
+        if not refresh_spotify_token(user):
+            return jsonify({'error': 'token_refresh_failed', 'message': 'Please reconnect your Spotify account'}), 401
+    
+    # Call Spotify API
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        time_range = request.args.get('time_range', 'medium_term')  # short_term, medium_term, long_term
+        
+        response = requests.get(
+            f'https://api.spotify.com/v1/me/top/artists',
+            headers={
+                'Authorization': f'Bearer {user.spotify_access_token}',
+            },
+            params={
+                'limit': min(limit, 50),
+                'time_range': time_range,
+            },
+            timeout=10,
+        )
+        
+        # If 401, try refreshing token once
+        if response.status_code == 401:
+            if refresh_spotify_token(user):
+                response = requests.get(
+                    f'https://api.spotify.com/v1/me/top/artists',
+                    headers={
+                        'Authorization': f'Bearer {user.spotify_access_token}',
+                    },
+                    params={
+                        'limit': min(limit, 50),
+                        'time_range': time_range,
+                    },
+                    timeout=10,
+                )
+            else:
+                return jsonify({'error': 'token_refresh_failed', 'message': 'Please reconnect your Spotify account'}), 401
+        
+        if response.status_code != 200:
+            print(f'[Spotify] API error: {response.status_code} {response.text}')
+            return jsonify({'error': 'spotify_api_error', 'message': 'Failed to fetch top artists'}), response.status_code
+        
+        data = response.json()
+        
+        # Format response
+        artists = []
+        for item in data.get('items', []):
+            artists.append({
+                'id': item.get('id'),
+                'name': item.get('name'),
+                'genres': item.get('genres', []),
+                'popularity': item.get('popularity'),
+                'imageUrl': item.get('images', [{}])[0].get('url') if item.get('images') else None,
+                'spotifyUrl': item.get('external_urls', {}).get('spotify'),
+            })
+        
+        return jsonify({
+            'artists': artists,
+            'total': data.get('total', len(artists)),
+            'timeRange': time_range,
+        }), 200
+        
+    except requests.RequestException as e:
+        print(f'[Spotify] Request error: {e}')
+        return jsonify({'error': 'network_error', 'message': 'Failed to connect to Spotify'}), 503
+    except Exception as e:
+        print(f'[Spotify] Unexpected error: {e}')
+        return jsonify({'error': 'server_error', 'message': 'Something went wrong'}), 500
+
+@app.route('/api/spotify/top-tracks', methods=['GET'])
+def spotify_top_tracks():
+    """
+    Get user's top tracks from Spotify.
+    Requires user to have connected Spotify account.
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'unauthorized'}), 401
+    
+    if not user.spotify_access_token:
+        return jsonify({'error': 'spotify_not_connected', 'message': 'Please connect your Spotify account'}), 400
+    
+    # Check if token is expired and refresh if needed
+    if user.spotify_token_expires_at and user.spotify_token_expires_at < datetime.utcnow():
+        if not refresh_spotify_token(user):
+            return jsonify({'error': 'token_refresh_failed', 'message': 'Please reconnect your Spotify account'}), 401
+    
+    # Call Spotify API
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        time_range = request.args.get('time_range', 'medium_term')
+        
+        response = requests.get(
+            f'https://api.spotify.com/v1/me/top/tracks',
+            headers={
+                'Authorization': f'Bearer {user.spotify_access_token}',
+            },
+            params={
+                'limit': min(limit, 50),
+                'time_range': time_range,
+            },
+            timeout=10,
+        )
+        
+        # If 401, try refreshing token once
+        if response.status_code == 401:
+            if refresh_spotify_token(user):
+                response = requests.get(
+                    f'https://api.spotify.com/v1/me/top/tracks',
+                    headers={
+                        'Authorization': f'Bearer {user.spotify_access_token}',
+                    },
+                    params={
+                        'limit': min(limit, 50),
+                        'time_range': time_range,
+                    },
+                    timeout=10,
+                )
+            else:
+                return jsonify({'error': 'token_refresh_failed', 'message': 'Please reconnect your Spotify account'}), 401
+        
+        if response.status_code != 200:
+            print(f'[Spotify] API error: {response.status_code} {response.text}')
+            return jsonify({'error': 'spotify_api_error', 'message': 'Failed to fetch top tracks'}), response.status_code
+        
+        data = response.json()
+        
+        # Format response
+        tracks = []
+        for item in data.get('items', []):
+            tracks.append({
+                'id': item.get('id'),
+                'name': item.get('name'),
+                'artists': [{'id': a.get('id'), 'name': a.get('name')} for a in item.get('artists', [])],
+                'album': {
+                    'id': item.get('album', {}).get('id'),
+                    'name': item.get('album', {}).get('name'),
+                    'imageUrl': item.get('album', {}).get('images', [{}])[0].get('url') if item.get('album', {}).get('images') else None,
+                },
+                'durationMs': item.get('duration_ms'),
+                'popularity': item.get('popularity'),
+                'previewUrl': item.get('preview_url'),
+                'spotifyUrl': item.get('external_urls', {}).get('spotify'),
+            })
+        
+        return jsonify({
+            'tracks': tracks,
+            'total': data.get('total', len(tracks)),
+            'timeRange': time_range,
+        }), 200
+        
+    except requests.RequestException as e:
+        print(f'[Spotify] Request error: {e}')
+        return jsonify({'error': 'network_error', 'message': 'Failed to connect to Spotify'}), 503
+    except Exception as e:
+        print(f'[Spotify] Unexpected error: {e}')
+        return jsonify({'error': 'server_error', 'message': 'Something went wrong'}), 500
+
+# ============================================================================
+# END SPOTIFY OAUTH ENDPOINTS
+# ============================================================================
 
 @app.route('/api/users/<int:user_id>', methods=['GET'])
 def get_user_by_id(user_id):

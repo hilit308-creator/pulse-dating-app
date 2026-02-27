@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Button, Chip, Stack, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Avatar, IconButton
+  Box, Typography, Button, Chip, Stack, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Avatar, IconButton, CircularProgress, Alert
 } from '@mui/material';
 import LanguageIcon from '@mui/icons-material/Language';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import { useAuth } from '../context/AuthContext';
+import { useSearchParams } from 'react-router-dom';
+
+const API_URL = process.env.REACT_APP_API_URL || 'https://pulse-dating-backend.onrender.com';
 
 const zodiacSigns = [
   { name: 'Aries', icon: '♈' },
@@ -29,6 +32,7 @@ const allLanguages = ['English', 'Hebrew', 'French', 'Spanish', 'Russian', 'Arab
 
 export default function ProfileExtras() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // Star Sign - load from user
   const [starSign, setStarSign] = useState(user?.starSign || '');
@@ -43,7 +47,102 @@ export default function ProfileExtras() {
   // Connected accounts - load from user
   const [instagramConnected, setInstagramConnected] = useState(user?.instagramConnected || false);
   const [instagramUsername, setInstagramUsername] = useState(user?.instagramUsername || '');
-  const [spotifyConnected, setSpotifyConnected] = useState(user?.spotifyConnected || false);
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [spotifyLoading, setSpotifyLoading] = useState(true);
+  const [spotifyArtists, setSpotifyArtists] = useState([]);
+  const [spotifyError, setSpotifyError] = useState('');
+
+  // Check Spotify connection status on mount
+  useEffect(() => {
+    checkSpotifyStatus();
+    
+    // Handle OAuth callback result
+    const spotifyParam = searchParams.get('spotify');
+    if (spotifyParam === 'connected') {
+      setSpotifyConnected(true);
+      fetchTopArtists();
+      // Clean up URL
+      searchParams.delete('spotify');
+      setSearchParams(searchParams, { replace: true });
+    } else if (spotifyParam === 'error') {
+      const reason = searchParams.get('reason') || 'unknown';
+      setSpotifyError(`Failed to connect: ${reason}`);
+      // Clean up URL
+      searchParams.delete('spotify');
+      searchParams.delete('reason');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
+
+  const checkSpotifyStatus = async () => {
+    try {
+      const token = localStorage.getItem('pulse_access_token');
+      if (!token) {
+        setSpotifyLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/spotify/status`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSpotifyConnected(data.connected);
+        if (data.connected) {
+          fetchTopArtists();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check Spotify status:', err);
+    } finally {
+      setSpotifyLoading(false);
+    }
+  };
+
+  const fetchTopArtists = async () => {
+    try {
+      const token = localStorage.getItem('pulse_access_token');
+      const response = await fetch(`${API_URL}/api/spotify/top-artists?limit=5`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSpotifyArtists(data.artists || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch top artists:', err);
+    }
+  };
+
+  const handleSpotifyConnect = () => {
+    if (!user?.id) {
+      setSpotifyError('Please log in to connect Spotify');
+      return;
+    }
+    // Redirect to backend Spotify auth endpoint
+    window.location.href = `${API_URL}/auth/spotify?user_id=${user.id}`;
+  };
+
+  const handleSpotifyDisconnect = async () => {
+    try {
+      const token = localStorage.getItem('pulse_access_token');
+      const response = await fetch(`${API_URL}/api/spotify/disconnect`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        setSpotifyConnected(false);
+        setSpotifyArtists([]);
+      } else {
+        setSpotifyError('Failed to disconnect');
+      }
+    } catch (err) {
+      setSpotifyError('Failed to disconnect');
+    }
+  };
 
   // Update state when user data changes
   useEffect(() => {
@@ -53,7 +152,6 @@ export default function ProfileExtras() {
       setLanguages(user.languages || []);
       setInstagramConnected(user.instagramConnected || false);
       setInstagramUsername(user.instagramUsername || '');
-      setSpotifyConnected(user.spotifyConnected || false);
     }
   }, [user]);
 
@@ -175,41 +273,90 @@ export default function ProfileExtras() {
 
         {/* Spotify */}
         <Typography variant="body2" sx={{ color: '#888', mb: 1 }}>Show off your favorite music</Typography>
+        
+        {/* Error message */}
+        {spotifyError && (
+          <Alert severity="error" onClose={() => setSpotifyError('')} sx={{ mb: 2, borderRadius: 2 }}>
+            {spotifyError}
+          </Alert>
+        )}
+        
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           <MusicNoteIcon sx={{ color: '#1db954', mr: 1 }} />
-          <Button
-            variant={spotifyConnected ? 'contained' : 'outlined'}
-            color={spotifyConnected ? 'success' : 'inherit'}
-            startIcon={spotifyConnected ? <CheckCircleIcon /> : <MusicNoteIcon />}
-            onClick={() => {
-              // Try to open Spotify app, fallback to web
-              const spotifyAppUrl = 'spotify://';
-              const spotifyWebUrl = 'https://open.spotify.com/';
-              const timeout = setTimeout(() => {
-                window.open(spotifyWebUrl, '_blank');
-              }, 700);
-              window.location = spotifyAppUrl;
-              // If the app opens, clear the timeout
-              window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
-            }}
-            sx={{ borderRadius: 2, fontWeight: 500, textTransform: 'none', bgcolor: spotifyConnected ? '#e8f5e9' : '#fff' }}
-          >
-            {spotifyConnected ? 'Spotify connected' : 'Connect my Spotify'}
-          </Button>
+          {spotifyLoading ? (
+            <CircularProgress size={20} sx={{ color: '#1db954' }} />
+          ) : (
+            <Button
+              variant={spotifyConnected ? 'contained' : 'outlined'}
+              color={spotifyConnected ? 'success' : 'inherit'}
+              startIcon={spotifyConnected ? <CheckCircleIcon /> : <MusicNoteIcon />}
+              onClick={spotifyConnected ? handleSpotifyDisconnect : handleSpotifyConnect}
+              sx={{ borderRadius: 2, fontWeight: 500, textTransform: 'none', bgcolor: spotifyConnected ? '#e8f5e9' : '#fff' }}
+            >
+              {spotifyConnected ? 'Disconnect Spotify' : 'Connect my Spotify'}
+            </Button>
+          )}
         </Box>
         <Typography variant="body2" sx={{ color: '#888', mb: 2 }}>
           Show your top Spotify artists on your profile and allow the app to highlight who you have in common with others
         </Typography>
-        <Stack direction="row" spacing={1}>
-          {[1,2,3,4,5].map((_,i) => (
-            <Box key={i} sx={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#f5f5f5', borderRadius: '50%', border: '2px dashed #ddd' }}>
-              <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="32" cy="32" r="32" fill="#f2f2f2" />
-                <path d="M32 33c5.5 0 10-4.5 10-10s-4.5-10-10-10-10 4.5-10 10 4.5 10 10 10zm0 4c-6.6 0-20 3.3-20 10v3a1 1 0 001 1h38a1 1 0 001-1v-3c0-6.7-13.4-10-20-10z" fill="#2e2e2e" />
-              </svg>
-            </Box>
-          ))}
+        
+        {/* Top Artists Display */}
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+          {spotifyConnected && spotifyArtists.length > 0 ? (
+            spotifyArtists.map((artist) => (
+              <Box 
+                key={artist.id} 
+                sx={{ 
+                  width: 44, 
+                  height: 44, 
+                  borderRadius: '50%', 
+                  overflow: 'hidden',
+                  border: '2px solid #1db954',
+                }}
+              >
+                {artist.imageUrl ? (
+                  <img 
+                    src={artist.imageUrl} 
+                    alt={artist.name} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    title={artist.name}
+                  />
+                ) : (
+                  <Box sx={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    bgcolor: '#1db954', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}>
+                    {artist.name?.charAt(0)}
+                  </Box>
+                )}
+              </Box>
+            ))
+          ) : (
+            [1,2,3,4,5].map((_,i) => (
+              <Box key={i} sx={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#f5f5f5', borderRadius: '50%', border: '2px dashed #ddd' }}>
+                <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="32" cy="32" r="32" fill="#f2f2f2" />
+                  <path d="M32 33c5.5 0 10-4.5 10-10s-4.5-10-10-10-10 4.5-10 10 4.5 10 10 10zm0 4c-6.6 0-20 3.3-20 10v3a1 1 0 001 1h38a1 1 0 001-1v-3c0-6.7-13.4-10-20-10z" fill="#2e2e2e" />
+                </svg>
+              </Box>
+            ))
+          )}
         </Stack>
+        
+        {/* Artist names */}
+        {spotifyConnected && spotifyArtists.length > 0 && (
+          <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
+            {spotifyArtists.map(a => a.name).join(', ')}
+          </Typography>
+        )}
       </Box>
 
       {/* Star Sign Dialog */}
