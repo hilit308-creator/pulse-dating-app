@@ -91,6 +91,7 @@ export default function ProfileExtras() {
   const checkSpotifyStatus = async () => {
     try {
       const token = localStorage.getItem('pulse_access_token');
+      console.log('[Spotify] Checking status, token present:', !!token);
       if (!token) {
         setSpotifyLoading(false);
         return;
@@ -102,10 +103,14 @@ export default function ProfileExtras() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[Spotify] Status response:', data);
         setSpotifyConnected(data.connected);
         if (data.connected) {
+          console.log('[Spotify] Connected, fetching top artists...');
           fetchTopArtists();
         }
+      } else {
+        console.error('[Spotify] Status check failed:', response.status);
       }
     } catch (err) {
       console.error('Failed to check Spotify status:', err);
