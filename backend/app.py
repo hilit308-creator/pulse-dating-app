@@ -1817,7 +1817,7 @@ def auth_login():
 # Spotify OAuth config
 SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
-SPOTIFY_REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'https://pulse-dating-app-1.onrender.com/callback')
+SPOTIFY_REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'https://pulse-dating-backend.onrender.com/callback')
 SPOTIFY_SCOPES = 'user-top-read user-read-email user-read-private'
 
 # In-memory state storage for CSRF protection (use Redis in production)

@@ -60,7 +60,7 @@ The app supports connecting your Spotify account to display your top artists on 
 ```bash
 SPOTIFY_CLIENT_ID=<your-spotify-client-id>
 SPOTIFY_CLIENT_SECRET=<your-spotify-client-secret>
-SPOTIFY_REDIRECT_URI=https://pulse-dating-app-1.onrender.com/callback
+SPOTIFY_REDIRECT_URI=https://pulse-dating-backend.onrender.com/callback
 ```
 
 ### OAuth Flow
