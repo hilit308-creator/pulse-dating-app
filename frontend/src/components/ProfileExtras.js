@@ -117,13 +117,17 @@ export default function ProfileExtras() {
   const fetchTopArtists = async () => {
     try {
       const token = localStorage.getItem('pulse_access_token');
+      console.log('[Spotify] Fetching top artists...');
       const response = await fetch(`${API_URL}/api/spotify/top-artists?limit=5`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[Spotify] Top artists response:', data);
         setSpotifyArtists(data.artists || []);
+      } else {
+        console.error('[Spotify] Failed to fetch artists:', response.status);
       }
     } catch (err) {
       console.error('Failed to fetch top artists:', err);

@@ -2166,14 +2166,29 @@ def spotify_top_artists():
         # Format response
         artists = []
         for item in data.get('items', []):
+            # Get the best image (prefer medium size ~300px)
+            images = item.get('images', [])
+            image_url = None
+            if images:
+                # Spotify returns images sorted by size (largest first)
+                # Try to get medium-sized image, fallback to first available
+                for img in images:
+                    if img.get('width', 0) <= 320:
+                        image_url = img.get('url')
+                        break
+                if not image_url and images:
+                    image_url = images[0].get('url')
+            
             artists.append({
                 'id': item.get('id'),
                 'name': item.get('name'),
                 'genres': item.get('genres', []),
                 'popularity': item.get('popularity'),
-                'imageUrl': item.get('images', [{}])[0].get('url') if item.get('images') else None,
+                'imageUrl': image_url,
                 'spotifyUrl': item.get('external_urls', {}).get('spotify'),
             })
+        
+        print(f'[Spotify] Returning {len(artists)} artists for user_id={user.id}')
         
         return jsonify({
             'artists': artists,
