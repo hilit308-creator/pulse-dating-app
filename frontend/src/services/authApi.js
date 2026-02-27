@@ -329,10 +329,77 @@ export const requestPasswordReset = async (usernameOrEmail) => {
 };
 
 /**
- * Login with Phone Number - Stub
+ * Login with Phone Number
+ * Checks if user exists, then sends OTP
  */
 export const loginWithPhone = async (phoneE164) => {
-  throw { code: 'not_implemented', message: 'Not implemented' };
+  // Validate phone
+  if (!phoneE164 || !validatePhone(phoneE164)) {
+    throw {
+      code: 'invalid_phone',
+      message: 'Please enter a valid phone number',
+    };
+  }
+  
+  // Check rate limit
+  const rateCheck = checkRateLimit(phoneE164, 'request');
+  if (!rateCheck.allowed) {
+    throw {
+      code: 'rate_limited',
+      message: `Too many attempts. Please wait ${rateCheck.waitTime} seconds.`,
+    };
+  }
+  
+  try {
+    // First check if user exists with this phone
+    const checkResponse = await fetch(`${API_URL}/api/auth/check-phone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phoneE164 }),
+    });
+    
+    const checkData = await checkResponse.json();
+    
+    if (!checkResponse.ok || !checkData.exists) {
+      throw {
+        code: 'user_not_found',
+        message: 'No account found with this phone number. Please sign up first.',
+      };
+    }
+    
+    // User exists, send OTP
+    const response = await fetch(`${API_URL}/api/auth/otp/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneE164 }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw {
+        code: data.error || 'request_failed',
+        message: data.message || 'Failed to send OTP',
+      };
+    }
+    
+    console.log('[Login] OTP sent successfully');
+    if (data.debugCode) {
+      console.log(`%c[Login] Your verification code is: ${data.debugCode}`, 'color: green; font-size: 16px; font-weight: bold;');
+    }
+    
+    return {
+      verificationId: data.verificationId,
+      resendInSec: data.resendInSec || 30,
+    };
+  } catch (err) {
+    if (err.code) throw err;
+    console.error('[Login] Phone login error:', err);
+    throw {
+      code: 'no_internet',
+      message: 'Unable to connect. Please check your internet connection.',
+    };
+  }
 };
 
 /**

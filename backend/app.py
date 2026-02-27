@@ -1606,6 +1606,31 @@ def register():
 # In-memory OTP storage (use Redis in production)
 _otp_storage = {}
 
+@app.route('/api/auth/check-phone', methods=['POST'])
+def check_phone():
+    """
+    Check if a user exists with the given phone number.
+    Body: { phone: string }
+    Returns: { exists: bool, user_id: int|null }
+    """
+    data = request.json or {}
+    phone = data.get('phone')
+    
+    if not phone:
+        return jsonify({'error': 'phone_required', 'message': 'Phone number is required'}), 400
+    
+    # Normalize phone number
+    normalized_phone = phone.strip()
+    if not normalized_phone.startswith('+'):
+        normalized_phone = '+' + normalized_phone
+    
+    user = User.query.filter_by(phone_number=normalized_phone).first()
+    
+    return jsonify({
+        'exists': user is not None,
+        'user_id': user.id if user else None,
+    }), 200
+
 @app.route('/api/auth/otp/request', methods=['POST'])
 def request_otp():
     """
