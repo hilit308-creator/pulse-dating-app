@@ -20,20 +20,54 @@ from agent import agent_bp
 
 load_dotenv()
 
+# ============================================================================
+# STARTUP LOGGING - Log DB identifier for debugging
+# ============================================================================
+def get_safe_db_identifier():
+    """Return safe DB identifier (host + dbname, no credentials)"""
+    db_url = os.getenv('DATABASE_URL', '')
+    if not db_url:
+        return {'db_type': 'sqlite', 'db_name': 'dating_app.db'}
+    try:
+        # Parse postgresql://user:pass@host:port/dbname
+        import re
+        match = re.match(r'postgres(?:ql)?://[^@]+@([^:/]+)(?::\d+)?/([^?]+)', db_url)
+        if match:
+            return {'db_type': 'postgresql', 'db_host': match.group(1), 'db_name': match.group(2)}
+    except:
+        pass
+    return {'db_type': 'unknown', 'db_hash': hash(db_url) % 10000}
+
+_DB_INFO = get_safe_db_identifier()
+print(f'[STARTUP] Database: {_DB_INFO}')
+print(f'[STARTUP] Environment: {os.getenv("RENDER", "local")}')
+print(f'[STARTUP] Frontend URL: {os.getenv("FRONTEND_URL", "not set")}')
+
 # Admin emails - these users get admin role automatically
 ADMIN_EMAILS = [
     'lironi217@gmail.com',
 ]
 
 app = Flask(__name__)
-CORS(app)  # Allow all origins for development
+# CORS configuration - allow credentials for cookie-based auth
+FRONTEND_ORIGINS = [
+    'https://pulse-dating-app-1.onrender.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
+CORS(app, origins=FRONTEND_ORIGINS, supports_credentials=True)
 
 # Manual CORS headers for all responses
 @app.after_request
 def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    origin = request.headers.get('Origin', '')
+    if origin in FRONTEND_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    else:
+        response.headers['Access-Control-Allow-Origin'] = FRONTEND_ORIGINS[0]
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -1517,8 +1551,11 @@ def register():
             if field not in data or not data[field]:
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
+        # Normalize email (trim + lowercase)
+        normalized_email = data['email'].strip().lower()
+        
         # Check if user already exists
-        if User.query.filter_by(email=data['email']).first():
+        if User.query.filter_by(email=normalized_email).first():
             return jsonify({'error': 'Email already registered'}), 400
         
         # Hash the password
@@ -1526,13 +1563,15 @@ def register():
         password_hash = bcrypt.hashpw(password, bcrypt.gensalt())
         
         # Determine user role (auto-admin for specific emails)
-        user_role = 'admin' if data['email'].lower() in [e.lower() for e in ADMIN_EMAILS] else 'user'
+        user_role = 'admin' if normalized_email in [e.lower() for e in ADMIN_EMAILS] else 'user'
+        
+        print(f'[Register] Creating user with email={normalized_email}, db={_DB_INFO}')
         
         # Create new user
         new_user = User(
-            first_name=data['first_name'],
-            last_name=data['last_name'],
-            email=data['email'],
+            first_name=data['first_name'].strip(),
+            last_name=data['last_name'].strip(),
+            email=normalized_email,
             password_hash=password_hash,
             gender=data.get('gender', ''),
             show_me=data.get('show_me', 'Everyone'),  # Gender preference for matching
@@ -1754,13 +1793,22 @@ def auth_login():
     username_or_email = data.get('usernameOrEmail', '').lower().strip()
     password = data.get('password', '')
     
+    # Enhanced login logging for debugging
+    print(f'[Login] Attempt: email={username_or_email}, db={_DB_INFO}')
+    
     if not username_or_email or not password:
+        print(f'[Login] Failed: missing credentials')
         return jsonify({'error': 'validation_error', 'message': 'Username and password required'}), 400
     
     # Find user by email
     user = User.query.filter_by(email=username_or_email).first()
     
+    # Log user lookup result
+    total_users = User.query.count()
+    print(f'[Login] User lookup: found={user is not None}, total_users_in_db={total_users}')
+    
     if not user:
+        print(f'[Login] Failed: no user found for email={username_or_email}')
         return jsonify({'error': 'user_not_found', 'message': 'No account found'}), 404
     
     # Check password
@@ -3590,6 +3638,65 @@ def get_pending_gestures_to_user():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# DEBUG ENDPOINTS - For diagnosing environment and DB issues
+# ============================================================================
+
+@app.route('/api/debug/env', methods=['GET'])
+def debug_env():
+    """
+    Safe diagnostic endpoint - returns environment info without secrets.
+    """
+    origin = request.headers.get('Origin', 'none')
+    return jsonify({
+        'env': 'production' if os.getenv('RENDER') else 'local',
+        'service': os.getenv('RENDER_SERVICE_NAME', 'unknown'),
+        'db_type': _DB_INFO.get('db_type', 'unknown'),
+        'db_host': _DB_INFO.get('db_host', 'n/a'),
+        'db_name': _DB_INFO.get('db_name', 'n/a'),
+        'frontend_origin_allowed': origin in FRONTEND_ORIGINS,
+        'request_origin': origin,
+        'total_users': User.query.count(),
+    }), 200
+
+@app.route('/api/debug/user-exists', methods=['GET'])
+def debug_user_exists():
+    """
+    Check if a user exists by email (for debugging).
+    """
+    email = request.args.get('email', '').lower().strip()
+    if not email:
+        return jsonify({'error': 'email parameter required'}), 400
+    
+    user = User.query.filter_by(email=email).first()
+    return jsonify({
+        'email': email,
+        'exists': user is not None,
+        'user_id': user.id if user else None,
+        'created_at': user.created_at.isoformat() if user and user.created_at else None,
+        'db_info': _DB_INFO,
+    }), 200
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Simple health check endpoint."""
+    try:
+        # Test DB connection
+        user_count = User.query.count()
+        return jsonify({
+            'status': 'healthy',
+            'db_connected': True,
+            'user_count': user_count,
+            'db_info': _DB_INFO,
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'db_connected': False,
+            'error': str(e),
+        }), 500
 
 
 if __name__ == '__main__':

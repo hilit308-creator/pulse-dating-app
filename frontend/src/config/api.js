@@ -1,12 +1,15 @@
 // API Configuration
 // All API calls should use this base URL
 
-// Production backend URL
+// Production backend URL - SINGLE SOURCE OF TRUTH
 const PRODUCTION_API_URL = 'https://pulse-dating-backend.onrender.com';
 
 // Use env var if set, otherwise use production URL in production, localhost in dev
 export const API_URL = process.env.REACT_APP_API_URL || 
   (process.env.NODE_ENV === 'production' ? PRODUCTION_API_URL : 'http://localhost:5000');
+
+// Log API URL on startup for debugging
+console.log(`[API Config] API_URL=${API_URL}, NODE_ENV=${process.env.NODE_ENV}`);
 
 // WebSocket URL (convert http(s) to ws(s))
 export const getWebSocketUrl = (path = '') => {

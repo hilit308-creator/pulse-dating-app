@@ -229,6 +229,8 @@ export const loginWithPassword = async (usernameOrEmail, password) => {
   }
   
   try {
+    console.log(`[Auth] Login attempt: email=${usernameOrEmail}, API_URL=${API_URL}`);
+    
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -238,6 +240,7 @@ export const loginWithPassword = async (usernameOrEmail, password) => {
     const data = await response.json();
     
     if (!response.ok) {
+      console.error(`[Auth] Login failed: status=${response.status}, error=${data.error}, message=${data.message}`);
       throw {
         code: data.error || 'login_failed',
         message: data.message || 'Login failed',
@@ -247,6 +250,7 @@ export const loginWithPassword = async (usernameOrEmail, password) => {
     console.log('[Auth] Login successful, got JWT');
     return data;
   } catch (error) {
+    console.error('[Auth] Login error:', error);
     if (error.code) throw error;
     throw {
       code: 'network_error',
