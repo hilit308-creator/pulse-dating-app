@@ -2129,7 +2129,7 @@ export default function ProfileSettings({ onBack }) {
             position: "fixed",
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: 80, // Above bottom navigation
             pb: "env(safe-area-inset-bottom, 0px)",
             display: "flex",
             justifyContent: "center",
@@ -2143,7 +2143,7 @@ export default function ProfileSettings({ onBack }) {
               maxWidth: 520,
               width: "100%",
               mx: 2,
-              mb: 2,
+              mb: 1,
               display: "flex",
               gap: 1.5,
             }}
