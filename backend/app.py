@@ -2128,6 +2128,8 @@ def spotify_top_artists():
         limit = request.args.get('limit', 10, type=int)
         time_range = request.args.get('time_range', 'medium_term')  # short_term, medium_term, long_term
         
+        print(f'[Spotify] Calling top-artists for user_id={user.id}, token_expires_at={user.spotify_token_expires_at}')
+        
         response = requests.get(
             f'https://api.spotify.com/v1/me/top/artists',
             headers={
@@ -2140,9 +2142,11 @@ def spotify_top_artists():
             timeout=10,
         )
         
+        print(f'[Spotify] API response status: {response.status_code}')
+        
         # If 401 or 403, try refreshing token once
         if response.status_code in [401, 403]:
-            print(f'[Spotify] Got {response.status_code}, attempting token refresh...')
+            print(f'[Spotify] Got {response.status_code}, response body: {response.text[:200]}')
             if refresh_spotify_token(user):
                 response = requests.get(
                     f'https://api.spotify.com/v1/me/top/artists',
