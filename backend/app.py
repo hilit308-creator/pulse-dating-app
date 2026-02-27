@@ -1834,6 +1834,8 @@ def spotify_auth():
     """
     # Get user_id from query param or token
     user_id = request.args.get('user_id')
+    return_to = request.args.get('return_to', '/settings')  # Default to settings, can be /auth/social-connect
+    
     if not user_id:
         user = get_current_user()
         if user:
@@ -1850,6 +1852,7 @@ def spotify_auth():
     _spotify_oauth_states[state] = {
         'user_id': int(user_id),
         'created_at': datetime.utcnow(),
+        'return_to': return_to,
     }
     
     # Clean up old states (older than 10 minutes)
@@ -1908,6 +1911,7 @@ def spotify_callback():
         return redirect(f'{frontend_url}/settings?spotify=error&reason=invalid_state')
     
     user_id = state_data['user_id']
+    return_to = state_data.get('return_to', '/settings')
     del _spotify_oauth_states[state]  # Clear used state
     
     # Exchange code for tokens
@@ -1967,7 +1971,7 @@ def spotify_callback():
         
         # Redirect with token in URL fragment (not query string for security)
         # Frontend will extract token from hash and restore session
-        return redirect(f'{frontend_url}/settings?spotify=connected#token={pulse_token}')
+        return redirect(f'{frontend_url}{return_to}?spotify=connected#token={pulse_token}')
         
     except requests.RequestException as e:
         print(f'[Spotify] Request error: {e}')

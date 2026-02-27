@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -16,27 +16,92 @@ import { Link2, Instagram, Music, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import OnboardingHeader from '../../components/OnboardingHeader';
 
+const API_URL = process.env.REACT_APP_API_URL || 'https://pulse-dating-backend.onrender.com';
+
 const SocialConnectScreen = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { updateUser, completeOnboarding, updateOnboardingStep, saveOnboardingData, user } = useAuth();
   
   const [instagram, setInstagram] = useState(user?.instagram || '');
-
-  useEffect(() => {
-    updateOnboardingStep('social-connect');
-  }, [updateOnboardingStep]);
   const [spotify, setSpotify] = useState(user?.spotifyTopArtists || []);
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [spotifyLoading, setSpotifyLoading] = useState(false);
   const [isInstagramDialogOpen, setIsInstagramDialogOpen] = useState(false);
   const [instagramInput, setInstagramInput] = useState('');
 
-  // Mock Spotify top artists
-  const mockSpotifyArtists = [
-    { name: 'The Weeknd', image: '🎤' },
-    { name: 'Dua Lipa', image: '🎵' },
-    { name: 'Drake', image: '🎧' },
-    { name: 'Taylor Swift', image: '🎶' },
-    { name: 'Bad Bunny', image: '🐰' },
-  ];
+  useEffect(() => {
+    updateOnboardingStep('social-connect');
+    
+    // Check for Spotify OAuth callback
+    const spotifyParam = searchParams.get('spotify');
+    if (spotifyParam === 'connected') {
+      // Check for token in URL fragment (hash)
+      const hash = window.location.hash;
+      if (hash && hash.includes('token=')) {
+        const tokenMatch = hash.match(/token=([^&]+)/);
+        if (tokenMatch && tokenMatch[1]) {
+          const newToken = tokenMatch[1];
+          localStorage.setItem('pulse_access_token', newToken);
+          console.log('[Spotify] Session restored with new token');
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      }
+      
+      setSpotifyConnected(true);
+      fetchTopArtists();
+      // Clean up URL
+      searchParams.delete('spotify');
+      setSearchParams(searchParams, { replace: true });
+    }
+    
+    // Check existing Spotify connection
+    checkSpotifyStatus();
+  }, [updateOnboardingStep]);
+
+  const checkSpotifyStatus = async () => {
+    try {
+      const token = localStorage.getItem('pulse_access_token');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/api/spotify/status`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSpotifyConnected(data.connected);
+        if (data.connected) {
+          fetchTopArtists();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check Spotify status:', err);
+    }
+  };
+
+  const fetchTopArtists = async () => {
+    try {
+      const token = localStorage.getItem('pulse_access_token');
+      const response = await fetch(`${API_URL}/api/spotify/top-artists?limit=5`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Convert to format expected by UI
+        const artists = (data.artists || []).map(a => ({
+          id: a.id,
+          name: a.name,
+          image: a.imageUrl || '🎵',
+          imageUrl: a.imageUrl,
+        }));
+        setSpotify(artists);
+      }
+    } catch (err) {
+      console.error('Failed to fetch top artists:', err);
+    }
+  };
 
   const handleConnectInstagram = () => {
     setIsInstagramDialogOpen(true);
@@ -56,13 +121,31 @@ const SocialConnectScreen = () => {
   };
 
   const handleConnectSpotify = () => {
-    // In real app, this would open Spotify OAuth
-    // For demo, we'll just set mock data
-    setSpotify(mockSpotifyArtists);
+    // Redirect to real Spotify OAuth
+    const userId = user?.id;
+    if (!userId) {
+      console.error('No user ID for Spotify connect');
+      return;
+    }
+    setSpotifyLoading(true);
+    // Redirect to backend Spotify auth endpoint with return_to for onboarding
+    window.location.href = `${API_URL}/auth/spotify?user_id=${userId}&return_to=/auth/social-connect`;
   };
 
-  const handleRemoveSpotify = () => {
-    setSpotify([]);
+  const handleRemoveSpotify = async () => {
+    try {
+      const token = localStorage.getItem('pulse_access_token');
+      await fetch(`${API_URL}/api/spotify/disconnect`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      setSpotify([]);
+      setSpotifyConnected(false);
+    } catch (err) {
+      console.error('Failed to disconnect Spotify:', err);
+      setSpotify([]);
+      setSpotifyConnected(false);
+    }
   };
 
   const handleContinue = () => {
@@ -281,7 +364,7 @@ const SocialConnectScreen = () => {
                 )}
               </Box>
               
-              {spotify.length > 0 ? (
+              {spotifyConnected || spotify.length > 0 ? (
                 <IconButton
                   onClick={handleRemoveSpotify}
                   size="small"
@@ -297,6 +380,7 @@ const SocialConnectScreen = () => {
                   variant="outlined"
                   size="small"
                   onClick={handleConnectSpotify}
+                  disabled={spotifyLoading}
                   sx={{
                     borderRadius: '20px',
                     textTransform: 'none',
@@ -308,7 +392,7 @@ const SocialConnectScreen = () => {
                     },
                   }}
                 >
-                  Connect
+                  {spotifyLoading ? 'Connecting...' : 'Connect'}
                 </Button>
               )}
             </Box>
@@ -345,7 +429,15 @@ const SocialConnectScreen = () => {
                           border: '1px solid #e2e8f0',
                         }}
                       >
-                        <span>{artist.image}</span>
+                        {artist.imageUrl ? (
+                          <img 
+                            src={artist.imageUrl} 
+                            alt={artist.name}
+                            style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <span>{artist.image}</span>
+                        )}
                         <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
                           {artist.name}
                         </Typography>
