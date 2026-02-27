@@ -1558,8 +1558,6 @@ def register():
         error_msg = f'Registration error: {str(e)}'
         print(error_msg)  # Debug log
         return jsonify({'error': error_msg}), 500
-    
-    return jsonify({'message': 'User registered successfully'}), 201
 
 # ============================================================================
 # OTP AUTHENTICATION ENDPOINTS
