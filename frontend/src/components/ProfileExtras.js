@@ -135,8 +135,10 @@ export default function ProfileExtras() {
       setSpotifyError('Please log in to connect Spotify');
       return;
     }
-    // Redirect to backend Spotify auth endpoint
-    window.location.href = `${API_URL}/auth/spotify?user_id=${user.id}`;
+    // Get current path for return_to (profile settings page)
+    const currentPath = window.location.pathname;
+    // Redirect to backend Spotify auth endpoint with return_to
+    window.location.href = `${API_URL}/auth/spotify?user_id=${user.id}&return_to=${encodeURIComponent(currentPath)}`;
   };
 
   const handleSpotifyDisconnect = async () => {
