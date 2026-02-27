@@ -1163,6 +1163,7 @@ export default function ProfileSettings({ onBack }) {
             open={photoModalOpen} 
             onClose={() => setPhotoModalOpen(false)}
             PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 340 } }}
+            sx={{ zIndex: 9999 }}
           >
             <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Add Photo</DialogTitle>
             <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -1398,6 +1399,7 @@ export default function ProfileSettings({ onBack }) {
           open={showVerify} 
           onClose={() => setShowVerify(false)}
           PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 360 } }}
+          sx={{ zIndex: 9999 }}
         >
           <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{ 
@@ -1765,7 +1767,7 @@ export default function ProfileSettings({ onBack }) {
         </Box>
 
         {/* Dialogs for causes / qualities / prompts */}
-        <Dialog open={causesDialog} onClose={() => setCausesDialog(false)}>
+        <Dialog open={causesDialog} onClose={() => setCausesDialog(false)} sx={{ zIndex: 9999 }}>
           <DialogTitle>Select up to {MAX_CAUSES} causes</DialogTitle>
           <DialogContent>
             <Stack spacing={1}>
@@ -1786,7 +1788,7 @@ export default function ProfileSettings({ onBack }) {
           </DialogActions>
         </Dialog>
 
-        <Dialog open={qualitiesDialog} onClose={() => setQualitiesDialog(false)}>
+        <Dialog open={qualitiesDialog} onClose={() => setQualitiesDialog(false)} sx={{ zIndex: 9999 }}>
           <DialogTitle>Select up to {MAX_QUALITIES} qualities</DialogTitle>
           <DialogContent>
             <Stack spacing={1}>
@@ -1807,7 +1809,7 @@ export default function ProfileSettings({ onBack }) {
           </DialogActions>
         </Dialog>
 
-        <Dialog open={promptDialog} onClose={() => setPromptDialog(false)}>
+        <Dialog open={promptDialog} onClose={() => setPromptDialog(false)} sx={{ zIndex: 9999 }}>
           <DialogTitle>Choose a prompt</DialogTitle>
           <DialogContent>
             <Stack spacing={2}>
@@ -2196,6 +2198,7 @@ export default function ProfileSettings({ onBack }) {
         open={showChecklist} 
         onClose={() => setShowChecklist(false)}
         PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 340 } }}
+        sx={{ zIndex: 9999 }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Complete Your Profile</DialogTitle>
         <DialogContent>
@@ -2297,6 +2300,7 @@ export default function ProfileSettings({ onBack }) {
         open={!!connectAccountDialog}
         onClose={() => setConnectAccountDialog(null)}
         PaperProps={{ sx: { borderRadius: '20px', maxWidth: 380, mx: 2 } }}
+        sx={{ zIndex: 9999 }}
       >
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {connectAccountDialog === 'instagram' ? (
@@ -2458,6 +2462,7 @@ export default function ProfileSettings({ onBack }) {
         open={hardPreferencesDialog}
         onClose={() => setHardPreferencesDialog(false)}
         fullScreen
+        sx={{ zIndex: 9999 }}
         PaperProps={{ 
           sx: { 
             background: '#FAFBFC',

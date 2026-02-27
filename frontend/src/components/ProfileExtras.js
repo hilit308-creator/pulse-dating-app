@@ -399,6 +399,7 @@ export default function ProfileExtras() {
         open={starSignDialog} 
         onClose={() => setStarSignDialog(false)} 
         PaperProps={{ sx: { borderRadius: 3, minWidth: 320, maxWidth: 400, m: 2 } }}
+        sx={{ zIndex: 9999 }}
       >
         <DialogTitle sx={{ fontWeight: 700 }}>Select your star sign</DialogTitle>
         <DialogContent sx={{ p: 2 }}>
@@ -440,7 +441,7 @@ export default function ProfileExtras() {
         </DialogContent>
       </Dialog>
       {/* Politics Dialog */}
-      <Dialog open={politicsDialog} onClose={() => setPoliticsDialog(false)}>
+      <Dialog open={politicsDialog} onClose={() => setPoliticsDialog(false)} sx={{ zIndex: 9999 }}>
         <DialogTitle>Select your political leaning</DialogTitle>
         <DialogContent>
           <TextField
@@ -459,7 +460,7 @@ export default function ProfileExtras() {
         </DialogActions>
       </Dialog>
       {/* Language Dialog */}
-      <Dialog open={languageDialog} onClose={() => setLanguageDialog(false)}>
+      <Dialog open={languageDialog} onClose={() => setLanguageDialog(false)} sx={{ zIndex: 9999 }}>
         <DialogTitle>Add a language</DialogTitle>
         <DialogContent>
           <TextField
