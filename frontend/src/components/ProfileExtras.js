@@ -59,6 +59,20 @@ export default function ProfileExtras() {
     // Handle OAuth callback result
     const spotifyParam = searchParams.get('spotify');
     if (spotifyParam === 'connected') {
+      // Check for token in URL fragment (hash)
+      const hash = window.location.hash;
+      if (hash && hash.includes('token=')) {
+        const tokenMatch = hash.match(/token=([^&]+)/);
+        if (tokenMatch && tokenMatch[1]) {
+          const newToken = tokenMatch[1];
+          // Restore session with new token
+          localStorage.setItem('pulse_access_token', newToken);
+          console.log('[Spotify] Session restored with new token');
+          // Clean up hash
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      }
+      
       setSpotifyConnected(true);
       fetchTopArtists();
       // Clean up URL

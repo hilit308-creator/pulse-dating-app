@@ -59,7 +59,7 @@ class User(db.Model):
     last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
-    phone_number = db.Column(db.String(20))
+    phone_number = db.Column(db.String(20), unique=True)
     gender = db.Column(db.String(20), nullable=True)
     show_me = db.Column(db.String(20), default='Everyone')  # Men, Women, Everyone
     role = db.Column(db.String(20), default='user')  # user, moderator, admin, super_admin
@@ -1955,7 +1955,19 @@ def spotify_callback():
         
         print(f'[Spotify] Tokens stored for user_id={user_id}')
         
-        return redirect(f'{frontend_url}/settings?spotify=connected')
+        # Generate new JWT token to restore session after redirect
+        pulse_token = jwt.encode(
+            {
+                'user_id': user.id,
+                'exp': datetime.utcnow() + timedelta(days=7),
+            },
+            app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+        
+        # Redirect with token in URL fragment (not query string for security)
+        # Frontend will extract token from hash and restore session
+        return redirect(f'{frontend_url}/settings?spotify=connected#token={pulse_token}')
         
     except requests.RequestException as e:
         print(f'[Spotify] Request error: {e}')
