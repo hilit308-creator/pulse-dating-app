@@ -2140,8 +2140,9 @@ def spotify_top_artists():
             timeout=10,
         )
         
-        # If 401, try refreshing token once
-        if response.status_code == 401:
+        # If 401 or 403, try refreshing token once
+        if response.status_code in [401, 403]:
+            print(f'[Spotify] Got {response.status_code}, attempting token refresh...')
             if refresh_spotify_token(user):
                 response = requests.get(
                     f'https://api.spotify.com/v1/me/top/artists',
