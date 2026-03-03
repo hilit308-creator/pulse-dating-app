@@ -8,6 +8,9 @@
   --color-accent-deep: #5B4BD5;
   --color-border: #f5f5f5;
   --app-bottom-nav-height: 64px;
+  /* Selection/focus highlight - transparent instead of dark blue */
+  --color-selection: transparent;
+  --color-focus-ring: transparent;
 }
 
 html, body, #root {

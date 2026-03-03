@@ -729,7 +729,7 @@ export default function ProfileSettings() {
                     borderRadius: '16px',
                     overflow: 'hidden',
                     cursor: 'pointer',
-                    border: photo.isPrimary ? '3px solid #6C5CE7' : '2px solid transparent',
+                    border: photo.isPrimary ? '3px solid #d1d5db' : '2px solid transparent',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                   }}
                 >
@@ -2348,7 +2348,7 @@ export default function ProfileSettings() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 2,
-                  border: datingIntention === intention.value ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                  border: datingIntention === intention.value ? '2px solid #d1d5db' : '1px solid #e2e8f0',
                   backgroundColor: datingIntention === intention.value ? 'rgba(108,92,231,0.1)' : '#fff',
                   '&:hover': { backgroundColor: 'rgba(108,92,231,0.05)' },
                 }}
@@ -2593,7 +2593,7 @@ export default function ProfileSettings() {
                   p: 2,
                   borderRadius: '12px',
                   cursor: 'pointer',
-                  border: moreAbout.height === height.label ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                  border: moreAbout.height === height.label ? '2px solid #d1d5db' : '1px solid #e2e8f0',
                   backgroundColor: moreAbout.height === height.label ? 'rgba(108,92,231,0.1)' : '#fff',
                   '&:hover': { backgroundColor: 'rgba(108,92,231,0.05)', borderColor: '#6C5CE7' },
                   transition: 'all 0.2s',

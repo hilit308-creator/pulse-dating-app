@@ -893,7 +893,7 @@ export default function EventDetailsPage() {
                   sx={{
                     p: 1,
                     borderRadius: 1.75,
-                    border: selectedMatch === m.id ? '2px solid #6C5CE7' : '1px solid #e5e7eb',
+                    border: selectedMatch === m.id ? '2px solid #d1d5db' : '1px solid #e5e7eb',
                     bgcolor: selectedMatch === m.id ? 'rgba(108,92,231,0.05)' : '#fff',
                     cursor: 'pointer',
                     display: 'flex',

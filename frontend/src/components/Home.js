@@ -15,6 +15,8 @@ import {
   Checkbox,
   IconButton,
   Chip,
+  TextField,
+  Tooltip,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
@@ -61,213 +63,12 @@ import {
   Globe,
 } from "lucide-react";
 import UserAvatarButton from "./UserAvatarButton";
-import UserCard from "./UserCard";
+import UserCard2 from "./UserCard2";
+import { ProfileTimeline } from "./timeline";
 import { PointsBannerCompact } from "./PointsBanner";
+import { demoUsers, personPhotos } from '../data/demoUsers';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
-/* ---------------------------------------
-   Photos helper (generate multiple crops)
---------------------------------------- */
-const personPhotos = (base) => {
-  const v = (q) => `${base}?auto=format&fit=crop&${q}&q=80`;
-  return [
-    v("w=1400&h=1700&crop=faces"),
-    v("w=1600&h=1000&crop=faces"),
-    v("w=1400&h=1400&crop=faces"),
-    v("w=1500&h=1900&crop=focalpoint&fp-x=0.35&fp-y=0.35"),
-    v("w=1500&h=1900&crop=focalpoint&fp-x=0.65&fp-y=0.40"),
-    v("w=1600&h=1200&crop=focalpoint&fp-x=0.50&fp-y=0.20"),
-  ];
-};
-
-/* ---------------------------------------
-   Demo users
---------------------------------------- */
-const baseUsers = [
-  {
-    id: 1,
-    name: "Maya",
-    age: 27,
-    gender: "Woman",
-    city: "Tel Aviv",
-    distance: 0.6,
-    profession: "Product Designer",
-    education: "Tel Aviv University",
-    tagline: "Here for the rooftop event tonight 🌃",
-    bio: "Creative soul who loves exploring new places and meeting interesting people. Always up for a good conversation over coffee.",
-    interests: ["Design", "Yoga", "Music", "Coffee", "Bars", "Beaches"],
-    matchDistance: 0.18,
-    likesYou: true,
-    verified: true,
-    base: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1",
-    aboutMe: ["170 cm", "Sometimes drinks", "Likes pets"],
-    lookingFor: ["Relationship"],
-    qualities: ["Humor", "Kindness", "Openness"],
-    height: 170,
-    location: "Tel Aviv",
-    hometown: "Haifa",
-    exercise: "Active",
-    drinking: "I drink sometimes",
-    smoking: "Never",
-    kids: "Not sure",
-    starSign: "Taurus",
-    politics: "Moderate",
-    languages: ["English", "Hebrew"],
-    causes: ["Environment", "Education"],
-    spotifyPlaylists: [
-      { name: "Chill Vibes", artist: "Various Artists", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop" },
-      { name: "Morning Coffee", artist: "Acoustic Covers", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&h=200&fit=crop" },
-      { name: "Workout Mix", artist: "Top Hits", image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&h=200&fit=crop" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Noa",
-    age: 29,
-    gender: "Woman",
-    city: "Givatayim",
-    distance: 0.9,
-    profession: "Data Scientist",
-    education: "Hebrew University",
-    tagline: "Just moved to the neighborhood 🏠",
-    bio: "Data nerd by day, bookworm by night. Love hiking and discovering new recipes.",
-    interests: ["Hiking", "Books", "Cooking", "Wine"],
-    matchDistance: 0.22,
-    likesYou: false,
-    verified: true,
-    base: "https://images.unsplash.com/photo-1544005313-94ddf0286df2",
-    aboutMe: ["165 cm", "Rarely drinks", "Wants kids"],
-    lookingFor: ["Relationship"],
-    qualities: ["Kindness", "Curiosity", "Humor"],
-    height: 165,
-    location: "Givatayim",
-    hometown: "Jerusalem",
-    exercise: "Sometimes",
-    drinking: "Rarely",
-    smoking: "Never",
-    kids: "Want someday",
-    starSign: "Virgo",
-    politics: "Liberal",
-    languages: ["Hebrew", "English", "French"],
-    causes: ["Animal rights"],
-    spotifyPlaylists: [
-      { name: "Indie Folk", artist: "Various Artists", image: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=200&h=200&fit=crop" },
-      { name: "Study Focus", artist: "Lo-Fi Beats", image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop" },
-    ],
-  },
-  {
-    id: 3,
-    name: "Lior",
-    age: 26,
-    gender: "Woman",
-    city: "Tel Aviv",
-    distance: 1.2,
-    profession: "UX Researcher",
-    education: "Bezalel Academy",
-    tagline: "Working from the coffee shop nearby ☕",
-    bio: "Passionate about design and capturing moments. Always looking for the next adventure.",
-    interests: ["Photography", "Art", "Pilates", "Music"],
-    matchDistance: 0.28,
-    likesYou: false,
-    verified: false,
-    base: "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
-    aboutMe: ["168 cm", "Doesn't smoke", "Likes pets"],
-    lookingFor: ["Something casual"],
-    qualities: ["Openness", "Humor", "Stability"],
-    height: 168,
-    location: "Tel Aviv",
-    hometown: "Herzliya",
-    exercise: "Active",
-    drinking: "Socially",
-    smoking: "Never",
-    kids: "Not sure",
-    starSign: "Leo",
-    politics: "Progressive",
-    languages: ["Hebrew", "English"],
-    causes: ["Arts", "LGBTQ+"],
-    spotifyPlaylists: [
-      { name: "Creative Flow", artist: "Ambient", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=200&h=200&fit=crop" },
-      { name: "Pilates Beats", artist: "Electronic", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop" },
-    ],
-  },
-  {
-    id: 4,
-    name: "Dana",
-    age: 30,
-    gender: "Woman",
-    city: "Ramat Gan",
-    distance: 0.4,
-    profession: "Product Manager",
-    education: "Technion",
-    tagline: "Training for the TLV marathon 🏃‍♀️",
-    bio: "Tech enthusiast who loves running and exploring new places. Looking for someone to share adventures with.",
-    interests: ["Running", "Tech", "Travel", "Yoga"],
-    matchDistance: 0.12,
-    likesYou: false,
-    verified: true,
-    base: "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c",
-    aboutMe: ["172 cm", "Sometimes drinks", "No kids"],
-    lookingFor: ["Relationship"],
-    qualities: ["Ambition", "Loyalty", "Positivity"],
-    height: 172,
-    location: "Ramat Gan",
-    hometown: "Haifa",
-    exercise: "Very active",
-    drinking: "Sometimes",
-    smoking: "Never",
-    kids: "Don't have",
-    starSign: "Aries",
-    politics: "Moderate",
-    languages: ["Hebrew", "English", "Spanish"],
-    causes: ["Tech for good", "Health"],
-    spotifyPlaylists: [
-      { name: "Running Hits", artist: "Pop Mix", image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=200&h=200&fit=crop" },
-      { name: "Tech Podcasts", artist: "Various", image: "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=200&h=200&fit=crop" },
-    ],
-  },
-  {
-    id: 5,
-    name: "Shira",
-    age: 26,
-    gender: "Woman",
-    city: "Tel Aviv",
-    distance: 0.3,
-    profession: "Photographer",
-    education: "Bezalel Academy",
-    tagline: "It's a Match! 💕",
-    bio: "Capturing moments and creating memories. Love spontaneous adventures and deep conversations.",
-    interests: ["Photography", "Travel", "Art", "Coffee", "Music", "Nature"],
-    matchDistance: 0.12,
-    likesYou: true,
-    isMatch: true,
-    verified: true,
-    base: "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
-    aboutMe: ["165 cm", "Social drinker", "Cat lover"],
-    lookingFor: ["Relationship", "Something serious"],
-    qualities: ["Creative", "Adventurous", "Authentic"],
-    height: 165,
-    location: "Tel Aviv",
-    hometown: "Jerusalem",
-    exercise: "Sometimes",
-    drinking: "Socially",
-    smoking: "Never",
-    kids: "Want someday",
-    starSign: "Pisces",
-    politics: "Liberal",
-    languages: ["Hebrew", "English", "Italian"],
-    causes: ["Arts", "Environment"],
-    spotifyPlaylists: [
-      { name: "Sunset Vibes", artist: "Chill Mix", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop" },
-      { name: "Road Trip", artist: "Indie Folk", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop" },
-    ],
-  },
-];
-
-const demoUsers = baseUsers.map((u) => {
-  const photos = personPhotos(u.base);
-  return { ...u, photos, photoUrl: photos[0] };
-});
 
 // Transform to UserCardModel format (per spec section 7)
 const transformToUserCardModel = (user) => ({
@@ -315,6 +116,10 @@ const transformToUserCardModel = (user) => ({
   politics: user.politics,
   languages: user.languages,
   spotifyPlaylists: user.spotifyPlaylists,
+  // Weekly Rhythm (Pulse signature feature)
+  userRhythm: user.userRhythm,
+  weeklyRhythm: user.weeklyRhythm,
+  weeklyTimeline: user.weeklyTimeline,
   // Keep original data for expanded profile
   _original: user,
 });
@@ -520,47 +325,44 @@ function TodaysPicks({ users = [], brand, onCardClick, onPickViewed }) {
     return (
       <Box 
         sx={{ 
-          mt: 2, 
+          mt: 1.5, 
           mx: 2,
-          p: 3,
-          textAlign: "center",
-          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-          borderRadius: 3,
-          border: '1px solid #e2e8f0',
+          py: 1.5,
+          px: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          borderRadius: 2,
+          bgcolor: 'rgba(99,102,241,0.04)',
         }}
       >
-        <Box sx={{ fontSize: 40, mb: 1 }}>✨</Box>
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 700, color: "#1e293b", mb: 0.5 }}
-        >
-          All caught up!
-        </Typography>
-        <Typography
-          sx={{ fontSize: 13, color: "#64748b", mb: 2, lineHeight: 1.5 }}
-        >
-          You've seen all your picks for today! ✨<br />
-          Tomorrow brings new possibilities.
-        </Typography>
+        <Box sx={{ fontSize: 20 }}>✨</Box>
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>
+            All caught up!
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: "#64748b" }}>
+            New picks tomorrow
+          </Typography>
+        </Box>
         <Button
-          variant="contained"
+          variant="text"
           size="small"
           onClick={() => {
-            // Scroll to Discover section
             const discoverSection = document.querySelector('[data-section="discover"]');
             if (discoverSection) {
               discoverSection.scrollIntoView({ behavior: 'smooth' });
             }
           }}
           sx={{ 
-            borderRadius: 2,
             textTransform: "none",
             fontWeight: 600,
-            bgcolor: '#6366f1',
-            '&:hover': { bgcolor: '#4f46e5' },
+            color: '#6366f1',
+            fontSize: 12,
+            minWidth: 'auto',
           }}
         >
-          Keep exploring
+          Explore
         </Button>
       </Box>
     );
@@ -699,7 +501,7 @@ function TodaysPicks({ users = [], brand, onCardClick, onPickViewed }) {
                       background: "linear-gradient(transparent, rgba(0,0,0,0.75))",
                     }}
                   />
-                  {/* Name + age + distance */}
+                  {/* Name + age + tagline */}
                   <Box
                     sx={{
                       position: "absolute",
@@ -719,15 +521,19 @@ function TodaysPicks({ users = [], brand, onCardClick, onPickViewed }) {
                     >
                       {u.name || u.firstName}, {u.age}
                     </Typography>
-                    {u.distance != null && (
+                    {/* Tagline - story-driven per spec */}
+                    {(u.tagline || u.bio) && (
                       <Typography
                         sx={{
                           fontSize: 11,
-                          color: "rgba(255,255,255,0.85)",
+                          color: "rgba(255,255,255,0.9)",
                           mt: 0.25,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        {u.distance < 1 ? `${Math.round(u.distance * 1000)}m` : `${u.distance.toFixed(1)}km`} away
+                        {u.tagline || (u.bio?.split('.')[0])}
                       </Typography>
                     )}
                   </Box>
@@ -736,6 +542,175 @@ function TodaysPicks({ users = [], brand, onCardClick, onPickViewed }) {
             </motion.div>
           );
         })}
+      </Box>
+    </Box>
+  );
+}
+
+/* ---------------------------------------
+   Personal Status Card (Phase 1.3)
+   - User's own status (opt-in, auto-expires)
+   - Shows above the first user card
+--------------------------------------- */
+function PersonalStatusCard({ userStatus, onUpdate, onTurnOff }) {
+  const statusLabels = {
+    coffee: 'Open to coffee',
+    workout: 'Looking for workout buddy',
+    event: 'Going to an event',
+    free: 'Free to hang out'
+  };
+  
+  const timeframeLabels = {
+    now: 'right now',
+    evening: 'this evening',
+    weekend: 'this weekend'
+  };
+
+  if (!userStatus?.enabled) {
+    return (
+      <Box
+          sx={{
+            mb: 2,
+            px: 2,
+            py: 1.5,
+            borderRadius: '12px',
+            background: 'rgba(108,92,231,0.04)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            cursor: 'pointer',
+            '&:hover': {
+              background: 'rgba(108,92,231,0.08)',
+            },
+            transition: 'background 0.2s',
+          }}
+          onClick={onUpdate}
+        >
+          <Tooltip 
+            title="Let others know what you're doing right now. Your status helps people find you for spontaneous meetups!"
+            placement="top"
+            arrow
+            enterDelay={300}
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: '#fff',
+                  color: '#4B5563',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  px: 2,
+                  py: 1.5,
+                  borderRadius: '10px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                  maxWidth: 220,
+                  lineHeight: 1.5,
+                  textAlign: 'center',
+                },
+              },
+              arrow: {
+                sx: {
+                  color: '#fff',
+                },
+              },
+            }}
+          >
+            <Box sx={{ 
+              width: 32, 
+              height: 32, 
+              borderRadius: '50%', 
+              bgcolor: 'rgba(108,92,231,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <span style={{ fontSize: 14 }}>✨</span>
+            </Box>
+          </Tooltip>
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>
+              Share what you're up to
+            </Typography>
+          </Box>
+          <Button
+            variant="text"
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpdate();
+            }}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              color: '#6C5CE7',
+              fontSize: 13,
+              minWidth: 'auto',
+            }}
+          >
+            Add
+          </Button>
+        </Box>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        mb: 2,
+        px: 2,
+        py: 1.5,
+        borderRadius: '12px',
+        background: 'rgba(108,92,231,0.06)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+      }}
+    >
+      <Box sx={{ 
+        width: 32, 
+        height: 32, 
+        borderRadius: '50%', 
+        bgcolor: 'rgba(108,92,231,0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <span style={{ fontSize: 14 }}>☕</span>
+      </Box>
+      <Box sx={{ flex: 1 }}>
+        <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#6C5CE7' }}>
+          {statusLabels[userStatus.type]} {timeframeLabels[userStatus.timeframe]}
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', gap: 0.5 }}>
+        <Button
+          variant="text"
+          size="small"
+          onClick={onUpdate}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 500,
+            color: '#6C5CE7',
+            fontSize: 12,
+            minWidth: 'auto',
+            px: 1,
+          }}
+        >
+          Edit
+        </Button>
+        <Button
+          variant="text"
+          size="small"
+          onClick={onTurnOff}
+          sx={{
+            textTransform: 'none',
+            color: '#94a3b8',
+            fontSize: 12,
+            minWidth: 'auto',
+            px: 1,
+          }}
+        >
+          ×
+        </Button>
       </Box>
     </Box>
   );
@@ -812,11 +787,22 @@ export default function Home({ onOpenTutorial }) {
       try {
         const response = await fetch(`${API_URL}/api/nearby-users?limit=20`);
         console.log('[Home] API response status:', response.status);
-        if (response.ok) {
-          const data = await response.json();
-          console.log('[Home] Received', data.users?.length, 'users from API');
-          
-          // Transform API users to match expected format - use actual API data, not constant fallbacks
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('[Home] Received', data.users?.length, 'users from API');
+        
+        // If API returns empty or no users, use demo users
+        if (!data.users || data.users.length === 0) {
+          console.log('[Home] API returned no users, using demo users');
+          setCachedUsers(demoUsers);
+          setLocalUsers(demoUsers);
+          setIsLoadingUsers(false);
+          return;
+        }
+        
+        // Transform API users to match expected format - use actual API data, not constant fallbacks
           const apiUsers = data.users.map((user, index) => ({
             id: user.id,
             name: user.firstName,
@@ -863,12 +849,11 @@ export default function Home({ onOpenTutorial }) {
             setCachedUsers(apiUsers); // Store in global cache
             setLocalUsers(apiUsers);
             console.log(`[Home] afterSetUsers: deckIndex=${deckIndexRef.current} usersCount=${apiUsers.length}`);
+          } else {
+            console.log('[Home] No API users after transform, using demo users');
+            setCachedUsers(demoUsers);
+            setLocalUsers(demoUsers);
           }
-        } else {
-          console.warn('[Home] API failed, using demo users as fallback');
-          setCachedUsers(demoUsers);
-          setLocalUsers(demoUsers);
-        }
       } catch (error) {
         console.error('[Home] Error fetching users:', error);
         // Fallback to demo users on error
@@ -950,6 +935,57 @@ export default function Home({ onOpenTutorial }) {
   // likedUsers, passedUsers, swipeHistory now come from global store (useHomeDeckStore)
   const [photoIdx, setPhotoIdx] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
+
+  // === EXPANDABLE CARD FLOW STATE ===
+  const [expandedUserId, setExpandedUserId] = useState(null);
+  const isExpanded = expandedUserId !== null;
+  
+  // Expand/Collapse handlers
+  const handleExpand = useCallback((userId) => {
+    console.log('[Home2] handleExpand called with userId:', userId);
+    setExpandedUserId(userId);
+    // Lock body scroll when expanded
+    document.body.style.overflow = 'hidden';
+  }, []);
+  
+  const handleCollapse = useCallback(() => {
+    setExpandedUserId(null);
+    // Restore body scroll
+    document.body.style.overflow = '';
+  }, []);
+  
+  // Handle device back button - collapse if expanded
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (isExpanded) {
+        e.preventDefault();
+        handleCollapse();
+        // Push state back to prevent actual navigation
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+    
+    if (isExpanded) {
+      // Push a state so we can intercept back
+      window.history.pushState(null, '', window.location.href);
+      window.addEventListener('popstate', handlePopState);
+    }
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isExpanded, handleCollapse]);
+
+  // Personal Status state (Phase 1.3)
+  const [userStatus, setUserStatus] = useState({
+    enabled: false,
+    type: 'coffee', // "coffee" | "workout" | "event" | "free"
+    timeframe: 'evening', // "now" | "evening" | "weekend"
+    expiresAt: null
+  });
+  const [showStatusEditor, setShowStatusEditor] = useState(false);
+  const [showCustomStatus, setShowCustomStatus] = useState(false);
+  const [customStatusText, setCustomStatusText] = useState('');
 
   // Admin panel state
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -1528,150 +1564,84 @@ export default function Home({ onOpenTutorial }) {
               variant="h6"
               sx={{ fontWeight: 800, letterSpacing: 0.2 }}
             >
-              Home
+              Pulse
             </Typography>
             <Typography
               variant="caption"
               sx={{ color: "#6B7280" }}
             >
-              Swipe with purpose ✨
+              Moments start here
             </Typography>
           </Box>
         </Box>
 
-        {/* Quick actions */}
-        <Stack direction="row" spacing={1.25} sx={{ mb: 1.5 }}>
-          <QuickAction
-            brand={brand}
-            onClick={() => {
-              // Scroll to Discover section on Home page
-              const discoverSection = document.querySelector('[data-section="discover"]');
-              if (discoverSection) {
-                discoverSection.scrollIntoView({ behavior: 'smooth' });
-              }
+        {/* Quick actions - hide when expanded */}
+        {!isExpanded && (
+          <Stack direction="row" spacing={1.25} sx={{ mb: 1.5 }}>
+            <QuickAction
+              brand={brand}
+              onClick={() => {
+                // Scroll to Discover section on Home page
+                const discoverSection = document.querySelector('[data-section="discover"]');
+                if (discoverSection) {
+                  discoverSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              icon={<Compass size={18} />}
+              label="Discover"
+            />
+            <QuickAction
+              brand={brand}
+              onClick={() => navigate("/my-events")}
+              icon={<Calendar size={18} />}
+              label="My Events"
+            />
+          </Stack>
+        )}
+
+        {/* Points Banner - hide when expanded */}
+        {!isExpanded && (
+          <Box sx={{ mb: 1.5 }}>
+            <PointsBannerCompact balance={150} />
+          </Box>
+        )}
+
+        {/* Today's Picks - MOVED TO TOP per Story Timeline spec */}
+        {!isExpanded && (
+          <TodaysPicks 
+            users={todaysPicks} 
+            brand={brand} 
+            onCardClick={(user) => {
+              console.log('[Analytics] todays_picks_card_opened', { userId: user.id });
+              sessionStorage.setItem('pulse_profile_source', 'todays_picks');
+              navigate(`/user/${user.id}`, { state: { from: 'todays_picks', user } });
             }}
-            icon={<Compass size={18} />}
-            label="Discover"
+            onPickViewed={() => {
+              console.log('[Analytics] todays_picks_viewed', { count: todaysPicks.length });
+            }}
           />
-          <QuickAction
-            brand={brand}
-            onClick={() => navigate("/my-events")}
-            icon={<Calendar size={18} />}
-            label="My Events"
+        )}
+
+        {/* Personal Status Card - Phase 1.3 - hide when expanded */}
+        {!isExpanded && (
+          <PersonalStatusCard 
+            userStatus={userStatus}
+            onUpdate={() => setShowStatusEditor(true)}
+            onTurnOff={() => setUserStatus({ ...userStatus, enabled: false })}
           />
-        </Stack>
+        )}
 
-        {/* Points Banner */}
-        <Box sx={{ mb: 1.5 }}>
-          <PointsBannerCompact balance={150} />
-        </Box>
-
-        {/* Soft Onboarding Card */}
-        <AnimatePresence>
-          {showOnboardingCard && (
-            <motion.div
-              initial={{ opacity: 0, y: -20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Box
-                sx={{
-                  mb: 2,
-                  p: 2.5,
-                  borderRadius: '20px',
-                  background: 'linear-gradient(135deg, rgba(108,92,231,0.08) 0%, rgba(168,85,247,0.08) 100%)',
-                  border: '1px solid rgba(108,92,231,0.15)',
-                  position: 'relative',
-                }}
-              >
-                {/* Close button */}
-                <IconButton
-                  size="small"
-                  onClick={handleDismissOnboarding}
-                  sx={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    color: '#94a3b8',
-                    '&:hover': { color: '#64748b' },
-                  }}
-                >
-                  <X size={16} />
-                </IconButton>
-                
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                  <Box
-                    sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: '14px',
-                      background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <MapPin size={22} color="#fff" />
-                  </Box>
-                  <Box sx={{ flex: 1, pr: 3 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>
-                      Want better matches faster?
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#64748b', mb: 2, lineHeight: 1.5 }}>
-                      Tell Pulse where and when you're comfortable being around.
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => {
-                          handleDismissOnboarding();
-                          navigate('/settings/location-visibility');
-                        }}
-                        sx={{
-                          borderRadius: '10px',
-                          textTransform: 'none',
-                          fontWeight: 600,
-                          px: 2,
-                          py: 0.75,
-                          background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                          boxShadow: '0 4px 12px rgba(108,92,231,0.3)',
-                        }}
-                      >
-                        Set my availability
-                      </Button>
-                      <Button
-                        variant="text"
-                        size="small"
-                        onClick={handleDismissOnboarding}
-                        sx={{
-                          borderRadius: '10px',
-                          textTransform: 'none',
-                          color: '#94a3b8',
-                          fontWeight: 500,
-                        }}
-                      >
-                        Maybe later
-                      </Button>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Card stack - UserCard v2 per spec */}
+        {/* Story Timeline Profile - Desktop Canvas with gray background outside */}
         <Box
           data-section="discover"
           sx={{
             position: "relative",
             width: "100%",
+            minHeight: '100vh',
+            background: { xs: '#fff', md: 'linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%)' },
             display: "flex",
             justifyContent: "center",
-            mb: 1,
+            pb: 4,
           }}
         >
           {!topUser ? (
@@ -1712,6 +1682,21 @@ export default function Home({ onOpenTutorial }) {
                 Adjust filters
               </Button>
 
+              <Button
+                size="small"
+                sx={{ mt: 1, borderRadius: 999 }}
+                variant="contained"
+                color="primary"
+                onClick={() => {
+                  // Reset everything including localStorage/sessionStorage
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  window.location.reload();
+                }}
+              >
+                Reset & Show Demo Users
+              </Button>
+
               <Typography variant="body2" sx={{ color: '#6B7280', mt: 3, fontSize: 13, textAlign: 'center', lineHeight: 1.6 }}>
                 You've seen all your picks for today! ✨<br />
                 Tomorrow brings new possibilities.
@@ -1727,10 +1712,22 @@ export default function Home({ onOpenTutorial }) {
                 data-filtered-count={filtered.length}
                 style={{ display: 'none' }}
               />
-              <UserCard
+              {/* Desktop Canvas Wrapper - 520px centered, white background */}
+              <Box
+                sx={{
+                  width: '100%',
+                  maxWidth: '520px',
+                  bgcolor: '#fff',
+                  boxShadow: { xs: 'none', md: '0 0 40px rgba(0,0,0,0.08)' },
+                  minHeight: '100vh',
+                }}
+              >
+              <ProfileTimeline
                 key={topUser.id}
                 user={transformToUserCardModel(topUser)}
-                onLike={async (user) => {
+                onUndo={handleUndo}
+                canUndo={swipeHistory.length > 0}
+                onLike={async () => {
                 // Record like - NO need to increment deckIndex because the user
                 // is removed from filtered list, so current index now points to next user
                 if (topUser?.id != null) {
@@ -1821,7 +1818,7 @@ export default function Home({ onOpenTutorial }) {
                   }
                 }
               }}
-              onPass={(user) => {
+              onPass={() => {
                 // Record pass - NO need to increment deckIndex because the user
                 // is removed from filtered list, so current index now points to next user
                 if (topUser?.id != null) {
@@ -1840,39 +1837,13 @@ export default function Home({ onOpenTutorial }) {
                   }
                 }
               }}
-              onTap={(user) => {
-                // Set anchor before navigating so we can restore on Back
-                setAnchor(topUser.id, filteredIdsHash);
-                console.log(`[Home] setAnchor: userId=${topUser.id} before navigating to profile`);
-                // Navigate to Full Profile Card (UserDetailsScreen) - same as Today's Picks
-                sessionStorage.setItem('pulse_profile_source', 'discover');
-                navigate(`/user/${topUser.id}`, { state: { from: 'discover', user: topUser } });
-              }}
-              onUndo={handleUndo}
-                canUndo={swipeHistory.length > 0}
-                hasLocationPermission={true}
               />
+              </Box>
             </>
           )}
         </Box>
 
-        {/* Today's Picks - per product spec v1 */}
-        <TodaysPicks 
-          users={todaysPicks} 
-          brand={brand} 
-          onCardClick={(user) => {
-            // Analytics: todays_picks_card_opened
-            console.log('[Analytics] todays_picks_card_opened', { userId: user.id });
-            // Navigate to full profile page (NOT popup) per spec
-            // Store source so profile page knows where to return
-            sessionStorage.setItem('pulse_profile_source', 'todays_picks');
-            navigate(`/user/${user.id}`, { state: { from: 'todays_picks', user } });
-          }}
-          onPickViewed={() => {
-            // Analytics: todays_picks_viewed
-            console.log('[Analytics] todays_picks_viewed', { count: todaysPicks.length });
-          }}
-        />
+        {/* Today's Picks moved to TOP of page */}
 
         {/* Filters dialog */}
         <FiltersDialog
@@ -1887,6 +1858,130 @@ export default function Home({ onOpenTutorial }) {
             setFiltersOpen(false);
           }}
         />
+
+        {/* Status Editor Dialog */}
+        <Dialog
+          open={showStatusEditor}
+          onClose={() => setShowStatusEditor(false)}
+          PaperProps={{
+            sx: {
+              borderRadius: '16px',
+              maxWidth: '360px',
+              width: '90%',
+              p: 2,
+            },
+          }}
+        >
+          <DialogContent sx={{ p: 2 }}>
+            <Typography sx={{ fontSize: 18, fontWeight: 700, mb: 2, textAlign: 'center' }}>
+              What are you up to?
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {[
+                { key: 'coffee', label: '☕ Open to coffee' },
+                { key: 'workout', label: '💪 Looking for workout buddy' },
+                { key: 'drinks', label: '🍷 Down for drinks tonight' },
+                { key: 'dancing', label: '💃 Going out dancing' },
+                { key: 'exploring', label: '🚶 Exploring the area' },
+                { key: 'custom', label: '✏️ Write your own...' },
+              ].map((option) => (
+                <Button
+                  key={option.key}
+                  variant={userStatus.type === option.key ? 'contained' : 'outlined'}
+                  fullWidth
+                  onClick={() => {
+                    if (option.key === 'custom') {
+                      // Show custom input field
+                      setShowCustomStatus(true);
+                    } else {
+                      setUserStatus({
+                        enabled: true,
+                        type: option.key,
+                        timeframe: 'now',
+                        expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours
+                      });
+                      setShowStatusEditor(false);
+                    }
+                  }}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    textTransform: 'none',
+                    py: 1.5,
+                    borderRadius: '12px',
+                    fontWeight: 500,
+                    ...(userStatus.type === option.key ? {
+                      background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                    } : {
+                      borderColor: '#e5e7eb',
+                      color: '#4B5563',
+                    }),
+                  }}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </Box>
+            {/* Custom status input */}
+            {showCustomStatus && (
+              <Box sx={{ mt: 2 }}>
+                <TextField
+                  fullWidth
+                  placeholder="What are you up to?"
+                  value={customStatusText}
+                  onChange={(e) => setCustomStatusText(e.target.value.slice(0, 50))}
+                  inputProps={{ maxLength: 50 }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                    },
+                  }}
+                />
+                <Typography sx={{ fontSize: 12, color: '#9ca3af', mt: 0.5, textAlign: 'right' }}>
+                  {customStatusText.length}/50
+                </Typography>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  disabled={!customStatusText.trim()}
+                  onClick={() => {
+                    setUserStatus({
+                      enabled: true,
+                      type: 'custom',
+                      customText: customStatusText.trim(),
+                      timeframe: 'now',
+                      expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000),
+                    });
+                    setShowStatusEditor(false);
+                    setShowCustomStatus(false);
+                    setCustomStatusText('');
+                  }}
+                  sx={{
+                    mt: 1.5,
+                    py: 1.25,
+                    borderRadius: '12px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                  }}
+                >
+                  Share status
+                </Button>
+              </Box>
+            )}
+
+            <Button
+              fullWidth
+              onClick={() => {
+                setShowStatusEditor(false);
+                setShowCustomStatus(false);
+                setCustomStatusText('');
+              }}
+              sx={{ mt: 2, color: '#9ca3af', textTransform: 'none' }}
+            >
+              Cancel
+            </Button>
+          </DialogContent>
+        </Dialog>
       </Box>
 
       {/* Admin Console */}

@@ -6,7 +6,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navig
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { Typography, Box, IconButton, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Settings, CircleUser, ArrowLeft, HelpCircle } from 'lucide-react';
+import { Settings, CircleUser, ArrowLeft, HelpCircle, Home as HomeIcon } from 'lucide-react';
 
 // Auth
 import { AuthProvider, useAuth, ONBOARDING_STATE, PERMISSION_STATE } from './context/AuthContext';
@@ -102,6 +102,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import ReportProblemScreen from './pages/ReportProblemScreen';
 import MeetingsSafetyScreen from './pages/MeetingsSafetyScreen';
 import UserDetailsScreen from './pages/UserDetailsScreen';
+import UserDetailsScreen2 from './pages/UserDetailsScreen2';
+import UserProfilePage from './pages/UserProfilePage';
 
 // Global components
 import { GlobalErrorProvider } from './components/GlobalErrorBanner';
@@ -124,6 +126,85 @@ const theme = createTheme({
     secondary: { main: '#3f51b5' },
   },
   components: {
+    // Remove all focus outlines and purple hover effects globally
+    MuiButtonBase: {
+      defaultProps: {
+        disableRipple: false,
+      },
+      styleOverrides: {
+        root: {
+          '&:focus': {
+            outline: 'none',
+            backgroundColor: 'transparent',
+          },
+          '&.Mui-focusVisible': {
+            outline: 'none',
+            boxShadow: 'none',
+            backgroundColor: 'transparent',
+          },
+          '&:hover': {
+            backgroundColor: 'rgba(0,0,0,0.04)',
+          },
+        },
+      },
+    },
+    MuiCardActionArea: {
+      styleOverrides: {
+        root: {
+          '&:hover': {
+            backgroundColor: 'rgba(0,0,0,0.02)',
+          },
+          '&:hover .MuiCardActionArea-focusHighlight': {
+            opacity: 0.02,
+          },
+          '& .MuiCardActionArea-focusHighlight': {
+            backgroundColor: 'rgba(0,0,0,0.5)',
+          },
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          '&:focus': {
+            outline: 'none',
+          },
+          '&.Mui-focusVisible': {
+            outline: 'none',
+          },
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          '&:focus': {
+            outline: 'none',
+          },
+          '&.Mui-focusVisible': {
+            outline: 'none',
+          },
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          '&:focus': {
+            outline: 'none',
+          },
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          '&:focus': {
+            outline: 'none',
+          },
+        },
+      },
+    },
     // Global Modal Vertical Spacing & Centering Rule
     // All dialogs/modals must:
     // 1. Be rendered in app-level overlay portal (above all screen content)
@@ -806,7 +887,7 @@ function AppShell() {
   const isProfilePath = location.pathname.startsWith('/profile/');
   
   // Root tabs - no back button needed (chat with specific matchId SHOULD show back button)
-  const rootTabs = ['/', '/home', '/home1', '/home-swipe', '/home-pulse', '/chat', '/matches', '/nearby', '/events', '/explore'];
+  const rootTabs = ['/', '/home', '/home1', '/home2', '/home-swipe', '/home-pulse', '/chat', '/matches', '/nearby', '/events', '/explore'];
   const isRootTab = rootTabs.includes(location.pathname);
   
   // Show tab bar and header only when logged in and onboarding complete
@@ -1036,6 +1117,7 @@ function AppShell() {
             <Route path="/" element={<ProtectedRoute><SmartHomeRoute /></ProtectedRoute>} />
             <Route path="/home" element={<ProtectedRoute><SmartHomeRoute /></ProtectedRoute>} />
             <Route path="/home1" element={<ProtectedRoute><Home1Screen /></ProtectedRoute>} />
+            <Route path="/home2" element={<Home />} />
             <Route path="/home-swipe" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/home-pulse" element={<ProtectedRoute><HomeScreen /></ProtectedRoute>} />
             <Route path="/explore" element={<ProtectedRoute><ExploreScreen /></ProtectedRoute>} />
@@ -1082,7 +1164,8 @@ function AppShell() {
             <Route path="/likes-you" element={<ProtectedRoute><LikesYouScreen /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/user/:id" element={<ProtectedRoute><UserDetailsScreen /></ProtectedRoute>} />
+            <Route path="/user/:id" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
+            <Route path="/user2/:id" element={<UserDetailsScreen2 />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile-demo" element={<ProtectedRoute><ProfileCardDemo /></ProtectedRoute>} />
             

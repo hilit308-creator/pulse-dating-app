@@ -19,7 +19,9 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-mo
 import { ArrowLeft, MapPin, Sparkles, X, Heart, Ruler, Wine, PawPrint, Baby, ShieldCheck, HeartHandshake, Sun, Smile, Radar, HelpCircle } from "lucide-react";
 import { NearbyMatchMoment, InvitationModal } from "../components/nearby";
 import MapView from "../components/MapView";
+import { ProfileTimeline } from "../components/timeline";
 import useHomeDeckStore from "../store/homeDeckStore";
+import { demoUsers } from "../data/demoUsers";
 import useNearbyPeopleStore from "../store/nearbyPeopleStore";
 import { buildPulseMagic, getViewerSignalsFromStorage, sanitizeNoProximityText } from "../utils/pulseMagic";
 
@@ -59,134 +61,58 @@ const normalizeNearbyPerson = (user, index = 0) => {
     likesYou: !!user?.likesYou,
     hasEvent: !!user?.hasEvent,
     eventId: user?.eventId,
+    isOnline: user?.isOnline || false, // Only show "Live now" if actually online
   };
 };
 
-// Mock data for nearby people with full profile details
-const MOCK_NEARBY_PEOPLE = [
-  {
-    id: 1,
-    firstName: "Maya",
-    age: 27,
-    city: "Tel Aviv",
-    tags: ["Yoga", "Design", "Coffee", "Music"],
-    status: "Live now",
-    aboutMoment: "Looking for good coffee",
-    profession: "Product Designer",
-    tagline: "Coffee, cats, and cozy playlists ☕️🐱",
-    aboutMe: ["170 cm", "Sometimes drinks", "Likes pets"],
-    lookingFor: ["A life partner", "Confidence", "Openness"],
-    photos: [
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1400&h=1700&crop=faces&q=80",
-      "https://images.unsplash.com/photo-1488426862026-ee32379fefbe?auto=format&fit=crop&w=1400&h=1700&q=80",
-      "https://images.unsplash.com/photo-1496440737103-cd596325d314?auto=format&fit=crop&w=1400&h=1700&q=80",
-    ],
-    hasEvent: true,
-    eventId: 1,
-    verified: true,
-    likesYou: true, // Mutual like potential
-  },
-  {
-    id: 2,
-    firstName: "Lior",
-    age: 26,
-    city: "Givatayim",
-    tags: ["Art", "Music", "Photography", "Pilates"],
-    status: "Active today",
-    aboutMoment: null,
-    profession: "UX Researcher",
-    tagline: "Designing with empathy",
-    aboutMe: ["168 cm", "Doesn't smoke", "Likes pets"],
-    lookingFor: ["Openness", "Humor", "Stability"],
-    photos: [
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=1400&h=1700&q=80",
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1400&h=1700&q=80",
-    ],
-    hasEvent: false,
-    verified: false,
-  },
-  {
-    id: 3,
-    firstName: "Noa",
-    age: 29,
-    city: "Tel Aviv",
-    tags: ["Photography", "Travel", "Hiking", "Wine"],
-    status: "Live now",
-    aboutMoment: "Exploring the neighborhood",
-    profession: "Photographer",
-    tagline: "Capturing moments, one frame at a time 📸",
-    aboutMe: ["165 cm", "Sometimes drinks", "No kids"],
-    lookingFor: ["Adventure", "Creativity", "Deep talks"],
-    photos: [
-      "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=1400&h=1700&q=80",
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1400&h=1700&q=80",
-      "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=1400&h=1700&q=80",
-    ],
-    hasEvent: true,
-    eventId: 2,
-    verified: true,
-    likesYou: true, // Mutual like potential
-  },
-  {
-    id: 4,
-    firstName: "Shira",
-    age: 25,
-    city: "Ramat Gan",
-    tags: ["Music", "Yoga", "Wellness", "Meditation"],
-    status: "Active today",
-    aboutMoment: null,
-    profession: "Music Teacher",
-    tagline: "Finding harmony in everything 🎵",
-    aboutMe: ["172 cm", "Doesn't drink", "Vegetarian"],
-    lookingFor: ["Mindfulness", "Kindness", "Music lover"],
-    photos: [
-      "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=1400&h=1700&q=80",
-      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=1400&h=1700&q=80",
-    ],
-    hasEvent: false,
-    verified: true,
-  },
-  {
-    id: 5,
-    firstName: "Dana",
-    age: 28,
-    city: "Tel Aviv",
-    tags: ["Design", "Art", "Brunch", "Architecture"],
-    status: "Live now",
-    aboutMoment: "Working from a cafe",
-    profession: "Interior Designer",
-    tagline: "Aesthetic vibes and good energy 🌟",
-    aboutMe: ["170 cm", "Sometimes drinks", "Dog mom"],
-    lookingFor: ["Sophistication", "Ambition", "Good taste"],
-    photos: [
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1400&h=1700&q=80",
-      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=1400&h=1700&q=80",
-      "https://images.unsplash.com/photo-1488161628813-04466f872be2?auto=format&fit=crop&w=1400&h=1700&q=80",
-    ],
-    hasEvent: true,
-    eventId: 1,
-    verified: true,
-  },
-  {
-    id: 6,
-    firstName: "Yael",
-    age: 24,
-    city: "Tel Aviv",
-    tags: ["Yoga", "Nature", "Cooking", "Reading"],
-    status: "Live now",
-    aboutMoment: null,
-    profession: "Yoga Instructor",
-    tagline: "Living mindfully, one breath at a time 🧘‍♀️",
-    aboutMe: ["163 cm", "Doesn't smoke", "Vegan"],
-    lookingFor: ["Authenticity", "Health-conscious", "Patience"],
-    photos: [
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1400&h=1700&q=80",
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1400&h=1700&q=80",
-    ],
-    hasEvent: false,
-    verified: false,
-  },
-];
+// Transform nearby person to ProfileTimeline format (same as Home page)
+const transformToUserCardModel = (person) => ({
+  id: person.id,
+  userId: String(person.id),
+  firstName: person.firstName,
+  age: person.age,
+  distanceMeters: person.distanceMeters || null,
+  primaryPhotoUrl: person.photos?.[0] || '',
+  photos: person.photos || [],
+  liveStatus: person.isOnline ? person.aboutMoment || 'Online now' : (person.aboutMoment || null),
+  primaryRole: person.profession || null,
+  topInterests: person.tags?.slice(0, 3).map(tag => ({
+    label: typeof tag === 'string' ? tag : tag.label,
+    icon: null
+  })) || null,
+  contextLine: person.tagline || person.profession || 'Looking for genuine connections',
+  height: null,
+  drinking: null,
+  professionalField: null,
+  isVerified: person.verified || false,
+  isMatch: false,
+  likesYou: person.likesYou || false,
+  bio: person.tagline || '',
+  occupation: person.profession,
+  education: null,
+  gender: null,
+  location: person.city,
+  hometown: null,
+  interests: person.tags,
+  lookingFor: person.lookingFor,
+  qualities: null,
+  causes: null,
+  exercise: null,
+  smoking: null,
+  kids: null,
+  starSign: null,
+  politics: null,
+  languages: null,
+  spotifyPlaylists: null,
+  userRhythm: null,
+  weeklyRhythm: null,
+  weeklyTimeline: null,
+  _original: person,
+});
+
+// Use shared demo users from data file (same as Home page)
+// MANDATORY: 4+ photos per user (app requirement)
+const MOCK_NEARBY_PEOPLE = demoUsers;
 
 /* ------------------------------ Components -------------------------------- */
 
@@ -1555,72 +1481,25 @@ export default function ViewNearbyPeopleScreen() {
             sx={{
               flex: 1,
               position: 'relative',
-              maxWidth: 400,
+              maxWidth: 520,
               width: '100%',
               mx: 'auto',
+              overflow: 'auto',
             }}
           >
-            <AnimatePresence>
-              {currentPerson && (
-                <SwipeableCard
-                  key={currentPerson.id}
-                  person={currentPerson}
-                  onSwipe={handleSwipe}
-                  isActive={true}
-                  viewerSignals={viewerSignals}
-                />
-              )}
-            </AnimatePresence>
+            {currentPerson && (
+              <ProfileTimeline
+                key={currentPerson.id}
+                user={transformToUserCardModel(currentPerson)}
+                onLike={handleLike}
+                onPass={handlePass}
+                onUndo={handleUndo}
+                canUndo={currentIndex > 0}
+                hideUndo={false}
+              />
+            )}
           </Box>
         )}
-
-        {/* Action buttons */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 3,
-            py: 3,
-          }}
-        >
-          {/* Pass button */}
-          <IconButton
-            onClick={handlePass}
-            disabled={viewMode === 'map'}
-            sx={{
-              width: 64,
-              height: 64,
-              backgroundColor: '#fff',
-              boxShadow: '0 4px 20px rgba(239,68,68,0.25)',
-              border: '2px solid #ef4444',
-              '&:hover': {
-                backgroundColor: 'rgba(239,68,68,0.05)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          >
-            <X size={32} color="#ef4444" />
-          </IconButton>
-
-          {/* Like button */}
-          <IconButton
-            onClick={handleLike}
-            disabled={viewMode === 'map'}
-            sx={{
-              width: 64,
-              height: 64,
-              backgroundColor: '#10b981',
-              boxShadow: '0 4px 20px rgba(16,185,129,0.4)',
-              '&:hover': {
-                backgroundColor: '#059669',
-                transform: 'scale(1.05)',
-              },
-            }}
-          >
-            <Heart size={32} color="#fff" fill="#fff" />
-          </IconButton>
-        </Box>
       </Box>
 
       {/* Tutorial Dialog */}

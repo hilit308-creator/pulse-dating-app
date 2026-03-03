@@ -114,6 +114,8 @@ class User(db.Model):
     spotify_access_token = db.Column(db.Text)
     spotify_refresh_token = db.Column(db.Text)
     spotify_token_expires_at = db.Column(db.DateTime)
+    # Weekly Rhythm - JSON field for recurring activities and upcoming plans
+    user_rhythm = db.Column(db.Text)  # JSON: { visibility, recurring, upcoming }
 
 
 class FeatureFlag(db.Model):
@@ -3723,6 +3725,83 @@ def debug_user_exists():
         'created_at': user.created_at.isoformat() if user and user.created_at else None,
         'db_info': _DB_INFO,
     }), 200
+
+# ============================================================================
+# WEEKLY RHYTHM API ENDPOINTS
+# ============================================================================
+
+@app.route('/api/users/<int:user_id>/rhythm', methods=['GET'])
+def get_user_rhythm(user_id):
+    """Get user's weekly rhythm data."""
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Parse rhythm JSON or return default
+    if user.user_rhythm:
+        try:
+            rhythm = json.loads(user.user_rhythm)
+        except:
+            rhythm = {'visibility': 'matches', 'recurring': [], 'upcoming': []}
+    else:
+        rhythm = {'visibility': 'matches', 'recurring': [], 'upcoming': []}
+    
+    return jsonify({'userRhythm': rhythm}), 200
+
+
+@app.route('/api/users/me/rhythm', methods=['PUT'])
+def update_my_rhythm():
+    """Update current user's weekly rhythm."""
+    # Get user from auth header or request
+    auth_header = request.headers.get('Authorization', '')
+    user_id = None
+    
+    if auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        try:
+            payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+            user_id = payload.get('user_id')
+        except:
+            pass
+    
+    # Fallback to request body
+    if not user_id:
+        user_id = request.json.get('user_id')
+    
+    if not user_id:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    data = request.json
+    
+    # Validate rhythm data
+    rhythm = {
+        'visibility': data.get('visibility', 'matches'),
+        'recurring': data.get('recurring', []),
+        'upcoming': data.get('upcoming', []),
+    }
+    
+    # Validate visibility
+    if rhythm['visibility'] not in ['hidden', 'matches', 'everyone']:
+        rhythm['visibility'] = 'matches'
+    
+    # Limit recurring to 5 items
+    rhythm['recurring'] = rhythm['recurring'][:5]
+    
+    # Validate recurring items
+    for item in rhythm['recurring']:
+        if 'label' not in item or len(item.get('label', '')) > 40:
+            return jsonify({'error': 'Invalid recurring item'}), 400
+    
+    # Save to database
+    user.user_rhythm = json.dumps(rhythm)
+    db.session.commit()
+    
+    return jsonify({'message': 'Rhythm updated', 'userRhythm': rhythm}), 200
+
 
 @app.route('/health', methods=['GET'])
 def health_check():

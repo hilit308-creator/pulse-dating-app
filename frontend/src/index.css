@@ -6,6 +6,68 @@ body {
   padding: 0;
 }
 
+/* Override browser selection highlight - make it subtle/transparent */
+::selection {
+  background: rgba(108, 92, 231, 0.15);
+  color: inherit;
+}
+
+::-moz-selection {
+  background: rgba(108, 92, 231, 0.15);
+  color: inherit;
+}
+
+/* Remove ALL focus outlines and highlights - completely transparent */
+*,
+*:focus,
+*:focus-visible,
+*:focus-within,
+*:active,
+*::before,
+*::after {
+  outline: none !important;
+  outline-color: transparent !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-focus-ring-color: transparent !important;
+  -moz-outline-style: none !important;
+}
+
+/* Remove tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-touch-callout: none;
+}
+
+/* Force remove outline from all MUI components */
+.MuiCard-root,
+.MuiPaper-root,
+.MuiButtonBase-root,
+.MuiButton-root,
+.MuiIconButton-root,
+.MuiBox-root,
+div[tabindex],
+button,
+a,
+input,
+select,
+textarea {
+  outline: none !important;
+  outline-color: transparent !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Remove focus ring from all focusable elements */
+:focus {
+  outline: 0 !important;
+  outline-offset: 0 !important;
+}
+
+:focus-visible {
+  outline: 0 !important;
+}
+
 /* Accessibility: High Contrast */
 body.high-contrast {
   filter: contrast(1.25);

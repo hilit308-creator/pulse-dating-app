@@ -570,7 +570,7 @@ export default function NaturePlaceDetailScreen() {
                       gap: 1.5,
                       p: 1.25,
                       borderRadius: '12px',
-                      border: selectedMatch?.id === match.id ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                      border: selectedMatch?.id === match.id ? '2px solid #d1d5db' : '1px solid #e2e8f0',
                       bgcolor: selectedMatch?.id === match.id ? 'rgba(108,92,231,0.08)' : '#fff',
                       cursor: 'pointer',
                       transition: 'all 0.2s',

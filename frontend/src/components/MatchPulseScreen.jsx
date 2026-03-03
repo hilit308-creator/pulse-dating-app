@@ -286,6 +286,7 @@ export default function MatchPulseScreen({
               position: 'relative',
               overflow: 'hidden',
               px: 3,
+              pb: 10, // Add padding to avoid bottom navigation bar
             }}
           >
             {/* Flowing path background */}

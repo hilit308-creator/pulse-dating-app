@@ -1669,7 +1669,7 @@ export default function MatchesScreen() {
                         sx={{ 
                           width: 56, 
                           height: 56,
-                          border: "2px solid #6C5CE7",
+                          border: "2px solid #d1d5db",
                         }} 
                       />
                       <Box sx={{ flex: 1, minWidth: 0 }}>

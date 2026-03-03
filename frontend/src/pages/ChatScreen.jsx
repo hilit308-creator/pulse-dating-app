@@ -793,7 +793,7 @@ function ChatBubble({
               mb: 0.5,
               px: 1,
               py: 0.5,
-              borderLeft: "3px solid #6C5CE7",
+              borderLeft: "3px solid #d1d5db",
               bgcolor: "#F5F3FF",
               borderRadius: 1,
             }}
@@ -5424,7 +5424,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                   sx={{
                     p: 1,
                     borderRadius: 1.5,
-                    border: reportPopup.reason === option.value ? "2px solid #6C5CE7" : "1px solid #E5E7EB",
+                    border: reportPopup.reason === option.value ? "2px solid #d1d5db" : "1px solid #E5E7EB",
                     bgcolor: reportPopup.reason === option.value ? "rgba(108, 92, 231, 0.08)" : "#fff",
                     cursor: "pointer",
                     transition: "all 0.15s ease",

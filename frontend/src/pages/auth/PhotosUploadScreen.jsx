@@ -18,7 +18,7 @@ import { ArrowLeft, Camera, Plus, X, Star, Image } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import OnboardingHeader from '../../components/OnboardingHeader';
 
-const MIN_PHOTOS = 2;
+const MIN_PHOTOS = 4;
 const MAX_PHOTOS = 6;
 
 const PhotosUploadScreen = () => {

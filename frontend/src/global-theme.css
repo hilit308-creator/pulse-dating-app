@@ -7,6 +7,9 @@
   --color-accent: #6C5CE7;
   --color-accent-deep: #5B4BD5;
   --color-border: #f5f5f5;
+  /* Selection/focus highlight - transparent instead of dark blue */
+  --color-selection: transparent;
+  --color-focus-ring: transparent;
 }
 
 body {

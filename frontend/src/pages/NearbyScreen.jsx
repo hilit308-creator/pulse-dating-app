@@ -624,6 +624,13 @@ export default function NearbyScreen() {
                       background: 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 50%, #bae6fd 100%)',
                       boxShadow: '0 26px 72px rgba(0,83,166,0.20)',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      '&:hover': {
+                        background: 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 50%, #bae6fd 100%)',
+                      },
+                      '&:focus': {
+                        outline: 'none',
+                        background: 'radial-gradient(200px 200px at 30% 30%, #ccfff1 0%, #cfe8ff 50%, #bae6fd 100%)',
+                      },
                       '&:active': {
                         opacity: 0.7,
                         transform: 'scale(0.98)',
@@ -888,9 +895,9 @@ export default function NearbyScreen() {
                   width: 24,
                   height: 24,
                   backgroundColor: '#fff',
-                  border: '3px solid #6C5CE7',
+                  border: '3px solid #e2e8f0',
                   '&:hover': {
-                    boxShadow: '0 0 0 8px rgba(108,92,231,0.16)',
+                    boxShadow: '0 0 0 8px rgba(0,0,0,0.04)',
                   },
                 },
                 '& .MuiSlider-track': {
