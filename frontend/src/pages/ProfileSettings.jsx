@@ -2724,12 +2724,13 @@ export default function ProfileSettings({ onBack }) {
         </Box>
       </Dialog>
 
-      {/* Snackbar */}
+      {/* Snackbar - high z-index to appear above bottom nav */}
       <Snackbar
         open={snack.open}
         autoHideDuration={2200}
         onClose={() => setSnack({ ...snack, open: false })}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        sx={{ zIndex: 10000, mb: 10 }}
       >
         <Alert
           severity={snack.sev}

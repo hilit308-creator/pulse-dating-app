@@ -58,6 +58,7 @@ import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from 'r
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useLanguage } from '../context/LanguageContext';
+import { loadPlans, savePlans, deletePlan } from '../components/QuickPlanModal';
 
 // Fix Leaflet default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -194,11 +195,52 @@ const LocationVisibilityScreen = () => {
     { id: 2, name: 'Family area', radius: 1000, schedule: 'always', timeRange: null, icon: 'home', lat: 32.0700, lng: 34.7700 },
   ]);
   
-  // Future places state
-  const [futurePlaces, setFuturePlaces] = useState([
-    { id: 1, name: 'Downtown', when: 'Today', timeRange: '18:00-22:00', icon: 'coffee', lat: 32.0900, lng: 34.7900 },
-    { id: 2, name: 'Gym', when: 'This week', timeRange: 'Evenings', icon: 'dumbbell', lat: 32.0750, lng: 34.7850 },
-  ]);
+  // Helper to convert stored plans to futurePlaces format
+  const convertPlansToFuturePlaces = (plans) => {
+    return plans.map(plan => ({
+      id: plan.id,
+      name: plan.place,
+      when: plan.time,
+      timeRange: plan.isRecurring ? plan.time : '',
+      icon: plan.placeId || 'mappin',
+      lat: 32.0853, // Default Tel Aviv coords
+      lng: 34.7818,
+      isRecurring: plan.isRecurring,
+      emoji: plan.emoji,
+    }));
+  };
+
+  // Future places state - load from shared storage
+  const [futurePlaces, setFuturePlaces] = useState(() => {
+    const storedPlans = loadPlans();
+    return convertPlansToFuturePlaces(storedPlans);
+  });
+  
+  // Refresh futurePlaces when component mounts or becomes visible
+  useEffect(() => {
+    const storedPlans = loadPlans();
+    setFuturePlaces(convertPlansToFuturePlaces(storedPlans));
+  }, []);
+  
+  // Privacy toggle for Weekly Rhythm visibility
+  const RHYTHM_VISIBILITY_KEY = 'pulse.weeklyRhythmVisibility';
+  const [showRhythmOnProfile, setShowRhythmOnProfile] = useState(() => {
+    try {
+      const stored = localStorage.getItem(RHYTHM_VISIBILITY_KEY);
+      return stored !== 'false'; // Default to true (show)
+    } catch {
+      return true;
+    }
+  });
+  
+  // Save privacy setting
+  useEffect(() => {
+    try {
+      localStorage.setItem(RHYTHM_VISIBILITY_KEY, String(showRhythmOnProfile));
+    } catch (e) {
+      console.error('Error saving rhythm visibility:', e);
+    }
+  }, [showRhythmOnProfile]);
   
   // New zone form
   const [newZone, setNewZone] = useState({
@@ -336,6 +378,8 @@ const LocationVisibilityScreen = () => {
 
   const handleDeletePlace = (id) => {
     setFuturePlaces(futurePlaces.filter(p => p.id !== id));
+    // Also delete from shared storage
+    deletePlan(id);
   };
 
   return (
@@ -605,7 +649,57 @@ const LocationVisibilityScreen = () => {
                 Add future place
               </Button>
 
-              <Box sx={{ mt: 3, p: 2, backgroundColor: '#f8fafc', borderRadius: '12px' }}>
+              {/* Privacy Toggle */}
+              <Box 
+                sx={{ 
+                  mt: 3, 
+                  p: 2, 
+                  backgroundColor: '#f8fafc', 
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a2e' }}>
+                    Show My Weekly Rhythm on profile
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#64748b' }}>
+                    {showRhythmOnProfile 
+                      ? 'Others can see your plans on your profile'
+                      : 'Hidden from profile, still used for matching'}
+                  </Typography>
+                </Box>
+                <Box
+                  onClick={() => setShowRhythmOnProfile(!showRhythmOnProfile)}
+                  sx={{
+                    width: 48,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: showRhythmOnProfile ? '#22c55e' : '#e5e7eb',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      position: 'absolute',
+                      top: 2,
+                      left: showRhythmOnProfile ? 22 : 2,
+                      transition: 'left 0.2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              <Box sx={{ mt: 2, p: 2, backgroundColor: '#f0fdf4', borderRadius: '12px' }}>
                 <Typography variant="caption" sx={{ color: '#64748b' }}>
                   💡 This doesn't force visibility — it enables suggestions with real overlap.
                 </Typography>

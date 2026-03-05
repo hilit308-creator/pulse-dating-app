@@ -67,6 +67,7 @@ import UserCard2 from "./UserCard2";
 import { ProfileTimeline } from "./timeline";
 import { PointsBannerCompact } from "./PointsBanner";
 import { demoUsers, personPhotos } from '../data/demoUsers';
+import QuickPlanModal from './QuickPlanModal';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -627,8 +628,11 @@ function PersonalStatusCard({ userStatus, onUpdate, onTurnOff }) {
             </Box>
           </Tooltip>
           <Box sx={{ flex: 1 }}>
-            <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>
-              Share what you're up to
+            <Typography sx={{ fontSize: 14, fontWeight: 600, color: '#1a1a2e' }}>
+              Add a plan
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: '#9ca3af', mt: 0.25 }}>
+              Where you'll be in the coming days
             </Typography>
           </Box>
           <Button
@@ -871,6 +875,9 @@ export default function Home({ onOpenTutorial }) {
   // prefs
   const [prefs, setPrefs] = useState(loadPrefs());
   const [filtersOpen, setFiltersOpen] = useState(false);
+  
+  // Quick Plan Modal state
+  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
 
   // swipe state - restore from URL query param (single source of truth)
   // Use ref to track the index so we don't lose it on re-renders
@@ -1626,7 +1633,7 @@ export default function Home({ onOpenTutorial }) {
         {!isExpanded && (
           <PersonalStatusCard 
             userStatus={userStatus}
-            onUpdate={() => setShowStatusEditor(true)}
+            onUpdate={() => setQuickPlanOpen(true)}
             onTurnOff={() => setUserStatus({ ...userStatus, enabled: false })}
           />
         )}
@@ -1982,6 +1989,16 @@ export default function Home({ onOpenTutorial }) {
             </Button>
           </DialogContent>
         </Dialog>
+
+        {/* Quick Plan Modal - Add a plan feature */}
+        <QuickPlanModal
+          open={quickPlanOpen}
+          onClose={() => setQuickPlanOpen(false)}
+          onPlanAdded={(plan) => {
+            console.log('[Home] Plan added:', plan);
+            // Could show a snackbar confirmation here
+          }}
+        />
       </Box>
 
       {/* Admin Console */}

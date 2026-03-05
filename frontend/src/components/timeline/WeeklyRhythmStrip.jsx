@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, ArrowRight } from 'lucide-react';
 import WeeklyRhythmTile from './WeeklyRhythmTile';
 import WeeklyRhythmEventTile from './WeeklyRhythmEventTile';
+import { loadPlans } from '../QuickPlanModal';
 
 // Time context labels
 const timeLabels = {
@@ -97,14 +98,59 @@ const WeeklyRhythmStrip = ({ user, viewerIsMatch = false }) => {
   const userRhythm = user?.userRhythm || user?.weeklyRhythm;
   const legacyRhythm = user?.weeklyTimeline;
   
+  // Load plans from QuickPlanModal (stored in localStorage)
+  const storedPlans = loadPlans();
+  
+  // Check privacy toggle from Settings
+  const RHYTHM_VISIBILITY_KEY = 'pulse.weeklyRhythmVisibility';
+  const isRhythmHiddenByUser = (() => {
+    try {
+      const stored = localStorage.getItem(RHYTHM_VISIBILITY_KEY);
+      return stored === 'false';
+    } catch {
+      return false;
+    }
+  })();
+  
   // Visibility settings
   const visibility = userRhythm?.visibility || 'everyone';
-  const shouldHide = visibility === 'hidden' || (visibility === 'matches' && !viewerIsMatch);
+  const shouldHide = isRhythmHiddenByUser || visibility === 'hidden' || (visibility === 'matches' && !viewerIsMatch);
   
   // Get items from different sources
   let events = userRhythm?.events || []; // Event attendance (highest priority)
   let recurring = userRhythm?.recurring || []; // Manual recurring
   let upcoming = userRhythm?.upcoming || []; // Upcoming items
+  
+  // Add stored plans from QuickPlanModal
+  const planItems = storedPlans.map(plan => {
+    // Format display based on plan type
+    let displayLabel = plan.place;
+    let displayTime = plan.time;
+    
+    if (plan.isRecurring && plan.days && plan.timeOfDayLabel) {
+      // Format: "Dance at Havana" with "Tue • Thu evenings"
+      const dayLabels = plan.days
+        .map(id => {
+          const dayMap = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun' };
+          return dayMap[id] || id;
+        })
+        .join(' • ');
+      displayTime = `${dayLabels} ${plan.timeOfDayLabel.toLowerCase()}s`;
+    }
+    
+    return {
+      id: `plan-${plan.id}`,
+      label: displayLabel,
+      emoji: plan.emoji || '📍',
+      timeLabel: displayTime,
+      type: plan.isRecurring ? 'rhythm' : 'rhythm',
+      isRecurring: plan.isRecurring,
+      // Include location data for matching
+      latitude: plan.latitude,
+      longitude: plan.longitude,
+      address: plan.address,
+    };
+  });
   
   // Legacy support
   if (legacyRhythm && Array.isArray(legacyRhythm) && recurring.length === 0) {
@@ -136,16 +182,18 @@ const WeeklyRhythmStrip = ({ user, viewerIsMatch = false }) => {
     timeLabel: item.customText || timeLabels[item.frequency] || item.frequency,
   }));
   
-  // V4 Ordering: Events first (soonest), then recurring
-  // Max 6 items total
+  // V4 Ordering: Events first (soonest), then plans, then recurring
+  // Max 5 items total (per spec)
   const allItems = [
     ...eventItems,
     ...upcomingItems.filter(i => i.type === 'event'),
+    ...planItems.filter(p => !p.isRecurring), // One-time plans
     ...recurringItems,
+    ...planItems.filter(p => p.isRecurring), // Recurring plans
     ...upcomingItems.filter(i => i.type === 'rhythm'),
-  ].slice(0, 6);
+  ].slice(0, 5);
   
-  const hasItems = allItems.length > 0;
+  const hasItems = allItems.length > 0 || storedPlans.length > 0;
   const hasEventItems = allItems.some(item => item.type === 'event');
   
   // Intersection Observer for scroll-triggered animation
