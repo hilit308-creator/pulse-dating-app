@@ -130,7 +130,39 @@ const OtpVerificationScreen = () => {
     setIsLoading(true);
     setError('');
     
+    // DEV MODE: Accept 123456 when running locally
+    const isDevMode = location.state?.devMode || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    
     try {
+      if (isDevMode && code === '123456') {
+        // Dev mode: simulate successful verification
+        console.log('[DEV MODE] OTP verified with dev code 123456');
+        
+        // Create mock user for dev mode
+        const mockUser = {
+          id: 'dev-user-123',
+          phone: phoneNumber,
+          hasPassword: false,
+          isNewUser: true,
+        };
+        
+        loginSuccess(
+          { accessToken: 'dev-token', refreshToken: 'dev-refresh-token' },
+          mockUser
+        );
+        
+        // Go to next onboarding step
+        updateOnboardingStep('password');
+        navigate('/auth/create-password');
+        return;
+      } else if (isDevMode && code !== '123456') {
+        setError('Dev mode: Use code 123456');
+        setOtp(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
+        setIsLoading(false);
+        return;
+      }
+      
       const result = await apiCall(verifyOtp, verificationId, code);
       
       // Login success

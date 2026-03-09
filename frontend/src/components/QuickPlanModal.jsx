@@ -90,8 +90,36 @@ const PLACE_SUGGESTIONS = [
   { id: 'meetup', label: 'Meetup / Social', icon: Users, emoji: '👥' },
 ];
 
-// Google Places API key (should be in env)
+// Google Places API key (check both naming conventions)
 const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY || '';
+console.log('[Google Places] API Key loaded:', GOOGLE_PLACES_API_KEY ? 'Yes (length: ' + GOOGLE_PLACES_API_KEY.length + ')' : 'NO KEY FOUND');
+
+// Load Google Maps script dynamically
+const loadGoogleMapsScript = () => {
+  console.log('[Google Places] loadGoogleMapsScript called, window.google exists:', !!window.google?.maps?.places, 'API key exists:', !!GOOGLE_PLACES_API_KEY);
+  if (window.google?.maps?.places || !GOOGLE_PLACES_API_KEY) return Promise.resolve();
+  
+  return new Promise((resolve, reject) => {
+    if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+      // Script already loading
+      const checkLoaded = setInterval(() => {
+        if (window.google?.maps?.places) {
+          clearInterval(checkLoaded);
+          resolve();
+        }
+      }, 100);
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_PLACES_API_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Google Maps'));
+    document.head.appendChild(script);
+  });
+};
 
 // Load plans from localStorage
 export const loadPlans = () => {
@@ -159,6 +187,12 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
   const [selectedDays, setSelectedDays] = useState([]); // Array of day ids
   const [selectedTimeOfDay, setSelectedTimeOfDay] = useState(null);
   
+  // Privacy toggle state
+  const [showOnProfile, setShowOnProfile] = useState(() => {
+    const saved = localStorage.getItem('pulse.weeklyRhythmVisibility');
+    return saved !== 'false'; // Default to true
+  });
+  
   // Google Places state
   const [placeSuggestions, setPlaceSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -168,12 +202,20 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
 
   // Initialize Google Places services
   useEffect(() => {
-    if (window.google?.maps?.places) {
-      autocompleteService.current = new window.google.maps.places.AutocompleteService();
-      // Create a dummy div for PlacesService (required by API)
-      const dummyDiv = document.createElement('div');
-      placesService.current = new window.google.maps.places.PlacesService(dummyDiv);
-    }
+    const initGooglePlaces = async () => {
+      try {
+        await loadGoogleMapsScript();
+        if (window.google?.maps?.places) {
+          autocompleteService.current = new window.google.maps.places.AutocompleteService();
+          // Create a dummy div for PlacesService (required by API)
+          const dummyDiv = document.createElement('div');
+          placesService.current = new window.google.maps.places.PlacesService(dummyDiv);
+        }
+      } catch (err) {
+        console.warn('Google Places not available:', err);
+      }
+    };
+    initGooglePlaces();
   }, []);
 
   // Reset state when modal opens
@@ -193,7 +235,10 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
 
   // Search Google Places
   const searchGooglePlaces = useCallback((query) => {
+    console.log('[Google Places] Searching for:', query, 'Service available:', !!autocompleteService.current);
+    
     if (!query.trim() || !autocompleteService.current) {
+      console.log('[Google Places] No query or service not available');
       setPlaceSuggestions([]);
       return;
     }
@@ -203,12 +248,13 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
     autocompleteService.current.getPlacePredictions(
       {
         input: query,
-        types: ['establishment', 'geocode'],
-        componentRestrictions: { country: 'il' }, // Restrict to Israel
+        types: ['establishment'],
+        // No country restriction for now
       },
       (predictions, status) => {
+        console.log('[Google Places] Response status:', status, 'Predictions:', predictions?.length || 0, 'Raw predictions:', predictions);
         setIsSearching(false);
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions && predictions.length > 0) {
           setPlaceSuggestions(predictions.map(p => ({
             id: p.place_id,
             label: p.structured_formatting.main_text,
@@ -336,13 +382,13 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
     let plan;
     
     if (planType === 'onetime') {
-      if (!selectedTime) return;
+      // Time is now OPTIONAL for one-time plans
       plan = {
         place: selectedPlace.label,
         placeId: selectedPlace.id,
         emoji: selectedPlace.emoji || '📍',
-        time: selectedTime.label,
-        timeId: selectedTime.id,
+        time: selectedTime?.label || 'Flexible',
+        timeId: selectedTime?.id || 'flexible',
         isRecurring: false,
         // Google Places data
         googlePlaceId: selectedPlace.placeId,
@@ -351,11 +397,13 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
         address: selectedPlace.address,
       };
     } else {
-      // Recurring plan
-      if (selectedDays.length === 0 || !selectedTimeOfDay) return;
-      
-      const daysDisplay = formatSelectedDays();
-      const timeDisplay = `${daysDisplay} ${selectedTimeOfDay.label.toLowerCase()}s`;
+      // Recurring plan - days and time are now OPTIONAL
+      const daysDisplay = formatSelectedDays() || 'Flexible';
+      const timeDisplay = selectedDays.length > 0 && selectedTimeOfDay 
+        ? `${daysDisplay} ${selectedTimeOfDay.label.toLowerCase()}s`
+        : selectedTimeOfDay 
+          ? selectedTimeOfDay.label
+          : daysDisplay;
       
       plan = {
         place: selectedPlace.label,
@@ -363,8 +411,8 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
         emoji: selectedPlace.emoji || '📍',
         time: timeDisplay,
         days: selectedDays,
-        timeOfDay: selectedTimeOfDay.id,
-        timeOfDayLabel: selectedTimeOfDay.label,
+        timeOfDay: selectedTimeOfDay?.id || 'flexible',
+        timeOfDayLabel: selectedTimeOfDay?.label || 'Flexible',
         isRecurring: true,
         // Google Places data
         googlePlaceId: selectedPlace.placeId,
@@ -383,11 +431,8 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
     onClose();
   };
 
-  // Validation
-  const canSave = selectedPlace && (
-    (planType === 'onetime' && selectedTime) ||
-    (planType === 'recurring' && selectedDays.length > 0 && selectedTimeOfDay)
-  );
+  // Validation - only place is required, everything else is optional
+  const canSave = !!selectedPlace;
 
   return (
     <Dialog
@@ -591,7 +636,7 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
                   alignItems: 'center',
                   gap: 1.5,
                   p: 1.5,
-                  mb: 2,
+                  mb: 1,
                   borderRadius: '12px',
                   backgroundColor: 'rgba(108,92,231,0.08)',
                 }}
@@ -609,13 +654,109 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
                 >
                   <span style={{ fontSize: 18 }}>{selectedPlace?.emoji}</span>
                 </Box>
-                <Typography sx={{ flex: 1, fontWeight: 600, color: '#1a1a2e' }}>
-                  {selectedPlace?.label}
-                </Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontWeight: 600, color: '#1a1a2e' }}>
+                    {selectedPlace?.label}
+                  </Typography>
+                  {selectedPlace?.address && (
+                    <Typography sx={{ fontSize: 12, color: '#9ca3af' }}>
+                      {selectedPlace.address}
+                    </Typography>
+                  )}
+                </Box>
                 <IconButton size="small" onClick={() => setStep(1)}>
                   <X size={16} />
                 </IconButton>
               </Box>
+
+              {/* Optional: Search for specific location */}
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="🔍 Add specific location (optional)"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCustomPlace(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    // Update selected place with specific location
+                    setSelectedPlace(prev => ({
+                      ...prev,
+                      address: searchQuery.trim(),
+                    }));
+                    setSearchQuery('');
+                  }
+                }}
+                sx={{
+                  mb: 1,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                    backgroundColor: '#f9fafb',
+                    fontSize: 14,
+                  },
+                }}
+              />
+
+              {/* Show "Add location" button when typing */}
+              {searchQuery.trim() && (
+                <Box sx={{ mb: 2 }}>
+                  {/* Google Places suggestions */}
+                  {placeSuggestions.length > 0 ? (
+                    <Box sx={{ maxHeight: 120, overflowY: 'auto' }}>
+                      {placeSuggestions.slice(0, 3).map((place) => (
+                        <Box
+                          key={place.id}
+                          onClick={() => {
+                            handleSelectPlace(place);
+                            setSearchQuery('');
+                          }}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            p: 1,
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            '&:hover': { backgroundColor: 'rgba(108,92,231,0.08)' },
+                          }}
+                        >
+                          <MapPin size={14} color="#6C5CE7" />
+                          <Typography sx={{ fontSize: 13, color: '#1a1a2e' }}>
+                            {place.label}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  ) : (
+                    /* Manual add button when no Google results */
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => {
+                        setSelectedPlace(prev => ({
+                          ...prev,
+                          address: searchQuery.trim(),
+                        }));
+                        setSearchQuery('');
+                      }}
+                      startIcon={<MapPin size={14} />}
+                      sx={{
+                        borderRadius: '10px',
+                        textTransform: 'none',
+                        justifyContent: 'flex-start',
+                        py: 1,
+                        borderColor: '#6C5CE7',
+                        color: '#6C5CE7',
+                        fontSize: 13,
+                      }}
+                    >
+                      Add "{searchQuery.trim()}"
+                    </Button>
+                  )}
+                </Box>
+              )}
 
               {/* Plan type toggle */}
               <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
@@ -671,7 +812,7 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
               {planType === 'onetime' ? (
                 <>
                   <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    When?
+                    When? <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {TIME_OPTIONS.map((time) => (
@@ -704,7 +845,7 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
                 <>
                   {/* Day selection for recurring */}
                   <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Which days?
+                    Which days? <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 2.5 }}>
                     {DAYS_OF_WEEK.map((day) => (
@@ -732,7 +873,7 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
 
                   {/* Time of day selection */}
                   <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    What time?
+                    What time? <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {TIME_OF_DAY.map((time) => (
@@ -779,28 +920,83 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
       {/* Footer */}
       <Box sx={{ p: 2, pt: 0 }}>
         {step === 2 && (
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={handleSave}
-            disabled={!canSave}
-            startIcon={<Check size={18} />}
-            sx={{
-              borderRadius: '12px',
-              py: 1.5,
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: 15,
-              backgroundColor: '#6C5CE7',
-              '&:hover': { backgroundColor: '#5B4BD5' },
-              '&:disabled': {
-                backgroundColor: '#e5e7eb',
-                color: '#9ca3af',
-              },
-            }}
-          >
-            Add plan
-          </Button>
+          <>
+            {/* Privacy Toggle */}
+            <Box 
+              sx={{ 
+                mb: 2, 
+                p: 1.5, 
+                backgroundColor: '#f8fafc', 
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>
+                  Show on profile
+                </Typography>
+                <Typography sx={{ fontSize: 11, color: '#64748b' }}>
+                  {showOnProfile ? 'Visible to others' : 'Hidden, used for matching only'}
+                </Typography>
+              </Box>
+              <Box
+                onClick={() => {
+                  const newValue = !showOnProfile;
+                  setShowOnProfile(newValue);
+                  localStorage.setItem('pulse.weeklyRhythmVisibility', String(newValue));
+                }}
+                sx={{
+                  width: 44,
+                  height: 24,
+                  borderRadius: 12,
+                  backgroundColor: showOnProfile ? '#22c55e' : '#e5e7eb',
+                  position: 'relative',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  flexShrink: 0,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    backgroundColor: '#fff',
+                    position: 'absolute',
+                    top: 2,
+                    left: showOnProfile ? 22 : 2,
+                    transition: 'left 0.2s',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  }}
+                />
+              </Box>
+            </Box>
+
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleSave}
+              disabled={!canSave}
+              startIcon={<Check size={18} />}
+              sx={{
+                borderRadius: '12px',
+                py: 1.5,
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 15,
+                backgroundColor: '#6C5CE7',
+                '&:hover': { backgroundColor: '#5B4BD5' },
+                '&:disabled': {
+                  backgroundColor: '#e5e7eb',
+                  color: '#9ca3af',
+                },
+              }}
+            >
+              Add plan
+            </Button>
+          </>
         )}
       </Box>
     </Dialog>

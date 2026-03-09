@@ -112,8 +112,27 @@ const PhoneInputScreen = () => {
     setIsLoading(true);
     setError('');
     
+    // DEV MODE: Skip OTP when running locally without backend
+    const isDevMode = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
     try {
       const fullPhone = getFullPhoneNumber();
+      
+      if (isDevMode) {
+        // Dev mode: simulate OTP sent and go directly to OTP screen
+        console.log('[DEV MODE] Skipping real OTP, use code: 123456');
+        setOtpSent('dev-verification-id', fullPhone);
+        updateOnboardingStep('otp');
+        navigate('/auth/otp', { 
+          state: { 
+            resendInSec: 60,
+            expiresInSec: 300,
+            devMode: true,
+          } 
+        });
+        return;
+      }
+      
       const result = await apiCall(requestOtp, fullPhone);
       
       // Store verification ID and navigate to OTP screen

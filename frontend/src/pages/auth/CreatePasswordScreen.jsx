@@ -65,6 +65,19 @@ const CreatePasswordScreen = () => {
     setIsLoading(true);
     setError('');
     
+    // DEV MODE: Skip API call when running locally
+    const isDevMode = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    if (isDevMode) {
+      console.log('[DEV MODE] Skipping password API, continuing to location');
+      // Store password locally for dev mode
+      localStorage.setItem('pulse_dev_password', password);
+      updateOnboardingStep('location');
+      navigate('/auth/location');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('pulse_access_token');
       
