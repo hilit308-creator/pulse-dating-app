@@ -14,7 +14,8 @@ import {
   Chip,
   Button,
 } from '@mui/material';
-import { ArrowLeft, Calendar, MapPin, Users, Clock, Heart } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Clock, Heart, UserCheck, ThumbsUp } from 'lucide-react';
+import { Stack } from '@mui/material';
 
 // Mock data for registered events
 const MY_EVENTS = [
@@ -27,6 +28,7 @@ const MY_EVENTS = [
     image: "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?auto=format&fit=crop&w=800&q=80",
     attendeesCount: 24,
     matchingAttendeesCount: 8,
+    likesCount: 3,
     category: "Wellness",
   },
   {
@@ -38,6 +40,7 @@ const MY_EVENTS = [
     image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
     attendeesCount: 56,
     matchingAttendeesCount: 12,
+    likesCount: 5,
     category: "Networking",
   },
   {
@@ -49,6 +52,7 @@ const MY_EVENTS = [
     image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80",
     attendeesCount: 18,
     matchingAttendeesCount: 5,
+    likesCount: 2,
     category: "Social",
   },
   {
@@ -60,6 +64,7 @@ const MY_EVENTS = [
     image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
     attendeesCount: 120,
     matchingAttendeesCount: 28,
+    likesCount: 8,
     category: "Party",
   },
 ];
@@ -73,6 +78,27 @@ const MyEventsScreen = () => {
 
   const handleEventClick = (event) => {
     navigate(`/events/${event.id}/attendees`, {
+      state: { event },
+    });
+  };
+
+  const handleViewAttendees = (event, e) => {
+    e.stopPropagation();
+    navigate(`/events/${event.id}/attendees`, {
+      state: { event, viewType: 'discover' },
+    });
+  };
+
+  const handleViewMatches = (event, e) => {
+    e.stopPropagation();
+    navigate(`/events/${event.id}/matches`, {
+      state: { event },
+    });
+  };
+
+  const handleViewLikes = (event, e) => {
+    e.stopPropagation();
+    navigate(`/events/${event.id}/likes`, {
       state: { event },
     });
   };
@@ -224,32 +250,79 @@ const MyEventsScreen = () => {
                 </Box>
               </Box>
 
-              {/* View Matches Button */}
-              {event.matchingAttendeesCount > 0 && (
+              {/* Action Buttons */}
+              <Stack spacing={1.5} sx={{ mt: 2 }}>
+                {/* Attendees Button - Discover style */}
                 <Button
                   fullWidth
                   variant="contained"
-                  startIcon={<Heart size={16} />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEventClick(event);
-                  }}
+                  startIcon={<Users size={16} />}
+                  onClick={(e) => handleViewAttendees(event, e)}
                   sx={{
-                    mt: 2,
                     py: 1.25,
                     borderRadius: '12px',
                     textTransform: 'none',
                     fontWeight: 600,
-                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                    boxShadow: '0 4px 16px rgba(108,92,231,0.3)',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: '0 4px 16px rgba(102,126,234,0.3)',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
+                      background: 'linear-gradient(135deg, #5568d3 0%, #6a4296 100%)',
                     },
                   }}
                 >
-                  View {event.matchingAttendeesCount} Matches
+                  View {event.attendeesCount} Attendees
                 </Button>
-              )}
+
+                {/* Matches Button */}
+                {event.matchingAttendeesCount > 0 && (
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<UserCheck size={16} />}
+                    onClick={(e) => handleViewMatches(event, e)}
+                    sx={{
+                      py: 1.25,
+                      borderRadius: '12px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      borderColor: '#667eea',
+                      color: '#667eea',
+                      background: 'linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)',
+                        borderColor: '#5568d3',
+                      },
+                    }}
+                  >
+                    {event.matchingAttendeesCount} Matches
+                  </Button>
+                )}
+
+                {/* Likes Button - People who liked you */}
+                {event.likesCount > 0 && (
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<Heart size={16} />}
+                    onClick={(e) => handleViewLikes(event, e)}
+                    sx={{
+                      py: 1.25,
+                      borderRadius: '12px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      borderColor: '#f093fb',
+                      color: '#f093fb',
+                      background: 'linear-gradient(135deg, rgba(240,147,251,0.08) 0%, rgba(245,87,108,0.08) 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, rgba(240,147,251,0.15) 0%, rgba(245,87,108,0.15) 100%)',
+                        borderColor: '#e879f9',
+                      },
+                    }}
+                  >
+                    {event.likesCount} Interested in You
+                  </Button>
+                )}
+              </Stack>
             </CardContent>
           </Card>
         ))}

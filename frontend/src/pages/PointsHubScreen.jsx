@@ -370,107 +370,126 @@ const PointsHubScreen = () => {
   }
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(180deg, #8B5CF6 0%, #EC4899 40%, #F87171 100%)',
-      pb: 4,
-    }}>
-      {/* Header */}
-      <Box sx={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: 'transparent',
-        backdropFilter: 'blur(10px)',
-        px: 2,
-        py: 1.5,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 2,
-      }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff' }}>
-          {t('yourPoints') || 'Your Points'}
-        </Typography>
-      </Box>
-
-      <Box sx={{ px: 2, pt: 3 }}>
-        {/* Section A: Balance Display - Vibrant Hero Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <Box sx={{
-            position: 'relative',
-            p: 4,
-            textAlign: 'center',
-            mb: 3,
-            overflow: 'hidden',
-          }}>
-            {/* Floating particles */}
-            <FloatingParticles />
-            
-            {/* Glowing coin icon */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, position: 'relative', zIndex: 1 }}>
-              <GlowingCoin size={56} />
-            </Box>
-            
-            {/* Points balance */}
-            <motion.div
-              animate={{ scale: [1, 1.02, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <Typography sx={{
-                fontSize: 56,
-                fontWeight: 900,
+    <Box sx={{ minHeight: '100vh', bgcolor: '#fafbfc', pb: 10 }}>
+      {/* Hero Section with Gradient - IDENTICAL to Events page */}
+      <Box
+        sx={{
+          position: 'relative',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+          pt: 3,
+          pb: 6,
+          mb: 3,
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'radial-gradient(circle at 20% 50%, rgba(108,92,231,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(168,85,247,0.3) 0%, transparent 50%)',
+            pointerEvents: 'none',
+          },
+        }}
+      >
+        <Box sx={{ position: 'relative', zIndex: 1, px: 3 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Typography 
+              variant="h3" 
+              sx={{ 
+                fontWeight: 900, 
                 color: '#fff',
-                lineHeight: 1,
-                textShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                position: 'relative',
-                zIndex: 1,
-              }}>
-                {pointsBalance}
-              </Typography>
-            </motion.div>
-            
-            <Typography sx={{
-              fontSize: 18,
-              color: 'rgba(255,255,255,0.9)',
-              mt: 1,
-              fontWeight: 600,
-              position: 'relative',
-              zIndex: 1,
-            }}>
-              {t('pointsAvailable') || 'Points Available'}
-            </Typography>
-            
-            {/* Get More Points button */}
-            <Button
-              onClick={() => {/* scroll to buy section */}}
-              sx={{
-                mt: 2,
-                px: 4,
-                py: 1.5,
-                borderRadius: '50px',
-                background: 'rgba(255,255,255,0.25)',
-                backdropFilter: 'blur(10px)',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                textTransform: 'none',
-                border: '2px solid rgba(255,255,255,0.4)',
-                position: 'relative',
-                zIndex: 1,
-                '&:hover': {
-                  background: 'rgba(255,255,255,0.35)',
-                },
+                mb: 1,
+                textShadow: '0 2px 20px rgba(0,0,0,0.2)',
               }}
             >
-              <Gift size={18} style={{ marginRight: 8 }} />
-              {t('getMorePoints') || 'Get More Points'}
-            </Button>
-          </Box>
-        </motion.div>
+              {t('yourPoints') || 'Your Points'}
+            </Typography>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: 'rgba(255,255,255,0.95)',
+                fontWeight: 500,
+                mb: 3,
+                maxWidth: 600,
+              }}
+            >
+              {t('boostYourProfile') || 'Boost your profile and unlock premium features'}
+            </Typography>
+          </motion.div>
+
+          {/* Points Balance Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          >
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: 'rgba(255,255,255,0.2)',
+              backdropFilter: 'blur(12px)',
+              borderRadius: '16px',
+              border: '1px solid rgba(255,255,255,0.3)',
+              p: 2.5,
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 20px rgba(255,165,0,0.4)',
+                }}>
+                  <Coins size={28} color="#fff" />
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: 36, fontWeight: 900, color: '#fff', lineHeight: 1 }}>
+                    {pointsBalance}
+                  </Typography>
+                  <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+                    {t('pointsAvailable') || 'Points Available'}
+                  </Typography>
+                </Box>
+              </Box>
+              <Button
+                onClick={() => {/* scroll to buy section */}}
+                sx={{
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: '12px',
+                  bgcolor: '#fff',
+                  color: '#667eea',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  textTransform: 'none',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                  '&:hover': {
+                    bgcolor: '#f8f9ff',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <Gift size={18} style={{ marginRight: 8 }} />
+                {t('getMorePoints') || 'Get More'}
+              </Button>
+            </Box>
+          </motion.div>
+        </Box>
+      </Box>
+
+      <Box sx={{ px: 2 }}>
+        {/* Section A: Balance Display removed - now in hero */}
 
         {/* Section B: Active Feature (Conditional) */}
         {activeFeature && (
@@ -552,7 +571,7 @@ const PointsHubScreen = () => {
         <Typography sx={{
           fontSize: 14,
           fontWeight: 700,
-          color: 'rgba(255,255,255,0.7)',
+          color: '#64748b',
           textTransform: 'uppercase',
           letterSpacing: 1,
           mb: 2,
@@ -570,12 +589,12 @@ const PointsHubScreen = () => {
             const notEnoughPoints = pointsBalance < feature.cost && !hasSubscription && !activeFeature;
             const isActivating = activatingFeature === feature.id;
             
-            // Vibrant gradient colors for each feature
+            // Gradient colors for each feature - matching Events page style
             const featureColors = [
-              'linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%)', // Undo - pink to purple
-              'linear-gradient(135deg, #F43F5E 0%, #EC4899 100%)', // Likes - red to pink
-              'linear-gradient(135deg, #06B6D4 0%, #8B5CF6 100%)', // Nearby - cyan to purple
-              'linear-gradient(135deg, #F59E0B 0%, #EC4899 100%)', // BeatPulse - orange to pink
+              'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Undo
+              'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // Likes
+              'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', // Nearby
+              'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', // BeatPulse
             ];
 
             return (
@@ -588,13 +607,16 @@ const PointsHubScreen = () => {
                 whileTap={{ scale: 0.98 }}
               >
                 <Box sx={{
-                  background: 'rgba(255,255,255,0.2)',
-                  backdropFilter: 'blur(15px)',
+                  bgcolor: '#fff',
                   borderRadius: '16px',
                   p: 2,
                   opacity: isDisabled && !isActive ? 0.6 : 1,
-                  border: isActive ? '2px solid #fff' : '1px solid rgba(255,255,255,0.3)',
-                  boxShadow: isActive ? '0 0 20px rgba(255,255,255,0.3)' : '0 4px 15px rgba(0,0,0,0.1)',
+                  border: isActive ? '2px solid #667eea' : '1px solid rgba(0,0,0,0.06)',
+                  boxShadow: isActive ? '0 4px 20px rgba(102,126,234,0.3)' : '0 4px 20px rgba(0,0,0,0.08)',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                  },
                 }}>
                   <Box sx={{
                     display: 'flex',
@@ -610,22 +632,21 @@ const PointsHubScreen = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+                        boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
                       }}>
                         <FeatureIcon size={24} color="#fff" />
                       </Box>
                       <Box>
                         <Typography sx={{ 
-                          fontWeight: 600, 
-                          color: '#fff',
+                          fontWeight: 700, 
+                          color: '#1a1a2e',
                           fontSize: 15,
-                          textShadow: '0 1px 3px rgba(0,0,0,0.2)',
                         }}>
                           {getFeatureInfo(feature)}
                         </Typography>
                         <Typography sx={{ 
                           fontSize: 13, 
-                          color: 'rgba(255,255,255,0.85)',
+                          color: '#64748b',
                         }}>
                           {feature.duration} {t('minutes') || 'min'} • {feature.cost} {t('pts') || 'pts'}
                         </Typography>
@@ -641,7 +662,7 @@ const PointsHubScreen = () => {
                         borderRadius: '10px',
                         fontSize: 13,
                         fontWeight: 600,
-                        boxShadow: '0 4px 15px rgba(34,197,94,0.4)',
+                        boxShadow: '0 4px 12px rgba(34,197,94,0.3)',
                       }}>
                         {t('active') || 'Active'}
                       </Box>
@@ -650,22 +671,23 @@ const PointsHubScreen = () => {
                         onClick={() => handleActivateFeature(feature)}
                         disabled={isDisabled || isActivating}
                         sx={{
-                          background: isDisabled ? 'rgba(255,255,255,0.1)' : featureColors[idx],
-                          color: isDisabled ? 'rgba(255,255,255,0.4)' : '#ffffff',
+                          background: isDisabled ? '#e5e7eb' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          color: isDisabled ? '#9ca3af' : '#ffffff',
                           px: 2.5,
                           py: 1,
                           borderRadius: '10px',
                           fontSize: 13,
-                          fontWeight: 600,
+                          fontWeight: 700,
                           textTransform: 'none',
                           minWidth: 90,
-                          boxShadow: isDisabled ? 'none' : '0 4px 15px rgba(236,72,153,0.3)',
+                          boxShadow: isDisabled ? 'none' : '0 4px 12px rgba(102,126,234,0.3)',
                           '&:hover': {
-                            opacity: 0.9,
+                            background: isDisabled ? '#e5e7eb' : 'linear-gradient(135deg, #5568d3 0%, #6a4296 100%)',
+                            boxShadow: isDisabled ? 'none' : '0 6px 16px rgba(102,126,234,0.4)',
                           },
                           '&.Mui-disabled': {
-                            background: 'rgba(255,255,255,0.1)',
-                            color: 'rgba(255,255,255,0.4)',
+                            background: '#e5e7eb',
+                            color: '#9ca3af',
                           },
                         }}
                       >
@@ -682,7 +704,7 @@ const PointsHubScreen = () => {
                   {notEnoughPoints && (
                     <Typography sx={{
                       fontSize: 12,
-                      color: '#F59E0B',
+                      color: '#667eea',
                       mt: 1.5,
                       display: 'flex',
                       alignItems: 'center',
@@ -702,7 +724,7 @@ const PointsHubScreen = () => {
         <Typography sx={{
           fontSize: 14,
           fontWeight: 700,
-          color: 'rgba(255,255,255,0.7)',
+          color: '#64748b',
           textTransform: 'uppercase',
           letterSpacing: 1,
           mb: 2,
@@ -714,14 +736,12 @@ const PointsHubScreen = () => {
           {PACKAGES.map((pkg, idx) => {
             const isPurchasing = purchasingPackage === pkg.id;
             
-            // Package colors - gold theme
+            // Package colors - matching Events page style
             const packageColors = [
-              'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', // Small - gold
-              'linear-gradient(135deg, #EC4899 0%, #F59E0B 100%)', // Medium - pink to gold
-              'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)', // Large - rainbow
+              'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Small
+              'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // Medium
+              'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)', // Large - best value
             ];
-            
-            const coinSizes = [1, 1.5, 2]; // Relative size multipliers
             
             return (
               <motion.div
@@ -736,32 +756,22 @@ const PointsHubScreen = () => {
                   onClick={() => !isPurchasing && handlePurchasePackage(pkg)}
                   sx={{
                     position: 'relative',
-                    background: 'rgba(255,255,255,0.2)',
-                    backdropFilter: 'blur(15px)',
+                    bgcolor: '#fff',
                     borderRadius: '16px',
                     p: 2.5,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     cursor: 'pointer',
-                    border: '1px solid rgba(255,255,255,0.3)',
+                    border: '1px solid rgba(0,0,0,0.06)',
                     overflow: 'hidden',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                    },
                   }}
                 >
-                  {/* Decorative glow */}
-                  <Box sx={{
-                    position: 'absolute',
-                    top: -20,
-                    right: -20,
-                    width: 80,
-                    height: 80,
-                    borderRadius: '50%',
-                    background: packageColors[idx],
-                    opacity: 0.2,
-                    filter: 'blur(20px)',
-                  }} />
-                  
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}>
                     <Box sx={{
                       width: 48,
@@ -771,47 +781,52 @@ const PointsHubScreen = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 4px 15px rgba(245,158,11,0.4)',
+                      boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
                     }}>
                       <Coins size={24} color="#fff" />
                     </Box>
                     <Box>
                       <Typography sx={{ 
                         fontWeight: 700, 
-                        color: '#fff',
+                        color: '#1a1a2e',
                         fontSize: 20,
                       }}>
                         {pkg.points}
                       </Typography>
                       <Typography sx={{ 
                         fontSize: 13, 
-                        color: 'rgba(255,255,255,0.6)',
+                        color: '#64748b',
                       }}>
                         {t('points') || 'Points'}
                       </Typography>
                     </Box>
                   </Box>
 
-                  <Box sx={{
-                    background: packageColors[idx],
-                    color: '#ffffff',
-                    px: 3,
-                    py: 1.25,
-                    borderRadius: '12px',
-                    fontSize: 16,
-                    fontWeight: 700,
-                    minWidth: 90,
-                    textAlign: 'center',
-                    boxShadow: '0 4px 15px rgba(245,158,11,0.4)',
-                    position: 'relative',
-                    zIndex: 1,
-                  }}>
+                  <Button
+                    sx={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: '#ffffff',
+                      px: 3,
+                      py: 1.25,
+                      borderRadius: '12px',
+                      fontSize: 16,
+                      fontWeight: 700,
+                      minWidth: 90,
+                      textAlign: 'center',
+                      boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
+                      textTransform: 'none',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #5568d3 0%, #6a4296 100%)',
+                        boxShadow: '0 6px 16px rgba(102,126,234,0.4)',
+                      },
+                    }}
+                  >
                     {isPurchasing ? (
                       <CircularProgress size={18} sx={{ color: '#ffffff' }} />
                     ) : (
                       `${pkg.currency}${pkg.price}`
                     )}
-                  </Box>
+                  </Button>
                 </Box>
               </motion.div>
             );
@@ -820,21 +835,19 @@ const PointsHubScreen = () => {
 
         {/* Premium comparison text (required) */}
         <Box sx={{
-          background: 'rgba(255,255,255,0.2)',
-          backdropFilter: 'blur(15px)',
-          border: '1px solid rgba(255,255,255,0.3)',
+          bgcolor: '#fff',
+          border: '1px solid rgba(0,0,0,0.06)',
           borderRadius: '16px',
           p: 2.5,
           textAlign: 'center',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         }}>
           <Typography sx={{
             fontSize: 14,
-            color: '#fff',
+            color: '#1a1a2e',
             fontWeight: 600,
-            textShadow: '0 1px 3px rgba(0,0,0,0.2)',
           }}>
-            <Crown size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+            <Crown size={16} style={{ verticalAlign: 'middle', marginRight: 6, color: '#667eea' }} />
             {t('premiumUnlocksEverything') || 'Premium unlocks everything — anytime'}
           </Typography>
         </Box>

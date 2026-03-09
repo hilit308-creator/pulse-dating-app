@@ -1,6 +1,6 @@
 /**
  * EventAttendeesScreen - Shows attendees of an event that match user's criteria
- * Users can swipe through attendees like in the Nearby flow
+ * Uses the new Discover-style ProfileTimeline cards (scrollable, one at a time)
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -8,285 +8,114 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
-  IconButton,
   Button,
   Chip,
 } from '@mui/material';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import {
-  ArrowLeft,
   Calendar,
-  MapPin,
   Users,
-  X,
-  Heart,
-  RotateCcw,
   Sparkles,
-  MessageCircle,
-  Filter,
 } from 'lucide-react';
+import ProfileTimeline from '../components/timeline/ProfileTimeline';
 
-// Mock attendees data
+// Mock attendees data - formatted for ProfileTimeline
 const MOCK_ATTENDEES = [
   {
     id: 101,
     firstName: "Shira",
+    name: "Shira",
     age: 26,
     city: "Tel Aviv",
     distance: 0.8,
     profession: "Marketing Manager",
     tagline: "Always up for an adventure 🌟",
-    interests: ["Wine", "Travel", "Music", "Dancing"],
+    bio: "Marketing manager by day, adventure seeker by night. Love discovering new places and meeting interesting people.",
+    interests: ["Wine", "Travel", "Music", "Dancing", "Yoga", "Photography"],
     photos: [
       "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
     ],
     likesYou: true,
     verified: true,
+    height: "168 cm",
+    location: "Tel Aviv",
+    lookingFor: ["Relationship"],
   },
   {
     id: 102,
     firstName: "Yael",
+    name: "Yael",
     age: 28,
     city: "Ramat Gan",
     distance: 2.1,
     profession: "Software Engineer",
     tagline: "Code by day, wine by night 🍷",
-    interests: ["Tech", "Yoga", "Books", "Coffee"],
+    bio: "Software engineer who believes in work-life balance. When I'm not coding, you'll find me at yoga or exploring new coffee shops.",
+    interests: ["Tech", "Yoga", "Books", "Coffee", "Hiking", "Cooking"],
     photos: [
       "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
     ],
     likesYou: false,
     verified: true,
+    height: "165 cm",
+    location: "Ramat Gan",
+    lookingFor: ["Something casual"],
   },
   {
     id: 103,
     firstName: "Noa",
+    name: "Noa",
     age: 25,
     city: "Tel Aviv",
     distance: 0.5,
     profession: "Graphic Designer",
     tagline: "Creating beautiful things ✨",
-    interests: ["Art", "Design", "Photography", "Hiking"],
+    bio: "Data nerd by day, bookworm by night. Love hiking and discovering new recipes.",
+    interests: ["Art", "Design", "Photography", "Hiking", "Reading", "Museums"],
     photos: [
       "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=800&q=80",
     ],
     likesYou: true,
     verified: false,
+    height: "170 cm",
+    location: "Tel Aviv",
+    lookingFor: ["Relationship"],
   },
   {
     id: 104,
     firstName: "Maya",
+    name: "Maya",
     age: 27,
     city: "Herzliya",
     distance: 5.2,
     profession: "Product Designer",
     tagline: "Coffee enthusiast ☕",
-    interests: ["UX", "Coffee", "Pilates", "Travel"],
+    bio: "Product designer passionate about creating meaningful experiences. Always looking for the next great coffee spot.",
+    interests: ["UX", "Coffee", "Pilates", "Travel", "Design", "Music"],
     photos: [
       "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1496440737103-cd596325d314?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80",
     ],
     likesYou: false,
     verified: true,
+    height: "172 cm",
+    location: "Herzliya",
+    lookingFor: ["New connections"],
   },
 ];
 
-// Swipeable Card Component
-function AttendeeCard({ person, onSwipe }) {
-  const [photoIndex, setPhotoIndex] = useState(0);
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-15, 15]);
-  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
-
-  const handleDragEnd = (_, info) => {
-    const { offset, velocity } = info;
-    if (offset.x > 100 || velocity.x > 500) {
-      onSwipe('right', person);
-    } else if (offset.x < -100 || velocity.x < -500) {
-      onSwipe('left', person);
-    }
-  };
-
-  const handleTap = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const tapX = e.clientX - rect.left;
-    if (tapX < rect.width * 0.3) {
-      setPhotoIndex((prev) => Math.max(0, prev - 1));
-    } else {
-      setPhotoIndex((prev) => Math.min(person.photos.length - 1, prev + 1));
-    }
-  };
-
-  return (
-    <motion.div
-      style={{
-        x,
-        rotate,
-        opacity,
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-      }}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      onDragEnd={handleDragEnd}
-      initial={{ scale: 0.95, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-    >
-      <Box
-        sx={{
-          width: '100%',
-          height: '100%',
-          borderRadius: '20px',
-          overflow: 'hidden',
-          backgroundColor: '#fff',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* Photo */}
-        <Box
-          onClick={handleTap}
-          sx={{
-            position: 'relative',
-            height: '55%',
-            cursor: 'pointer',
-          }}
-        >
-          <img
-            src={person.photos[photoIndex]}
-            alt={person.firstName}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          />
-          
-          {/* Photo dots */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 12,
-              left: 0,
-              right: 0,
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 0.5,
-            }}
-          >
-            {person.photos.map((_, i) => (
-              <Box
-                key={i}
-                sx={{
-                  width: 40,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: i === photoIndex ? '#fff' : 'rgba(255,255,255,0.4)',
-                }}
-              />
-            ))}
-          </Box>
-
-          {/* Gradient overlay */}
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 120,
-              background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
-            }}
-          />
-
-          {/* Name overlay */}
-          <Box sx={{ position: 'absolute', bottom: 16, left: 16, right: 16 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#fff' }}>
-              {person.firstName}, {person.age}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-              <MapPin size={14} color="#fff" />
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                {person.city} · {person.distance} km away
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Content */}
-        <Box sx={{ p: 2, flex: 1, overflow: 'auto' }}>
-          <Typography variant="body2" sx={{ color: '#64748b', mb: 0.5 }}>
-            {person.profession}
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#1a1a2e', mb: 1.5 }}>
-            {person.tagline}
-          </Typography>
-
-          {/* Interests */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {person.interests.map((interest, i) => (
-              <Chip
-                key={i}
-                label={interest}
-                size="small"
-                sx={{
-                  backgroundColor: 'rgba(108,92,231,0.08)',
-                  color: '#6C5CE7',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                }}
-              />
-            ))}
-          </Box>
-        </Box>
-      </Box>
-    </motion.div>
-  );
-}
-
-// Match Screen - LEGACY: now redirects to global popup
-function MatchModal({ person, onStartChat, onKeepSwiping }) {
-  // FALLBACK: dispatch global popup and render nothing
-  React.useEffect(() => {
-    if (!person) return;
-    try {
-      window.dispatchEvent(
-        new CustomEvent('pulse:show_match', {
-          detail: {
-            match: {
-              id: person.id,
-              name: person.name || person.firstName,
-              firstName: person.firstName || person.name,
-              photo: person.photoUrl || person.photos?.[0],
-              photos: person.photos,
-            },
-            copy: {
-              title: "It's a Match",
-              subtitle: "You're in sync",
-              description: 'Something real can happen now',
-              matchedLine: `You and ${person.firstName || person.name} matched!`,
-              primaryCta: 'Start Chat',
-              secondaryCta: 'Keep Swiping',
-            },
-            onLater: onKeepSwiping,
-          },
-        })
-      );
-    } catch {
-      // ignore
-    }
-    if (onKeepSwiping) onKeepSwiping();
-  }, [person, onKeepSwiping]);
-
-  // Never render legacy UI - global popup handles display
-  return null;
-}
+// Transform attendee to ProfileTimeline format
+const transformToProfileTimelineFormat = (person) => ({
+  ...person,
+  name: person.firstName,
+  primaryPhoto: person.photos?.[0],
+});
 
 const EventAttendeesScreen = () => {
   const navigate = useNavigate();
@@ -331,23 +160,7 @@ const EventAttendeesScreen = () => {
     }
   };
 
-  const handleStartChat = () => {
-    if (!matchPerson) return;
-    navigate(`/chat?matchId=${matchPerson.id}`);
-  };
-
-  const handleKeepSwiping = () => {
-    setMatchPerson(null);
-    setTimeout(() => {
-      setCurrentIndex((prev) => {
-        if (prev + 1 >= attendees.length) {
-          setIsAllDone(true);
-        }
-        return prev + 1;
-      });
-    }, 200);
-  };
-
+  // Show match popup when someone likes you back
   useEffect(() => {
     if (!matchPerson) return;
     try {
@@ -375,8 +188,6 @@ const EventAttendeesScreen = () => {
     } catch {
       // ignore
     }
-    // Do not advance cards automatically; user can decide next action.
-    // Keep matchPerson cleared to avoid re-opening popup.
     setMatchPerson(null);
   }, [matchPerson]);
 
@@ -397,17 +208,6 @@ const EventAttendeesScreen = () => {
         position: 'relative',
       }}
     >
-      {/* Match Modal */}
-      <AnimatePresence>
-        {false && matchPerson && (
-          <MatchModal
-            person={matchPerson}
-            onStartChat={handleStartChat}
-            onKeepSwiping={handleKeepSwiping}
-          />
-        )}
-      </AnimatePresence>
-
       {/* Header */}
       <Box
         sx={{
@@ -490,87 +290,36 @@ const EventAttendeesScreen = () => {
           </Button>
         </Box>
       ) : (
-        <>
+        /* ProfileTimeline - New Discover-style scrollable card */
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: 'auto',
+            pb: 'calc(88px + env(safe-area-inset-bottom, 0px))',
+          }}
+        >
           <Box
             sx={{
-              flex: 1,
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
+              width: '100%',
+              maxWidth: '520px',
+              mx: 'auto',
+              bgcolor: '#fff',
+              boxShadow: { xs: 'none', md: '0 0 40px rgba(0,0,0,0.08)' },
+              minHeight: '100vh',
             }}
           >
-            <Box
-              sx={{
-                flex: 1,
-                position: 'relative',
-                maxWidth: 400,
-                width: '100%',
-                mx: 'auto',
-              }}
-            >
-              <AnimatePresence>
-                {currentPerson && (
-                  <AttendeeCard
-                    key={currentPerson.id}
-                    person={currentPerson}
-                    onSwipe={handleSwipe}
-                  />
-                )}
-              </AnimatePresence>
-            </Box>
+            {currentPerson && (
+              <ProfileTimeline
+                key={currentPerson.id}
+                user={transformToProfileTimelineFormat(currentPerson)}
+                onLike={() => handleSwipe('right', currentPerson)}
+                onPass={() => handleSwipe('left', currentPerson)}
+                onUndo={handleUndo}
+                canUndo={currentIndex > 0}
+              />
+            )}
           </Box>
-
-          {/* Action Buttons */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 3,
-              py: 3,
-              pb: 'calc(24px + env(safe-area-inset-bottom, 0px))',
-            }}
-          >
-            <IconButton
-              onClick={handleUndo}
-              disabled={currentIndex === 0}
-              sx={{
-                width: 48,
-                height: 48,
-                backgroundColor: '#fff',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                '&:disabled': { opacity: 0.4 },
-              }}
-            >
-              <RotateCcw size={22} color="#f59e0b" />
-            </IconButton>
-
-            <IconButton
-              onClick={() => handleSwipe('left', currentPerson)}
-              sx={{
-                width: 64,
-                height: 64,
-                backgroundColor: '#fff',
-                boxShadow: '0 4px 20px rgba(239,68,68,0.3)',
-                '&:hover': { backgroundColor: '#fef2f2' },
-              }}
-            >
-              <X size={28} color="#ef4444" />
-            </IconButton>
-
-            <IconButton
-              onClick={() => handleSwipe('right', currentPerson)}
-              sx={{
-                width: 64,
-                height: 64,
-                backgroundColor: '#fff',
-                boxShadow: '0 4px 20px rgba(34,197,94,0.3)',
-                '&:hover': { backgroundColor: '#f0fdf4' },
-              }}
-            >
-              <Heart size={28} color="#22c55e" />
-            </IconButton>
-          </Box>
-        </>
+        </Box>
       )}
     </Box>
   );

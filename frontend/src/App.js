@@ -80,6 +80,8 @@ import PermissionsScreen from './pages/PermissionsScreen';
 import BusinessUpgradeScreen from './pages/BusinessUpgradeScreen';
 import MyEventsScreen from './pages/MyEventsScreen';
 import EventAttendeesScreen from './pages/EventAttendeesScreen';
+import EventMatchesScreen from './pages/EventMatchesScreen';
+import EventLikesScreen from './pages/EventLikesScreen';
 import LocationVisibilityScreen from './pages/LocationVisibilityScreen';
 import TimeVisibilityScreen from './pages/TimeVisibilityScreen';
 import ContactsVisibilityScreen from './pages/ContactsVisibilityScreen';
@@ -1136,6 +1138,8 @@ function AppShell() {
             <Route path="/events" element={<ProtectedRoute><EventsByCategory /></ProtectedRoute>} />
             <Route path="/my-events" element={<ProtectedRoute><MyEventsScreen /></ProtectedRoute>} />
             <Route path="/events/:id/attendees" element={<ProtectedRoute><EventAttendeesScreen /></ProtectedRoute>} />
+            <Route path="/events/:id/matches" element={<ProtectedRoute><EventMatchesScreen /></ProtectedRoute>} />
+            <Route path="/events/:id/likes" element={<ProtectedRoute><EventLikesScreen /></ProtectedRoute>} />
             <Route path="/business/:id" element={<ProtectedRoute><BusinessPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
             <Route path="/account-settings" element={<ProtectedRoute><AccountSettingsScreen /></ProtectedRoute>} />

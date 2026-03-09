@@ -18,7 +18,7 @@ import { Coins, Sparkles, ChevronRight, Zap, Gift } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 /**
- * Compact banner for inline use (Chat, Home sidebar) - VIBRANT STYLE
+ * Compact banner for inline use (Chat, Home sidebar) - Events page style
  */
 export const PointsBannerCompact = ({ balance = 0, onClick }) => {
   const navigate = useNavigate();
@@ -39,36 +39,32 @@ export const PointsBannerCompact = ({ balance = 0, onClick }) => {
         justifyContent: 'space-between',
         px: 2,
         py: 1.5,
-        background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
         borderRadius: '14px',
         cursor: 'pointer',
         overflow: 'hidden',
-        boxShadow: '0 4px 16px rgba(139,92,246,0.35)',
+        boxShadow: '0 4px 16px rgba(102,126,234,0.35)',
         transition: 'all 0.2s',
         '&:hover': {
           transform: 'scale(1.01)',
-          boxShadow: '0 6px 20px rgba(139,92,246,0.45)',
+          boxShadow: '0 6px 20px rgba(102,126,234,0.45)',
         },
       }}
     >
-      {/* Floating sparkles */}
+      {/* Subtle sparkles */}
       <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        {[...Array(3)].map((_, i) => (
+        {[...Array(2)].map((_, i) => (
           <Box
             key={i}
             sx={{
               position: 'absolute',
-              left: `${20 + i * 30}%`,
+              left: `${30 + i * 35}%`,
               top: '50%',
               transform: 'translateY(-50%)',
-              opacity: 0.4,
-              animation: `sparkle${i} ${2 + i * 0.3}s ease-in-out infinite`,
-              '@keyframes sparkle0': { '0%, 100%': { transform: 'translateY(-50%) scale(1)' }, '50%': { transform: 'translateY(-50%) scale(1.3)' } },
-              '@keyframes sparkle1': { '0%, 100%': { transform: 'translateY(-50%) scale(1)' }, '50%': { transform: 'translateY(-50%) scale(1.2)' } },
-              '@keyframes sparkle2': { '0%, 100%': { transform: 'translateY(-50%) scale(1)' }, '50%': { transform: 'translateY(-50%) scale(1.4)' } },
+              opacity: 0.3,
             }}
           >
-            <Sparkles size={10 + i * 2} color="rgba(255,255,255,0.6)" />
+            <Sparkles size={12} color="rgba(255,255,255,0.5)" />
           </Box>
         ))}
       </Box>
@@ -79,7 +75,7 @@ export const PointsBannerCompact = ({ balance = 0, onClick }) => {
             width: 40,
             height: 40,
             borderRadius: '12px',
-            background: 'rgba(255,255,255,0.25)',
+            background: 'rgba(255,255,255,0.2)',
             backdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
@@ -96,7 +92,7 @@ export const PointsBannerCompact = ({ balance = 0, onClick }) => {
             {balance} {t('points') || 'Points'}
           </Typography>
           <Typography
-            sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.75rem' }}
+            sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.75rem' }}
           >
             {t('boostYourProfile') || 'Boost your profile'}
           </Typography>
@@ -108,7 +104,7 @@ export const PointsBannerCompact = ({ balance = 0, onClick }) => {
 };
 
 /**
- * Promo card for Home screen - VIBRANT STYLE
+ * Promo card for Home screen - Events page style
  */
 export const PointsPromoCard = ({ balance = 0 }) => {
   const navigate = useNavigate();
@@ -119,38 +115,33 @@ export const PointsPromoCard = ({ balance = 0 }) => {
       onClick={() => navigate('/points')}
       sx={{
         position: 'relative',
-        background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
         borderRadius: '20px',
         p: 3,
         cursor: 'pointer',
         overflow: 'hidden',
-        boxShadow: '0 8px 32px rgba(139,92,246,0.4)',
+        boxShadow: '0 8px 32px rgba(102,126,234,0.4)',
         transition: 'all 0.2s',
         '&:hover': {
           transform: 'scale(1.02)',
-          boxShadow: '0 12px 40px rgba(139,92,246,0.5)',
+          boxShadow: '0 12px 40px rgba(102,126,234,0.5)',
         },
       }}
     >
-      {/* Floating particles */}
+      {/* Subtle sparkles */}
       <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        {[...Array(5)].map((_, i) => (
+        {[...Array(2)].map((_, i) => (
           <Box
             key={i}
             sx={{
               position: 'absolute',
-              left: `${10 + i * 20}%`,
-              top: `${20 + (i % 3) * 25}%`,
-              opacity: 0.4,
-              animation: `float${i} ${2.5 + i * 0.3}s ease-in-out infinite`,
-              '@keyframes float0': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
-              '@keyframes float1': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
-              '@keyframes float2': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-12px)' } },
-              '@keyframes float3': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-6px)' } },
-              '@keyframes float4': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-9px)' } },
+              left: `${30 + i * 35}%`,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              opacity: 0.3,
             }}
           >
-            <Sparkles size={8 + i * 2} color="rgba(255,255,255,0.6)" />
+            <Sparkles size={14} color="rgba(255,255,255,0.5)" />
           </Box>
         ))}
       </Box>
@@ -158,7 +149,7 @@ export const PointsPromoCard = ({ balance = 0 }) => {
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <Sparkles size={18} color="#ffffff" />
+            <Coins size={18} color="#ffffff" />
             <Typography
               sx={{
                 color: 'rgba(255,255,255,0.9)',
@@ -177,7 +168,7 @@ export const PointsPromoCard = ({ balance = 0 }) => {
             {balance}
           </Typography>
           <Typography
-            sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }}
+            sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.85rem' }}
           >
             {t('usePointsToBoost') || 'Use points to boost your visibility'}
           </Typography>
@@ -187,7 +178,7 @@ export const PointsPromoCard = ({ balance = 0 }) => {
             width: 52,
             height: 52,
             borderRadius: '16px',
-            background: 'rgba(255,255,255,0.25)',
+            background: 'rgba(255,255,255,0.2)',
             backdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
@@ -205,18 +196,20 @@ export const PointsPromoCard = ({ balance = 0 }) => {
           mt: 2.5,
           py: 1.25,
           borderRadius: '12px',
-          background: 'rgba(255,255,255,0.25)',
-          backdropFilter: 'blur(10px)',
-          color: '#ffffff',
+          bgcolor: '#fff',
+          color: '#667eea',
           fontWeight: 700,
           textTransform: 'none',
           fontSize: '0.95rem',
-          border: '1px solid rgba(255,255,255,0.3)',
           position: 'relative',
           zIndex: 1,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
           '&:hover': {
-            background: 'rgba(255,255,255,0.35)',
+            bgcolor: '#f8f9ff',
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
           },
+          transition: 'all 0.3s ease',
         }}
       >
         {t('viewPointsHub') || 'View Points Hub'}
@@ -226,7 +219,7 @@ export const PointsPromoCard = ({ balance = 0 }) => {
 };
 
 /**
- * Sticky banner for Chat screen - VIBRANT STYLE
+ * Sticky banner for Chat screen - Events page style
  */
 export const PointsStickyBanner = ({ balance = 0 }) => {
   const navigate = useNavigate();
@@ -242,25 +235,25 @@ export const PointsStickyBanner = ({ balance = 0 }) => {
         justifyContent: 'space-between',
         px: 3,
         py: 1.5,
-        background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
         cursor: 'pointer',
         overflow: 'hidden',
       }}
     >
-      {/* Sparkle effect */}
+      {/* Subtle sparkles */}
       <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        {[...Array(3)].map((_, i) => (
+        {[...Array(2)].map((_, i) => (
           <Box
             key={i}
             sx={{
               position: 'absolute',
-              left: `${25 + i * 25}%`,
+              left: `${30 + i * 35}%`,
               top: '50%',
               transform: 'translateY(-50%)',
               opacity: 0.3,
             }}
           >
-            <Sparkles size={10} color="rgba(255,255,255,0.6)" />
+            <Sparkles size={10} color="rgba(255,255,255,0.5)" />
           </Box>
         ))}
       </Box>
@@ -279,7 +272,7 @@ export const PointsStickyBanner = ({ balance = 0 }) => {
 };
 
 /**
- * Feature gate banner (when feature is blocked) - VIBRANT STYLE
+ * Feature gate banner (when feature is blocked) - Events page style
  */
 export const PointsFeatureGate = ({ 
   feature, 
@@ -295,13 +288,12 @@ export const PointsFeatureGate = ({
     <Box
       sx={{
         position: 'relative',
-        background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1b4e 100%)',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
         borderRadius: '24px',
         p: 4,
         textAlign: 'center',
-        boxShadow: '0 8px 32px rgba(139,92,246,0.3)',
+        boxShadow: '0 8px 32px rgba(102,126,234,0.3)',
         overflow: 'hidden',
-        border: '1px solid rgba(139,92,246,0.3)',
       }}
     >
       {/* Background glow */}
@@ -313,7 +305,7 @@ export const PointsFeatureGate = ({
         width: 150,
         height: 150,
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(236,72,153,0.3) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(240,147,251,0.3) 0%, transparent 70%)',
         filter: 'blur(30px)',
       }} />
       
@@ -324,29 +316,30 @@ export const PointsFeatureGate = ({
           width: 72,
           height: 72,
           borderRadius: '20px',
-          background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
+          background: 'rgba(255,255,255,0.2)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255,255,255,0.3)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           mx: 'auto',
           mb: 2,
-          boxShadow: '0 8px 24px rgba(236,72,153,0.4)',
         }}
       >
-        <Sparkles size={32} color="#ffffff" />
+        <Coins size={32} color="#ffffff" />
       </Box>
       
       <Typography sx={{ fontWeight: 700, color: '#fff', fontSize: '1.25rem', mb: 1, position: 'relative', zIndex: 1 }}>
         {t('unlockFeature') || 'Unlock'} {feature}
       </Typography>
       
-      <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', mb: 3, position: 'relative', zIndex: 1 }}>
+      <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem', mb: 3, position: 'relative', zIndex: 1 }}>
         {t('usePointsToUnlock') || 'Use points to unlock this feature temporarily'}
       </Typography>
       
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 3, position: 'relative', zIndex: 1 }}>
-        <Coins size={24} color="#F59E0B" />
-        <Typography sx={{ fontWeight: 800, color: '#F59E0B', fontSize: '1.5rem' }}>
+        <Coins size={24} color="#fff" />
+        <Typography sx={{ fontWeight: 800, color: '#fff', fontSize: '1.5rem' }}>
           {cost} {t('pts') || 'pts'}
         </Typography>
       </Box>
@@ -358,24 +351,27 @@ export const PointsFeatureGate = ({
           sx={{
             py: 1.5,
             borderRadius: '14px',
-            background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
-            color: '#ffffff',
+            bgcolor: '#fff',
+            color: '#667eea',
             fontWeight: 700,
             textTransform: 'none',
             fontSize: '1rem',
-            boxShadow: '0 4px 20px rgba(236,72,153,0.4)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
             position: 'relative',
             zIndex: 1,
             '&:hover': {
-              opacity: 0.9,
+              bgcolor: '#f8f9ff',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
             },
+            transition: 'all 0.3s ease',
           }}
         >
           {t('activateNow') || 'Activate Now'}
         </Button>
       ) : (
         <>
-          <Typography sx={{ color: '#F59E0B', fontSize: '0.85rem', mb: 2, position: 'relative', zIndex: 1 }}>
+          <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.85rem', mb: 2, position: 'relative', zIndex: 1 }}>
             {t('notEnoughPoints') || 'Not enough points'} ({currentBalance}/{cost})
           </Typography>
           <Button
@@ -384,17 +380,20 @@ export const PointsFeatureGate = ({
             sx={{
               py: 1.5,
               borderRadius: '14px',
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
-              color: '#ffffff',
+              bgcolor: '#fff',
+              color: '#667eea',
               fontWeight: 700,
               textTransform: 'none',
               fontSize: '1rem',
-              boxShadow: '0 4px 20px rgba(236,72,153,0.4)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
               position: 'relative',
               zIndex: 1,
               '&:hover': {
-                opacity: 0.9,
+                bgcolor: '#f8f9ff',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
               },
+              transition: 'all 0.3s ease',
             }}
           >
             {t('getMorePoints') || 'Get More Points'}
