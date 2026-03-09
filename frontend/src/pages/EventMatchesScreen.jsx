@@ -1,9 +1,10 @@
 /**
  * EventMatchesScreen - Shows matches attending an event
  * Uses Matches-style compact profile cards
+ * Synced with EventsByCategory - uses EVENTS and DEMO_ATTENDEES data
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -24,9 +25,10 @@ import {
   Flag,
   UserCheck,
 } from 'lucide-react';
+import { EVENTS, DEMO_ATTENDEES } from './EventsByCategory';
 
-// Mock matches data for event
-const MOCK_EVENT_MATCHES = [
+// Demo fallback matches (shown when no real data available)
+const DEMO_FALLBACK_MATCHES = [
   {
     id: 1,
     name: "Maya",
@@ -74,6 +76,25 @@ const MOCK_EVENT_MATCHES = [
     lookingFor: ["Something casual"],
   },
 ];
+
+// Transform DEMO_ATTENDEES to match card format
+const transformAttendeeToMatch = (attendee) => ({
+  id: attendee.id,
+  name: attendee.name,
+  age: attendee.age,
+  distance: Math.random() * 3 + 0.5, // Random distance for demo
+  city: attendee.location,
+  photoUrl: attendee.photo,
+  photos: attendee.photos || [attendee.photo],
+  tagline: attendee.prompts?.[0]?.answer || `${attendee.hobbies?.slice(0, 2).join(', ')} ✨`,
+  interests: attendee.hobbies || [],
+  aboutMe: [
+    attendee.height ? `${attendee.height} cm` : null,
+    attendee.drinking,
+    attendee.smoking ? `${attendee.smoking} smoker` : null,
+  ].filter(Boolean),
+  lookingFor: attendee.lookingFor || [],
+});
 
 // Compact Match Card Component - Same style as MatchesScreen
 function EventMatchCard({ profile, onChat, onPass }) {
@@ -296,6 +317,24 @@ const EventMatchesScreen = () => {
   const location = useLocation();
   const event = location.state?.event;
 
+  // Get matches from synced EVENTS data, fallback to demo
+  const eventMatches = useMemo(() => {
+    if (!event?.id) return DEMO_FALLBACK_MATCHES;
+    
+    // Find the full event data from EVENTS
+    const fullEvent = EVENTS.find(e => String(e.id) === String(event.id));
+    if (!fullEvent?.attendees?.length) return DEMO_FALLBACK_MATCHES;
+    
+    // Get attendees who are matches (isMatch: true)
+    const matchAttendees = fullEvent.attendees
+      .map(id => DEMO_ATTENDEES.find(a => a.id === id))
+      .filter(a => a && a.isMatch)
+      .map(transformAttendeeToMatch);
+    
+    // If no matches found, show demo fallback
+    return matchAttendees.length > 0 ? matchAttendees : DEMO_FALLBACK_MATCHES;
+  }, [event?.id]);
+
   const handleChat = (profile) => {
     navigate('/chat/new', { state: { profile, fromEvent: event } });
   };
@@ -332,14 +371,14 @@ const EventMatchesScreen = () => {
         </Box>
         {event && (
           <Typography variant="body2" sx={{ color: '#64748b' }}>
-            {event.title} • {MOCK_EVENT_MATCHES.length} matches
+            {event.title} • {eventMatches.length} matches
           </Typography>
         )}
       </Box>
 
       {/* Matches List */}
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {MOCK_EVENT_MATCHES.map((profile) => (
+        {eventMatches.map((profile) => (
           <EventMatchCard
             key={profile.id}
             profile={profile}
@@ -350,7 +389,7 @@ const EventMatchesScreen = () => {
       </Box>
 
       {/* Empty state */}
-      {MOCK_EVENT_MATCHES.length === 0 && (
+      {eventMatches.length === 0 && (
         <Box
           sx={{
             flex: 1,

@@ -1,80 +1,95 @@
 /**
  * MyEventsScreen - Shows events the user has registered to
+ * Synced with EventsByCategory - uses same EVENTS data and purchased localStorage
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  IconButton,
   Card,
   CardMedia,
   CardContent,
   Chip,
   Button,
 } from '@mui/material';
-import { ArrowLeft, Calendar, MapPin, Users, Clock, Heart, UserCheck, ThumbsUp } from 'lucide-react';
+import { Calendar, MapPin, Users, Heart, UserCheck } from 'lucide-react';
 import { Stack } from '@mui/material';
+import { EVENTS, DEMO_ATTENDEES } from './EventsByCategory';
 
-// Mock data for registered events
-const MY_EVENTS = [
-  {
-    id: 1,
-    title: "Sunset Yoga on the Beach",
-    date: "Sat, Dec 28",
-    time: "17:00",
-    location: "Gordon Beach, Tel Aviv",
-    image: "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?auto=format&fit=crop&w=800&q=80",
-    attendeesCount: 24,
-    matchingAttendeesCount: 8,
-    likesCount: 3,
-    category: "Wellness",
-  },
-  {
-    id: 2,
-    title: "Tech Networking Mixer",
-    date: "Sun, Dec 29",
-    time: "19:00",
-    location: "WeWork Sarona, Tel Aviv",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
-    attendeesCount: 56,
-    matchingAttendeesCount: 12,
-    likesCount: 5,
-    category: "Networking",
-  },
-  {
-    id: 3,
-    title: "Wine Tasting Evening",
-    date: "Tue, Dec 31",
-    time: "20:00",
-    location: "Jaffa Wine Bar",
-    image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80",
-    attendeesCount: 18,
-    matchingAttendeesCount: 5,
-    likesCount: 2,
-    category: "Social",
-  },
-  {
-    id: 4,
-    title: "New Year's Eve Party",
-    date: "Tue, Dec 31",
-    time: "22:00",
-    location: "Clara Rooftop, Tel Aviv",
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
-    attendeesCount: 120,
-    matchingAttendeesCount: 28,
-    likesCount: 8,
-    category: "Party",
-  },
-];
+// Format date for display (e.g., "Thu · May 30")
+const formatEventDate = (dateStr, time = "21:00") => {
+  const d = new Date(dateStr);
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+};
+
+// Transform EVENTS data to MyEvents format
+const transformEventToMyEvent = (event) => {
+  const attendeesList = (event.attendees || []).map(id => DEMO_ATTENDEES.find(a => a.id === id)).filter(Boolean);
+  const matchingAttendees = attendeesList.filter(a => a.isMatch);
+  // "Likes" = non-match attendees (people who liked you but you haven't matched yet)
+  const likesAttendees = attendeesList.filter(a => !a.isMatch);
+  
+  return {
+    id: event.id,
+    title: event.title,
+    date: formatEventDate(event.date, event.time),
+    time: event.time,
+    location: `${event.venue}, ${event.region}`,
+    image: event.cover,
+    attendeesCount: attendeesList.length || event.capacity || 0,
+    matchingAttendeesCount: matchingAttendees.length,
+    likesCount: likesAttendees.length, // Synced with real data
+    category: event.category === 'large' ? 'Party' : 
+              event.category === 'small' ? 'Social' : 
+              event.category === 'twist' ? 'Experience' : 
+              event.category === 'sports' ? 'Sports' : 'Event',
+  };
+};
 
 const MyEventsScreen = () => {
   const navigate = useNavigate();
+  
+  // Get purchased events from localStorage (synced with EventsByCategory)
+  const [purchased, setPurchased] = useState(() => {
+    try {
+      const raw = localStorage.getItem("event_purchased");
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+      return new Set();
+    }
+  });
 
-  const handleBack = () => {
-    navigate(-1);
-  };
+  // Listen for localStorage changes (when user buys tickets in EventsByCategory)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const raw = localStorage.getItem("event_purchased");
+        setPurchased(new Set(raw ? JSON.parse(raw) : []));
+      } catch {
+        // ignore
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    // Also check on focus (for same-tab updates)
+    window.addEventListener('focus', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleStorageChange);
+    };
+  }, []);
+
+  // Filter and transform purchased events
+  const myEvents = useMemo(() => {
+    return EVENTS
+      .filter(ev => purchased.has(String(ev.id)))
+      .map(transformEventToMyEvent);
+  }, [purchased]);
 
   const handleEventClick = (event) => {
     navigate(`/events/${event.id}/attendees`, {
@@ -133,13 +148,44 @@ const MyEventsScreen = () => {
           </Typography>
         </Box>
         <Typography variant="caption" sx={{ color: '#64748b' }}>
-          {MY_EVENTS.length} events you're attending
+          {myEvents.length} events you're attending
         </Typography>
       </Box>
 
       {/* Events List */}
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {MY_EVENTS.map((event) => (
+        {myEvents.length === 0 ? (
+          <Box
+            sx={{
+              textAlign: 'center',
+              py: 8,
+              px: 4,
+            }}
+          >
+            <Calendar size={48} color="#cbd5e1" />
+            <Typography variant="h6" sx={{ mt: 2, fontWeight: 700, color: '#1a1a2e' }}>
+              No events yet
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b', mt: 1 }}>
+              Browse events and buy tickets to see them here
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => navigate('/events')}
+              sx={{
+                mt: 3,
+                py: 1.25,
+                px: 4,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              }}
+            >
+              Browse Events
+            </Button>
+          </Box>
+        ) : myEvents.map((event) => (
           <Card
             key={event.id}
             onClick={() => handleEventClick(event)}
@@ -327,33 +373,6 @@ const MyEventsScreen = () => {
           </Card>
         ))}
       </Box>
-
-      {/* Empty state */}
-      {MY_EVENTS.length === 0 && (
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            px: 4,
-            py: 8,
-            textAlign: 'center',
-          }}
-        >
-          <Calendar size={64} color="#cbd5e1" />
-          <Typography
-            variant="h6"
-            sx={{ mt: 2, fontWeight: 700, color: '#1a1a2e' }}
-          >
-            No events yet
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#64748b', mt: 1 }}>
-            No events nearby right now.
-          </Typography>
-        </Box>
-      )}
     </Box>
   );
 };

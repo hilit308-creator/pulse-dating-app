@@ -1,9 +1,10 @@
 /**
  * EventLikesScreen - Shows people who liked you and are attending the event
  * Uses Matches-style compact profile cards
+ * Synced with EventsByCategory - uses EVENTS and DEMO_ATTENDEES data
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -21,9 +22,10 @@ import {
   Flag,
   X,
 } from 'lucide-react';
+import { EVENTS, DEMO_ATTENDEES } from './EventsByCategory';
 
-// Mock likes data for event - people who liked you and are attending
-const MOCK_EVENT_LIKES = [
+// Demo fallback likes (shown when no real data available)
+const DEMO_FALLBACK_LIKES = [
   {
     id: 1,
     name: "Liza",
@@ -74,6 +76,26 @@ const MOCK_EVENT_LIKES = [
     likedAt: "1 day ago",
   },
 ];
+
+// Transform DEMO_ATTENDEES to likes format (non-matches who "liked" you)
+const transformAttendeeToLike = (attendee, index) => ({
+  id: attendee.id,
+  name: attendee.name,
+  age: attendee.age,
+  distance: Math.random() * 3 + 0.5,
+  city: attendee.location,
+  photoUrl: attendee.photo,
+  photos: attendee.photos || [attendee.photo],
+  tagline: attendee.prompts?.[0]?.answer || `${attendee.hobbies?.slice(0, 2).join(', ')} ✨`,
+  interests: attendee.hobbies || [],
+  aboutMe: [
+    attendee.height ? `${attendee.height} cm` : null,
+    attendee.drinking,
+    attendee.smoking ? `${attendee.smoking} smoker` : null,
+  ].filter(Boolean),
+  lookingFor: attendee.lookingFor || [],
+  likedAt: index === 0 ? "2 hours ago" : index === 1 ? "5 hours ago" : "1 day ago",
+});
 
 // Event Like Card Component - Similar to Matches but with Like indicator
 function EventLikeCard({ profile, onLikeBack, onPass }) {
@@ -310,6 +332,25 @@ const EventLikesScreen = () => {
   const location = useLocation();
   const event = location.state?.event;
 
+  // Get likes from synced EVENTS data, fallback to demo
+  // "Likes" = non-match attendees who "liked" you (simulated)
+  const eventLikes = useMemo(() => {
+    if (!event?.id) return DEMO_FALLBACK_LIKES;
+    
+    // Find the full event data from EVENTS
+    const fullEvent = EVENTS.find(e => String(e.id) === String(event.id));
+    if (!fullEvent?.attendees?.length) return DEMO_FALLBACK_LIKES;
+    
+    // Get attendees who are NOT matches (simulating "they liked you but you haven't matched yet")
+    const likeAttendees = fullEvent.attendees
+      .map(id => DEMO_ATTENDEES.find(a => a.id === id))
+      .filter(a => a && !a.isMatch) // Non-matches = people who liked you
+      .map((a, i) => transformAttendeeToLike(a, i));
+    
+    // If no likes found, show demo fallback
+    return likeAttendees.length > 0 ? likeAttendees : DEMO_FALLBACK_LIKES;
+  }, [event?.id]);
+
   const handleLikeBack = (profile) => {
     console.log('Liked back:', profile.name);
     // This would create a match and navigate to chat
@@ -348,7 +389,7 @@ const EventLikesScreen = () => {
         </Box>
         {event && (
           <Typography variant="body2" sx={{ color: '#64748b' }}>
-            {event.title} • {MOCK_EVENT_LIKES.length} people liked you
+            {event.title} • {eventLikes.length} people liked you
           </Typography>
         )}
       </Box>
@@ -369,7 +410,7 @@ const EventLikesScreen = () => {
 
       {/* Likes List */}
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {MOCK_EVENT_LIKES.map((profile) => (
+        {eventLikes.map((profile) => (
           <EventLikeCard
             key={profile.id}
             profile={profile}
@@ -380,7 +421,7 @@ const EventLikesScreen = () => {
       </Box>
 
       {/* Empty state */}
-      {MOCK_EVENT_LIKES.length === 0 && (
+      {eventLikes.length === 0 && (
         <Box
           sx={{
             flex: 1,
