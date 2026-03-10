@@ -5313,36 +5313,34 @@ export default function ExploreScreen() {
         position: 'relative',
       }}
     >
-      {/* Fixed Header Area - Title + Filters (does NOT scroll) */}
+      {/* Page Title - scrolls with content */}
+      <Box sx={{ px: 3, pt: 3, pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 0.5 }}>
+            {t('explore')}
+          </Typography>
+          <Typography variant="body1" sx={{ color: '#64748b' }}>
+            Places worth stepping into
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Sticky Filter Chips - stays visible during scroll, below main header */}
       <Box
         sx={{
           backgroundColor: '#fff',
           borderBottom: '1px solid rgba(0,0,0,0.06)',
           boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          position: 'sticky',
+          top: 56, // Below main app header (56px)
+          zIndex: 100,
+          px: 3,
+          py: 1.5,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
         }}
       >
-        {/* Page Title */}
-        <Box sx={{ px: 3, pt: 3, pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 0.5 }}>
-              {t('explore')}
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#64748b' }}>
-              Places worth stepping into
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Filter Chips - Fixed, stays in place */}
-        <Box
-          sx={{
-            px: 3,
-            py: 1.5,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1,
-          }}
-        >
           {/* Row 1: Main filters */}
           <Box 
             sx={{ 
@@ -5417,7 +5415,6 @@ export default function ExploreScreen() {
               );
             })}
           </Box>
-        </Box>
       </Box>
 
       {/* Scrollable Content Area - only places scroll */}
