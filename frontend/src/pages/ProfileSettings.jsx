@@ -923,7 +923,7 @@ export default function ProfileSettings({ onBack }) {
           </Box>
         </Box>
 
-        {/* Points - Vibrant colorful banner */}
+        {/* Points - Dark theme banner matching SubscriptionsScreen */}
         <Box sx={{ px: 2, pb: 2 }}>
           <Box
             onClick={() => navigate('/points')}
@@ -934,36 +934,43 @@ export default function ProfileSettings({ onBack }) {
               justifyContent: 'space-between',
               p: 2.5,
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
+              background: 'linear-gradient(135deg, #0f0a15 0%, #1a1025 100%)',
               cursor: 'pointer',
               overflow: 'hidden',
-              boxShadow: '0 4px 20px rgba(139,92,246,0.4)',
+              border: '1px solid rgba(236, 72, 153, 0.3)',
+              boxShadow: '0 4px 20px rgba(236, 72, 153, 0.2)',
               transition: 'all 0.2s ease',
               '&:hover': {
                 transform: 'scale(1.01)',
-                boxShadow: '0 6px 24px rgba(139,92,246,0.5)',
+                boxShadow: '0 6px 24px rgba(236, 72, 153, 0.3)',
+                borderColor: 'rgba(236, 72, 153, 0.5)',
               },
             }}
           >
-            {/* Floating sparkles */}
+            {/* Floating circles animation */}
             <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-              {[...Array(4)].map((_, i) => (
+              {[
+                { top: '10%', right: '5%', size: 28 },
+                { top: '50%', left: '3%', size: 24 },
+                { bottom: '15%', right: '12%', size: 20 },
+              ].map((pos, i) => (
                 <Box
                   key={i}
                   sx={{
                     position: 'absolute',
-                    left: `${15 + i * 25}%`,
-                    top: `${20 + (i % 2) * 40}%`,
+                    ...pos,
+                    width: pos.size,
+                    height: pos.size,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
                     opacity: 0.4,
-                    animation: `float${i} ${2 + i * 0.5}s ease-in-out infinite`,
-                    '@keyframes float0': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
-                    '@keyframes float1': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-6px)' } },
-                    '@keyframes float2': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
-                    '@keyframes float3': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-5px)' } },
+                    animation: `floatCircle${i} ${3 + i * 0.5}s ease-in-out infinite`,
+                    [`@keyframes floatCircle${i}`]: {
+                      '0%, 100%': { transform: 'scale(1)', opacity: 0.3 },
+                      '50%': { transform: 'scale(1.1)', opacity: 0.5 },
+                    },
                   }}
-                >
-                  <Sparkles size={12 + i * 2} color="rgba(255,255,255,0.6)" />
-                </Box>
+                />
               ))}
             </Box>
             
@@ -972,35 +979,33 @@ export default function ProfileSettings({ onBack }) {
                 width: 48, 
                 height: 48, 
                 borderRadius: '14px', 
-                background: 'rgba(255,255,255,0.25)',
-                backdropFilter: 'blur(10px)',
+                background: 'rgba(236, 72, 153, 0.2)',
+                border: '1px solid rgba(236, 72, 153, 0.3)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '1px solid rgba(255,255,255,0.3)',
               }}>
-                <Coins size={24} color="#fff" />
+                <Coins size={24} color="#ec4899" />
               </Box>
               <Box>
                 <Typography sx={{ fontWeight: 700, color: '#fff', fontSize: '1.1rem' }}>
                   {points} Points available
                 </Typography>
-                <Typography sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem' }}>
+                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>
                   Use points to unlock short premium boosts
                 </Typography>
               </Box>
             </Box>
             
             <Box sx={{
-              background: 'rgba(255,255,255,0.25)',
-              backdropFilter: 'blur(10px)',
+              background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
               color: '#fff',
               fontWeight: 700,
               fontSize: '0.85rem',
               px: 2,
               py: 1,
               borderRadius: '10px',
-              border: '1px solid rgba(255,255,255,0.3)',
+              boxShadow: '0 4px 12px rgba(236, 72, 153, 0.3)',
               position: 'relative',
               zIndex: 1,
             }}>

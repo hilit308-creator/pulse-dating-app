@@ -172,30 +172,15 @@ const getVariantForUser = (userId, promoId) => {
  */
 export const HomeInlinePromoBanner = ({ userId = 'anonymous', swipeCount = 0 }) => {
   const navigate = useNavigate();
-  const [isVisible, setIsVisible] = useState(false);
   const [variant, setVariant] = useState('A');
   
   useEffect(() => {
-    // Check subscription status
-    const subscription = localStorage.getItem('pulse_subscription');
-    if (subscription) {
-      setIsVisible(false);
-      return;
-    }
-    
-    // Show after 6-10 swipes
-    if (swipeCount >= 6 && swipeCount <= 15) {
-      if (shouldShowPromo('promo_home_inline', 14)) {
-        setIsVisible(true);
-        setVariant(getVariantForUser(userId, 'promo_home_inline'));
-        
-        trackEvent('promo_impression', {
-          promo_id: 'promo_home_inline',
-          variant_id: variant,
-          swipe_count: swipeCount,
-        });
-      }
-    }
+    setVariant(getVariantForUser(userId, 'promo_home_inline'));
+    trackEvent('promo_impression', {
+      promo_id: 'promo_home_inline',
+      variant_id: variant,
+      swipe_count: swipeCount,
+    });
   }, [swipeCount, userId, variant]);
 
   const handleClick = useCallback(() => {
@@ -206,19 +191,7 @@ export const HomeInlinePromoBanner = ({ userId = 'anonymous', swipeCount = 0 }) 
     navigate('/subscriptions');
   }, [variant, navigate]);
 
-  const handleDismiss = useCallback((e) => {
-    e.stopPropagation();
-    trackEvent('promo_dismiss', {
-      promo_id: 'promo_home_inline',
-      variant_id: variant,
-    });
-    dismissPromo('promo_home_inline');
-    setIsVisible(false);
-  }, [variant]);
-
   const copy = PROMO_COPY.promo_home_inline[variant] || PROMO_COPY.promo_home_inline.A;
-
-  if (!isVisible) return null;
 
   return (
     <AnimatePresence>
@@ -279,14 +252,6 @@ export const HomeInlinePromoBanner = ({ userId = 'anonymous', swipeCount = 0 }) 
             >
               {copy.cta}
             </Button>
-            
-            <IconButton
-              size="small"
-              onClick={handleDismiss}
-              sx={{ p: 0.5, color: '#94a3b8' }}
-            >
-              <X size={16} />
-            </IconButton>
           </Box>
         </Box>
       </motion.div>
@@ -300,26 +265,28 @@ export const HomeInlinePromoBanner = ({ userId = 'anonymous', swipeCount = 0 }) 
  */
 export const NearbyStickyStickyBanner = ({ userId = 'anonymous' }) => {
   const navigate = useNavigate();
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true); // Start visible
   const [variant, setVariant] = useState('A');
   
   useEffect(() => {
-    // Check subscription status
-    const subscription = localStorage.getItem('pulse_subscription');
-    if (subscription) {
-      setIsVisible(false);
-      return;
-    }
+    // Check if should show (reappears after 3 minutes if dismissed)
+    const checkVisibility = () => {
+      const shouldShow = shouldShowPromo('promo_nearby_sticky', 0.00208); // 3 minutes = 0.00208 days
+      setIsVisible(shouldShow);
+      if (shouldShow) {
+        setVariant(getVariantForUser(userId, 'promo_nearby_sticky'));
+        trackEvent('promo_impression', {
+          promo_id: 'promo_nearby_sticky',
+          variant_id: variant,
+        });
+      }
+    };
     
-    if (shouldShowPromo('promo_nearby_sticky', 7)) {
-      setIsVisible(true);
-      setVariant(getVariantForUser(userId, 'promo_nearby_sticky'));
-      
-      trackEvent('promo_impression', {
-        promo_id: 'promo_nearby_sticky',
-        variant_id: variant,
-      });
-    }
+    checkVisibility();
+    
+    // Check every 30 seconds if banner should reappear
+    const interval = setInterval(checkVisibility, 30000);
+    return () => clearInterval(interval);
   }, [userId, variant]);
 
   const handleClick = useCallback(() => {

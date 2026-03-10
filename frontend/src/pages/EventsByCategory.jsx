@@ -373,31 +373,30 @@ export const DEMO_ATTENDEES = [
 
 export const EVENTS = [
   // Large parties
-  { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2026-03-23", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a3", "a5", "a6", "a7", "a10"] },
-  { id: "lp2", title: "Mega Dance Night", category: "large", price: 99, date: "2026-03-12", time: "21:00", venue: "Sky Dome", country: "USA", region: "Metro", coords: { lat: 40.7306, lng: -73.9352 }, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-dj-playing-music-in-a-club-4819-large.mp4", tags: ["DJ", "Dancing", "Drinks"], blurb: "Top DJs with immersive light show.", details: "Doors 21:00 • Main act 23:30 • Dress code: casual chic.", badges: ["18+"], hostedBy: "NightLife Productions", capacity: 2000, whoFor: "EDM fans, night owls, people who love to dance", vibe: "Energetic", attendees: ["a2", "a4", "a8", "a9"] },
+  { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2026-03-28", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a3", "a5", "a6", "a7", "a10"] },
+  { id: "lp2", title: "Mega Dance Night", category: "large", price: 99, date: "2026-03-14", time: "21:00", venue: "Sky Dome", country: "USA", region: "Metro", coords: { lat: 40.7306, lng: -73.9352 }, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-dj-playing-music-in-a-club-4819-large.mp4", tags: ["DJ", "Dancing", "Drinks"], blurb: "Top DJs with immersive light show.", details: "Doors 21:00 • Main act 23:30 • Dress code: casual chic.", badges: ["18+"], hostedBy: "NightLife Productions", capacity: 2000, whoFor: "EDM fans, night owls, people who love to dance", vibe: "Energetic", attendees: ["a2", "a4", "a8", "a9"] },
   // Small / Private
-  { id: "sp1", title: "Private Loft Party", category: "small", price: 60, date: "2026-03-14", time: "20:00", venue: "Maple St. 123", country: "USA", region: "Uptown", coords: { lat: 40.7644, lng: -73.9747 }, cover: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks"], blurb: "Intimate house vibes, 80 guests max.", details: "BYOB, rooftop chill zone, quiet room available.", badges: ["New"], hostedBy: "The Loft Collective", capacity: 80, whoFor: "People seeking intimate connections in a relaxed setting", vibe: "Flirty", attendees: ["a1", "a2"] },
-  { id: "sp2", title: "Acoustic Night", category: "small", price: 45, date: "2026-03-18", time: "20:30", venue: "Indie Bar", country: "USA", region: "City Center", coords: { lat: 40.741, lng: -73.9897 }, cover: "https://images.unsplash.com/photo-1464375117522-1311dd6d0cd2?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Social"], blurb: "Unplugged sets & candlelight atmosphere.", details: "Limited seating • First set at 20:30 • Open mic at 22:30.", hostedBy: "Indie Sessions", capacity: 50, whoFor: "Music appreciators, acoustic lovers, creative souls", vibe: "Chill", attendees: ["a3"] },
+  { id: "sp1", title: "Private Loft Party", category: "small", price: 60, date: "2026-03-15", time: "20:00", venue: "Maple St. 123", country: "USA", region: "Uptown", coords: { lat: 40.7644, lng: -73.9747 }, cover: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks"], blurb: "Intimate house vibes, 80 guests max.", details: "BYOB, rooftop chill zone, quiet room available.", badges: ["New"], hostedBy: "The Loft Collective", capacity: 80, whoFor: "People seeking intimate connections in a relaxed setting", vibe: "Flirty", attendees: ["a1", "a2"] },
+  { id: "sp2", title: "Acoustic Night", category: "small", price: 45, date: "2026-03-20", time: "20:30", venue: "Indie Bar", country: "USA", region: "City Center", coords: { lat: 40.741, lng: -73.9897 }, cover: "https://images.unsplash.com/photo-1464375117522-1311dd6d0cd2?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Social"], blurb: "Unplugged sets & candlelight atmosphere.", details: "Limited seating • First set at 20:30 • Open mic at 22:30.", hostedBy: "Indie Sessions", capacity: 50, whoFor: "Music appreciators, acoustic lovers, creative souls", vibe: "Chill", attendees: ["a3"] },
   // Events with a Twist
-  { id: "tw1", title: "Night Food Market", category: "twist", price: 0, date: "2026-03-17", time: "18:00", venue: "Downtown Plaza", country: "USA", region: "Downtown", coords: { lat: 40.7128, lng: -74.006 }, cover: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-people-walking-by-a-food-stand-at-night-4401-large.mp4", tags: ["Outdoor", "Social"], blurb: "Global cuisines, live demos, indie bands.", details: "30+ vendors, vegan options, chef talks, tasting bracelets available.", badges: ["Family"], hostedBy: "Foodies United", capacity: 1000, whoFor: "Food enthusiasts, social butterflies, anyone hungry", vibe: "Social", attendees: ["a1", "a4", "a5"] },
-  { id: "tw2", title: "Museum Late Hours", category: "twist", price: 30, date: "2026-03-15", time: "19:00", venue: "City Museum", country: "USA", region: "Museum District", coords: { lat: 40.7794, lng: -73.9632 }, cover: "https://images.unsplash.com/photo-1505666287802-931dc83948e9?q=80&w=1600&auto=format&fit=crop", tags: ["Talks", "Social"], blurb: "Special curation + ambient DJ set.", details: "Guided tours every hour • Café open till midnight.", hostedBy: "City Museum", capacity: 300, whoFor: "Art lovers, curious minds, those seeking deeper conversations", vibe: "Deep", attendees: ["a2", "a3"] },
+  { id: "tw1", title: "Night Food Market", category: "twist", price: 0, date: "2026-03-19", time: "18:00", venue: "Downtown Plaza", country: "USA", region: "Downtown", coords: { lat: 40.7128, lng: -74.006 }, cover: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-people-walking-by-a-food-stand-at-night-4401-large.mp4", tags: ["Outdoor", "Social"], blurb: "Global cuisines, live demos, indie bands.", details: "30+ vendors, vegan options, chef talks, tasting bracelets available.", badges: ["Family"], hostedBy: "Foodies United", capacity: 1000, whoFor: "Food enthusiasts, social butterflies, anyone hungry", vibe: "Social", attendees: ["a1", "a4", "a5"] },
+  { id: "tw2", title: "Museum Late Hours", category: "twist", price: 30, date: "2026-03-16", time: "19:00", venue: "City Museum", country: "USA", region: "Museum District", coords: { lat: 40.7794, lng: -73.9632 }, cover: "https://images.unsplash.com/photo-1505666287802-931dc83948e9?q=80&w=1600&auto=format&fit=crop", tags: ["Talks", "Social"], blurb: "Special curation + ambient DJ set.", details: "Guided tours every hour • Café open till midnight.", hostedBy: "City Museum", capacity: 300, whoFor: "Art lovers, curious minds, those seeking deeper conversations", vibe: "Deep", attendees: ["a2", "a3"] },
   // Sports
-  { id: "spx1", title: "Tennis Tournament", category: "sports", price: 70, date: "2026-03-10", time: "10:00", venue: "Grand Arena", country: "USA", region: "Sports Park", coords: { lat: 40.8296, lng: -73.9262 }, cover: "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Quarterfinals • Center court seats available.", details: "Gates 10:00 • No outside drinks • Family bundle discounts.", hostedBy: "Sports League", capacity: 800, whoFor: "Sports fans, tennis enthusiasts", vibe: "Energetic", attendees: [] },
-  { id: "spx2", title: "Sunset 5K Run", category: "sports", price: 35, date: "2026-03-22", time: "19:00", venue: "Beachfront", country: "USA", region: "Beach", coords: { lat: 40.583, lng: -73.8283 }, cover: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Scenic route along the coast, medals for finishers.", details: "Packet pickup from 16:00 • Start 19:00 • Hydration stations.", hostedBy: "Run Club", capacity: 500, whoFor: "Runners, fitness lovers, sunset chasers", vibe: "Energetic", attendees: ["a5"] },
+  { id: "spx1", title: "Tennis Tournament", category: "sports", price: 70, date: "2026-03-13", time: "10:00", venue: "Grand Arena", country: "USA", region: "Sports Park", coords: { lat: 40.8296, lng: -73.9262 }, cover: "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Quarterfinals • Center court seats available.", details: "Gates 10:00 • No outside drinks • Family bundle discounts.", hostedBy: "Sports League", capacity: 800, whoFor: "Sports fans, tennis enthusiasts", vibe: "Energetic", attendees: [] },
+  { id: "spx2", title: "Sunset 5K Run", category: "sports", price: 35, date: "2026-03-29", time: "19:00", venue: "Beachfront", country: "USA", region: "Beach", coords: { lat: 40.583, lng: -73.8283 }, cover: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Scenic route along the coast, medals for finishers.", details: "Packet pickup from 16:00 • Start 19:00 • Hydration stations.", hostedBy: "Run Club", capacity: 500, whoFor: "Runners, fitness lovers, sunset chasers", vibe: "Energetic", attendees: ["a5"] },
   // Tel Aviv venue-specific events (for Explore places)
-  { id: "tlv1", title: "Underground Beats @ Kuli Alma", category: "large", price: 80, date: "2026-03-15", time: "23:00", venue: "Kuli Alma", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0636, lng: 34.7705 }, cover: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1600&auto=format&fit=crop", tags: ["DJ", "Dancing", "Underground"], blurb: "Eclectic DJ sets in Tel Aviv's iconic underground venue.", details: "Doors 23:00 • Multiple rooms • Art installations.", badges: ["18+"], hostedBy: "Kuli Alma", capacity: 400, whoFor: "Alternative music lovers, night owls", vibe: "Energetic", attendees: ["a1", "a2"] },
-  { id: "tlv2", title: "Techno Warehouse @ The Block", category: "large", price: 120, date: "2026-03-20", time: "23:30", venue: "The Block", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0500, lng: 34.7600 }, cover: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?q=80&w=1600&auto=format&fit=crop", tags: ["Techno", "Dancing", "International DJs"], blurb: "World-class techno in Tel Aviv's premier club.", details: "International headliner • Funktion-One sound • Till sunrise.", badges: ["18+", "Verified"], hostedBy: "The Block TLV", capacity: 1500, whoFor: "Techno enthusiasts, serious dancers", vibe: "Energetic", attendees: ["a3", "a4"] },
-  { id: "tlv3", title: "Chill Vibes @ Sputnik", category: "small", price: 0, date: "2026-03-14", time: "21:00", venue: "Sputnik", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0700, lng: 34.7750 }, cover: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks", "Casual"], blurb: "Laid-back evening at Tel Aviv's favorite dive bar.", details: "No cover • Great drinks • Meet new people.", badges: [], hostedBy: "Sputnik Bar", capacity: 100, whoFor: "Casual drinkers, social butterflies", vibe: "Chill", attendees: ["a1", "a5"] },
-  { id: "tlv4", title: "Live Jazz @ Pastel", category: "small", price: 50, date: "2026-03-19", time: "20:30", venue: "Pastel", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0720, lng: 34.7800 }, cover: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Jazz", "Intimate"], blurb: "Intimate jazz performance in candlelit setting.", details: "Limited seating • Two sets • Wine bar open.", hostedBy: "Pastel TLV", capacity: 60, whoFor: "Jazz lovers, romantic date night", vibe: "Chill", attendees: ["a2", "a3"] },
-  { id: "tlv5", title: "Rooftop Party @ Beit Maariv", category: "large", price: 70, date: "2026-03-21", time: "22:00", venue: "Beit Maariv", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0680, lng: 34.7850 }, cover: "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?q=80&w=1600&auto=format&fit=crop", tags: ["Rooftop", "Dancing", "Views"], blurb: "Dance under the stars with city views.", details: "Multiple floors • Rooftop bar • Dress to impress.", badges: ["18+"], hostedBy: "Beit Maariv", capacity: 500, whoFor: "Party lovers, rooftop enthusiasts", vibe: "Energetic", attendees: ["a4", "a5"] },
-  { id: "tlv6", title: "Open Mic @ Anna Loulou", category: "small", price: 30, date: "2026-03-17", time: "21:00", venue: "Anna Loulou", country: "Israel", region: "Jaffa", coords: { lat: 32.0530, lng: 34.7550 }, cover: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Open Mic", "Alternative"], blurb: "Showcase your talent at Jaffa's legendary bar.", details: "Sign up from 20:00 • All genres welcome • Great cocktails.", hostedBy: "Anna Loulou Bar", capacity: 80, whoFor: "Musicians, artists, creative souls", vibe: "Social", attendees: ["a1", "a3"] },
-  { id: "tlv7", title: "Sunset Sessions @ Teder.fm", category: "small", price: 0, date: "2026-03-16", time: "17:00", venue: "Teder.fm", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0580, lng: 34.7650 }, cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Radio", "Chill"], blurb: "Live radio broadcast with sunset drinks.", details: "Free entry • Food trucks • Chill vibes till late.", badges: ["Family"], hostedBy: "Teder.fm", capacity: 200, whoFor: "Music lovers, sunset chasers", vibe: "Chill", attendees: ["a2", "a4"] },
-  { id: "tlv8", title: "Levinsky Food Fest @ Spicehaus", category: "twist", price: 0, date: "2026-03-22", time: "18:00", venue: "Spicehaus", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0620, lng: 34.7720 }, cover: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?q=80&w=1600&auto=format&fit=crop", tags: ["Food", "Social", "Market"], blurb: "Culinary journey through Levinsky Market.", details: "Tasting menu • Chef demos • Live music.", badges: ["Family"], hostedBy: "Spicehaus", capacity: 150, whoFor: "Foodies, culture lovers", vibe: "Social", attendees: ["a1", "a5"] },
+  { id: "tlv1", title: "Underground Beats @ Kuli Alma", category: "large", price: 80, date: "2026-03-21", time: "23:00", venue: "Kuli Alma", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0636, lng: 34.7705 }, cover: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1600&auto=format&fit=crop", tags: ["DJ", "Dancing", "Underground"], blurb: "Eclectic DJ sets in Tel Aviv's iconic underground venue.", details: "Doors 23:00 • Multiple rooms • Art installations.", badges: ["18+"], hostedBy: "Kuli Alma", capacity: 400, whoFor: "Alternative music lovers, night owls", vibe: "Energetic", attendees: ["a1", "a2"] },
+  { id: "tlv2", title: "Techno Warehouse @ The Block", category: "large", price: 120, date: "2026-03-27", time: "23:30", venue: "The Block", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0500, lng: 34.7600 }, cover: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?q=80&w=1600&auto=format&fit=crop", tags: ["Techno", "Dancing", "International DJs"], blurb: "World-class techno in Tel Aviv's premier club.", details: "International headliner • Funktion-One sound • Till sunrise.", badges: ["18+", "Verified"], hostedBy: "The Block TLV", capacity: 1500, whoFor: "Techno enthusiasts, serious dancers", vibe: "Energetic", attendees: ["a3", "a4"] },
+  { id: "tlv3", title: "Chill Vibes @ Sputnik", category: "small", price: 0, date: "2026-03-17", time: "21:00", venue: "Sputnik", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0700, lng: 34.7750 }, cover: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks", "Casual"], blurb: "Laid-back evening at Tel Aviv's favorite dive bar.", details: "No cover • Great drinks • Meet new people.", badges: [], hostedBy: "Sputnik Bar", capacity: 100, whoFor: "Casual drinkers, social butterflies", vibe: "Chill", attendees: ["a1", "a5"] },
+  { id: "tlv4", title: "Live Jazz @ Pastel", category: "small", price: 50, date: "2026-03-24", time: "20:30", venue: "Pastel", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0720, lng: 34.7800 }, cover: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Jazz", "Intimate"], blurb: "Intimate jazz performance in candlelit setting.", details: "Limited seating • Two sets • Wine bar open.", hostedBy: "Pastel TLV", capacity: 60, whoFor: "Jazz lovers, romantic date night", vibe: "Chill", attendees: ["a2", "a3"] },
+  { id: "tlv5", title: "Rooftop Party @ Beit Maariv", category: "large", price: 70, date: "2026-03-22", time: "22:00", venue: "Beit Maariv", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0680, lng: 34.7850 }, cover: "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?q=80&w=1600&auto=format&fit=crop", tags: ["Rooftop", "Dancing", "Views"], blurb: "Dance under the stars with city views.", details: "Multiple floors • Rooftop bar • Dress to impress.", badges: ["18+"], hostedBy: "Beit Maariv", capacity: 500, whoFor: "Party lovers, rooftop enthusiasts", vibe: "Energetic", attendees: ["a4", "a5"] },
+  { id: "tlv6", title: "Open Mic @ Anna Loulou", category: "small", price: 30, date: "2026-03-18", time: "21:00", venue: "Anna Loulou", country: "Israel", region: "Jaffa", coords: { lat: 32.0530, lng: 34.7550 }, cover: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Open Mic", "Alternative"], blurb: "Showcase your talent at Jaffa's legendary bar.", details: "Sign up from 20:00 • All genres welcome • Great cocktails.", hostedBy: "Anna Loulou Bar", capacity: 80, whoFor: "Musicians, artists, creative souls", vibe: "Social", attendees: ["a1", "a3"] },
+  { id: "tlv7", title: "Sunset Sessions @ Teder.fm", category: "small", price: 0, date: "2026-03-15", time: "17:00", venue: "Teder.fm", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0580, lng: 34.7650 }, cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Radio", "Chill"], blurb: "Live radio broadcast with sunset drinks.", details: "Free entry • Food trucks • Chill vibes till late.", badges: ["Family"], hostedBy: "Teder.fm", capacity: 200, whoFor: "Music lovers, sunset chasers", vibe: "Chill", attendees: ["a2", "a4"] },
+  { id: "tlv8", title: "Levinsky Food Fest @ Spicehaus", category: "twist", price: 0, date: "2026-03-30", time: "18:00", venue: "Spicehaus", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0620, lng: 34.7720 }, cover: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?q=80&w=1600&auto=format&fit=crop", tags: ["Food", "Social", "Market"], blurb: "Culinary journey through Levinsky Market.", details: "Tasting menu • Chef demos • Live music.", badges: ["Family"], hostedBy: "Spicehaus", capacity: 150, whoFor: "Foodies, culture lovers", vibe: "Social", attendees: ["a1", "a5"] },
 ];
 
 /* --------------------------- Tabs meta -------------------------------- */
 const BASE_TABS = [
-  { key: "all", label: "All" },
   { key: "large", label: "Large Parties" },
   { key: "small", label: "Small / Private" },
   { key: "twist", label: "Events with a Twist" },
@@ -604,8 +603,8 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
             }}
             size="small"
             sx={{ 
-              bgcolor: isFav ? "#667eea" : "rgba(255,255,255,0.95)", 
-              color: isFav ? "#fff" : "#667eea", 
+              bgcolor: isFav ? "#6C5CE7" : "rgba(255,255,255,0.95)", 
+              color: isFav ? "#fff" : "#6C5CE7", 
               backdropFilter: 'blur(12px)',
               boxShadow: isFav ? "0 4px 16px rgba(102,126,234,0.4)" : "0 4px 12px rgba(0,0,0,0.12)",
               transition: 'all 0.2s ease',
@@ -712,10 +711,7 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
             sx={{ 
               fontWeight: 900, 
               mb: 0.5,
-              background: 'linear-gradient(135deg, #1a1a2e 0%, #667eea 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
+              color: '#1a1a2e',
             }} 
             noWrap
           >
@@ -784,12 +780,12 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
                 }}
                 disabled={ev.soldOut || isPast}
                 sx={{ 
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+                  background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)', 
                   fontWeight: 700,
-                  boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
+                  boxShadow: '0 4px 12px rgba(108,92,231,0.3)',
                   '&:hover': { 
-                    background: "linear-gradient(135deg, #5568d3 0%, #6a4296 100%)",
-                    boxShadow: '0 6px 16px rgba(102,126,234,0.4)',
+                    background: 'linear-gradient(135deg, #5b4cdb 0%, #9645e6 100%)',
+                    boxShadow: '0 6px 16px rgba(108,92,231,0.4)',
                   },
                   '&:disabled': {
                     background: '#e5e7eb',
@@ -817,13 +813,13 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
                   flex: 1, 
                   fontSize: "0.75rem", 
                   fontWeight: 600,
-                  borderColor: "#667eea", 
-                  color: "#667eea", 
-                  background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                  borderColor: "rgba(108,92,231,0.3)", 
+                  color: "#6C5CE7", 
+                  background: "rgba(108,92,231,0.08)", 
                   transition: 'all 0.2s ease',
                   '&:hover': { 
-                    background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
-                    borderColor: "#5568d3",
+                    background: "rgba(108,92,231,0.12)",
+                    borderColor: "#6C5CE7",
                   } 
                 }}
               >
@@ -841,13 +837,13 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
                 sx={{ 
                   minWidth: 'auto', 
                   px: 1.5, 
-                  borderColor: "#667eea", 
-                  color: "#667eea", 
-                  background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                  borderColor: "rgba(108,92,231,0.3)", 
+                  color: "#6C5CE7", 
+                  background: "rgba(108,92,231,0.08)", 
                   transition: 'all 0.2s ease',
                   '&:hover': { 
-                    background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
-                    borderColor: "#5568d3",
+                    background: "rgba(108,92,231,0.12)",
+                    borderColor: "#6C5CE7",
                   } 
                 }}
               >
@@ -865,13 +861,13 @@ function EventCard({ ev, onBuy, onToggleFav, isFav, onOpenCalendar, onOpenMaps, 
                 sx={{ 
                   minWidth: 'auto', 
                   px: 1.5, 
-                  borderColor: "#667eea", 
-                  color: "#667eea", 
-                  background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                  borderColor: "rgba(108,92,231,0.3)", 
+                  color: "#6C5CE7", 
+                  background: "rgba(108,92,231,0.08)", 
                   transition: 'all 0.2s ease',
                   '&:hover': { 
-                    background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
-                    borderColor: "#5568d3",
+                    background: "rgba(108,92,231,0.12)",
+                    borderColor: "#6C5CE7",
                   } 
                 }}
               >
@@ -911,18 +907,14 @@ function CategorySection({ title, events, onBuy, favs, onToggleFav, onOpenCalend
                 width: 4,
                 height: 32,
                 borderRadius: '4px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                boxShadow: '0 2px 8px rgba(102,126,234,0.3)',
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
               }}
             />
             <Typography 
               variant="h5" 
               sx={{ 
                 fontWeight: 900,
-                background: 'linear-gradient(135deg, #1a1a2e 0%, #667eea 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
+                color: '#1a1a2e',
               }}
             >
               {title}
@@ -933,9 +925,9 @@ function CategorySection({ title, events, onBuy, favs, onToggleFav, onOpenCalend
             size="small"
             sx={{
               fontWeight: 600,
-              background: 'linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%)',
-              color: '#667eea',
-              border: '1px solid rgba(0,0,0,0.08)',
+              bgcolor: '#f1f5f9',
+              color: '#64748b',
+              border: 'none',
             }}
           />
         </Stack>
@@ -1507,11 +1499,11 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
             disabled={event.soldOut || isPurchased}
             sx={{ 
               fontWeight: 700, 
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              boxShadow: '0 4px 16px rgba(102,126,234,0.3)',
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              boxShadow: '0 4px 16px rgba(108,92,231,0.3)',
               '&:hover': { 
-                background: "linear-gradient(135deg, #5568d3 0%, #6a4296 100%)",
-                boxShadow: '0 6px 20px rgba(102,126,234,0.4)',
+                background: 'linear-gradient(135deg, #5b4cdb 0%, #9645e6 100%)',
+                boxShadow: '0 6px 20px rgba(108,92,231,0.4)',
               },
               '&:disabled': {
                 background: '#e5e7eb',
@@ -1535,13 +1527,13 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
               }}
               sx={{ 
                 flex: 1, 
-                borderColor: "#667eea", 
-                color: "#667eea", 
-                background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                borderColor: "#6C5CE7", 
+                color: "#6C5CE7", 
+                background: "transparent", 
                 fontWeight: 600,
                 '&:hover': { 
-                  background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
-                  borderColor: "#5568d3",
+                  background: "rgba(108,92,231,0.08)",
+                  borderColor: "#5b4cdb",
                 } 
               }}
             >
@@ -1567,13 +1559,13 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
               }}
               sx={{ 
                 flex: 1, 
-                borderColor: "#667eea", 
-                color: "#667eea", 
-                background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                borderColor: "#6C5CE7", 
+                color: "#6C5CE7", 
+                background: "transparent", 
                 fontWeight: 600,
                 '&:hover': { 
-                  background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
-                  borderColor: "#5568d3",
+                  background: "rgba(108,92,231,0.08)",
+                  borderColor: "#5b4cdb",
                 } 
               }}
             >
@@ -1591,13 +1583,13 @@ function EventDetailsDialog({ open, onClose, event, purchased, onBuy, onInvitePl
               }}
               sx={{ 
                 flex: 1, 
-                borderColor: "#667eea", 
-                color: "#667eea", 
-                background: "linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)", 
+                borderColor: "#6C5CE7", 
+                color: "#6C5CE7", 
+                background: "transparent", 
                 fontWeight: 600,
                 '&:hover': { 
-                  background: "linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%)",
-                  borderColor: "#5568d3",
+                  background: "rgba(108,92,231,0.08)",
+                  borderColor: "#5b4cdb",
                 } 
               }}
             >
@@ -1634,7 +1626,7 @@ export default function EventsByCategory() {
     [pairsByEventId, user]
   );
   
-  const [tab, setTab] = useState("all");
+  const [tab, setTab] = useState("large");
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [viewMode, setViewMode] = useState("list");
@@ -1827,7 +1819,7 @@ export default function EventsByCategory() {
     } else {
       const filtered30Days = EVENTS.filter((ev) => isWithin30Days(ev.date));
       const windowed = filtered30Days.length ? filtered30Days : EVENTS;
-      baseEvents = tab === "all" ? windowed : windowed.filter((ev) => ev.category === tab);
+      baseEvents = windowed.filter((ev) => ev.category === tab);
     }
 
     // Check which filters would have results
@@ -1858,7 +1850,7 @@ export default function EventsByCategory() {
       // Apply 30 days window filter for regular tabs
       const filtered30Days = EVENTS.filter((ev) => isWithin30Days(ev.date));
       const windowed = filtered30Days.length ? filtered30Days : EVENTS;
-      base = tab === "all" ? windowed : windowed.filter((ev) => ev.category === tab);
+      base = windowed.filter((ev) => ev.category === tab);
     }
 
     if (selectedCategories.length > 0) {
@@ -1981,365 +1973,225 @@ export default function EventsByCategory() {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#fafbfc", pb: 10 }}>
-      {/* Hero Section with Gradient */}
-      <Box
-        sx={{
-          position: 'relative',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
-          pt: 3,
-          pb: 6,
-          mb: 3,
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'radial-gradient(circle at 20% 50%, rgba(108,92,231,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(168,85,247,0.3) 0%, transparent 50%)',
-            pointerEvents: 'none',
-          },
+      {/* Page Title - scrolls with content (like Explore) */}
+      <Box sx={{ px: 3, pt: 3, pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 0.5 }}>
+            Events
+          </Typography>
+          <Typography variant="body1" sx={{ color: '#64748b' }}>
+            Find amazing experiences & meet new people
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Plus size={18} />}
+          onClick={() => navigate('/events/new')}
+          sx={{
+            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            fontWeight: 700,
+            borderRadius: '12px',
+            px: 2,
+            py: 1,
+            textTransform: 'none',
+            boxShadow: '0 4px 12px rgba(108,92,231,0.3)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #5b4cdb 0%, #9645e6 100%)',
+              boxShadow: '0 6px 16px rgba(108,92,231,0.4)',
+            },
+          }}
+        >
+          Add Event
+        </Button>
+      </Box>
+
+      {/* Sticky Filters Bar (like Explore) */}
+      <Box 
+        sx={{ 
+          position: "sticky", 
+          top: 56, // Below main app header
+          zIndex: 100, 
+          bgcolor: "#fff", 
+          borderBottom: "1px solid rgba(0,0,0,0.06)", 
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          px: 3,
+          py: 1.5,
         }}
       >
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <Typography 
-              variant="h3" 
-              sx={{ 
-                fontWeight: 900, 
-                color: '#fff',
-                mb: 1,
-                textShadow: '0 2px 20px rgba(0,0,0,0.2)',
-              }}
-            >
-              Discover Events
-            </Typography>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                color: 'rgba(255,255,255,0.95)',
-                fontWeight: 500,
-                mb: 3,
-                maxWidth: 600,
-              }}
-            >
-              Find amazing experiences, meet new people, and create unforgettable memories
-            </Typography>
-          </motion.div>
-
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2, flexWrap: 'nowrap', overflow: 'hidden' }}>
-            <Button 
-              startIcon={<Plus size={18} />} 
-              onClick={() => navigate("/events/new")} 
-              variant="contained"
-              size="large"
-              sx={{ 
-                bgcolor: '#fff',
-                color: '#667eea',
-                fontWeight: 700,
-                px: { xs: 2, sm: 3 },
-                py: 1.5,
-                borderRadius: '16px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                whiteSpace: 'nowrap',
-                minWidth: 'auto',
-                fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                '&:hover': {
-                  bgcolor: '#f8f9ff',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 12px 32px rgba(0,0,0,0.2)',
-                },
-                transition: 'all 0.3s ease',
-              }}
-            >
-              Create
-            </Button>
-
-            <ToggleButtonGroup
-              exclusive 
-              size="medium" 
-              value={viewMode}
-              onChange={(_, v) => v && setViewMode(v)}
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.2)',
-                backdropFilter: 'blur(12px)',
-                borderRadius: '12px',
-                border: '1px solid rgba(255,255,255,0.3)',
-                '& .MuiToggleButton-root': {
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 600,
-                  '&.Mui-selected': {
-                    bgcolor: 'rgba(255,255,255,0.3)',
-                    color: '#fff',
-                  },
-                },
-              }}
-            >
-              <ToggleButton value="list">
-                <ListIcon size={18} style={{ marginRight: 8 }} /> List
-              </ToggleButton>
-              <ToggleButton value="map" onClick={openAllEventsInMaps}>
-                <MapIcon size={18} style={{ marginRight: 8 }} /> Map
-              </ToggleButton>
-            </ToggleButtonGroup>
-
-            <Badge color="error" badgeContent={activeFilterCount} invisible={activeFilterCount === 0}>
-              <IconButton 
-                onClick={() => setFiltersOpen(true)}
+        {/* Category Tabs - Row 1 */}
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            gap: 1,
+            overflowX: 'auto',
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+            pb: 1,
+          }}
+        >
+          {ALL_TABS.map((c) => {
+            const isActive = tab === c.key;
+            return (
+              <Chip
+                key={c.key}
+                label={c.label}
+                onClick={() => {
+                  setTab(c.key);
+                  setQuickToday(false);
+                  setQuickWeekend(false);
+                  setQuickFree(false);
+                  setQuickNear(false);
+                  setQuickOutdoor(false);
+                  setQuickLive(false);
+                }}
                 sx={{
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.4)',
-                  color: '#fff',
-                  bgcolor: 'rgba(255,255,255,0.1)',
-                  backdropFilter: 'blur(12px)',
-                  px: 1.5,
-                  py: 1,
+                  flexShrink: 0,
+                  fontWeight: 600,
+                  borderRadius: '18px',
+                  backgroundColor: isActive ? '#f3e8ff !important' : '#f1f5f9',
+                  color: isActive ? '#7c3aed' : '#64748b',
+                  border: isActive ? '1px solid #c4b5fd' : '1px solid transparent',
                   '&:hover': {
-                    borderColor: 'rgba(255,255,255,0.6)',
-                    bgcolor: 'rgba(255,255,255,0.2)',
+                    backgroundColor: isActive ? '#f3e8ff !important' : '#e2e8f0',
                   },
                 }}
-              >
-                <SlidersHorizontal size={20} />
-              </IconButton>
-            </Badge>
-          </Stack>
-        </Container>
-      </Box>
+              />
+            );
+          })}
+        </Box>
 
-      {/* Sticky Tabs Bar */}
-      <Box sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: "#fafbfc", borderBottom: "1px solid #e5e7eb", boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-        <Container maxWidth="lg" sx={{ py: 1 }}>
-
-
-          {/* Tabs */}
-          <Tabs 
-            value={tab} 
-            onChange={(_, v) => {
-              setTab(v);
-              // Clear quick filter chips when switching tabs to prevent empty results
-              setQuickToday(false);
-              setQuickWeekend(false);
-              setQuickFree(false);
-              setQuickNear(false);
-              setQuickOutdoor(false);
-              setQuickLive(false);
-            }} 
-            variant="scrollable" 
-            scrollButtons="auto"
-            sx={{ 
-              "& .MuiTab-root": { 
-                fontWeight: 700, 
-                textTransform: "none",
-                fontSize: '0.95rem',
-                minHeight: 48,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  color: '#667eea',
-                  transform: 'translateY(-2px)',
-                },
-              }, 
-              "& .Mui-selected": { 
-                color: "#667eea !important",
-                fontWeight: 800,
-              }, 
-              "& .MuiTabs-indicator": { 
-                height: 3, 
-                bgcolor: "#667eea",
-                borderRadius: '3px 3px 0 0',
-              } 
+        {/* Quick filter chips - Row 2 */}
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            gap: 1,
+            overflowX: 'auto',
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+            mt: 1,
+          }}
+        >
+          <Chip 
+            icon={<CalendarClock size={14} />} 
+            label="Today" 
+            size="small"
+            onClick={() => { setQuickToday((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+            sx={{
+              flexShrink: 0,
+              fontWeight: 500,
+              borderRadius: '14px',
+              backgroundColor: quickToday ? '#f3e8ff !important' : '#f8fafc',
+              color: quickToday ? '#7c3aed' : '#94a3b8',
+              border: quickToday ? '1px solid #c4b5fd' : '1px solid transparent',
+              '& .MuiChip-icon': {
+                color: quickToday ? '#7c3aed' : '#94a3b8',
+              },
+              '&:hover': {
+                backgroundColor: quickToday ? '#f3e8ff !important' : '#f1f5f9',
+              },
             }}
-          >
-            {ALL_TABS.map((c) => <Tab key={c.key} value={c.key} label={c.label} />)}
-          </Tabs>
-
-          {/* Quick filter chips - Enhanced with animations */}
-          <Stack direction="row" spacing={1} sx={{ mt: 1.5, pb: 1.5, flexWrap: "wrap", gap: 1 }}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Chip 
-                icon={<CalendarClock size={14} />} 
-                label="Today" 
-                color="primary"
-                variant="filled"
-                onClick={() => { setQuickToday((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
-                sx={{
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
-                  },
-                  // Unselected = dark gradient, Selected = light
-                  ...(!quickToday ? {
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                  } : {
-                    background: 'rgba(102,126,234,0.15)',
-                    color: '#667eea',
-                    border: '2px solid #667eea',
-                  }),
-                }}
-              />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.15 }}
-            >
-              <Chip 
-                icon={<CalendarClock size={14} />} 
-                label="Weekend" 
-                color="primary"
-                variant="filled"
-                onClick={() => { setQuickWeekend((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
-                sx={{
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
-                  },
-                  ...(!quickWeekend ? {
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                  } : {
-                    background: 'rgba(102,126,234,0.15)',
-                    color: '#667eea',
-                    border: '2px solid #667eea',
-                  }),
-                }}
-              />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Chip 
-                label="Free" 
-                color="primary"
-                variant="filled"
-                onClick={() => { setQuickFree((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
-                sx={{
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
-                  },
-                  ...(!quickFree ? {
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                  } : {
-                    background: 'rgba(102,126,234,0.15)',
-                    color: '#667eea',
-                    border: '2px solid #667eea',
-                  }),
-                }}
-              />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.25 }}
-            >
-              <Chip 
-                icon={<LocateFixed size={14} />} 
-                label="Near me" 
-                color="primary"
-                variant="filled"
-                onClick={() => { setQuickNear((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
-                sx={{
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
-                  },
-                  ...(!quickNear ? {
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                  } : {
-                    background: 'rgba(102,126,234,0.15)',
-                    color: '#667eea',
-                    border: '2px solid #667eea',
-                  }),
-                }}
-              />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Chip 
-                icon={<Sun size={14} />} 
-                label="Outdoor" 
-                color="primary"
-                variant="filled"
-                onClick={() => { setQuickOutdoor((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
-                sx={{
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
-                  },
-                  ...(!quickOutdoor ? {
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                  } : {
-                    background: 'rgba(102,126,234,0.15)',
-                    color: '#667eea',
-                    border: '2px solid #667eea',
-                  }),
-                }}
-              />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.35 }}
-            >
-              <Chip 
-                icon={<Music size={14} />} 
-                label="Live Music" 
-                color="primary"
-                variant="filled"
-                onClick={() => { setQuickLive((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
-                sx={{
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
-                  },
-                  ...(!quickLive ? {
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                  } : {
-                    background: 'rgba(102,126,234,0.15)',
-                    color: '#667eea',
-                    border: '2px solid #667eea',
-                  }),
-                }}
-              />
-            </motion.div>
-          </Stack>
-        </Container>
+          />
+          <Chip 
+            icon={<CalendarClock size={14} />} 
+            label="Weekend" 
+            size="small"
+            onClick={() => { setQuickWeekend((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+            sx={{
+              flexShrink: 0,
+              fontWeight: 500,
+              borderRadius: '14px',
+              backgroundColor: quickWeekend ? '#f3e8ff !important' : '#f8fafc',
+              color: quickWeekend ? '#7c3aed' : '#94a3b8',
+              border: quickWeekend ? '1px solid #c4b5fd' : '1px solid transparent',
+              '& .MuiChip-icon': {
+                color: quickWeekend ? '#7c3aed' : '#94a3b8',
+              },
+              '&:hover': {
+                backgroundColor: quickWeekend ? '#f3e8ff !important' : '#f1f5f9',
+              },
+            }}
+          />
+          <Chip 
+            label="Free" 
+            size="small"
+            onClick={() => { setQuickFree((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+            sx={{
+              flexShrink: 0,
+              fontWeight: 500,
+              borderRadius: '14px',
+              backgroundColor: quickFree ? '#f3e8ff !important' : '#f8fafc',
+              color: quickFree ? '#7c3aed' : '#94a3b8',
+              border: quickFree ? '1px solid #c4b5fd' : '1px solid transparent',
+              '&:hover': {
+                backgroundColor: quickFree ? '#f3e8ff !important' : '#f1f5f9',
+              },
+            }}
+          />
+          <Chip 
+            icon={<LocateFixed size={14} />} 
+            label="Near me" 
+            size="small"
+            onClick={() => { setQuickNear((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+            sx={{
+              flexShrink: 0,
+              fontWeight: 500,
+              borderRadius: '14px',
+              backgroundColor: quickNear ? '#f3e8ff !important' : '#f8fafc',
+              color: quickNear ? '#7c3aed' : '#94a3b8',
+              border: quickNear ? '1px solid #c4b5fd' : '1px solid transparent',
+              '& .MuiChip-icon': {
+                color: quickNear ? '#7c3aed' : '#94a3b8',
+              },
+              '&:hover': {
+                backgroundColor: quickNear ? '#f3e8ff !important' : '#f1f5f9',
+              },
+            }}
+          />
+          <Chip 
+            icon={<Sun size={14} />} 
+            label="Outdoor" 
+            size="small"
+            onClick={() => { setQuickOutdoor((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+            sx={{
+              flexShrink: 0,
+              fontWeight: 500,
+              borderRadius: '14px',
+              backgroundColor: quickOutdoor ? '#f3e8ff !important' : '#f8fafc',
+              color: quickOutdoor ? '#7c3aed' : '#94a3b8',
+              border: quickOutdoor ? '1px solid #c4b5fd' : '1px solid transparent',
+              '& .MuiChip-icon': {
+                color: quickOutdoor ? '#7c3aed' : '#94a3b8',
+              },
+              '&:hover': {
+                backgroundColor: quickOutdoor ? '#f3e8ff !important' : '#f1f5f9',
+              },
+            }}
+          />
+          <Chip 
+            icon={<Music size={14} />} 
+            label="Live Music" 
+            size="small"
+            onClick={() => { setQuickLive((v) => !v); if (navigator?.vibrate) navigator.vibrate(5); }}
+            sx={{
+              flexShrink: 0,
+              fontWeight: 500,
+              borderRadius: '14px',
+              backgroundColor: quickLive ? '#f3e8ff !important' : '#f8fafc',
+              color: quickLive ? '#7c3aed' : '#94a3b8',
+              border: quickLive ? '1px solid #c4b5fd' : '1px solid transparent',
+              '& .MuiChip-icon': {
+                color: quickLive ? '#7c3aed' : '#94a3b8',
+              },
+              '&:hover': {
+                backgroundColor: quickLive ? '#f3e8ff !important' : '#f1f5f9',
+              },
+            }}
+          />
+        </Box>
       </Box>
 
-      <Container maxWidth="lg" sx={{ pt: 2 }}>
+      {/* Content Area */}
+      <Box sx={{ px: 3, py: 2 }}>
         {geoError && <Alert severity="warning" sx={{ mb: 2 }}>{geoError}</Alert>}
 
         {/* Purchased tab עם החלקות */}
@@ -2408,7 +2260,7 @@ export default function EventsByCategory() {
                   justifyContent: 'center',
                   mb: 2,
                 }}>
-                  <Heart size={28} color="#667eea" />
+                  <Heart size={28} color="#6C5CE7" />
                 </Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>
                   No saved events yet
@@ -2420,7 +2272,7 @@ export default function EventsByCategory() {
                   variant="contained" 
                   onClick={() => setTab("all")}
                   sx={{ 
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
                     fontWeight: 600,
                     px: 3,
                     borderRadius: '12px',
@@ -2479,16 +2331,9 @@ export default function EventsByCategory() {
                 })}
               </Grid>
             )
-          ) : tab === "all" ? (
-            <>
-              <CategorySection title="Large Parties" events={dataByCat.large} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => navigate(`/events/${ev.id}`)} />
-              <CategorySection title="Small / Private" events={dataByCat.small} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => navigate(`/events/${ev.id}`)} />
-              <CategorySection title="Events with a Twist" events={dataByCat.twist} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => navigate(`/events/${ev.id}`)} />
-              <CategorySection title="Sports" events={dataByCat.sports} onBuy={openBuy} favs={favs} onToggleFav={toggleFav} onOpenCalendar={openCalendar} userLocation={userLocation} onOpenMaps={openMapsForEvent} onInvitePlus1={(ev) => setPlusOneEvent(ev)} onViewDetails={(ev) => navigate(`/events/${ev.id}`)} />
-            </>
           ) : (
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              {(tab === "all" ? EVENTS : EVENTS.filter((ev)=>ev.category===tab)).map((ev) => (
+              {EVENTS.filter((ev)=>ev.category===tab).map((ev) => (
                 <Grid key={ev.id} item xs={12} sm={6} md={4}>
                   <EventCard
                     ev={ev}
@@ -2505,7 +2350,7 @@ export default function EventsByCategory() {
             </Grid>
           )
         )}
-      </Container>
+      </Box>
 
       {/* רכישת כרטיסים */}
       <TicketPurchaseDialog open={!!selectedEvent} onClose={closeBuy} event={selectedEvent} onPurchased={markPurchased} />

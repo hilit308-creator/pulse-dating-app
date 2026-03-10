@@ -41,6 +41,7 @@ import {
 } from "@mui/material";
 import { useLanguage } from '../context/LanguageContext';
 import { ChatPointsStickyBanner } from '../components/PointsPromoBanner';
+import { HomeInlinePromoBanner } from '../components/SubscriptionPromoBanner';
 import {
   ArrowLeft,
   Send,
@@ -3672,47 +3673,46 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
       </Box>
     );
   }
-  
   if (!openChat) {
     return (
       <Box 
         sx={{ 
-          height: "calc(100vh - 56px)",
+          minHeight: "calc(100vh - 56px)",
           bgcolor: "#fff",
           position: "relative",
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          /* Hide scrollbar but allow scrolling */
-          scrollbarWidth: "none", /* Firefox */
-          msOverflowStyle: "none", /* IE/Edge */
-          "&::-webkit-scrollbar": { display: "none" }, /* Chrome/Safari */
+          pb: "calc(80px + env(safe-area-inset-bottom, 0))",
         }}
       >
         {/* Meeting bar is now global - rendered in GlobalMeetingBar component */}
 
-        {/* Header - Fixed at top */}
+        {/* Big Title - Like Explore page */}
+        <Box sx={{ px: 2, pt: 3, pb: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+            {t('chats')}
+          </Typography>
+        </Box>
+
+        {/* Premium Promo Banner - After title */}
+        <HomeInlinePromoBanner />
+
+        {/* Sticky Section: Subtitle + Filters */}
         <Box
           sx={{
+            position: 'sticky',
+            top: 56, /* Below app header */
+            zIndex: 10,
+            bgcolor: '#fff',
             px: 2,
             py: 1.5,
-            borderBottom: "1px solid #eee",
-            bgcolor: "#fff",
-            zIndex: 10,
-            flexShrink: 0,
+            borderBottom: '1px solid #f1f5f9',
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              {t('chats')}
-            </Typography>
-          </Box>
-          <Typography variant="body2" sx={{ color: "#6B7280" }}>
+          <Typography variant="body2" sx={{ color: "#64748b", mb: 1.5 }}>
             {t('startConversation')}
           </Typography>
           
           {/* Pulse spec: Sort tabs - Purple style like date pill */}
-          <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <Chip 
               label={t('online')} 
               onClick={() => setChatListSort('active')}
@@ -3739,7 +3739,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
         </Box>
 
         {/* Chat List (כולל כפתורי “בקש AI” ו“תמיכה”) */}
-        <Box sx={{ pt: 1, flex: 1, overflowY: "auto", scrollbarWidth: "none", msOverflowStyle: "none", "&::-webkit-scrollbar": { display: "none" } }}>
+        <Box sx={{ pt: 1 }}>
           {sortedChats.map((c) => (
             <Box
               key={c.matchId}

@@ -25,6 +25,8 @@
  * - No feature statistics shown to user
  * - No "celebration" animations
  * - No confirmation dialogs on activate
+ * 
+ * Design: Matches SubscriptionsScreen (dark, nightlife, premium feel)
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -33,7 +35,6 @@ import {
   Box,
   Typography,
   Button,
-  IconButton,
   CircularProgress,
   Snackbar,
   Alert,
@@ -49,71 +50,189 @@ import {
   Clock,
   Coins,
   Crown,
-  Gift,
-  Star,
+  Check,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { PointsBalanceSkeleton, FeatureCardsSkeleton } from '../components/SkeletonLoading';
 
-// Floating particles animation for vibrant feel
-const FloatingParticles = () => (
-  <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-    {[...Array(8)].map((_, i) => (
-      <motion.div
-        key={i}
-        style={{
-          position: 'absolute',
-          width: 8 + Math.random() * 12,
-          height: 8 + Math.random() * 12,
-          borderRadius: '50%',
-          background: `rgba(${200 + Math.random() * 55}, ${100 + Math.random() * 100}, ${200 + Math.random() * 55}, 0.6)`,
-          left: `${10 + Math.random() * 80}%`,
-          top: `${10 + Math.random() * 80}%`,
-        }}
-        animate={{
-          y: [0, -20, 0],
-          x: [0, Math.random() * 10 - 5, 0],
-          scale: [1, 1.2, 1],
-          opacity: [0.4, 0.8, 0.4],
-        }}
-        transition={{
-          duration: 3 + Math.random() * 2,
-          repeat: Infinity,
-          delay: Math.random() * 2,
-        }}
-      />
-    ))}
-  </Box>
-);
-
-// Coin icon with glow effect
-const GlowingCoin = ({ size = 40 }) => (
-  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-    <motion.div
-      animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
-      transition={{ duration: 2, repeat: Infinity }}
-      style={{
-        position: 'absolute',
-        inset: -8,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(255,200,50,0.4) 0%, transparent 70%)',
-      }}
-    />
+// Pulse Wave SVG Component - Same as SubscriptionsScreen
+const PulseWave = ({ intensity = 'calm', style = {} }) => {
+  const isCalm = intensity === 'calm';
+  const peakHeight = isCalm ? 15 : 25;
+  const glowIntensity = isCalm ? 0.3 : 0.5;
+  
+  return (
     <Box
       sx={{
-        width: size,
-        height: size,
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        height: 120,
+        overflow: 'hidden',
+        opacity: 0.2,
+        pointerEvents: 'none',
+        ...style,
+      }}
+    >
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 1200 120"
+        preserveAspectRatio="none"
+        style={{ display: 'block' }}
+      >
+        <defs>
+          <linearGradient id="pulseGradientPoints" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#ec4899" />
+            <stop offset="50%" stopColor="#a855f7" />
+            <stop offset="100%" stopColor="#ec4899" />
+          </linearGradient>
+          <filter id="pulseGlowPoints">
+            <feGaussianBlur stdDeviation={glowIntensity * 8} result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        
+        <motion.path
+          d={`M0,60 Q150,${60 - peakHeight} 300,60 T600,60 Q750,${60 + peakHeight} 900,60 T1200,60`}
+          fill="none"
+          stroke="url(#pulseGradientPoints)"
+          strokeWidth="3"
+          filter="url(#pulseGlowPoints)"
+          animate={{ 
+            d: [
+              `M0,60 Q150,${60 - peakHeight} 300,60 T600,60 Q750,${60 + peakHeight} 900,60 T1200,60`,
+              `M0,60 Q150,${60 + peakHeight * 0.5} 300,60 T600,60 Q750,${60 - peakHeight * 0.5} 900,60 T1200,60`,
+              `M0,60 Q150,${60 - peakHeight} 300,60 T600,60 Q750,${60 + peakHeight} 900,60 T1200,60`,
+            ]
+          }}
+          transition={{
+            d: {
+              duration: isCalm ? 8 : 6,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }
+          }}
+        />
+      </svg>
+    </Box>
+  );
+};
+
+// Feature Item Component - Same style as SubscriptionsScreen
+const FeatureItem = ({ text }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+    <Box
+      sx={{
+        width: 24,
+        height: 24,
         borderRadius: '50%',
-        background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%)',
+        background: 'rgba(236, 72, 153, 0.2)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: '0 4px 20px rgba(255,165,0,0.5)',
+        flexShrink: 0,
       }}
     >
-      <Coins size={size * 0.5} color="#fff" />
+      <Check size={14} color="#ec4899" />
     </Box>
+    <Typography
+      sx={{
+        color: 'rgba(255, 255, 255, 0.9)',
+        fontSize: '0.9rem',
+        fontWeight: 500,
+      }}
+    >
+      {text}
+    </Typography>
   </Box>
+);
+
+// Pricing Option Component - Same style as SubscriptionsScreen
+const PricingOption = ({ label, price, note, selected, onSelect }) => (
+  <Box
+    onClick={onSelect}
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      p: 1.5,
+      borderRadius: '12px',
+      border: selected 
+        ? '2px solid rgba(236, 72, 153, 0.8)' 
+        : '1px solid rgba(255, 255, 255, 0.15)',
+      background: selected 
+        ? 'rgba(236, 72, 153, 0.1)' 
+        : 'rgba(255, 255, 255, 0.03)',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      mb: 1,
+      '&:hover': {
+        background: 'rgba(236, 72, 153, 0.08)',
+        borderColor: 'rgba(236, 72, 153, 0.5)',
+      },
+    }}
+  >
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box
+        sx={{
+          width: 20,
+          height: 20,
+          borderRadius: '50%',
+          border: selected 
+            ? '6px solid #ec4899' 
+            : '2px solid rgba(255, 255, 255, 0.3)',
+          transition: 'all 0.2s ease',
+        }}
+      />
+      <Box>
+        <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.95rem' }}>
+          {label}
+        </Typography>
+        {note && (
+          <Typography sx={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
+            {note}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+    <Typography sx={{ color: '#ec4899', fontWeight: 700, fontSize: '1rem' }}>
+      {price}
+    </Typography>
+  </Box>
+);
+
+// CTA Button with gradient - Same style as SubscriptionsScreen
+const CTAButton = ({ children, onClick, disabled }) => (
+  <Button
+    onClick={onClick}
+    disabled={disabled}
+    sx={{
+      width: '100%',
+      py: 1.75,
+      borderRadius: '14px',
+      background: disabled ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
+      color: disabled ? 'rgba(255,255,255,0.5)' : '#fff',
+      fontWeight: 700,
+      fontSize: '1rem',
+      textTransform: 'none',
+      boxShadow: disabled ? 'none' : '0 8px 32px rgba(236, 72, 153, 0.35)',
+      '&:hover': {
+        background: disabled ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #db2777 0%, #9333ea 100%)',
+        boxShadow: disabled ? 'none' : '0 12px 40px rgba(236, 72, 153, 0.45)',
+      },
+      '&.Mui-disabled': {
+        background: 'rgba(255,255,255,0.1)',
+        color: 'rgba(255,255,255,0.5)',
+      },
+    }}
+  >
+    {children}
+  </Button>
 );
 
 // Feature definitions (LOCKED - do not modify)
@@ -341,516 +460,376 @@ const PointsHubScreen = () => {
 
   if (loading) {
     return (
-      <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', pb: 4 }}>
-        {/* Header Skeleton */}
-        <Box sx={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          bgcolor: '#ffffff',
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
-          px: 2,
-          py: 1.5,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-        }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-            {t('yourPoints') || 'Your Points'}
-          </Typography>
-        </Box>
-        <Box sx={{ px: 2, pt: 3 }}>
-          <PointsBalanceSkeleton />
-          <Box sx={{ mt: 3 }}>
-            <FeatureCardsSkeleton count={4} />
-          </Box>
-        </Box>
+      <Box sx={{ 
+        minHeight: '100vh', 
+        background: 'linear-gradient(180deg, #0f0a15 0%, #1a1025 50%, #0f0a15 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <CircularProgress sx={{ color: '#ec4899' }} />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#fafbfc', pb: 10 }}>
-      {/* Hero Section with Gradient - IDENTICAL to Events page */}
+    <Box sx={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(180deg, #0f0a15 0%, #1a1025 50%, #0f0a15 100%)',
+      pb: 10,
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {/* Hero Section - Dark theme like SubscriptionsScreen */}
       <Box
         sx={{
           position: 'relative',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
-          pt: 3,
+          pt: 8,
           pb: 6,
-          mb: 3,
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'radial-gradient(circle at 20% 50%, rgba(108,92,231,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(168,85,247,0.3) 0%, transparent 50%)',
-            pointerEvents: 'none',
-          },
+          textAlign: 'center',
         }}
       >
-        <Box sx={{ position: 'relative', zIndex: 1, px: 3 }}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <Typography 
-              variant="h3" 
-              sx={{ 
-                fontWeight: 900, 
-                color: '#fff',
-                mb: 1,
-                textShadow: '0 2px 20px rgba(0,0,0,0.2)',
+        {/* Floating profile images in background - decorative */}
+        <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          {[
+            { top: '15%', right: '8%', size: 48 },
+            { top: '25%', left: '5%', size: 40 },
+            { top: '60%', right: '12%', size: 36 },
+            { bottom: '20%', left: '10%', size: 44 },
+          ].map((pos, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 0.6, scale: 1 }}
+              transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }}
+              style={{
+                position: 'absolute',
+                ...pos,
+                width: pos.size,
+                height: pos.size,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
+                opacity: 0.3,
               }}
-            >
-              {t('yourPoints') || 'Your Points'}
-            </Typography>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                color: 'rgba(255,255,255,0.95)',
-                fontWeight: 500,
-                mb: 3,
-                maxWidth: 600,
-              }}
-            >
-              {t('boostYourProfile') || 'Boost your profile and unlock premium features'}
-            </Typography>
-          </motion.div>
+            />
+          ))}
+        </Box>
 
-          {/* Points Balance Card */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Typography
+            variant="h4"
+            sx={{
+              color: '#fff',
+              fontWeight: 800,
+              mb: 1,
+              fontSize: { xs: '1.75rem', sm: '2.25rem' },
+            }}
           >
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              bgcolor: 'rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(12px)',
-              borderRadius: '16px',
-              border: '1px solid rgba(255,255,255,0.3)',
-              p: 2.5,
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%)',
+            {t('chooseHowYouWant') || 'Choose how you'}
+          </Typography>
+          <Typography
+            variant="h4"
+            sx={{
+              color: '#fff',
+              fontWeight: 800,
+              mb: 4,
+              fontSize: { xs: '1.75rem', sm: '2.25rem' },
+            }}
+          >
+            {t('wantToBePresent') || 'want to be present'}
+          </Typography>
+        </motion.div>
+
+        {/* Points Balance Display */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+        >
+          <Box sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 1.5,
+            px: 3,
+            py: 1.5,
+            borderRadius: '20px',
+            background: 'rgba(236, 72, 153, 0.15)',
+            border: '1px solid rgba(236, 72, 153, 0.3)',
+          }}>
+            <Coins size={24} color="#ec4899" />
+            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.25rem' }}>
+              {pointsBalance}
+            </Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
+              {t('pointsAvailable') || 'points'}
+            </Typography>
+          </Box>
+        </motion.div>
+      </Box>
+
+      {/* Section 1: PULSE BOOST - Spend Points */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            mx: 2,
+            mb: 4,
+            p: 3,
+            borderRadius: '24px',
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backdropFilter: 'blur(10px)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Pulse Wave in background */}
+          <PulseWave intensity="calm" style={{ opacity: 0.15 }} />
+          
+          {/* Content */}
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            {/* Badge */}
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '20px',
+                background: 'rgba(236, 72, 153, 0.15)',
+                border: '1px solid rgba(236, 72, 153, 0.3)',
+                mb: 2,
+              }}
+            >
+              <Sparkles size={14} color="#ec4899" />
+              <Typography sx={{ color: '#ec4899', fontSize: '0.75rem', fontWeight: 600 }}>
+                PULSE BOOST
+              </Typography>
+            </Box>
+            
+            {/* Headline */}
+            <Typography
+              variant="h5"
+              sx={{
+                color: '#fff',
+                fontWeight: 800,
+                mb: 0.5,
+                fontSize: '1.5rem',
+              }}
+            >
+              {t('boostYourVisibility') || 'Boost your visibility'}
+            </Typography>
+            
+            {/* Subline */}
+            <Typography
+              sx={{
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontSize: '0.95rem',
+                mb: 3,
+              }}
+            >
+              {t('spendPointsDesc') || 'Spend points to stand out'}
+            </Typography>
+            
+            {/* Features list */}
+            <Box sx={{ mb: 3 }}>
+              {FEATURES.map((feature) => (
+                <FeatureItem 
+                  key={feature.id} 
+                  text={`${getFeatureInfo(feature)} - ${feature.duration} ${t('minutes') || 'min'}`} 
+                />
+              ))}
+            </Box>
+            
+            {/* Pricing Options */}
+            <Box sx={{ mb: 3 }}>
+              {FEATURES.map((feature, idx) => {
+                const isActive = activeFeature?.id === feature.id;
+                const isDisabled = hasSubscription || (activeFeature && !isActive) || pointsBalance < feature.cost;
+                
+                return (
+                  <PricingOption
+                    key={feature.id}
+                    label={getFeatureInfo(feature)}
+                    price={`${feature.cost} pts`}
+                    note={isActive ? `⏱ ${formatTime(remainingTime)}` : `${feature.duration} min`}
+                    selected={isActive}
+                    onSelect={() => !isDisabled && !isActive && handleActivateFeature(feature)}
+                  />
+                );
+              })}
+            </Box>
+            
+            {/* Active Feature Notice */}
+            {activeFeature && (
+              <Box
+                sx={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 4px 20px rgba(255,165,0,0.4)',
-                }}>
-                  <Coins size={28} color="#fff" />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: 36, fontWeight: 900, color: '#fff', lineHeight: 1 }}>
-                    {pointsBalance}
-                  </Typography>
-                  <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
-                    {t('pointsAvailable') || 'Points Available'}
-                  </Typography>
-                </Box>
-              </Box>
-              <Button
-                onClick={() => {/* scroll to buy section */}}
-                sx={{
-                  px: 3,
-                  py: 1.5,
-                  borderRadius: '12px',
-                  bgcolor: '#fff',
-                  color: '#667eea',
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
-                  textTransform: 'none',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                  '&:hover': {
-                    bgcolor: '#f8f9ff',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-                  },
-                  transition: 'all 0.3s ease',
+                  gap: 1,
+                  py: 1.75,
+                  borderRadius: '14px',
+                  background: 'rgba(34, 197, 94, 0.15)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
                 }}
               >
-                <Gift size={18} style={{ marginRight: 8 }} />
-                {t('getMorePoints') || 'Get More'}
-              </Button>
-            </Box>
-          </motion.div>
-        </Box>
-      </Box>
+                <Check size={20} color="#22c55e" />
+                <Typography sx={{ color: '#22c55e', fontWeight: 600 }}>
+                  {getFeatureInfo({ id: activeFeature.id })} {t('active') || 'Active'}
+                </Typography>
+              </Box>
+            )}
 
-      <Box sx={{ px: 2 }}>
-        {/* Section A: Balance Display removed - now in hero */}
-
-        {/* Section B: Active Feature (Conditional) */}
-        {activeFeature && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Box sx={{
-              bgcolor: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-              borderRadius: '16px',
-              p: 2.5,
-              mb: 3,
-              color: '#ffffff',
-            }}>
-              <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-                <Box>
-                  <Typography sx={{ 
-                    fontSize: 12, 
-                    fontWeight: 600, 
-                    opacity: 0.9,
-                    textTransform: 'uppercase',
-                    letterSpacing: 1,
-                    mb: 0.5,
-                  }}>
-                    {t('activeNow') || 'Active Now'}
-                  </Typography>
-                  <Typography sx={{ fontSize: 18, fontWeight: 700 }}>
-                    {getFeatureInfo({ id: activeFeature.id })}
-                  </Typography>
-                </Box>
-                <Box sx={{
+            {/* Subscription Active Notice */}
+            {hasSubscription && (
+              <Box
+                sx={{
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: 1,
-                  bgcolor: 'rgba(255,255,255,0.2)',
-                  borderRadius: '12px',
-                  px: 2,
-                  py: 1,
-                }}>
-                  <Clock size={18} />
-                  <Typography sx={{ 
-                    fontSize: 20, 
-                    fontWeight: 700,
-                    fontFamily: 'monospace',
-                  }}>
-                    {formatTime(remainingTime)}
-                  </Typography>
-                </Box>
+                  py: 1.75,
+                  borderRadius: '14px',
+                  background: 'rgba(236, 72, 153, 0.15)',
+                  border: '1px solid rgba(236, 72, 153, 0.3)',
+                }}
+              >
+                <Crown size={20} color="#ec4899" />
+                <Typography sx={{ color: '#ec4899', fontWeight: 600 }}>
+                  {t('premiumActive') || 'Premium Active'}
+                </Typography>
               </Box>
-            </Box>
-          </motion.div>
-        )}
-
-        {/* Subscription Active Notice */}
-        {hasSubscription && (
-          <Box sx={{
-            bgcolor: '#fef3c7',
-            borderRadius: '12px',
-            p: 2,
-            mb: 3,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-          }}>
-            <Crown size={24} color="#d97706" />
-            <Typography sx={{ color: '#92400e', fontSize: 14 }}>
-              {t('subscriptionActivePointsDisabled') || 'You have an active subscription. Points features are included.'}
-            </Typography>
+            )}
           </Box>
-        )}
+        </Box>
+      </motion.div>
 
-        {/* Section C: Spend Points (Feature Cards) */}
-        <Typography sx={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: '#64748b',
-          textTransform: 'uppercase',
-          letterSpacing: 1,
-          mb: 2,
-        }}>
-          {t('spendPoints') || 'Spend Points'}
+      {/* Section 2: BUY POINTS */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            mx: 2,
+            mb: 4,
+            p: 3,
+            borderRadius: '24px',
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backdropFilter: 'blur(10px)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Pulse Wave in background */}
+          <PulseWave intensity="energetic" style={{ opacity: 0.22 }} />
+          
+          {/* Content */}
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            {/* Badge */}
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '20px',
+                background: 'rgba(236, 72, 153, 0.15)',
+                border: '1px solid rgba(236, 72, 153, 0.3)',
+                mb: 2,
+              }}
+            >
+              <Coins size={14} color="#ec4899" />
+              <Typography sx={{ color: '#ec4899', fontSize: '0.75rem', fontWeight: 600 }}>
+                PULSE POINTS
+              </Typography>
+            </Box>
+            
+            {/* Headline */}
+            <Typography
+              variant="h5"
+              sx={{
+                color: '#fff',
+                fontWeight: 800,
+                mb: 0.5,
+                fontSize: '1.5rem',
+              }}
+            >
+              {t('getMorePoints') || 'Get more points'}
+            </Typography>
+            
+            {/* Subline */}
+            <Typography
+              sx={{
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontSize: '0.95rem',
+                mb: 3,
+              }}
+            >
+              {t('buyPointsDesc') || 'One-time purchase, no subscription'}
+            </Typography>
+            
+            {/* Pricing Options */}
+            <Box sx={{ mb: 3 }}>
+              {PACKAGES.map((pkg) => (
+                <PricingOption
+                  key={pkg.id}
+                  label={`${pkg.points} ${t('points') || 'Points'}`}
+                  price={`${pkg.currency}${pkg.price}`}
+                  note={t('oneTimePurchase') || 'one-time'}
+                  selected={purchasingPackage === pkg.id}
+                  onSelect={() => handlePurchasePackage(pkg)}
+                />
+              ))}
+            </Box>
+            
+            {/* CTA */}
+            <CTAButton 
+              onClick={() => {
+                const selectedPkg = PACKAGES.find(p => p.id === purchasingPackage) || PACKAGES[1];
+                handlePurchasePackage(selectedPkg);
+              }}
+              disabled={!!purchasingPackage}
+            >
+              {purchasingPackage ? (
+                <CircularProgress size={20} sx={{ color: '#fff' }} />
+              ) : (
+                t('buyNow') || 'Buy Now'
+              )}
+            </CTAButton>
+          </Box>
+        </Box>
+      </motion.div>
+
+      {/* Premium upsell link */}
+      <Box sx={{ textAlign: 'center', px: 2, mb: 4 }}>
+        <Typography
+          onClick={() => navigate('/subscriptions')}
+          sx={{
+            color: 'rgba(255, 255, 255, 0.6)',
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            '&:hover': { color: '#ec4899' },
+            transition: 'color 0.2s ease',
+          }}
+        >
+          <Crown size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+          {t('premiumUnlocksEverything') || 'Premium unlocks everything — anytime'}
         </Typography>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
-          {FEATURES.map((feature, idx) => {
-            const FeatureIcon = feature.icon;
-            const isActive = activeFeature?.id === feature.id;
-            const isDisabled = hasSubscription || 
-                             (activeFeature && !isActive) || 
-                             pointsBalance < feature.cost;
-            const notEnoughPoints = pointsBalance < feature.cost && !hasSubscription && !activeFeature;
-            const isActivating = activatingFeature === feature.id;
-            
-            // Gradient colors for each feature - matching Events page style
-            const featureColors = [
-              'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Undo
-              'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // Likes
-              'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', // Nearby
-              'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', // BeatPulse
-            ];
-
-            return (
-              <motion.div
-                key={feature.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, delay: idx * 0.05 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Box sx={{
-                  bgcolor: '#fff',
-                  borderRadius: '16px',
-                  p: 2,
-                  opacity: isDisabled && !isActive ? 0.6 : 1,
-                  border: isActive ? '2px solid #667eea' : '1px solid rgba(0,0,0,0.06)',
-                  boxShadow: isActive ? '0 4px 20px rgba(102,126,234,0.3)' : '0 4px 20px rgba(0,0,0,0.08)',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                  },
-                }}>
-                  <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: '14px',
-                        background: featureColors[idx],
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
-                      }}>
-                        <FeatureIcon size={24} color="#fff" />
-                      </Box>
-                      <Box>
-                        <Typography sx={{ 
-                          fontWeight: 700, 
-                          color: '#1a1a2e',
-                          fontSize: 15,
-                        }}>
-                          {getFeatureInfo(feature)}
-                        </Typography>
-                        <Typography sx={{ 
-                          fontSize: 13, 
-                          color: '#64748b',
-                        }}>
-                          {feature.duration} {t('minutes') || 'min'} • {feature.cost} {t('pts') || 'pts'}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {isActive ? (
-                      <Box sx={{
-                        background: 'linear-gradient(135deg, #22C55E 0%, #10B981 100%)',
-                        color: '#ffffff',
-                        px: 2,
-                        py: 1,
-                        borderRadius: '10px',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        boxShadow: '0 4px 12px rgba(34,197,94,0.3)',
-                      }}>
-                        {t('active') || 'Active'}
-                      </Box>
-                    ) : (
-                      <Button
-                        onClick={() => handleActivateFeature(feature)}
-                        disabled={isDisabled || isActivating}
-                        sx={{
-                          background: isDisabled ? '#e5e7eb' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          color: isDisabled ? '#9ca3af' : '#ffffff',
-                          px: 2.5,
-                          py: 1,
-                          borderRadius: '10px',
-                          fontSize: 13,
-                          fontWeight: 700,
-                          textTransform: 'none',
-                          minWidth: 90,
-                          boxShadow: isDisabled ? 'none' : '0 4px 12px rgba(102,126,234,0.3)',
-                          '&:hover': {
-                            background: isDisabled ? '#e5e7eb' : 'linear-gradient(135deg, #5568d3 0%, #6a4296 100%)',
-                            boxShadow: isDisabled ? 'none' : '0 6px 16px rgba(102,126,234,0.4)',
-                          },
-                          '&.Mui-disabled': {
-                            background: '#e5e7eb',
-                            color: '#9ca3af',
-                          },
-                        }}
-                      >
-                        {isActivating ? (
-                          <CircularProgress size={18} sx={{ color: '#ffffff' }} />
-                        ) : (
-                          t('activate') || 'Activate'
-                        )}
-                      </Button>
-                    )}
-                  </Box>
-
-                  {/* Not enough points hint */}
-                  {notEnoughPoints && (
-                    <Typography sx={{
-                      fontSize: 12,
-                      color: '#667eea',
-                      mt: 1.5,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                    }}>
-                      <Sparkles size={14} />
-                      {t('needMorePoints') || `Need ${feature.cost - pointsBalance} more points`}
-                    </Typography>
-                  )}
-                </Box>
-              </motion.div>
-            );
-          })}
-        </Box>
-
-        {/* Section D: Buy Points */}
-        <Typography sx={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: '#64748b',
-          textTransform: 'uppercase',
-          letterSpacing: 1,
-          mb: 2,
-        }}>
-          {t('buyPoints') || 'Buy Points'}
-        </Typography>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
-          {PACKAGES.map((pkg, idx) => {
-            const isPurchasing = purchasingPackage === pkg.id;
-            
-            // Package colors - matching Events page style
-            const packageColors = [
-              'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Small
-              'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // Medium
-              'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)', // Large - best value
-            ];
-            
-            return (
-              <motion.div
-                key={pkg.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, delay: idx * 0.05 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Box
-                  onClick={() => !isPurchasing && handlePurchasePackage(pkg)}
-                  sx={{
-                    position: 'relative',
-                    bgcolor: '#fff',
-                    borderRadius: '16px',
-                    p: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    border: '1px solid rgba(0,0,0,0.06)',
-                    overflow: 'hidden',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                    },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '14px',
-                      background: packageColors[idx],
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
-                    }}>
-                      <Coins size={24} color="#fff" />
-                    </Box>
-                    <Box>
-                      <Typography sx={{ 
-                        fontWeight: 700, 
-                        color: '#1a1a2e',
-                        fontSize: 20,
-                      }}>
-                        {pkg.points}
-                      </Typography>
-                      <Typography sx={{ 
-                        fontSize: 13, 
-                        color: '#64748b',
-                      }}>
-                        {t('points') || 'Points'}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Button
-                    sx={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: '#ffffff',
-                      px: 3,
-                      py: 1.25,
-                      borderRadius: '12px',
-                      fontSize: 16,
-                      fontWeight: 700,
-                      minWidth: 90,
-                      textAlign: 'center',
-                      boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
-                      textTransform: 'none',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, #5568d3 0%, #6a4296 100%)',
-                        boxShadow: '0 6px 16px rgba(102,126,234,0.4)',
-                      },
-                    }}
-                  >
-                    {isPurchasing ? (
-                      <CircularProgress size={18} sx={{ color: '#ffffff' }} />
-                    ) : (
-                      `${pkg.currency}${pkg.price}`
-                    )}
-                  </Button>
-                </Box>
-              </motion.div>
-            );
-          })}
-        </Box>
-
-        {/* Premium comparison text (required) */}
-        <Box sx={{
-          bgcolor: '#fff',
-          border: '1px solid rgba(0,0,0,0.06)',
-          borderRadius: '16px',
-          p: 2.5,
-          textAlign: 'center',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        }}>
-          <Typography sx={{
-            fontSize: 14,
-            color: '#1a1a2e',
-            fontWeight: 600,
-          }}>
-            <Crown size={16} style={{ verticalAlign: 'middle', marginRight: 6, color: '#667eea' }} />
-            {t('premiumUnlocksEverything') || 'Premium unlocks everything — anytime'}
-          </Typography>
-        </Box>
       </Box>
 
       {/* Snackbar */}

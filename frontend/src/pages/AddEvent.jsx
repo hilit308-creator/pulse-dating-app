@@ -132,8 +132,21 @@ export default function AddEvent() {
   const [errors, setErrors] = useState({});
   const [showPreview, setShowPreview] = useState(false);
   
+  // Track if user has made any changes
+  const [isDirty, setIsDirty] = useState(false);
+  
   // Accordion state - track which section is open
   const [openSection, setOpenSection] = useState('basic');
+  
+  // Track form changes to set isDirty
+  useEffect(() => {
+    const hasTitle = form.basic.title.length > 0;
+    const hasDescription = form.basic.shortDescription.length > 0;
+    const hasSchedule = form.schedule.startAt || form.schedule.locationText || form.schedule.onlineLink;
+    const hasTickets = form.tickets.length > 0;
+    
+    setIsDirty(hasTitle || hasDescription || hasSchedule || hasTickets);
+  }, [form.basic.title, form.basic.shortDescription, form.schedule.startAt, form.schedule.locationText, form.schedule.onlineLink, form.tickets]);
   
   // Section completion tracking
   const [completedSections, setCompletedSections] = useState({
@@ -733,59 +746,67 @@ export default function AddEvent() {
         </motion.div>
       </Box>
 
-      {/* Sticky Bottom Bar */}
-      <Box sx={{ 
-        position: 'fixed', 
-        bottom: 0, 
-        left: 0, 
-        right: 0, 
-        bgcolor: '#fff', 
-        borderTop: '1px solid rgba(0,0,0,0.08)',
-        p: 2,
-        boxShadow: '0 -4px 12px rgba(0,0,0,0.05)'
-      }}>
-        <Stack direction="row" spacing={2} justifyContent="center" sx={{ maxWidth: 720, mx: 'auto' }}>
-          <Button 
-            variant="outlined" 
-            onClick={() => setShowPreview(true)}
-            sx={{
-              borderRadius: '12px',
-              textTransform: 'none',
-              fontWeight: 600,
-              px: 4,
-              py: 1.25,
-              borderColor: '#e2e8f0',
-              color: '#64748b',
-              '&:hover': {
-                borderColor: '#6C5CE7',
-                color: '#6C5CE7',
-                bgcolor: 'rgba(108,92,231,0.04)'
-              }
-            }}
+      {/* Action Buttons - Part of page content, only show when user has made changes */}
+      <AnimatePresence>
+        {isDirty && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
           >
-            Preview
-          </Button>
-          <Button 
-            variant="contained" 
-            onClick={() => validateAnd(() => alert('Ready to publish (mock).'))}
-            sx={{
-              borderRadius: '12px',
-              textTransform: 'none',
-              fontWeight: 600,
-              px: 4,
-              py: 1.25,
-              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-              boxShadow: '0 4px 12px rgba(108,92,231,0.3)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
-                boxShadow: '0 6px 16px rgba(108,92,231,0.4)'
-              }
-            }}
-          >
-            Publish Event
-          </Button>
-        </Stack>
-      </Box>
+            <Box sx={{ 
+              maxWidth: 720, 
+              mx: 'auto',
+              px: 2,
+              pb: 4,
+              pt: 2,
+            }}>
+              <Stack direction="row" spacing={2} justifyContent="center">
+                <Button 
+                  variant="outlined" 
+                  onClick={() => setShowPreview(true)}
+                  sx={{
+                    borderRadius: '12px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 4,
+                    py: 1.25,
+                    borderColor: '#e2e8f0',
+                    color: '#64748b',
+                    '&:hover': {
+                      borderColor: '#6C5CE7',
+                      color: '#6C5CE7',
+                      bgcolor: 'rgba(108,92,231,0.04)'
+                    }
+                  }}
+                >
+                  Preview
+                </Button>
+                <Button 
+                  variant="contained" 
+                  onClick={() => validateAnd(() => alert('Ready to publish (mock).'))}
+                  sx={{
+                    borderRadius: '12px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 4,
+                    py: 1.25,
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                    boxShadow: '0 4px 12px rgba(108,92,231,0.3)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
+                      boxShadow: '0 6px 16px rgba(108,92,231,0.4)'
+                    }
+                  }}
+                >
+                  Publish Event
+                </Button>
+              </Stack>
+            </Box>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Preview Dialog (lightweight) */}
       <Dialog 

@@ -1349,7 +1349,7 @@ export default function MatchesScreen() {
       }}
     >
       {/* Subscription Promo Banner - appears after browsing */}
-      <HomeInlinePromoBanner swipeCount={filteredMatches.length > 0 ? 8 : 0} />
+      <HomeInlinePromoBanner swipeCount={8} />
 
       {/* Pending Workshop Invite Banner */}
       {pendingWorkshopInvite && (

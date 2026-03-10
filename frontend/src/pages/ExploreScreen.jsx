@@ -2695,17 +2695,155 @@ function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
 /* =========================
    Add Date Spot Dialog (UGC)
    ========================= */
+// Google Places API key
+const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY || '';
+
+// Load Google Maps script dynamically
+const loadGoogleMapsScript = () => {
+  if (window.google?.maps?.places || !GOOGLE_PLACES_API_KEY) return Promise.resolve();
+  
+  return new Promise((resolve, reject) => {
+    if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+      const checkLoaded = setInterval(() => {
+        if (window.google?.maps?.places) {
+          clearInterval(checkLoaded);
+          resolve();
+        }
+      }, 100);
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_PLACES_API_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+};
+
 function AddDateSpotDialog({ open, onClose, onSubmit }) {
   const [step, setStep] = React.useState(1); // 1: Basic Info, 2: Details, 3: Photos, 4: Success
   const [formData, setFormData] = React.useState({
     name: '',
     category: '',
     location: '',
+    locationPlaceId: '',
+    locationCoords: null,
     description: '',
     vibes: [],
     photos: [],
+    isFree: true,
+    priceRange: '',
+    isOpen24h: true,
+    openingHours: '',
+    closingHours: '',
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  
+  // Google Places state
+  const [locationSuggestions, setLocationSuggestions] = React.useState([]);
+  const [isSearchingLocation, setIsSearchingLocation] = React.useState(false);
+  const autocompleteService = React.useRef(null);
+  const placesService = React.useRef(null);
+  const searchTimeoutRef = React.useRef(null);
+
+  // Initialize Google Places services
+  React.useEffect(() => {
+    const initGooglePlaces = async () => {
+      try {
+        await loadGoogleMapsScript();
+        if (window.google?.maps?.places) {
+          autocompleteService.current = new window.google.maps.places.AutocompleteService();
+          const dummyDiv = document.createElement('div');
+          placesService.current = new window.google.maps.places.PlacesService(dummyDiv);
+        }
+      } catch (err) {
+        console.warn('Google Places not available:', err);
+      }
+    };
+    initGooglePlaces();
+  }, []);
+
+  // Search Google Places for location
+  const searchLocation = React.useCallback((query) => {
+    if (!query.trim() || !autocompleteService.current) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    setIsSearchingLocation(true);
+    
+    autocompleteService.current.getPlacePredictions(
+      {
+        input: query,
+        types: ['establishment', 'geocode'],
+      },
+      (predictions, status) => {
+        setIsSearchingLocation(false);
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions?.length > 0) {
+          setLocationSuggestions(predictions.map(p => ({
+            placeId: p.place_id,
+            mainText: p.structured_formatting.main_text,
+            secondaryText: p.structured_formatting.secondary_text,
+            fullText: p.description,
+          })));
+        } else {
+          setLocationSuggestions([]);
+        }
+      }
+    );
+  }, []);
+
+  // Debounced location search
+  React.useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    if (formData.location.trim().length >= 2 && !formData.locationPlaceId) {
+      searchTimeoutRef.current = setTimeout(() => {
+        searchLocation(formData.location);
+      }, 300);
+    } else {
+      setLocationSuggestions([]);
+    }
+    
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [formData.location, formData.locationPlaceId, searchLocation]);
+
+  // Select a location from suggestions
+  const selectLocation = (suggestion) => {
+    setFormData(prev => ({
+      ...prev,
+      location: suggestion.fullText,
+      locationPlaceId: suggestion.placeId,
+    }));
+    setLocationSuggestions([]);
+    
+    // Get place details for coordinates
+    if (placesService.current) {
+      placesService.current.getDetails(
+        { placeId: suggestion.placeId, fields: ['geometry'] },
+        (place, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+            setFormData(prev => ({
+              ...prev,
+              locationCoords: {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng(),
+              },
+            }));
+          }
+        }
+      );
+    }
+  };
 
   const categories = [
     { id: 'cafe', label: 'Cafe', icon: '☕' },
@@ -2726,7 +2864,8 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
 
   const handleClose = () => {
     setStep(1);
-    setFormData({ name: '', category: '', location: '', description: '', vibes: [], photos: [] });
+    setFormData({ name: '', category: '', location: '', locationPlaceId: '', locationCoords: null, description: '', vibes: [], photos: [], isFree: true, priceRange: '', isOpen24h: true, openingHours: '', closingHours: '' });
+    setLocationSuggestions([]);
     onClose();
   };
 
@@ -2833,24 +2972,204 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
               </Box>
             </Box>
 
-            <Box>
+            <Box sx={{ mb: 1.5, position: 'relative' }}>
               <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block', fontSize: '0.7rem' }}>
                 Location *
               </Typography>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="e.g., Tel Aviv, Rothschild Blvd"
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '10px',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                }}
-              />
+              <Box sx={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value, locationPlaceId: '', locationCoords: null }))}
+                  placeholder="Search for a place..."
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    paddingRight: '36px',
+                    borderRadius: '10px',
+                    border: formData.locationPlaceId ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                  }}
+                />
+                {isSearchingLocation && (
+                  <Box sx={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }}>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#94a3b8' }}>...</Typography>
+                  </Box>
+                )}
+                {formData.locationPlaceId && (
+                  <Box sx={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }}>
+                    <Typography sx={{ fontSize: '1rem' }}>📍</Typography>
+                  </Box>
+                )}
+              </Box>
+              
+              {/* Location Suggestions Dropdown */}
+              {locationSuggestions.length > 0 && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    bgcolor: '#fff',
+                    borderRadius: '10px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    zIndex: 1000,
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    mt: 0.5,
+                  }}
+                >
+                  {locationSuggestions.map((suggestion) => (
+                    <Box
+                      key={suggestion.placeId}
+                      onClick={() => selectLocation(suggestion)}
+                      sx={{
+                        p: 1.5,
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #f1f5f9',
+                        '&:hover': { bgcolor: 'rgba(108,92,231,0.05)' },
+                        '&:last-child': { borderBottom: 'none' },
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#1a1a2e' }}>
+                        {suggestion.mainText}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        {suggestion.secondaryText}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Box>
+
+            {/* Free or Paid */}
+            <Box sx={{ mb: 1.5 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block', fontSize: '0.7rem' }}>
+                Pricing
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box
+                  onClick={() => setFormData(prev => ({ ...prev, isFree: true, priceRange: '' }))}
+                  sx={{
+                    flex: 1,
+                    p: 1,
+                    borderRadius: '10px',
+                    border: formData.isFree ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                    bgcolor: formData.isFree ? 'rgba(108,92,231,0.08)' : 'transparent',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '1.2rem' }}>🆓</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>Free</Typography>
+                </Box>
+                <Box
+                  onClick={() => setFormData(prev => ({ ...prev, isFree: false }))}
+                  sx={{
+                    flex: 1,
+                    p: 1,
+                    borderRadius: '10px',
+                    border: !formData.isFree ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                    bgcolor: !formData.isFree ? 'rgba(108,92,231,0.08)' : 'transparent',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '1.2rem' }}>💰</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>Paid</Typography>
+                </Box>
+              </Box>
+              {!formData.isFree && (
+                <Box sx={{ mt: 1 }}>
+                  <input
+                    type="text"
+                    value={formData.priceRange}
+                    onChange={(e) => setFormData(prev => ({ ...prev, priceRange: e.target.value }))}
+                    placeholder="e.g., ₪50-100 per person"
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      fontSize: '0.85rem',
+                      outline: 'none',
+                    }}
+                  />
+                </Box>
+              )}
+            </Box>
+
+            {/* Opening Hours */}
+            <Box sx={{ mb: 1.5 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.5, display: 'block', fontSize: '0.7rem' }}>
+                Opening Hours
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                <Box
+                  onClick={() => setFormData(prev => ({ ...prev, isOpen24h: true, openingHours: '', closingHours: '' }))}
+                  sx={{
+                    flex: 1,
+                    p: 1,
+                    borderRadius: '10px',
+                    border: formData.isOpen24h ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                    bgcolor: formData.isOpen24h ? 'rgba(108,92,231,0.08)' : 'transparent',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '1.2rem' }}>🕐</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>Always Open</Typography>
+                </Box>
+                <Box
+                  onClick={() => setFormData(prev => ({ ...prev, isOpen24h: false }))}
+                  sx={{
+                    flex: 1,
+                    p: 1,
+                    borderRadius: '10px',
+                    border: !formData.isOpen24h ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                    bgcolor: !formData.isOpen24h ? 'rgba(108,92,231,0.08)' : 'transparent',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '1.2rem' }}>⏰</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>Set Hours</Typography>
+                </Box>
+              </Box>
+              {!formData.isOpen24h && (
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <input
+                    type="time"
+                    value={formData.openingHours}
+                    onChange={(e) => setFormData(prev => ({ ...prev, openingHours: e.target.value }))}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      fontSize: '0.85rem',
+                      outline: 'none',
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ color: '#64748b' }}>to</Typography>
+                  <input
+                    type="time"
+                    value={formData.closingHours}
+                    onChange={(e) => setFormData(prev => ({ ...prev, closingHours: e.target.value }))}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      fontSize: '0.85rem',
+                      outline: 'none',
+                    }}
+                  />
+                </Box>
+              )}
             </Box>
           </DialogContent>
           <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
@@ -2917,7 +3236,7 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
               />
             </Box>
 
-            <Box>
+            <Box sx={{ mb: 2 }}>
               <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 1, display: 'block' }}>
                 Vibes (select all that apply)
               </Typography>
@@ -2938,7 +3257,8 @@ function AddDateSpotDialog({ open, onClose, onSubmit }) {
                 ))}
               </Box>
             </Box>
-          </DialogContent>
+
+            </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
             <Button
               fullWidth
@@ -5365,13 +5685,14 @@ export default function ExploreScreen() {
                     flexShrink: 0,
                     fontWeight: 600,
                     borderRadius: '18px',
-                    bgcolor: isActive ? '#0EA5E9' : '#f1f5f9',
-                    color: isActive ? '#fff' : '#64748b',
+                    backgroundColor: isActive ? '#f3e8ff !important' : '#f1f5f9',
+                    color: isActive ? '#7c3aed' : '#64748b',
+                    border: isActive ? '1px solid #c4b5fd' : '1px solid transparent',
                     '& .MuiChip-icon': {
-                      color: isActive ? '#fff' : '#64748b',
+                      color: isActive ? '#7c3aed' : '#64748b',
                     },
                     '&:hover': {
-                      bgcolor: isActive ? '#0284C7' : '#e2e8f0',
+                      backgroundColor: isActive ? '#f3e8ff !important' : '#e2e8f0',
                     },
                   }}
                 />
@@ -5402,13 +5723,14 @@ export default function ExploreScreen() {
                     flexShrink: 0,
                     fontWeight: 500,
                     borderRadius: '14px',
-                    bgcolor: isActive ? '#0EA5E9' : '#f8fafc',
-                    color: isActive ? '#fff' : '#94a3b8',
+                    backgroundColor: isActive ? '#f3e8ff !important' : '#f8fafc',
+                    color: isActive ? '#7c3aed' : '#94a3b8',
+                    border: isActive ? '1px solid #c4b5fd' : '1px solid transparent',
                     '& .MuiChip-icon': {
-                      color: isActive ? '#fff' : '#94a3b8',
+                      color: isActive ? '#7c3aed' : '#94a3b8',
                     },
                     '&:hover': {
-                      bgcolor: isActive ? '#0284C7' : '#f1f5f9',
+                      backgroundColor: isActive ? '#f3e8ff !important' : '#f1f5f9',
                     },
                   }}
                 />

@@ -1,5 +1,5 @@
 /**
- * PointsPromoBanner - Vibrant Points Promotional Banners
+ * PointsPromoBanner - Points Promotional Banners
  * 
  * Per Spec: Points System promotional surfaces
  * 
@@ -8,14 +8,14 @@
  * - ChatStickyBanner: Bottom sticky in Chat List, dismissible (7 days)
  * - HomePromoBanner: Inline card after X swipes
  * 
- * Design: Vibrant, colorful, alive - matching Points Hub theme
+ * Design: Dark theme matching SubscriptionsScreen (nightlife, premium feel)
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, IconButton } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Coins, Sparkles, Gift, Zap, ChevronRight } from 'lucide-react';
+import { X, Coins, Sparkles, ChevronRight } from 'lucide-react';
 
 // Storage key for dismiss tracking
 const DISMISS_STORAGE_KEY = 'pulse_points_promo_dismissed';
@@ -42,31 +42,36 @@ const dismissPromo = (promoId) => {
   } catch {}
 };
 
-// Floating coins animation
-const FloatingCoins = () => (
+// Floating circles animation - same style as PointsHubScreen hero
+const FloatingCircles = ({ count = 3 }) => (
   <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-    {[...Array(5)].map((_, i) => (
+    {[
+      { top: '10%', right: '8%', size: 28 },
+      { top: '55%', left: '5%', size: 24 },
+      { bottom: '15%', right: '15%', size: 20 },
+      { top: '35%', left: '12%', size: 18 },
+    ].slice(0, count).map((pos, i) => (
       <motion.div
         key={i}
-        style={{
-          position: 'absolute',
-          fontSize: 16 + Math.random() * 8,
-          left: `${15 + Math.random() * 70}%`,
-          top: `${20 + Math.random() * 60}%`,
-        }}
-        animate={{
-          y: [0, -15, 0],
-          rotate: [0, 10, -10, 0],
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ 
+          opacity: [0.3, 0.5, 0.3],
           scale: [1, 1.1, 1],
         }}
-        transition={{
-          duration: 2 + Math.random() * 2,
+        transition={{ 
+          duration: 3 + i * 0.5, 
           repeat: Infinity,
-          delay: Math.random() * 2,
+          delay: i * 0.3,
         }}
-      >
-        🪙
-      </motion.div>
+        style={{
+          position: 'absolute',
+          ...pos,
+          width: pos.size,
+          height: pos.size,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
+        }}
+      />
     ))}
   </Box>
 );
@@ -75,6 +80,7 @@ const FloatingCoins = () => (
  * Edit Profile Points Banner
  * Placement: Below Profile Strength bar, above Photos section
  * Persistent, non-dismissible
+ * Design: Dark theme matching SubscriptionsScreen
  */
 export const EditProfilePointsBanner = ({ pointsBalance = 150 }) => {
   const navigate = useNavigate();
@@ -89,18 +95,19 @@ export const EditProfilePointsBanner = ({ pointsBalance = 150 }) => {
         onClick={() => navigate('/points')}
         sx={{
           position: 'relative',
-          background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%)',
+          background: 'linear-gradient(135deg, #1a1025 0%, #0f0a15 100%)',
           borderRadius: '16px',
           p: 2,
           mx: 2,
           mb: 2,
           cursor: 'pointer',
           overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(139,92,246,0.4)',
+          border: '1px solid rgba(236, 72, 153, 0.3)',
+          boxShadow: '0 4px 20px rgba(236, 72, 153, 0.2)',
         }}
       >
-        {/* Floating coins */}
-        <FloatingCoins />
+        {/* Floating circles animation */}
+        <FloatingCircles count={3} />
         
         <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -108,24 +115,19 @@ export const EditProfilePointsBanner = ({ pointsBalance = 150 }) => {
               width: 44,
               height: 44,
               borderRadius: '12px',
-              background: 'rgba(255,255,255,0.25)',
-              backdropFilter: 'blur(10px)',
+              background: 'rgba(236, 72, 153, 0.2)',
+              border: '1px solid rgba(236, 72, 153, 0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Coins size={24} color="#fff" />
-              </motion.div>
+              <Coins size={24} color="#ec4899" />
             </Box>
             <Box>
               <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem' }}>
                 {pointsBalance} Points available
               </Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem' }}>
+              <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>
                 Use points to unlock short premium boosts
               </Typography>
             </Box>
@@ -133,8 +135,7 @@ export const EditProfilePointsBanner = ({ pointsBalance = 150 }) => {
           
           <Button
             sx={{
-              background: 'rgba(255,255,255,0.25)',
-              backdropFilter: 'blur(10px)',
+              background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
               color: '#fff',
               fontWeight: 700,
               fontSize: '0.85rem',
@@ -142,13 +143,13 @@ export const EditProfilePointsBanner = ({ pointsBalance = 150 }) => {
               px: 2,
               py: 1,
               borderRadius: '10px',
-              border: '1px solid rgba(255,255,255,0.3)',
+              boxShadow: '0 4px 12px rgba(236, 72, 153, 0.3)',
               '&:hover': {
-                background: 'rgba(255,255,255,0.35)',
+                background: 'linear-gradient(135deg, #db2777 0%, #9333ea 100%)',
               },
             }}
           >
-            <Gift size={16} style={{ marginRight: 6 }} />
+            <Sparkles size={16} style={{ marginRight: 6 }} />
             Get More
           </Button>
         </Box>
@@ -161,6 +162,7 @@ export const EditProfilePointsBanner = ({ pointsBalance = 150 }) => {
  * Chat List Sticky Banner
  * Placement: Bottom of Chat List, above tab bar
  * Dismissible - hidden for 7 days after dismiss
+ * Design: Dark theme matching SubscriptionsScreen
  */
 export const ChatPointsStickyBanner = () => {
   const navigate = useNavigate();
@@ -200,47 +202,37 @@ export const ChatPointsStickyBanner = () => {
           onClick={() => navigate('/points')}
           sx={{
             position: 'relative',
-            background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
+            background: 'linear-gradient(135deg, #1a1025 0%, #0f0a15 100%)',
             borderRadius: '14px',
             p: 2,
             cursor: 'pointer',
             overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(139,92,246,0.5)',
+            border: '1px solid rgba(236, 72, 153, 0.3)',
+            boxShadow: '0 4px 20px rgba(236, 72, 153, 0.25)',
           }}
         >
-          {/* Sparkle effects */}
-          <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-            {[...Array(3)].map((_, i) => (
-              <motion.div
-                key={i}
-                style={{
-                  position: 'absolute',
-                  left: `${20 + i * 30}%`,
-                  top: '50%',
-                }}
-                animate={{
-                  scale: [0, 1, 0],
-                  opacity: [0, 1, 0],
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  delay: i * 0.5,
-                }}
-              >
-                <Sparkles size={14} color="rgba(255,255,255,0.6)" />
-              </motion.div>
-            ))}
-          </Box>
+          {/* Floating circles animation */}
+          <FloatingCircles count={3} />
           
           <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Zap size={20} color="#FFD700" />
+              <Box sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '10px',
+                background: 'rgba(236, 72, 153, 0.2)',
+                border: '1px solid rgba(236, 72, 153, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Coins size={18} color="#ec4899" />
+              </Box>
               <Box>
                 <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.95rem' }}>
                   Boost your chances!
                 </Typography>
-                <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem' }}>
+                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>
                   Get Points & Unlock special features
                 </Typography>
               </Box>
@@ -249,7 +241,7 @@ export const ChatPointsStickyBanner = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Button
                 sx={{
-                  background: 'rgba(255,255,255,0.2)',
+                  background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
                   color: '#fff',
                   fontWeight: 600,
                   fontSize: '0.85rem',
@@ -257,8 +249,9 @@ export const ChatPointsStickyBanner = () => {
                   px: 2,
                   py: 0.75,
                   borderRadius: '10px',
+                  boxShadow: '0 4px 12px rgba(236, 72, 153, 0.3)',
                   '&:hover': {
-                    background: 'rgba(255,255,255,0.3)',
+                    background: 'linear-gradient(135deg, #db2777 0%, #9333ea 100%)',
                   },
                 }}
               >
@@ -269,7 +262,7 @@ export const ChatPointsStickyBanner = () => {
               <IconButton
                 size="small"
                 onClick={handleDismiss}
-                sx={{ p: 0.5, color: 'rgba(255,255,255,0.7)' }}
+                sx={{ p: 0.5, color: 'rgba(255,255,255,0.5)' }}
               >
                 <X size={18} />
               </IconButton>
@@ -285,6 +278,7 @@ export const ChatPointsStickyBanner = () => {
  * Home Feed Promo Card
  * Placement: Inline after X swipes, replaces swipe card temporarily
  * Non-blocking, dismissible
+ * Design: Dark theme matching SubscriptionsScreen
  */
 export const HomePointsPromoCard = ({ onDismiss }) => {
   const navigate = useNavigate();
@@ -299,14 +293,14 @@ export const HomePointsPromoCard = ({ onDismiss }) => {
       <Box
         sx={{
           position: 'relative',
-          background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 100%)',
+          background: 'linear-gradient(135deg, #0f0a15 0%, #1a1025 100%)',
           borderRadius: '24px',
           p: 3,
           mx: 2,
           my: 2,
           overflow: 'hidden',
-          border: '2px solid rgba(236,72,153,0.3)',
-          boxShadow: '0 8px 32px rgba(139,92,246,0.3)',
+          border: '1px solid rgba(236, 72, 153, 0.3)',
+          boxShadow: '0 8px 32px rgba(236, 72, 153, 0.2)',
         }}
       >
         {/* Background glow */}
@@ -318,12 +312,12 @@ export const HomePointsPromoCard = ({ onDismiss }) => {
           width: 200,
           height: 200,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(236,72,153,0.3) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(236,72,153,0.2) 0%, transparent 70%)',
           filter: 'blur(40px)',
         }} />
         
-        {/* Floating coins */}
-        <FloatingCoins />
+        {/* Floating circles animation */}
+        <FloatingCircles count={3} />
         
         {/* Close button */}
         <IconButton
@@ -340,30 +334,37 @@ export const HomePointsPromoCard = ({ onDismiss }) => {
         </IconButton>
         
         <Box sx={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-          {/* Title with emoji */}
-          <Typography sx={{
-            fontSize: '1.8rem',
-            fontWeight: 800,
-            color: '#fff',
-            mb: 1,
-          }}>
-            Psst! 🎁
-          </Typography>
+          {/* Badge */}
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.5,
+              px: 1.5,
+              py: 0.5,
+              borderRadius: '20px',
+              background: 'rgba(236, 72, 153, 0.15)',
+              border: '1px solid rgba(236, 72, 153, 0.3)',
+              mb: 2,
+            }}
+          >
+            <Sparkles size={14} color="#ec4899" />
+            <Typography sx={{ color: '#ec4899', fontSize: '0.75rem', fontWeight: 600 }}>
+              PULSE POINTS
+            </Typography>
+          </Box>
           
           <Typography sx={{
-            fontSize: '1.3rem',
-            fontWeight: 700,
-            background: 'linear-gradient(135deg, #EC4899 0%, #F59E0B 100%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            mb: 2,
+            fontSize: '1.5rem',
+            fontWeight: 800,
+            color: '#fff',
+            mb: 0.5,
           }}>
             Get More Likes!
           </Typography>
           
           <Typography sx={{
-            color: 'rgba(255,255,255,0.7)',
+            color: 'rgba(255,255,255,0.6)',
             fontSize: '0.95rem',
             mb: 3,
           }}>
@@ -373,17 +374,18 @@ export const HomePointsPromoCard = ({ onDismiss }) => {
           <Button
             onClick={() => navigate('/points')}
             sx={{
-              background: 'linear-gradient(135deg, #EC4899 0%, #F59E0B 100%)',
+              background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
               color: '#fff',
               fontWeight: 700,
               fontSize: '1rem',
               textTransform: 'none',
               px: 4,
               py: 1.5,
-              borderRadius: '50px',
-              boxShadow: '0 4px 20px rgba(236,72,153,0.5)',
+              borderRadius: '14px',
+              boxShadow: '0 8px 32px rgba(236, 72, 153, 0.35)',
               '&:hover': {
-                opacity: 0.9,
+                background: 'linear-gradient(135deg, #db2777 0%, #9333ea 100%)',
+                boxShadow: '0 12px 40px rgba(236, 72, 153, 0.45)',
               },
             }}
           >

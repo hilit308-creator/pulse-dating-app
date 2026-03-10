@@ -578,7 +578,7 @@ export default function EventDetailsPage() {
               <Chip
                 label={event.price === 0 ? 'Free' : `₪${event.price}`}
                 size="small"
-                sx={{ fontWeight: 800, bgcolor: 'rgba(102,126,234,0.10)', color: '#667eea' }}
+                sx={{ fontWeight: 800, bgcolor: 'rgba(108,92,231,0.10)', color: '#6C5CE7' }}
               />
               {!!event.capacity && (
                 <Chip
@@ -591,9 +591,32 @@ export default function EventDetailsPage() {
             </Stack>
 
             {!isPurchased && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                Buy a ticket to unlock the people you might meet at this event.
-              </Alert>
+              <Box sx={{ 
+                mt: 2, 
+                p: 1.5, 
+                borderRadius: 2, 
+                bgcolor: 'rgba(108,92,231,0.08)', 
+                border: '1px solid rgba(108,92,231,0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}>
+                <Box sx={{ 
+                  width: 24, 
+                  height: 24, 
+                  borderRadius: '50%', 
+                  bgcolor: 'rgba(108,92,231,0.15)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Typography sx={{ color: '#6C5CE7', fontSize: '0.85rem' }}>ℹ</Typography>
+                </Box>
+                <Typography sx={{ color: '#6C5CE7', fontSize: '0.9rem' }}>
+                  Buy a ticket to unlock the people you might meet at this event.
+                </Typography>
+              </Box>
             )}
           </Box>
 
@@ -617,8 +640,8 @@ export default function EventDetailsPage() {
                   fontWeight: 800,
                   borderRadius: 2.5,
                   py: 1,
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  '&:hover': { background: 'linear-gradient(135deg, #5568d3 0%, #6a4296 100%)' },
+                  background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                  '&:hover': { background: 'linear-gradient(135deg, #5b4cdb 0%, #9645e6 100%)' },
                 }}
                 disabled={event.soldOut || isPurchased}
               >
@@ -628,7 +651,13 @@ export default function EventDetailsPage() {
                 variant="outlined"
                 startIcon={<Heart size={16} />}
                 fullWidth
-                sx={{ borderRadius: 2.5, py: 1 }}
+                sx={{ 
+                  borderRadius: 2.5, 
+                  py: 1,
+                  borderColor: '#6C5CE7',
+                  color: '#6C5CE7',
+                  '&:hover': { borderColor: '#5b4cdb', bgcolor: 'rgba(108,92,231,0.08)' },
+                }}
                 onClick={toggleFav}
               >
                 {isFav ? 'Saved' : 'Save'}
@@ -640,7 +669,13 @@ export default function EventDetailsPage() {
                 variant="outlined"
                 startIcon={<Share2 size={16} />}
                 fullWidth
-                sx={{ borderRadius: 2.5, py: 1 }}
+                sx={{ 
+                  borderRadius: 2.5, 
+                  py: 1,
+                  borderColor: '#6C5CE7',
+                  color: '#6C5CE7',
+                  '&:hover': { borderColor: '#5b4cdb', bgcolor: 'rgba(108,92,231,0.08)' },
+                }}
                 onClick={() => {
                   if (navigator.share) {
                     navigator.share({ title: event.title, text: `Check out ${event.title}`, url: window.location.href });
@@ -656,7 +691,13 @@ export default function EventDetailsPage() {
                 variant="outlined"
                 startIcon={<UserPlus size={16} />}
                 fullWidth
-                sx={{ borderRadius: 2.5, py: 1 }}
+                sx={{ 
+                  borderRadius: 2.5, 
+                  py: 1,
+                  borderColor: '#6C5CE7',
+                  color: '#6C5CE7',
+                  '&:hover': { borderColor: '#5b4cdb', bgcolor: 'rgba(108,92,231,0.08)' },
+                }}
                 onClick={() => setPlusOpen(true)}
               >
                 +1
@@ -696,7 +737,7 @@ export default function EventDetailsPage() {
                   fontWeight: 800,
                   border: '1px solid rgba(0,0,0,0.10)',
                   '&.Mui-selected': {
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
                     color: '#fff',
                     borderColor: 'transparent',
                   },
