@@ -4028,8 +4028,6 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
           </Fade>
         </Modal>
 
-        {/* Points Promo Sticky Banner */}
-        <ChatPointsStickyBanner />
       </Box>
     );
   }
@@ -5521,10 +5519,10 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
         open={Boolean(aiAnchor) && aiAnchor && document.body.contains(aiAnchor)}
         anchorEl={aiAnchor}
         onClose={() => setAiAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         marginThreshold={24}
-        sx={{ zIndex: 1601 }}
+        sx={{ zIndex: 9999 }}
         PaperProps={{
           sx: {
             p: 1,
@@ -5534,10 +5532,10 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
             boxShadow: 3,
             minWidth: 280,
             maxWidth: 'min(520px, calc(100vw - 24px))',
-            maxHeight: 'min(540px, calc(100vh - 220px))',
+            maxHeight: 'min(280px, calc(100vh - 450px))',
             overflowY: 'auto',
             overflowX: 'hidden',
-            mt: 1,
+            transform: 'translateY(-93px) !important',
           },
         }}
       >
@@ -5768,15 +5766,15 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
             top: 0,
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: 56,
             width: '100vw',
-            height: '100vh',
+            height: 'calc(100vh - 56px)',
             background: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'auto',
             outline: 'none',
-            zIndex: 100000,
+            zIndex: 1000,
           }}
         >
           {/* Header Bar */}
