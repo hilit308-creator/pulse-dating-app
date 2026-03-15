@@ -10,6 +10,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
 import { ProfileTimeline } from '../components/timeline';
+import SwipeWrapper, { SwipeLabels } from '../components/SwipeWrapper';
 import useHomeDeckStore from '../store/homeDeckStore';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -69,6 +70,7 @@ export default function UserProfilePage() {
   const [user, setUser] = useState(stateUser);
   const [loading, setLoading] = useState(!stateUser);
   const [error, setError] = useState(null);
+  const [swipeOffset, setSwipeOffset] = useState(0); // Track swipe offset for labels
   // Match popup - dispatch global event to show MatchPulseScreen (same as Home page)
   const showMatchPopup = useCallback((matchedUser) => {
     try {
@@ -269,24 +271,37 @@ export default function UserProfilePage() {
   }
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        maxWidth: '520px',
-        mx: 'auto',
-        bgcolor: '#fff',
-        boxShadow: { xs: 'none', md: '0 0 40px rgba(0,0,0,0.08)' },
-        minHeight: '100vh',
-      }}
-    >
-      <ProfileTimeline
-        user={transformedUser}
-        onLike={handleLike}
-        onPass={handlePass}
-        onUndo={null}
-        canUndo={false}
-        hideUndo={true}
-      />
-    </Box>
+    <>
+      {/* Swipe Labels - NOPE/LIKE */}
+      <SwipeLabels swipeOffset={swipeOffset} />
+      
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: '520px',
+          mx: 'auto',
+          bgcolor: '#fff',
+          boxShadow: { xs: 'none', md: '0 0 40px rgba(0,0,0,0.08)' },
+          minHeight: '100vh',
+        }}
+      >
+        <SwipeWrapper
+          onSwipeRight={handleLike}
+          onSwipeLeft={handlePass}
+          onOffsetChange={setSwipeOffset}
+        >
+          <Box sx={{ pointerEvents: 'auto' }}>
+            <ProfileTimeline
+              user={transformedUser}
+              onLike={() => {}}
+              onPass={() => {}}
+              onUndo={null}
+              canUndo={false}
+              hideUndo={true}
+            />
+          </Box>
+        </SwipeWrapper>
+      </Box>
+    </>
   );
 }

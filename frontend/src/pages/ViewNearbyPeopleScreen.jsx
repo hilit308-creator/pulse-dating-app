@@ -20,6 +20,7 @@ import { ArrowLeft, MapPin, Sparkles, X, Heart, Ruler, Wine, PawPrint, Baby, Shi
 import { NearbyMatchMoment, InvitationModal } from "../components/nearby";
 import MapView from "../components/MapView";
 import { ProfileTimeline } from "../components/timeline";
+import SwipeWrapper, { SwipeLabels } from "../components/SwipeWrapper";
 import useHomeDeckStore from "../store/homeDeckStore";
 import { demoUsers } from "../data/demoUsers";
 import useNearbyPeopleStore from "../store/nearbyPeopleStore";
@@ -95,7 +96,7 @@ const transformToUserCardModel = (person) => ({
   hometown: null,
   interests: person.tags,
   lookingFor: person.lookingFor,
-  qualities: null,
+  qualities: person.qualities || null,
   causes: null,
   exercise: null,
   smoking: null,
@@ -813,6 +814,7 @@ export default function ViewNearbyPeopleScreen() {
   const [nearbyMomentPerson, setNearbyMomentPerson] = useState(null);
   const [showInvitationModal, setShowInvitationModal] = useState(false); // Invitation modal
   const [invitationPerson, setInvitationPerson] = useState(null);
+  const [swipeOffset, setSwipeOffset] = useState(0); // Track swipe offset for labels
 
   const [viewMode, setViewMode] = useState('browse');
 
@@ -1299,15 +1301,19 @@ export default function ViewNearbyPeopleScreen() {
   const currentPerson = people[currentIndex];
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "#fafbfc",
-        position: "relative",
-      }}
-    >
+    <>
+      {/* Swipe Labels - NOPE/LIKE */}
+      <SwipeLabels swipeOffset={swipeOffset} />
+      
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: "#fafbfc",
+          position: "relative",
+        }}
+      >
       {/* Match Screen Overlay */}
       <AnimatePresence>
         {false && matchPerson && (
@@ -1485,18 +1491,30 @@ export default function ViewNearbyPeopleScreen() {
               width: '100%',
               mx: 'auto',
               overflow: 'auto',
+              // Hide scrollbar but keep scroll functionality
+              '&::-webkit-scrollbar': { display: 'none' },
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
             }}
           >
             {currentPerson && (
-              <ProfileTimeline
-                key={currentPerson.id}
-                user={transformToUserCardModel(currentPerson)}
-                onLike={handleLike}
-                onPass={handlePass}
-                onUndo={handleUndo}
-                canUndo={currentIndex > 0}
-                hideUndo={false}
-              />
+              <SwipeWrapper
+                key={`swipe-${currentPerson.id}`}
+                onSwipeRight={handleLike}
+                onSwipeLeft={handlePass}
+                onOffsetChange={setSwipeOffset}
+              >
+                <Box sx={{ pointerEvents: 'auto' }}>
+                  <ProfileTimeline
+                    user={transformToUserCardModel(currentPerson)}
+                    onLike={() => {}}
+                    onPass={() => {}}
+                    onUndo={handleUndo}
+                    canUndo={currentIndex > 0}
+                    hideUndo={false}
+                  />
+                </Box>
+              </SwipeWrapper>
             )}
           </Box>
         )}
@@ -1583,5 +1601,6 @@ export default function ViewNearbyPeopleScreen() {
         </DialogActions>
       </Dialog>
     </Box>
+    </>
   );
 }

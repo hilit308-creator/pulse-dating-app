@@ -23,6 +23,7 @@ import {
   Skeleton,
   Tooltip,
   TextField,
+  Stack,
   Avatar,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
@@ -50,13 +51,15 @@ import {
   TreePine,
   Palette,
   Calendar,
-  CreditCard,
   Trash2,
   Disc,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import { useLanguage } from '../context/LanguageContext';
 import useGestureMessagesStore from '../store/gestureMessagesStore';
 import { demoMatches } from './MatchesScreen';
+import { openPayPlusWindow } from '../services/payplus';
 
 /* =========================
    Constants
@@ -99,6 +102,7 @@ const NEARBY_PEOPLE = [
     unit: "m",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
     isOnline: true,
+    acceptsGestures: true,
   },
   {
     id: 2,
@@ -107,6 +111,7 @@ const NEARBY_PEOPLE = [
     unit: "m",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
     isOnline: true,
+    acceptsGestures: false, // Demo: Tom has disabled gestures
   },
   {
     id: 3,
@@ -115,6 +120,7 @@ const NEARBY_PEOPLE = [
     unit: "km",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80",
     isOnline: false,
+    acceptsGestures: true,
   },
   {
     id: 4,
@@ -123,6 +129,7 @@ const NEARBY_PEOPLE = [
     unit: "km",
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
     isOnline: true,
+    acceptsGestures: true,
   },
   {
     id: 5,
@@ -131,6 +138,7 @@ const NEARBY_PEOPLE = [
     unit: "km",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
     isOnline: true,
+    acceptsGestures: true,
   },
 ];
 
@@ -1533,7 +1541,7 @@ function BenefitsDialog({ open, onClose, place }) {
 /* =========================
    Sweet Gestures Section
    ========================= */
-function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures = {} }) {
+function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures = {}, acceptsGestures, onToggleAcceptsGestures }) {
   const [showAll, setShowAll] = React.useState(false);
   const displayedPeople = showAll ? people : people.slice(0, 3);
   
@@ -1579,16 +1587,43 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
             </Typography>
           </Box>
         </Box>
-        <Chip
-          label="New"
-          size="small"
-          sx={{
-            bgcolor: 'rgba(108,92,231,0.15)',
-            color: '#6C5CE7',
-            fontWeight: 700,
-            fontSize: '0.65rem',
-          }}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Chip
+            label="New"
+            size="small"
+            sx={{
+              bgcolor: 'rgba(108,92,231,0.15)',
+              color: '#6C5CE7',
+              fontWeight: 700,
+              fontSize: '0.65rem',
+            }}
+          />
+          {/* Toggle to accept/decline gestures */}
+          <Tooltip 
+            title={acceptsGestures 
+              ? "You're accepting Sweet Gestures. Click to disable receiving gestures from others." 
+              : "You've disabled Sweet Gestures. Others cannot send you gestures. Click to enable."
+            }
+            arrow
+            placement="bottom"
+          >
+            <IconButton
+              onClick={onToggleAcceptsGestures}
+              size="small"
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: acceptsGestures ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                color: acceptsGestures ? '#22c55e' : '#ef4444',
+                '&:hover': {
+                  bgcolor: acceptsGestures ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                },
+              }}
+            >
+              {acceptsGestures ? <Bell size={16} /> : <BellOff size={16} />}
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       {/* People List */}
@@ -1669,14 +1704,28 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
                   const Icon = gesture.icon;
                   const isMain = gesture.id === 'coffee';
                   const isSent = Boolean(sentGestures[person.id]?.[gesture.id]);
+                  const personAcceptsGestures = person.acceptsGestures !== false;
+                  const isDisabled = isSent || !personAcceptsGestures;
+                  
+                  // Determine tooltip text
+                  const getTooltipText = () => {
+                    if (!personAcceptsGestures) {
+                      return `${person.name} has disabled Sweet Gestures`;
+                    }
+                    if (isSent) {
+                      return "Already sent to this person";
+                    }
+                    return gesture.label;
+                  };
+                  
                   return (
                     <motion.div
                       key={gesture.id}
-                      whileHover={{ scale: isSent ? 1 : 1.1 }}
-                      whileTap={{ scale: isSent ? 1 : 0.95 }}
+                      whileHover={{ scale: isDisabled ? 1 : 1.1 }}
+                      whileTap={{ scale: isDisabled ? 1 : 0.95 }}
                     >
                       <Tooltip 
-                        title={isSent ? "Already sent to this person" : gesture.label}
+                        title={getTooltipText()}
                         arrow
                         placement="top"
                       >
@@ -1684,24 +1733,30 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
                           <IconButton
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (!isSent) onSendGesture(person, gesture);
+                              if (!isDisabled) onSendGesture(person, gesture);
                             }}
-                            disabled={isSent}
+                            disabled={isDisabled}
                             sx={{
                               width: isMain ? 44 : 34,
                               height: isMain ? 44 : 34,
                               borderRadius: isMain ? '12px' : '10px',
-                              background: isMain ? gesture.gradient : 'transparent',
+                              background: isMain 
+                                ? (personAcceptsGestures ? gesture.gradient : '#e2e8f0') 
+                                : 'transparent',
                               border: isMain ? 'none' : '1.5px solid #e2e8f0',
-                              boxShadow: isMain ? `0 4px 16px ${gesture.shadowColor}` : 'none',
-                              opacity: isSent ? 0.5 : 1,
+                              boxShadow: isMain && personAcceptsGestures ? `0 4px 16px ${gesture.shadowColor}` : 'none',
+                              opacity: isDisabled ? 0.5 : 1,
                               transition: 'all 0.3s ease',
                               '&:hover': {
-                                background: isMain ? gesture.gradient : 'rgba(108,92,231,0.08)',
+                                background: isMain 
+                                  ? (personAcceptsGestures ? gesture.gradient : '#e2e8f0')
+                                  : 'rgba(108,92,231,0.08)',
                                 borderColor: isMain ? 'transparent' : '#6C5CE7',
                               },
                               '&.Mui-disabled': {
-                                background: isMain ? gesture.gradient : 'transparent',
+                                background: isMain 
+                                  ? (personAcceptsGestures ? gesture.gradient : '#e2e8f0')
+                                  : 'transparent',
                                 border: isMain ? 'none' : '1.5px solid #e2e8f0',
                                 opacity: 0.5,
                               },
@@ -1709,7 +1764,7 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
                           >
                             <Icon 
                               size={isMain ? 18 : 14} 
-                              color={isMain ? '#fff' : '#64748b'} 
+                              color={isMain && personAcceptsGestures ? '#fff' : '#94a3b8'} 
                             />
                           </IconButton>
                         </span>
@@ -1755,8 +1810,11 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
 function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
   const [selectedCafe, setSelectedCafe] = React.useState(null);
   const [selectedDrink, setSelectedDrink] = React.useState(null);
+  const [quantity, setQuantity] = React.useState(1);
   const [message, setMessage] = React.useState('');
   const [useCustomMessage, setUseCustomMessage] = React.useState(false);
+  const [highlightAddForYourself, setHighlightAddForYourself] = React.useState(false);
+  const addForYourselfRef = React.useRef(null);
 
   // Default messages for coffee
   const defaultMessages = [
@@ -1783,20 +1841,34 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
   ];
 
   const handleConfirm = () => {
+    // If quantity is 1, highlight the "Add one for yourself" button first and scroll to it
+    if (quantity === 1 && !highlightAddForYourself) {
+      setHighlightAddForYourself(true);
+      // Scroll to the "Add one for yourself" button
+      setTimeout(() => {
+        addForYourselfRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      return;
+    }
+    
     if (selectedCafe && selectedDrink && message) {
-      onConfirm({ cafe: selectedCafe, drink: selectedDrink, message });
+      onConfirm({ cafe: selectedCafe, drink: selectedDrink, quantity, message });
       setSelectedCafe(null);
       setSelectedDrink(null);
+      setQuantity(1);
       setMessage('');
       setUseCustomMessage(false);
+      setHighlightAddForYourself(false);
     }
   };
 
   const handleClose = () => {
     setSelectedCafe(null);
     setSelectedDrink(null);
+    setQuantity(1);
     setMessage('');
     setUseCustomMessage(false);
+    setHighlightAddForYourself(false);
     onClose();
   };
 
@@ -1939,6 +2011,75 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
           </Box>
         </Box>
 
+        {/* Quantity Selector */}
+        {selectedDrink && (
+          <Box sx={{ mb: 2.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem' }}>
+                Quantity
+              </Typography>
+              {quantity === 1 && (
+                <Button
+                  ref={addForYourselfRef}
+                  size="small"
+                  onClick={() => {
+                    setQuantity(2);
+                    setHighlightAddForYourself(false);
+                  }}
+                  sx={{ 
+                    textTransform: 'none', 
+                    color: highlightAddForYourself ? '#fff' : '#6C5CE7', 
+                    fontSize: '0.8rem',
+                    fontWeight: highlightAddForYourself ? 700 : 400,
+                    p: highlightAddForYourself ? '4px 12px' : 0,
+                    minWidth: 'auto',
+                    bgcolor: highlightAddForYourself ? '#6C5CE7' : 'transparent',
+                    borderRadius: '8px',
+                    animation: highlightAddForYourself ? 'pulse 1.5s infinite' : 'none',
+                    boxShadow: highlightAddForYourself ? '0 2px 8px rgba(108, 92, 231, 0.4)' : 'none',
+                    '&:hover': { 
+                      bgcolor: highlightAddForYourself ? '#5b4cdb' : 'transparent', 
+                      textDecoration: highlightAddForYourself ? 'none' : 'underline' 
+                    },
+                    '@keyframes pulse': {
+                      '0%': { transform: 'scale(1)' },
+                      '50%': { transform: 'scale(1.05)' },
+                      '100%': { transform: 'scale(1)' },
+                    },
+                  }}
+                >
+                  + Add one for yourself? ☕
+                </Button>
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#f1f5f9', borderRadius: '12px', p: 0.5 }}>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
+                  sx={{ bgcolor: '#fff', '&:hover': { bgcolor: '#fff' } }}
+                >
+                  <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: quantity <= 1 ? '#ccc' : '#1a1a2e' }}>−</Typography>
+                </IconButton>
+                <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', minWidth: 30, textAlign: 'center' }}>{quantity}</Typography>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setQuantity(quantity + 1)}
+                  sx={{ bgcolor: '#fff', '&:hover': { bgcolor: '#fff' } }}
+                >
+                  <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: '#1a1a2e' }}>+</Typography>
+                </IconButton>
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.85rem' }}>
+                  {quantity > 1 ? `${quantity} × ${selectedDrink.price} = ₪${parseInt(selectedDrink.price.replace('₪', '')) * quantity}` : selectedDrink.price}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
         {/* Message */}
         <Box>
           <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
@@ -2038,6 +2179,7 @@ function CoffeeSelectionDialog({ open, onClose, person, onConfirm }) {
 function FlowerSelectionDialog({ open, onClose, person, onConfirm }) {
   const [selectedShop, setSelectedShop] = React.useState(null);
   const [selectedFlower, setSelectedFlower] = React.useState(null);
+  const [quantity, setQuantity] = React.useState(1);
   const [message, setMessage] = React.useState('');
   const [useCustomMessage, setUseCustomMessage] = React.useState(false);
 
@@ -2069,10 +2211,12 @@ function FlowerSelectionDialog({ open, onClose, person, onConfirm }) {
       onConfirm({
         shop: selectedShop,
         flower: selectedFlower,
+        quantity,
         message: message || defaultMessages[0],
       });
       setSelectedShop(null);
       setSelectedFlower(null);
+      setQuantity(1);
       setMessage('');
       setUseCustomMessage(false);
     }
@@ -2081,6 +2225,7 @@ function FlowerSelectionDialog({ open, onClose, person, onConfirm }) {
   const handleClose = () => {
     setSelectedShop(null);
     setSelectedFlower(null);
+    setQuantity(1);
     setMessage('');
     setUseCustomMessage(false);
     onClose();
@@ -2225,6 +2370,58 @@ function FlowerSelectionDialog({ open, onClose, person, onConfirm }) {
           </Box>
         </Box>
 
+        {/* Quantity Selector */}
+        {selectedFlower && (
+          <Box sx={{ mb: 2.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem' }}>
+                Quantity
+              </Typography>
+              {quantity === 1 && (
+                <Button
+                  size="small"
+                  onClick={() => setQuantity(2)}
+                  sx={{ 
+                    textTransform: 'none', 
+                    color: '#ec4899', 
+                    fontSize: '0.8rem',
+                    p: 0,
+                    minWidth: 'auto',
+                    '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' }
+                  }}
+                >
+                  + Add one for yourself? 💐
+                </Button>
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#f1f5f9', borderRadius: '12px', p: 0.5 }}>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
+                  sx={{ bgcolor: '#fff', '&:hover': { bgcolor: '#fff' } }}
+                >
+                  <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: quantity <= 1 ? '#ccc' : '#1a1a2e' }}>−</Typography>
+                </IconButton>
+                <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', minWidth: 30, textAlign: 'center' }}>{quantity}</Typography>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setQuantity(quantity + 1)}
+                  sx={{ bgcolor: '#fff', '&:hover': { bgcolor: '#fff' } }}
+                >
+                  <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: '#1a1a2e' }}>+</Typography>
+                </IconButton>
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.85rem' }}>
+                  {quantity > 1 ? `${quantity} × ${selectedFlower.price} = ₪${selectedFlower.priceNum * quantity}` : selectedFlower.price}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
         {/* Message */}
         <Box>
           <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
@@ -2326,6 +2523,7 @@ function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
   const [selectedCategory, setSelectedCategory] = React.useState(null);
   const [selectedVendor, setSelectedVendor] = React.useState(null);
   const [selectedGift, setSelectedGift] = React.useState(null);
+  const [quantity, setQuantity] = React.useState(1);
   const [message, setMessage] = React.useState('');
   const [useCustomMessage, setUseCustomMessage] = React.useState(false);
 
@@ -2391,11 +2589,13 @@ function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
         category: selectedCategory,
         vendor: selectedVendor,
         gift: selectedGift,
+        quantity,
         message: message || defaultMessages[0],
       });
       setSelectedCategory(null);
       setSelectedVendor(null);
       setSelectedGift(null);
+      setQuantity(1);
       setMessage('');
       setUseCustomMessage(false);
     }
@@ -2405,6 +2605,7 @@ function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
     setSelectedCategory(null);
     setSelectedVendor(null);
     setSelectedGift(null);
+    setQuantity(1);
     setMessage('');
     setUseCustomMessage(false);
     onClose();
@@ -2592,6 +2793,58 @@ function GiftSelectionDialog({ open, onClose, person, onConfirm }) {
                   </Typography>
                 </Box>
               ))}
+            </Box>
+          </Box>
+        )}
+
+        {/* Quantity Selector */}
+        {selectedGift && (
+          <Box sx={{ mb: 2.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem' }}>
+                Quantity
+              </Typography>
+              {quantity === 1 && (
+                <Button
+                  size="small"
+                  onClick={() => setQuantity(2)}
+                  sx={{ 
+                    textTransform: 'none', 
+                    color: '#f59e0b', 
+                    fontSize: '0.8rem',
+                    p: 0,
+                    minWidth: 'auto',
+                    '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' }
+                  }}
+                >
+                  + Add one for yourself? 🎁
+                </Button>
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#f1f5f9', borderRadius: '12px', p: 0.5 }}>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
+                  sx={{ bgcolor: '#fff', '&:hover': { bgcolor: '#fff' } }}
+                >
+                  <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: quantity <= 1 ? '#ccc' : '#1a1a2e' }}>−</Typography>
+                </IconButton>
+                <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', minWidth: 30, textAlign: 'center' }}>{quantity}</Typography>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setQuantity(quantity + 1)}
+                  sx={{ bgcolor: '#fff', '&:hover': { bgcolor: '#fff' } }}
+                >
+                  <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: '#1a1a2e' }}>+</Typography>
+                </IconButton>
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.85rem' }}>
+                  {quantity > 1 ? `${quantity} × ${selectedGift.price} = ₪${selectedGift.priceNum * quantity}` : selectedGift.price}
+                </Typography>
+              </Box>
             </Box>
           </Box>
         )}
@@ -3832,10 +4085,6 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
   const [inviteMethod, setInviteMethod] = React.useState(null); // 'match', 'contact', 'solo'
   const [selectedMatch, setSelectedMatch] = React.useState(null);
   const [isProcessing, setIsProcessing] = React.useState(false);
-  const [paymentMethod, setPaymentMethod] = React.useState(null); // 'apple', 'card'
-  const [cardNumber, setCardNumber] = React.useState('');
-  const [cardExpiry, setCardExpiry] = React.useState('');
-  const [cardCvv, setCardCvv] = React.useState('');
 
   // Available dates for this workshop
   const availableDates = workshop?.workshopDetails?.availableDates || [];
@@ -3877,10 +4126,6 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
     setSelectedDate(null);
     setInviteMethod(null);
     setSelectedMatch(null);
-    setPaymentMethod(null);
-    setCardNumber('');
-    setCardExpiry('');
-    setCardCvv('');
     onClose();
   };
 
@@ -4158,90 +4403,44 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               </Typography>
             </Box>
 
-            {/* Payment methods */}
-            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1 }}>Payment method</Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Chip 
-                label="Apple Pay" 
-                icon={<Box component="span" sx={{ fontSize: '16px' }}></Box>}
-                onClick={() => setPaymentMethod('apple')}
-                sx={{ 
-                  flex: 1, 
-                  py: 2, 
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  bgcolor: paymentMethod === 'apple' ? '#6C5CE7' : '#f1f5f9',
-                  color: paymentMethod === 'apple' ? 'white' : '#1a1a2e',
-                  '&:hover': { bgcolor: paymentMethod === 'apple' ? '#5b4cdb' : '#e2e8f0' },
-                }} 
-              />
-              <Chip 
-                label="Credit Card" 
-                icon={<CreditCard size={16} />}
-                onClick={() => setPaymentMethod('card')}
-                sx={{ 
-                  flex: 1, 
-                  py: 2, 
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  bgcolor: paymentMethod === 'card' ? '#6C5CE7' : '#f1f5f9',
-                  color: paymentMethod === 'card' ? 'white' : '#1a1a2e',
-                  '&:hover': { bgcolor: paymentMethod === 'card' ? '#5b4cdb' : '#e2e8f0' },
-                }} 
-              />
-            </Box>
-
-            {/* Credit Card Form */}
-            {paymentMethod === 'card' && (
-              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <TextField
-                  fullWidth
-                  placeholder="Card Number"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
-                  size="small"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '10px',
-                      '&:hover fieldset': { borderColor: '#6C5CE7' },
-                      '&.Mui-focused fieldset': { borderColor: '#6C5CE7' },
-                    },
-                  }}
-                />
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <TextField
-                    placeholder="MM/YY"
-                    value={cardExpiry}
-                    onChange={(e) => setCardExpiry(e.target.value.slice(0, 5))}
-                    size="small"
-                    sx={{
-                      flex: 1,
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '10px',
-                        '&:hover fieldset': { borderColor: '#6C5CE7' },
-                        '&.Mui-focused fieldset': { borderColor: '#6C5CE7' },
-                      },
-                    }}
-                  />
-                  <TextField
-                    placeholder="CVV"
-                    value={cardCvv}
-                    onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    size="small"
-                    sx={{
-                      flex: 1,
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '10px',
-                        '&:hover fieldset': { borderColor: '#6C5CE7' },
-                        '&.Mui-focused fieldset': { borderColor: '#6C5CE7' },
-                      },
-                    }}
-                  />
-                </Box>
-              </Box>
-            )}
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+          <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => {
+                // Open PayPlus payment page
+                openPayPlusWindow({
+                  type: 'workshop',
+                  itemId: String(workshop.id),
+                  itemName: workshop.name || 'Workshop',
+                  amount: workshop.workshopDetails?.price || 0,
+                  quantity: 1,
+                  description: `Workshop: ${workshop.name}`,
+                  metadata: {
+                    workshopId: workshop.id,
+                    workshopName: workshop.name,
+                    workshopDate: workshop.workshopDetails?.date,
+                    invitedMatch: selectedMatch?.id,
+                  },
+                });
+                
+                // Continue with booking flow
+                handleBook();
+              }}
+              disabled={isProcessing}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+                '&:hover': { background: 'linear-gradient(135deg, #5b4cdb 0%, #9645e6 100%)' },
+                '&:disabled': { background: '#e2e8f0', color: '#94a3b8' },
+              }}
+            >
+              {isProcessing ? 'Processing...' : `Book Workshop - ₪${workshop.workshopDetails?.price || 0}`}
+            </Button>
             <Button
               fullWidth
               variant="outlined"
@@ -4249,22 +4448,6 @@ function WorkshopBookingDialog({ open, onClose, workshop, onBook, userMatches = 
               sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: '#e2e8f0', color: '#64748b' }}
             >
               Back
-            </Button>
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={handleBook}
-              disabled={isProcessing || !paymentMethod || (paymentMethod === 'card' && (!cardNumber || !cardExpiry || !cardCvv))}
-              sx={{
-                py: 1.25,
-                borderRadius: '12px',
-                textTransform: 'none',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                '&:disabled': { background: '#e2e8f0', color: '#94a3b8' },
-              }}
-            >
-              {isProcessing ? 'Processing...' : `Pay ₪${workshop.workshopDetails?.price || 0}`}
             </Button>
           </DialogActions>
         </>
@@ -4728,57 +4911,81 @@ function SayHiDialog({ open, onClose, person, onConfirm }) {
    Payment Flow Dialog
    ========================= */
 function PaymentFlowDialog({ open, onClose, person, gestureType, gestureDetails, onConfirmPayment }) {
-  const [cardNumber, setCardNumber] = React.useState('');
-  const [expiry, setExpiry] = React.useState('');
-  const [cvv, setCvv] = React.useState('');
   const [isProcessing, setIsProcessing] = React.useState(false);
 
   // Get gesture info based on type
+  const quantity = gestureDetails?.quantity || 1;
+  
   const getGestureInfo = () => {
     switch (gestureType) {
       case 'coffee':
+        const coffeePrice = parseFloat((gestureDetails?.drink?.price || '₪0').replace('₪', '')) || 0;
         return {
           icon: Coffee,
           color: '#6C5CE7',
           gradient: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
           itemName: gestureDetails?.drink?.name || 'Coffee',
           vendorName: gestureDetails?.cafe?.name || 'Cafe',
-          price: gestureDetails?.drink?.price || '₪0',
+          unitPrice: gestureDetails?.drink?.price || '₪0',
+          priceNum: coffeePrice,
+          totalPrice: `₪${coffeePrice * quantity}`,
+          totalPriceNum: coffeePrice * quantity,
         };
       case 'flower':
+        const flowerPrice = gestureDetails?.flower?.priceNum || parseFloat((gestureDetails?.flower?.price || '₪0').replace('₪', '')) || 0;
         return {
           icon: Flower2,
           color: '#ec4899',
           gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
           itemName: gestureDetails?.flower?.name || 'Flowers',
           vendorName: gestureDetails?.shop?.name || 'Flower Shop',
-          price: gestureDetails?.flower?.price || '₪0',
+          unitPrice: gestureDetails?.flower?.price || '₪0',
+          priceNum: flowerPrice,
+          totalPrice: `₪${flowerPrice * quantity}`,
+          totalPriceNum: flowerPrice * quantity,
         };
       case 'gift':
+        const giftPrice = gestureDetails?.gift?.priceNum || parseFloat((gestureDetails?.gift?.price || '₪0').replace('₪', '')) || 0;
         return {
           icon: Gift,
           color: '#f59e0b',
           gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
           itemName: gestureDetails?.gift?.name || 'Gift',
-          vendorName: gestureDetails?.gift?.vendor || 'Vendor',
-          price: gestureDetails?.gift?.price || '₪0',
+          vendorName: gestureDetails?.vendor?.name || 'Vendor',
+          unitPrice: gestureDetails?.gift?.price || '₪0',
+          priceNum: giftPrice,
+          totalPrice: `₪${giftPrice * quantity}`,
+          totalPriceNum: giftPrice * quantity,
         };
       default:
-        return { icon: Gift, color: '#6C5CE7', gradient: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)', itemName: 'Item', vendorName: 'Vendor', price: '₪0' };
+        return { icon: Gift, color: '#6C5CE7', gradient: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)', itemName: 'Item', vendorName: 'Vendor', unitPrice: '₪0', priceNum: 0, totalPrice: '₪0', totalPriceNum: 0 };
     }
   };
 
   const info = getGestureInfo();
   const Icon = info.icon;
 
-  const handleSubmit = async () => {
-    if (!cardNumber || !expiry || !cvv) return;
-    
+  const handlePayWithPayPlus = () => {
     setIsProcessing(true);
-    // Simulate payment token generation
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // In production: Use Stripe/payment provider to create payment token
+    // Open PayPlus payment page
+    openPayPlusWindow({
+      type: 'gesture',
+      itemId: `${gestureType}_${person?.id}_${Date.now()}`,
+      itemName: info.itemName,
+      amount: info.priceNum,
+      quantity: quantity,
+      description: `${quantity > 1 ? `${quantity}x ` : ''}${info.itemName} for ${person?.name} from ${info.vendorName}`,
+      metadata: {
+        gestureType,
+        recipientId: person?.id,
+        recipientName: person?.name,
+        vendorName: info.vendorName,
+        ...gestureDetails,
+      },
+    });
+    
+    // Generate payment token for tracking
     const paymentToken = `tok_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     onConfirmPayment({
@@ -4788,16 +4995,6 @@ function PaymentFlowDialog({ open, onClose, person, gestureType, gestureDetails,
     });
     
     setIsProcessing(false);
-    setCardNumber('');
-    setExpiry('');
-    setCvv('');
-  };
-
-  const handleClose = () => {
-    setCardNumber('');
-    setExpiry('');
-    setCvv('');
-    onClose();
   };
 
   if (!person) return null;
@@ -4805,7 +5002,7 @@ function PaymentFlowDialog({ open, onClose, person, gestureType, gestureDetails,
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={onClose}
       PaperProps={{
         sx: {
           borderRadius: '20px',
@@ -4857,10 +5054,10 @@ function PaymentFlowDialog({ open, onClose, person, gestureType, gestureDetails,
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
             <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.9rem' }}>
-              {info.itemName}
+              {info.itemName} {quantity > 1 && `× ${quantity}`}
             </Typography>
             <Typography variant="caption" sx={{ fontWeight: 600, color: '#1a1a2e', fontSize: '0.95rem' }}>
-              {info.price}
+              {quantity > 1 ? info.totalPrice : info.unitPrice}
             </Typography>
           </Box>
           <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>
@@ -4891,90 +5088,14 @@ function PaymentFlowDialog({ open, onClose, person, gestureType, gestureDetails,
           </Box>
         </Box>
 
-        {/* Card Details */}
-        <Box>
-          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1, display: 'block', fontSize: '0.95rem' }}>
-            Payment Details
-          </Typography>
-          
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="caption" sx={{ color: '#64748b', mb: 0.5, display: 'block', fontSize: '0.85rem' }}>
-              Card Number
-            </Typography>
-            <input
-              type="text"
-              value={cardNumber}
-              onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
-              placeholder="1234 5678 9012 3456"
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '10px',
-                border: '2px solid rgba(0,0,0,0.12)',
-                fontSize: '0.95rem',
-                fontFamily: 'inherit',
-              }}
-            />
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="caption" sx={{ color: '#64748b', mb: 0.5, display: 'block', fontSize: '0.85rem' }}>
-                Expiry
-              </Typography>
-              <input
-                type="text"
-                value={expiry}
-                onChange={(e) => setExpiry(e.target.value.slice(0, 5))}
-                placeholder="MM/YY"
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '10px',
-                  border: '2px solid rgba(0,0,0,0.12)',
-                  fontSize: '0.95rem',
-                  fontFamily: 'inherit',
-                }}
-              />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="caption" sx={{ color: '#64748b', mb: 0.5, display: 'block', fontSize: '0.85rem' }}>
-                CVV
-              </Typography>
-              <input
-                type="text"
-                value={cvv}
-                onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                placeholder="123"
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '10px',
-                  border: '2px solid rgba(0,0,0,0.12)',
-                  fontSize: '0.95rem',
-                  fontFamily: 'inherit',
-                }}
-              />
-            </Box>
-          </Box>
-        </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 2.5, pb: 2.5, pt: 1.5, gap: 1.5 }}>
-        <Button
-          fullWidth
-          variant="outlined"
-          onClick={handleClose}
-          disabled={isProcessing}
-          sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: '#64748b', fontSize: '0.95rem' }}
-        >
-          Cancel
-        </Button>
+      <DialogActions sx={{ px: 2.5, pb: 2.5, pt: 1.5, flexDirection: 'column', gap: 1 }}>
         <Button
           fullWidth
           variant="contained"
-          onClick={handleSubmit}
-          disabled={!cardNumber || !expiry || !cvv || isProcessing}
+          onClick={handlePayWithPayPlus}
+          disabled={isProcessing}
           sx={{
             py: 1.25,
             borderRadius: '12px',
@@ -4983,10 +5104,20 @@ function PaymentFlowDialog({ open, onClose, person, gestureType, gestureDetails,
             fontSize: '0.95rem',
             background: info.gradient,
             boxShadow: `0 4px 16px ${info.color}66`,
+            '&:hover': { opacity: 0.9 },
             '&:disabled': { background: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.26)' },
           }}
         >
-          {isProcessing ? '...' : 'Send'}
+          {isProcessing ? 'Processing...' : `Send - ${quantity > 1 ? info.totalPrice : info.unitPrice}`}
+        </Button>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={onClose}
+          disabled={isProcessing}
+          sx={{ py: 1.25, borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: '#64748b', fontSize: '0.95rem' }}
+        >
+          Cancel
         </Button>
       </DialogActions>
     </Dialog>
@@ -5163,6 +5294,400 @@ function GestureSentDialog({ open, onClose, person, gesture, coffeeDetails }) {
 
 
 /* =========================
+   Gesture Declined Dialog (for sender when recipient declines)
+   ========================= */
+function GestureDeclinedDialog({ open, onClose, person, gesture, gestureDetails, onCancel, onSendToOther, onOrderForSelf }) {
+  if (!person || !gesture) return null;
+
+  const Icon = gesture.icon;
+  const quantity = gestureDetails?.quantity || 1;
+  
+  // Get single item price for "order for myself" option
+  const getSingleItemPrice = () => {
+    switch (gesture.type) {
+      case 'coffee':
+        return {
+          price: gestureDetails?.drink?.price || '₪0',
+          priceNum: parseInt((gestureDetails?.drink?.price || '₪0').replace('₪', '')) || 0,
+          itemName: gestureDetails?.drink?.name || 'Coffee',
+        };
+      case 'flower':
+        return {
+          price: gestureDetails?.flower?.price || '₪0',
+          priceNum: gestureDetails?.flower?.priceNum || 0,
+          itemName: gestureDetails?.flower?.name || 'Flowers',
+        };
+      case 'gift':
+        return {
+          price: gestureDetails?.gift?.price || '₪0',
+          priceNum: gestureDetails?.gift?.priceNum || 0,
+          itemName: gestureDetails?.gift?.name || 'Gift',
+        };
+      default:
+        return { price: '₪0', priceNum: 0, itemName: 'Item' };
+    }
+  };
+  
+  const singleItem = getSingleItemPrice();
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: {
+          borderRadius: '16px',
+          maxWidth: 320,
+          width: '100%',
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+          p: 2.5,
+          textAlign: 'center',
+        }}
+      >
+        <Box
+          sx={{
+            width: 56,
+            height: 56,
+            borderRadius: '16px',
+            bgcolor: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mx: 'auto',
+            mb: 1.5,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}
+        >
+          <Icon size={28} color={gesture.color} />
+        </Box>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5, fontSize: '1.1rem' }}>
+          Maybe next time 💭
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.9rem' }}>
+          {person.name} couldn't accept your {gesture.label.toLowerCase()} right now
+        </Typography>
+      </Box>
+
+      <DialogContent sx={{ p: 2.5, textAlign: 'center' }}>
+        {/* Encouraging message */}
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: '12px',
+            bgcolor: 'rgba(34, 197, 94, 0.08)',
+            border: '1px solid rgba(34, 197, 94, 0.2)',
+            mb: 2,
+          }}
+        >
+          <Typography variant="body2" sx={{ color: '#16a34a', fontWeight: 600, fontSize: '0.9rem' }}>
+            Don't worry! No charge was made 💚
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+            You're only charged when someone accepts
+          </Typography>
+        </Box>
+
+        <Typography variant="body2" sx={{ color: '#64748b', mb: 2, fontSize: '0.85rem' }}>
+          What would you like to do?
+        </Typography>
+
+        {/* Options */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={onSendToOther}
+            startIcon={<Users size={18} />}
+            sx={{
+              py: 1.25,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              background: gesture.gradient,
+              boxShadow: `0 4px 16px ${gesture.color}40`,
+            }}
+          >
+            Send to someone else
+          </Button>
+          
+          {quantity > 1 && (
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => onOrderForSelf(singleItem)}
+              startIcon={<Icon size={18} />}
+              sx={{
+                py: 1.25,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                borderColor: gesture.color,
+                color: gesture.color,
+                '&:hover': { borderColor: gesture.color, bgcolor: `${gesture.color}10` },
+              }}
+            >
+              Order just for myself - {singleItem.price}
+            </Button>
+          )}
+          
+          <Button
+            fullWidth
+            variant="text"
+            onClick={onCancel}
+            sx={{
+              py: 1,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              color: '#64748b',
+            }}
+          >
+            Cancel order
+          </Button>
+        </Box>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+/* =========================
+   Gesture Received Dialog (for recipient to accept/decline)
+   ========================= */
+function GestureReceivedDialog({ open, onClose, sender, gesture, gestureDetails, onAccept, onDecline, onSendMessage }) {
+  if (!sender || !gesture) return null;
+
+  const Icon = gesture.icon;
+
+  // Get item details based on gesture type
+  const getItemDetails = () => {
+    switch (gesture.type) {
+      case 'coffee':
+        return {
+          itemName: gestureDetails?.drink?.name || 'Coffee',
+          vendorName: gestureDetails?.cafe?.name || 'Nearby cafe',
+          price: gestureDetails?.drink?.price || '₪0',
+        };
+      case 'flower':
+        return {
+          itemName: gestureDetails?.flower?.name || 'Flowers',
+          vendorName: gestureDetails?.shop?.name || 'Flower shop',
+          price: gestureDetails?.flower?.price || '₪0',
+        };
+      case 'gift':
+        return {
+          itemName: gestureDetails?.gift?.name || 'Gift',
+          vendorName: gestureDetails?.vendor?.name || 'Vendor',
+          price: gestureDetails?.gift?.price || '₪0',
+        };
+      default:
+        return { itemName: 'Item', vendorName: 'Vendor', price: '₪0' };
+    }
+  };
+
+  const itemDetails = getItemDetails();
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: {
+          borderRadius: '16px',
+          maxWidth: 340,
+          width: '100%',
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {/* Animated Header */}
+      <Box
+        sx={{
+          background: gesture.gradient,
+          p: 2.5,
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Floating particles */}
+        {[...Array(5)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ 
+              y: -100, 
+              opacity: [0, 1, 0],
+              x: Math.sin(i) * 20,
+            }}
+            transition={{ 
+              duration: 2.5,
+              repeat: Infinity,
+              delay: i * 0.4,
+            }}
+            style={{
+              position: 'absolute',
+              left: `${15 + i * 15}%`,
+              bottom: 0,
+            }}
+          >
+            <Sparkles size={14} color="rgba(255,255,255,0.5)" />
+          </motion.div>
+        ))}
+
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", damping: 12 }}
+        >
+          <Box
+            sx={{
+              width: 60,
+              height: 60,
+              borderRadius: '16px',
+              bgcolor: 'rgba(255,255,255,0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 1.5,
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <Icon size={30} color="#fff" />
+          </Box>
+        </motion.div>
+
+        <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', mb: 0.5, fontSize: '1.15rem' }}>
+          You received a {gesture.label}! 🎉
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem' }}>
+          From {sender.name}
+        </Typography>
+      </Box>
+
+      <DialogContent sx={{ p: 2.5 }}>
+        {/* Sender Info */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+          <Box
+            component="img"
+            src={sender.avatar}
+            alt={sender.name}
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '12px',
+              objectFit: 'cover',
+            }}
+          />
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body1" sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem' }}>
+              {sender.name}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+              wants to treat you!
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Item Details */}
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: '12px',
+            bgcolor: `${gesture.color}10`,
+            border: `1px solid ${gesture.color}30`,
+            mb: 2,
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5, fontSize: '0.95rem' }}>
+            {itemDetails.itemName}
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.85rem', display: 'block' }}>
+            From {itemDetails.vendorName}
+          </Typography>
+          {gestureDetails?.message && (
+            <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mb: 0.25 }}>
+                Message:
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#1a1a2e', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                "{gestureDetails.message}"
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={onAccept}
+            sx={{
+              py: 1.25,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              background: gesture.gradient,
+              boxShadow: `0 4px 16px ${gesture.color}40`,
+            }}
+          >
+            Accept with thanks! 💝
+          </Button>
+          
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={onSendMessage}
+            startIcon={<MessageCircle size={18} />}
+            sx={{
+              py: 1.25,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              borderColor: 'rgba(0,0,0,0.15)',
+              color: '#1a1a2e',
+            }}
+          >
+            Send a message first
+          </Button>
+          
+          <Button
+            fullWidth
+            variant="text"
+            onClick={onDecline}
+            sx={{
+              py: 1,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              color: '#64748b',
+            }}
+          >
+            Politely decline 💭
+          </Button>
+        </Box>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+/* =========================
    Main ExploreScreen
    ========================= */
 export default function ExploreScreen() {
@@ -5189,6 +5714,14 @@ export default function ExploreScreen() {
   const [selectedGesture, setSelectedGesture] = useState(null);
   const [showGestureDialog, setShowGestureDialog] = useState(false);
   
+  // User's preference for accepting gestures (persisted in localStorage)
+  const [userAcceptsGestures, setUserAcceptsGestures] = useState(() => {
+    try {
+      const saved = localStorage.getItem("user_accepts_gestures");
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch { return true; }
+  });
+  
   // Gesture messages store
   const addGestureMessage = useGestureMessagesStore((state) => state.addGestureMessage);
   const canSendGesture = useGestureMessagesStore((state) => state.canSendGesture);
@@ -5210,6 +5743,9 @@ export default function ExploreScreen() {
   const [giftDetails, setGiftDetails] = useState(null);
   const [currentGestureType, setCurrentGestureType] = useState(null);
   const [currentGestureDetails, setCurrentGestureDetails] = useState(null);
+  // Demo dialogs for gesture declined/received
+  const [showGestureDeclinedDemo, setShowGestureDeclinedDemo] = useState(false);
+  const [showGestureReceivedDemo, setShowGestureReceivedDemo] = useState(false);
   // sentGestures is now managed by the store for persistence
   const sentGestures = useGestureMessagesStore((state) => state.sentGestures);
   const markGestureSent = useGestureMessagesStore((state) => state.markGestureSent);
@@ -5456,6 +5992,22 @@ export default function ExploreScreen() {
   const handleSeeBenefits = useCallback((place) => {
     setSelectedPlace(place);
     setShowBenefitsDialog(true);
+  }, []);
+
+  // Toggle user's preference for accepting gestures
+  const handleToggleAcceptsGestures = useCallback(() => {
+    setUserAcceptsGestures(prev => {
+      const newValue = !prev;
+      localStorage.setItem("user_accepts_gestures", JSON.stringify(newValue));
+      setToast({ 
+        open: true, 
+        message: newValue 
+          ? "Sweet Gestures enabled! Others can now send you gestures." 
+          : "Sweet Gestures disabled. Others cannot send you gestures.",
+        severity: newValue ? 'success' : 'info'
+      });
+      return newValue;
+    });
   }, []);
 
   // Sweet Gestures handler - opens dialog, does NOT consume free gesture yet
@@ -5785,11 +6337,46 @@ export default function ExploreScreen() {
               />
               {/* Sweet Gestures Section - appears after 3rd place */}
               {index === 2 && (
-                <SweetGesturesSection 
-                  people={NEARBY_PEOPLE} 
-                  onSendGesture={handleSendGesture}
-                  sentGestures={sentGestures}
-                />
+                <>
+                  <SweetGesturesSection 
+                    people={NEARBY_PEOPLE} 
+                    onSendGesture={handleSendGesture}
+                    sentGestures={sentGestures}
+                    acceptsGestures={userAcceptsGestures}
+                    onToggleAcceptsGestures={handleToggleAcceptsGestures}
+                  />
+                  {/* Demo buttons for gesture scenarios */}
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1, mb: 2 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setShowGestureReceivedDemo(true)}
+                      sx={{ 
+                        textTransform: 'none', 
+                        fontSize: '0.75rem',
+                        borderColor: '#6C5CE7',
+                        color: '#6C5CE7',
+                        borderRadius: '8px',
+                      }}
+                    >
+                      Demo: Received gesture ☕
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setShowGestureDeclinedDemo(true)}
+                      sx={{ 
+                        textTransform: 'none', 
+                        fontSize: '0.75rem',
+                        borderColor: '#ef4444',
+                        color: '#ef4444',
+                        borderRadius: '8px',
+                      }}
+                    >
+                      Demo: Gesture declined 💭
+                    </Button>
+                  </Box>
+                </>
               )}
             </React.Fragment>
           ))}
@@ -6099,6 +6686,94 @@ export default function ExploreScreen() {
           </Box>
         </DialogContent>
       </Dialog>
+
+      {/* Demo: Gesture Received Dialog */}
+      <GestureReceivedDialog
+        open={showGestureReceivedDemo}
+        onClose={() => setShowGestureReceivedDemo(false)}
+        sender={{
+          id: 1, // Maya's ID from demoMatches
+          name: 'Maya',
+          avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+        }}
+        gesture={{
+          type: 'coffee',
+          label: 'Coffee',
+          icon: Coffee,
+          color: '#6C5CE7',
+          gradient: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+        }}
+        gestureDetails={{
+          drink: { name: 'Cappuccino', price: '₪16' },
+          cafe: { name: 'Cafe Nordoy', distance: '150m' },
+          message: "Coffee's on me! ☕ Would love to chat!",
+        }}
+        onAccept={() => {
+          setShowGestureReceivedDemo(false);
+          setToast({ open: true, message: 'Gesture accepted! Maya will be notified 💝', severity: 'success' });
+          // Navigate to chat with Maya after accepting
+          setTimeout(() => navigate('/chat/1'), 1500);
+        }}
+        onDecline={() => {
+          setShowGestureReceivedDemo(false);
+          setToast({ open: true, message: 'Politely declined 💭', severity: 'info' });
+        }}
+        onSendMessage={() => {
+          setShowGestureReceivedDemo(false);
+          // Navigate to specific chat with Maya (sender)
+          navigate('/chat/1');
+        }}
+      />
+
+      {/* Demo: Gesture Declined Dialog */}
+      <GestureDeclinedDialog
+        open={showGestureDeclinedDemo}
+        onClose={() => setShowGestureDeclinedDemo(false)}
+        person={{
+          id: 2, // Dana's ID
+          name: 'Dana',
+          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80',
+        }}
+        gesture={{
+          type: 'coffee',
+          label: 'Coffee',
+          icon: Coffee,
+          color: '#6C5CE7',
+          gradient: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+        }}
+        gestureDetails={{
+          quantity: 2,
+          drink: { name: 'Latte', price: '₪18' },
+          cafe: { name: 'Cafelix', distance: '320m' },
+        }}
+        onCancel={() => {
+          setShowGestureDeclinedDemo(false);
+          setToast({ open: true, message: 'Order cancelled', severity: 'info' });
+        }}
+        onSendToOther={() => {
+          setShowGestureDeclinedDemo(false);
+          // Navigate to matches page to choose someone else
+          navigate('/matches');
+          setToast({ open: true, message: 'Choose someone else to send to! ☕', severity: 'success' });
+        }}
+        onOrderForSelf={(itemDetails) => {
+          setShowGestureDeclinedDemo(false);
+          // Open PayPlus for self-order (only 1 item)
+          openPayPlusWindow({
+            type: 'gesture',
+            itemId: `coffee_self_${Date.now()}`,
+            itemName: itemDetails?.itemName || 'Latte',
+            amount: itemDetails?.priceNum || 18,
+            quantity: 1,
+            description: `${itemDetails?.itemName || 'Latte'} for yourself from Cafelix`,
+            metadata: {
+              gestureType: 'coffee',
+              forSelf: true,
+            },
+          });
+          setToast({ open: true, message: `Ordering just for yourself! ☕ ${itemDetails?.price || '₪18'} - Redirecting to payment...`, severity: 'success' });
+        }}
+      />
 
       {/* Toast - Bottom of screen, modern style */}
       {toast.open && (

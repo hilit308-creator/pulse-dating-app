@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import ProfileTimeline from '../components/timeline/ProfileTimeline';
+import SwipeWrapper, { SwipeLabels } from '../components/SwipeWrapper';
 
 // Mock attendees data - formatted for ProfileTimeline
 const MOCK_ATTENDEES = [
@@ -41,6 +42,7 @@ const MOCK_ATTENDEES = [
     height: "168 cm",
     location: "Tel Aviv",
     lookingFor: ["Relationship"],
+    qualities: ["Humor", "Kindness", "Openness"],
   },
   {
     id: 102,
@@ -63,6 +65,7 @@ const MOCK_ATTENDEES = [
     height: "165 cm",
     location: "Ramat Gan",
     lookingFor: ["Something casual"],
+    qualities: ["Intelligence", "Ambition", "Honesty"],
   },
   {
     id: 103,
@@ -85,6 +88,7 @@ const MOCK_ATTENDEES = [
     height: "170 cm",
     location: "Tel Aviv",
     lookingFor: ["Relationship"],
+    qualities: ["Creativity", "Empathy", "Curiosity"],
   },
   {
     id: 104,
@@ -107,6 +111,7 @@ const MOCK_ATTENDEES = [
     height: "172 cm",
     location: "Herzliya",
     lookingFor: ["New connections"],
+    qualities: ["Passion", "Authenticity", "Humor"],
   },
 ];
 
@@ -127,6 +132,7 @@ const EventAttendeesScreen = () => {
   const [swipedPeople, setSwipedPeople] = useState({ liked: [], passed: [] });
   const [matchPerson, setMatchPerson] = useState(null);
   const [isAllDone, setIsAllDone] = useState(false);
+  const [swipeOffset, setSwipeOffset] = useState(0); // Track swipe offset for labels
 
   const handleBack = () => {
     navigate(-1);
@@ -199,12 +205,16 @@ const EventAttendeesScreen = () => {
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#fafbfc',
+    <>
+      {/* Swipe Labels - NOPE/LIKE */}
+      <SwipeLabels swipeOffset={swipeOffset} />
+      
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#fafbfc',
         position: 'relative',
       }}
     >
@@ -309,19 +319,28 @@ const EventAttendeesScreen = () => {
             }}
           >
             {currentPerson && (
-              <ProfileTimeline
-                key={currentPerson.id}
-                user={transformToProfileTimelineFormat(currentPerson)}
-                onLike={() => handleSwipe('right', currentPerson)}
-                onPass={() => handleSwipe('left', currentPerson)}
-                onUndo={handleUndo}
-                canUndo={currentIndex > 0}
-              />
+              <SwipeWrapper
+                key={`swipe-${currentPerson.id}`}
+                onSwipeRight={() => handleSwipe('right', currentPerson)}
+                onSwipeLeft={() => handleSwipe('left', currentPerson)}
+                onOffsetChange={setSwipeOffset}
+              >
+                <Box sx={{ pointerEvents: 'auto' }}>
+                  <ProfileTimeline
+                    user={transformToProfileTimelineFormat(currentPerson)}
+                    onLike={() => {}}
+                    onPass={() => {}}
+                    onUndo={handleUndo}
+                    canUndo={currentIndex > 0}
+                  />
+                </Box>
+              </SwipeWrapper>
             )}
           </Box>
         </Box>
       )}
     </Box>
+    </>
   );
 };
 

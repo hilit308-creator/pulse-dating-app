@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { openPayPlusWindow } from '../services/payplus';
 import {
   Box,
   Container,
@@ -373,26 +374,26 @@ export const DEMO_ATTENDEES = [
 
 export const EVENTS = [
   // Large parties
-  { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2026-03-28", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a3", "a5", "a6", "a7", "a10"] },
-  { id: "lp2", title: "Mega Dance Night", category: "large", price: 99, date: "2026-03-14", time: "21:00", venue: "Sky Dome", country: "USA", region: "Metro", coords: { lat: 40.7306, lng: -73.9352 }, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-dj-playing-music-in-a-club-4819-large.mp4", tags: ["DJ", "Dancing", "Drinks"], blurb: "Top DJs with immersive light show.", details: "Doors 21:00 • Main act 23:30 • Dress code: casual chic.", badges: ["18+"], hostedBy: "NightLife Productions", capacity: 2000, whoFor: "EDM fans, night owls, people who love to dance", vibe: "Energetic", attendees: ["a2", "a4", "a8", "a9"] },
+  { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2027-03-28", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a3", "a5", "a6", "a7", "a10"] },
+  { id: "lp2", title: "Mega Dance Night", category: "large", price: 99, date: "2027-03-14", time: "21:00", venue: "Sky Dome", country: "USA", region: "Metro", coords: { lat: 40.7306, lng: -73.9352 }, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-dj-playing-music-in-a-club-4819-large.mp4", tags: ["DJ", "Dancing", "Drinks"], blurb: "Top DJs with immersive light show.", details: "Doors 21:00 • Main act 23:30 • Dress code: casual chic.", badges: ["18+"], hostedBy: "NightLife Productions", capacity: 2000, whoFor: "EDM fans, night owls, people who love to dance", vibe: "Energetic", attendees: ["a2", "a4", "a8", "a9"] },
   // Small / Private
-  { id: "sp1", title: "Private Loft Party", category: "small", price: 60, date: "2026-03-15", time: "20:00", venue: "Maple St. 123", country: "USA", region: "Uptown", coords: { lat: 40.7644, lng: -73.9747 }, cover: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks"], blurb: "Intimate house vibes, 80 guests max.", details: "BYOB, rooftop chill zone, quiet room available.", badges: ["New"], hostedBy: "The Loft Collective", capacity: 80, whoFor: "People seeking intimate connections in a relaxed setting", vibe: "Flirty", attendees: ["a1", "a2"] },
-  { id: "sp2", title: "Acoustic Night", category: "small", price: 45, date: "2026-03-20", time: "20:30", venue: "Indie Bar", country: "USA", region: "City Center", coords: { lat: 40.741, lng: -73.9897 }, cover: "https://images.unsplash.com/photo-1464375117522-1311dd6d0cd2?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Social"], blurb: "Unplugged sets & candlelight atmosphere.", details: "Limited seating • First set at 20:30 • Open mic at 22:30.", hostedBy: "Indie Sessions", capacity: 50, whoFor: "Music appreciators, acoustic lovers, creative souls", vibe: "Chill", attendees: ["a3"] },
+  { id: "sp1", title: "Private Loft Party", category: "small", price: 60, date: "2027-03-15", time: "20:00", venue: "Maple St. 123", country: "USA", region: "Uptown", coords: { lat: 40.7644, lng: -73.9747 }, cover: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks"], blurb: "Intimate house vibes, 80 guests max.", details: "BYOB, rooftop chill zone, quiet room available.", badges: ["New"], hostedBy: "The Loft Collective", capacity: 80, whoFor: "People seeking intimate connections in a relaxed setting", vibe: "Flirty", attendees: ["a1", "a2"] },
+  { id: "sp2", title: "Acoustic Night", category: "small", price: 45, date: "2027-03-20", time: "20:30", venue: "Indie Bar", country: "USA", region: "City Center", coords: { lat: 40.741, lng: -73.9897 }, cover: "https://images.unsplash.com/photo-1464375117522-1311dd6d0cd2?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Social"], blurb: "Unplugged sets & candlelight atmosphere.", details: "Limited seating • First set at 20:30 • Open mic at 22:30.", hostedBy: "Indie Sessions", capacity: 50, whoFor: "Music appreciators, acoustic lovers, creative souls", vibe: "Chill", attendees: ["a3"] },
   // Events with a Twist
-  { id: "tw1", title: "Night Food Market", category: "twist", price: 0, date: "2026-03-19", time: "18:00", venue: "Downtown Plaza", country: "USA", region: "Downtown", coords: { lat: 40.7128, lng: -74.006 }, cover: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-people-walking-by-a-food-stand-at-night-4401-large.mp4", tags: ["Outdoor", "Social"], blurb: "Global cuisines, live demos, indie bands.", details: "30+ vendors, vegan options, chef talks, tasting bracelets available.", badges: ["Family"], hostedBy: "Foodies United", capacity: 1000, whoFor: "Food enthusiasts, social butterflies, anyone hungry", vibe: "Social", attendees: ["a1", "a4", "a5"] },
-  { id: "tw2", title: "Museum Late Hours", category: "twist", price: 30, date: "2026-03-16", time: "19:00", venue: "City Museum", country: "USA", region: "Museum District", coords: { lat: 40.7794, lng: -73.9632 }, cover: "https://images.unsplash.com/photo-1505666287802-931dc83948e9?q=80&w=1600&auto=format&fit=crop", tags: ["Talks", "Social"], blurb: "Special curation + ambient DJ set.", details: "Guided tours every hour • Café open till midnight.", hostedBy: "City Museum", capacity: 300, whoFor: "Art lovers, curious minds, those seeking deeper conversations", vibe: "Deep", attendees: ["a2", "a3"] },
+  { id: "tw1", title: "Night Food Market", category: "twist", price: 0, date: "2027-03-19", time: "18:00", venue: "Downtown Plaza", country: "USA", region: "Downtown", coords: { lat: 40.7128, lng: -74.006 }, cover: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-people-walking-by-a-food-stand-at-night-4401-large.mp4", tags: ["Outdoor", "Social"], blurb: "Global cuisines, live demos, indie bands.", details: "30+ vendors, vegan options, chef talks, tasting bracelets available.", badges: ["Family"], hostedBy: "Foodies United", capacity: 1000, whoFor: "Food enthusiasts, social butterflies, anyone hungry", vibe: "Social", attendees: ["a1", "a4", "a5"] },
+  { id: "tw2", title: "Museum Late Hours", category: "twist", price: 30, date: "2027-03-16", time: "19:00", venue: "City Museum", country: "USA", region: "Museum District", coords: { lat: 40.7794, lng: -73.9632 }, cover: "https://images.unsplash.com/photo-1505666287802-931dc83948e9?q=80&w=1600&auto=format&fit=crop", tags: ["Talks", "Social"], blurb: "Special curation + ambient DJ set.", details: "Guided tours every hour • Café open till midnight.", hostedBy: "City Museum", capacity: 300, whoFor: "Art lovers, curious minds, those seeking deeper conversations", vibe: "Deep", attendees: ["a2", "a3"] },
   // Sports
-  { id: "spx1", title: "Tennis Tournament", category: "sports", price: 70, date: "2026-03-13", time: "10:00", venue: "Grand Arena", country: "USA", region: "Sports Park", coords: { lat: 40.8296, lng: -73.9262 }, cover: "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Quarterfinals • Center court seats available.", details: "Gates 10:00 • No outside drinks • Family bundle discounts.", hostedBy: "Sports League", capacity: 800, whoFor: "Sports fans, tennis enthusiasts", vibe: "Energetic", attendees: [] },
-  { id: "spx2", title: "Sunset 5K Run", category: "sports", price: 35, date: "2026-03-29", time: "19:00", venue: "Beachfront", country: "USA", region: "Beach", coords: { lat: 40.583, lng: -73.8283 }, cover: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Scenic route along the coast, medals for finishers.", details: "Packet pickup from 16:00 • Start 19:00 • Hydration stations.", hostedBy: "Run Club", capacity: 500, whoFor: "Runners, fitness lovers, sunset chasers", vibe: "Energetic", attendees: ["a5"] },
+  { id: "spx1", title: "Tennis Tournament", category: "sports", price: 70, date: "2027-03-13", time: "10:00", venue: "Grand Arena", country: "USA", region: "Sports Park", coords: { lat: 40.8296, lng: -73.9262 }, cover: "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Quarterfinals • Center court seats available.", details: "Gates 10:00 • No outside drinks • Family bundle discounts.", hostedBy: "Sports League", capacity: 800, whoFor: "Sports fans, tennis enthusiasts", vibe: "Energetic", attendees: [] },
+  { id: "spx2", title: "Sunset 5K Run", category: "sports", price: 35, date: "2027-03-29", time: "19:00", venue: "Beachfront", country: "USA", region: "Beach", coords: { lat: 40.583, lng: -73.8283 }, cover: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Social"], blurb: "Scenic route along the coast, medals for finishers.", details: "Packet pickup from 16:00 • Start 19:00 • Hydration stations.", hostedBy: "Run Club", capacity: 500, whoFor: "Runners, fitness lovers, sunset chasers", vibe: "Energetic", attendees: ["a5"] },
   // Tel Aviv venue-specific events (for Explore places)
-  { id: "tlv1", title: "Underground Beats @ Kuli Alma", category: "large", price: 80, date: "2026-03-21", time: "23:00", venue: "Kuli Alma", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0636, lng: 34.7705 }, cover: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1600&auto=format&fit=crop", tags: ["DJ", "Dancing", "Underground"], blurb: "Eclectic DJ sets in Tel Aviv's iconic underground venue.", details: "Doors 23:00 • Multiple rooms • Art installations.", badges: ["18+"], hostedBy: "Kuli Alma", capacity: 400, whoFor: "Alternative music lovers, night owls", vibe: "Energetic", attendees: ["a1", "a2"] },
-  { id: "tlv2", title: "Techno Warehouse @ The Block", category: "large", price: 120, date: "2026-03-27", time: "23:30", venue: "The Block", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0500, lng: 34.7600 }, cover: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?q=80&w=1600&auto=format&fit=crop", tags: ["Techno", "Dancing", "International DJs"], blurb: "World-class techno in Tel Aviv's premier club.", details: "International headliner • Funktion-One sound • Till sunrise.", badges: ["18+", "Verified"], hostedBy: "The Block TLV", capacity: 1500, whoFor: "Techno enthusiasts, serious dancers", vibe: "Energetic", attendees: ["a3", "a4"] },
-  { id: "tlv3", title: "Chill Vibes @ Sputnik", category: "small", price: 0, date: "2026-03-17", time: "21:00", venue: "Sputnik", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0700, lng: 34.7750 }, cover: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks", "Casual"], blurb: "Laid-back evening at Tel Aviv's favorite dive bar.", details: "No cover • Great drinks • Meet new people.", badges: [], hostedBy: "Sputnik Bar", capacity: 100, whoFor: "Casual drinkers, social butterflies", vibe: "Chill", attendees: ["a1", "a5"] },
-  { id: "tlv4", title: "Live Jazz @ Pastel", category: "small", price: 50, date: "2026-03-24", time: "20:30", venue: "Pastel", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0720, lng: 34.7800 }, cover: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Jazz", "Intimate"], blurb: "Intimate jazz performance in candlelit setting.", details: "Limited seating • Two sets • Wine bar open.", hostedBy: "Pastel TLV", capacity: 60, whoFor: "Jazz lovers, romantic date night", vibe: "Chill", attendees: ["a2", "a3"] },
-  { id: "tlv5", title: "Rooftop Party @ Beit Maariv", category: "large", price: 70, date: "2026-03-22", time: "22:00", venue: "Beit Maariv", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0680, lng: 34.7850 }, cover: "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?q=80&w=1600&auto=format&fit=crop", tags: ["Rooftop", "Dancing", "Views"], blurb: "Dance under the stars with city views.", details: "Multiple floors • Rooftop bar • Dress to impress.", badges: ["18+"], hostedBy: "Beit Maariv", capacity: 500, whoFor: "Party lovers, rooftop enthusiasts", vibe: "Energetic", attendees: ["a4", "a5"] },
-  { id: "tlv6", title: "Open Mic @ Anna Loulou", category: "small", price: 30, date: "2026-03-18", time: "21:00", venue: "Anna Loulou", country: "Israel", region: "Jaffa", coords: { lat: 32.0530, lng: 34.7550 }, cover: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Open Mic", "Alternative"], blurb: "Showcase your talent at Jaffa's legendary bar.", details: "Sign up from 20:00 • All genres welcome • Great cocktails.", hostedBy: "Anna Loulou Bar", capacity: 80, whoFor: "Musicians, artists, creative souls", vibe: "Social", attendees: ["a1", "a3"] },
-  { id: "tlv7", title: "Sunset Sessions @ Teder.fm", category: "small", price: 0, date: "2026-03-15", time: "17:00", venue: "Teder.fm", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0580, lng: 34.7650 }, cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Radio", "Chill"], blurb: "Live radio broadcast with sunset drinks.", details: "Free entry • Food trucks • Chill vibes till late.", badges: ["Family"], hostedBy: "Teder.fm", capacity: 200, whoFor: "Music lovers, sunset chasers", vibe: "Chill", attendees: ["a2", "a4"] },
-  { id: "tlv8", title: "Levinsky Food Fest @ Spicehaus", category: "twist", price: 0, date: "2026-03-30", time: "18:00", venue: "Spicehaus", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0620, lng: 34.7720 }, cover: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?q=80&w=1600&auto=format&fit=crop", tags: ["Food", "Social", "Market"], blurb: "Culinary journey through Levinsky Market.", details: "Tasting menu • Chef demos • Live music.", badges: ["Family"], hostedBy: "Spicehaus", capacity: 150, whoFor: "Foodies, culture lovers", vibe: "Social", attendees: ["a1", "a5"] },
+  { id: "tlv1", title: "Underground Beats @ Kuli Alma", category: "large", price: 80, date: "2027-03-21", time: "23:00", venue: "Kuli Alma", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0636, lng: 34.7705 }, cover: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1600&auto=format&fit=crop", tags: ["DJ", "Dancing", "Underground"], blurb: "Eclectic DJ sets in Tel Aviv's iconic underground venue.", details: "Doors 23:00 • Multiple rooms • Art installations.", badges: ["18+"], hostedBy: "Kuli Alma", capacity: 400, whoFor: "Alternative music lovers, night owls", vibe: "Energetic", attendees: ["a1", "a2"] },
+  { id: "tlv2", title: "Techno Warehouse @ The Block", category: "large", price: 120, date: "2027-03-27", time: "23:30", venue: "The Block", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0500, lng: 34.7600 }, cover: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?q=80&w=1600&auto=format&fit=crop", tags: ["Techno", "Dancing", "International DJs"], blurb: "World-class techno in Tel Aviv's premier club.", details: "International headliner • Funktion-One sound • Till sunrise.", badges: ["18+", "Verified"], hostedBy: "The Block TLV", capacity: 1500, whoFor: "Techno enthusiasts, serious dancers", vibe: "Energetic", attendees: ["a3", "a4"] },
+  { id: "tlv3", title: "Chill Vibes @ Sputnik", category: "small", price: 0, date: "2027-03-17", time: "21:00", venue: "Sputnik", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0700, lng: 34.7750 }, cover: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks", "Casual"], blurb: "Laid-back evening at Tel Aviv's favorite dive bar.", details: "No cover • Great drinks • Meet new people.", badges: [], hostedBy: "Sputnik Bar", capacity: 100, whoFor: "Casual drinkers, social butterflies", vibe: "Chill", attendees: ["a1", "a5"] },
+  { id: "tlv4", title: "Live Jazz @ Pastel", category: "small", price: 50, date: "2027-03-24", time: "20:30", venue: "Pastel", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0720, lng: 34.7800 }, cover: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Jazz", "Intimate"], blurb: "Intimate jazz performance in candlelit setting.", details: "Limited seating • Two sets • Wine bar open.", hostedBy: "Pastel TLV", capacity: 60, whoFor: "Jazz lovers, romantic date night", vibe: "Chill", attendees: ["a2", "a3"] },
+  { id: "tlv5", title: "Rooftop Party @ Beit Maariv", category: "large", price: 70, date: "2027-03-22", time: "22:00", venue: "Beit Maariv", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0680, lng: 34.7850 }, cover: "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?q=80&w=1600&auto=format&fit=crop", tags: ["Rooftop", "Dancing", "Views"], blurb: "Dance under the stars with city views.", details: "Multiple floors • Rooftop bar • Dress to impress.", badges: ["18+"], hostedBy: "Beit Maariv", capacity: 500, whoFor: "Party lovers, rooftop enthusiasts", vibe: "Energetic", attendees: ["a4", "a5"] },
+  { id: "tlv6", title: "Open Mic @ Anna Loulou", category: "small", price: 30, date: "2027-03-18", time: "21:00", venue: "Anna Loulou", country: "Israel", region: "Jaffa", coords: { lat: 32.0530, lng: 34.7550 }, cover: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?q=80&w=1600&auto=format&fit=crop", tags: ["Live Music", "Open Mic", "Alternative"], blurb: "Showcase your talent at Jaffa's legendary bar.", details: "Sign up from 20:00 • All genres welcome • Great cocktails.", hostedBy: "Anna Loulou Bar", capacity: 80, whoFor: "Musicians, artists, creative souls", vibe: "Social", attendees: ["a1", "a3"] },
+  { id: "tlv7", title: "Sunset Sessions @ Teder.fm", category: "small", price: 0, date: "2027-03-15", time: "17:00", venue: "Teder.fm", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0580, lng: 34.7650 }, cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1600&auto=format&fit=crop", tags: ["Outdoor", "Radio", "Chill"], blurb: "Live radio broadcast with sunset drinks.", details: "Free entry • Food trucks • Chill vibes till late.", badges: ["Family"], hostedBy: "Teder.fm", capacity: 200, whoFor: "Music lovers, sunset chasers", vibe: "Chill", attendees: ["a2", "a4"] },
+  { id: "tlv8", title: "Levinsky Food Fest @ Spicehaus", category: "twist", price: 0, date: "2027-03-30", time: "18:00", venue: "Spicehaus", country: "Israel", region: "Tel Aviv", coords: { lat: 32.0620, lng: 34.7720 }, cover: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?q=80&w=1600&auto=format&fit=crop", tags: ["Food", "Social", "Market"], blurb: "Culinary journey through Levinsky Market.", details: "Tasting menu • Chef demos • Live music.", badges: ["Family"], hostedBy: "Spicehaus", capacity: 150, whoFor: "Foodies, culture lovers", vibe: "Social", attendees: ["a1", "a5"] },
 ];
 
 /* --------------------------- Tabs meta -------------------------------- */
@@ -1109,20 +1110,29 @@ function SwipeDeck({ users, onLike, onSkip, onOpenProfile }) {
 /* --------------------------- Purchase Dialog ----------------------------- */
 function TicketPurchaseDialog({ open, onClose, event, onPurchased }) {
   const [qty, setQty] = useState(1);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [method, setMethod] = useState("in_app");
-  const [err, setErr] = useState("");
 
   const price = Number(event?.price || 0);
   const total = Math.max(1, Number(qty || 1)) * price;
 
-  const confirm = () => {
-    if (!name.trim()) return setErr("Please enter the buyer name.");
-    if (!email.trim() || !email.includes("@")) return setErr("Please enter a valid email.");
-    setErr("");
+  const handlePayWithPayPlus = () => {
+    // Open PayPlus payment page
+    openPayPlusWindow({
+      type: 'event',
+      itemId: String(event?.id),
+      itemName: event?.title || 'Event Ticket',
+      amount: price,
+      quantity: qty,
+      description: `Ticket for ${event?.title}`,
+      metadata: {
+        eventId: event?.id,
+        eventTitle: event?.title,
+        eventDate: event?.date,
+      },
+    });
+    
+    // Mark as purchased (in production, this would happen after payment confirmation)
     onPurchased?.(String(event?.id));
-    onClose?.({ ok: true, eventId: event.id, qty, name, email, method, total });
+    onClose?.({ ok: true, eventId: event.id, qty, total });
   };
 
   return (
@@ -1143,28 +1153,62 @@ function TicketPurchaseDialog({ open, onClose, event, onPurchased }) {
         }
       }}
     >
-      <DialogTitle sx={{ py: 0.75, px: 1.5, fontSize: '0.85rem', fontWeight: 600 }}>Purchase Tickets</DialogTitle>
-      <DialogContent sx={{ py: 0.75, px: 1.5 }}>
-        <Stack spacing={0.75}>
-          <Typography variant="caption" sx={{ fontWeight: 600 }}>{event?.title} • ₪{price.toFixed(2)}</Typography>
-          <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} fullWidth size="small" InputProps={{ sx: { fontSize: '0.8rem', height: 36 } }} InputLabelProps={{ sx: { fontSize: '0.75rem' } }} />
-          <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} fullWidth size="small" InputProps={{ sx: { fontSize: '0.8rem', height: 36 } }} InputLabelProps={{ sx: { fontSize: '0.75rem' } }} />
-          <TextField label="Qty" type="number" value={qty} onChange={(e) => setQty(Math.max(1, Number(e.target.value)))} inputProps={{ min: 1 }} fullWidth size="small" InputProps={{ sx: { fontSize: '0.8rem', height: 36 } }} InputLabelProps={{ sx: { fontSize: '0.75rem' } }} />
-          <RadioGroup row value={method} onChange={(e) => setMethod(e.target.value)} name="payment" sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.7rem' }, '& .MuiFormControlLabel-root': { mr: 0.5, ml: 0 } }}>
-            <FormControlLabel value="in_app" control={<Radio size="small" sx={{ p: 0.25 }} />} label="In-App" />
-            <FormControlLabel value="bit" control={<Radio size="small" sx={{ p: 0.25 }} />} label="Bit" />
-            <FormControlLabel value="other" control={<Radio size="small" sx={{ p: 0.25 }} />} label="Other" />
-          </RadioGroup>
-          {!!err && <Alert severity="error" sx={{ py: 0, '& .MuiAlert-message': { fontSize: '0.7rem', py: 0.25 } }}>{err}</Alert>}
+      <DialogTitle sx={{ py: 1.5, px: 2, fontSize: '1rem', fontWeight: 700, textAlign: 'center' }}>
+        Purchase Tickets
+      </DialogTitle>
+      <DialogContent sx={{ py: 1.5, px: 2 }}>
+        <Stack spacing={1.5}>
+          <Box sx={{ textAlign: 'center', py: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{event?.title}</Typography>
+            <Typography variant="body2" sx={{ color: '#64748b' }}>{event?.date} • {event?.venue}</Typography>
+          </Box>
+          
+          <TextField 
+            label="Quantity" 
+            type="number" 
+            value={qty} 
+            onChange={(e) => setQty(Math.max(1, Number(e.target.value)))} 
+            inputProps={{ min: 1 }} 
+            fullWidth 
+            size="small" 
+          />
+          
+          <Divider />
+          
           <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography variant="caption">Total:</Typography>
-            <Typography sx={{ fontWeight: 800, fontSize: '0.9rem' }}>₪{total.toFixed(2)}</Typography>
+            <Typography variant="body2" sx={{ color: '#64748b' }}>Price per ticket:</Typography>
+            <Typography sx={{ fontWeight: 600 }}>₪{price.toFixed(2)}</Typography>
+          </Stack>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="body1" sx={{ fontWeight: 700 }}>Total:</Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#6C5CE7' }}>₪{total.toFixed(2)}</Typography>
           </Stack>
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ py: 0.5, px: 1.5 }}>
-        <Button onClick={() => onClose?.(null)} color="inherit" size="small" sx={{ fontSize: '0.75rem', minWidth: 50 }}>Cancel</Button>
-        <Button onClick={confirm} variant="contained" size="small" sx={{ fontSize: '0.75rem', minWidth: 60 }}>Pay</Button>
+      <DialogActions sx={{ py: 1.5, px: 2, flexDirection: 'column', gap: 1 }}>
+        <Button 
+          onClick={handlePayWithPayPlus} 
+          variant="contained" 
+          fullWidth
+          sx={{ 
+            py: 1.25,
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            '&:hover': { background: 'linear-gradient(135deg, #5b4cdb 0%, #9645e6 100%)' },
+          }}
+        >
+          Buy Ticket
+        </Button>
+        <Button 
+          onClick={() => onClose?.(null)} 
+          color="inherit" 
+          fullWidth
+          sx={{ fontSize: '0.85rem' }}
+        >
+          Cancel
+        </Button>
       </DialogActions>
     </Dialog>
   );

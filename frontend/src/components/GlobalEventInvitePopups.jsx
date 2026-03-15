@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import useEventInvitesStore from '../store/eventInvitesStore';
+import { openPayPlusWindow } from '../services/payplus';
 
 const getPurchasedSet = () => {
   try {
@@ -99,7 +100,6 @@ export default function GlobalEventInvitePopups() {
 
   const [lastCharge, setLastCharge] = useState(null);
   const [declinedInvite, setDeclinedInvite] = useState(null); // For showing decline options dialog
-  const [paymentConfirm, setPaymentConfirm] = useState(null); // For showing payment confirmation dialog
 
   useEffect(() => {
     if (!reminderInvite) return;
@@ -474,11 +474,41 @@ export default function GlobalEventInvitePopups() {
             sx={secondaryCtaSx}
             fullWidth
             onClick={() => {
-              // Show payment confirmation popup
+              // Redirect to PayPlus for payment
               const eventToPay = declinedInvite?.event;
               setDeclinedInvite(null);
+              
               if (eventToPay) {
-                setPaymentConfirm({ event: eventToPay, amount: 120 });
+                // Add to purchased workshops in localStorage
+                const purchasedWorkshops = JSON.parse(localStorage.getItem('purchased_workshops') || '[]');
+                const workshopToAdd = {
+                  id: eventToPay.id,
+                  name: eventToPay.title,
+                  image: eventToPay.cover,
+                  date: eventToPay.date,
+                  time: eventToPay.time,
+                  venue: eventToPay.venue,
+                  purchasedAt: Date.now(),
+                };
+                if (!purchasedWorkshops.find(w => w.id === eventToPay.id)) {
+                  purchasedWorkshops.push(workshopToAdd);
+                  localStorage.setItem('purchased_workshops', JSON.stringify(purchasedWorkshops));
+                }
+                
+                // Open PayPlus for payment
+                openPayPlusWindow({
+                  type: 'workshop',
+                  itemId: eventToPay.id,
+                  itemName: eventToPay.title,
+                  amount: 120,
+                  quantity: 1,
+                  description: `Ticket for ${eventToPay.title}`,
+                  metadata: {
+                    eventId: eventToPay.id,
+                    eventDate: eventToPay.date,
+                    eventVenue: eventToPay.venue,
+                  },
+                });
               }
             }}
           >
@@ -498,119 +528,6 @@ export default function GlobalEventInvitePopups() {
         </DialogActions>
       </Dialog>
 
-      {/* Payment Confirmation Dialog */}
-      <Dialog
-        open={!!paymentConfirm}
-        onClose={() => setPaymentConfirm(null)}
-        maxWidth="xs"
-        fullWidth
-        disablePortal={dialogPortalProps.disablePortal}
-        container={dialogPortalProps.container}
-        sx={dialogPortalProps.sx}
-        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
-      >
-        <DialogTitle component="div" sx={{ pb: 0.5, textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 40, mb: 0.5 }}>🎟️</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 800 }}>
-            Confirm Purchase
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ textAlign: 'center' }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-            {paymentConfirm?.event?.title}
-          </Typography>
-          {paymentConfirm?.event?.date && (
-            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-              📅 {new Date(paymentConfirm.event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-              {paymentConfirm?.event?.time && ` at ${paymentConfirm.event.time}`}
-            </Typography>
-          )}
-          
-          {/* Price */}
-          <Box sx={{ 
-            bgcolor: 'rgba(108,92,231,0.08)', 
-            borderRadius: 2, 
-            p: 2, 
-            mb: 2 
-          }}>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: '#6C5CE7' }}>
-              ₪{paymentConfirm?.amount || 120}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Total amount
-            </Typography>
-          </Box>
-
-          {/* Masked card */}
-          <Box sx={{ 
-            border: '1px solid #e5e7eb', 
-            borderRadius: 2, 
-            p: 1.5, 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1.5,
-            bgcolor: '#fafafa'
-          }}>
-            <Box sx={{ 
-              width: 40, 
-              height: 28, 
-              bgcolor: '#1a1f71', 
-              borderRadius: 1, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center' 
-            }}>
-              <Typography sx={{ color: 'white', fontSize: 10, fontWeight: 700 }}>VISA</Typography>
-            </Box>
-            <Box sx={{ flex: 1, textAlign: 'left' }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>
-                •••• •••• •••• 4242
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Expires 12/28
-              </Typography>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions
-          sx={{
-            px: 2,
-            pb: 2,
-            pt: 0.5,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'stretch',
-            gap: 1,
-          }}
-        >
-          <Button
-            variant="contained"
-            sx={primaryCtaSx}
-            fullWidth
-            onClick={() => {
-              // Simulate payment - add to purchased
-              const purchased = getPurchasedSet();
-              if (paymentConfirm?.event?.id) {
-                purchased.add(paymentConfirm.event.id);
-                setPurchasedSet(purchased);
-              }
-              setPaymentConfirm(null);
-              // Show success message or navigate
-              navigate('/events?tab=purchased');
-            }}
-          >
-            💳 Pay ₪{paymentConfirm?.amount || 120}
-          </Button>
-          <Button
-            color="inherit"
-            sx={neutralCtaSx}
-            fullWidth
-            onClick={() => setPaymentConfirm(null)}
-          >
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 }

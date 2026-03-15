@@ -131,6 +131,318 @@ const transformToUserCardModel = (user) => ({
 const SAFE_BOTTOM =
   "calc(var(--app-bottom-nav-height, 88px) + env(safe-area-inset-bottom, 0px))";
 
+// Screen width for swipe calculations
+const SCREEN_W = typeof window !== 'undefined' ? window.innerWidth : 400;
+const SWIPE_THRESHOLD = 100; // 100px threshold for easier swiping
+
+// SwipeWrapper - wraps content and provides horizontal swipe functionality
+const SwipeWrapper = ({ children, onSwipeLeft, onSwipeRight, onOffsetChange }) => {
+  const [offsetX, setOffsetX] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const isSwipeRef = useRef(false);
+  const containerRef = useRef(null);
+
+  // Notify parent of offset changes for label display
+  useEffect(() => {
+    onOffsetChange?.(offsetX);
+  }, [offsetX, onOffsetChange]);
+
+  const handleTouchStart = useCallback((e) => {
+    const touch = e.touches[0];
+    startXRef.current = touch.clientX;
+    startYRef.current = touch.clientY;
+    isSwipeRef.current = false;
+    setIsSwiping(false);
+  }, []);
+
+  const handleMouseDown = useCallback((e) => {
+    console.log('[SwipeWrapper] Mouse down at:', e.clientX, e.clientY);
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    isSwipeRef.current = false;
+    setIsSwiping(false);
+    
+    const handleMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startXRef.current;
+      const deltaY = Math.abs(moveEvent.clientY - startYRef.current);
+      
+      // Determine if horizontal swipe (more horizontal than vertical movement)
+      if (!isSwipeRef.current && (Math.abs(deltaX) > 15 || deltaY > 15)) {
+        isSwipeRef.current = Math.abs(deltaX) > deltaY;
+        console.log('[SwipeWrapper] Direction determined - isHorizontal:', isSwipeRef.current, 'deltaX:', deltaX, 'deltaY:', deltaY);
+      }
+      
+      if (isSwipeRef.current) {
+        setIsSwiping(true);
+        setOffsetX(deltaX);
+      }
+    };
+    
+    const handleMouseUp = (upEvent) => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      
+      const finalDeltaX = upEvent.clientX - startXRef.current;
+      console.log('[SwipeWrapper] Mouse up - deltaX:', finalDeltaX, 'threshold:', SWIPE_THRESHOLD, 'isSwipe:', isSwipeRef.current);
+      
+      if (Math.abs(finalDeltaX) > SWIPE_THRESHOLD) {
+        if (finalDeltaX > 0) {
+          // Swipe right - Like
+          console.log('[SwipeWrapper] Triggering LIKE');
+          setOffsetX(SCREEN_W);
+          setTimeout(() => {
+            setOffsetX(0);
+            setIsSwiping(false);
+            onSwipeRight?.();
+          }, 200);
+        } else {
+          // Swipe left - Pass
+          console.log('[SwipeWrapper] Triggering PASS');
+          setOffsetX(-SCREEN_W);
+          setTimeout(() => {
+            setOffsetX(0);
+            setIsSwiping(false);
+            onSwipeLeft?.();
+          }, 200);
+        }
+      } else {
+        // Snap back
+        setOffsetX(0);
+        setIsSwiping(false);
+      }
+      
+      isSwipeRef.current = false;
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [onSwipeLeft, onSwipeRight]);
+
+  const handleTouchMove = useCallback((e) => {
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - startXRef.current;
+    const deltaY = Math.abs(touch.clientY - startYRef.current);
+    
+    // Determine if horizontal swipe
+    if (!isSwipeRef.current && (Math.abs(deltaX) > 15 || deltaY > 15)) {
+      isSwipeRef.current = Math.abs(deltaX) > deltaY;
+    }
+    
+    if (isSwipeRef.current) {
+      e.preventDefault(); // Prevent scroll when swiping
+      setIsSwiping(true);
+      setOffsetX(deltaX);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    const touch = e.changedTouches[0];
+    const finalDeltaX = touch.clientX - startXRef.current;
+    console.log('[SwipeWrapper] Touch end - deltaX:', finalDeltaX, 'threshold:', SWIPE_THRESHOLD);
+    
+    if (Math.abs(finalDeltaX) > SWIPE_THRESHOLD) {
+      if (finalDeltaX > 0) {
+        // Swipe right - Like
+        console.log('[SwipeWrapper] Touch - Triggering LIKE');
+        setOffsetX(SCREEN_W);
+        setTimeout(() => {
+          setOffsetX(0);
+          setIsSwiping(false);
+          onSwipeRight?.();
+        }, 200);
+      } else {
+        // Swipe left - Pass
+        console.log('[SwipeWrapper] Touch - Triggering PASS');
+        setOffsetX(-SCREEN_W);
+        setTimeout(() => {
+          setOffsetX(0);
+          setIsSwiping(false);
+          onSwipeLeft?.();
+        }, 200);
+      }
+    } else {
+      // Snap back
+      setOffsetX(0);
+      setIsSwiping(false);
+    }
+    
+    isSwipeRef.current = false;
+  }, [onSwipeLeft, onSwipeRight]);
+
+  // Calculate visual feedback
+  const rotation = (offsetX / SCREEN_W) * 8;
+  const likeOpacity = Math.min(1, Math.max(0, offsetX / SWIPE_THRESHOLD));
+  const passOpacity = Math.min(1, Math.max(0, -offsetX / SWIPE_THRESHOLD));
+
+  // Use effect to add global touch/mouse listeners
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onTouchStart = (e) => {
+      const touch = e.touches[0];
+      startXRef.current = touch.clientX;
+      startYRef.current = touch.clientY;
+      isSwipeRef.current = false;
+    };
+
+    const onTouchMove = (e) => {
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - startXRef.current;
+      const deltaY = Math.abs(touch.clientY - startYRef.current);
+      
+      if (!isSwipeRef.current && (Math.abs(deltaX) > 15 || deltaY > 15)) {
+        isSwipeRef.current = Math.abs(deltaX) > deltaY;
+      }
+      
+      if (isSwipeRef.current) {
+        e.preventDefault();
+        setIsSwiping(true);
+        setOffsetX(deltaX);
+      }
+    };
+
+    const onTouchEnd = (e) => {
+      const touch = e.changedTouches[0];
+      const finalDeltaX = touch.clientX - startXRef.current;
+      
+      if (Math.abs(finalDeltaX) > SWIPE_THRESHOLD) {
+        if (finalDeltaX > 0) {
+          setOffsetX(SCREEN_W);
+          setTimeout(() => {
+            setOffsetX(0);
+            setIsSwiping(false);
+            onSwipeRight?.();
+          }, 200);
+        } else {
+          setOffsetX(-SCREEN_W);
+          setTimeout(() => {
+            setOffsetX(0);
+            setIsSwiping(false);
+            onSwipeLeft?.();
+          }, 200);
+        }
+      } else {
+        setOffsetX(0);
+        setIsSwiping(false);
+      }
+      isSwipeRef.current = false;
+    };
+
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    container.addEventListener('touchmove', onTouchMove, { passive: false });
+    container.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchmove', onTouchMove);
+      container.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [onSwipeLeft, onSwipeRight]);
+
+  // Handle mouse down on the overlay
+  const handleOverlayMouseDown = useCallback((e) => {
+    // Don't interfere with clicks on buttons or interactive elements
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+      return;
+    }
+    
+    console.log('[SwipeWrapper] Overlay mouse down');
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    isSwipeRef.current = false;
+    setIsSwiping(false);
+    
+    const handleMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startXRef.current;
+      const deltaY = Math.abs(moveEvent.clientY - startYRef.current);
+      
+      if (!isSwipeRef.current && (Math.abs(deltaX) > 15 || deltaY > 15)) {
+        isSwipeRef.current = Math.abs(deltaX) > deltaY;
+      }
+      
+      if (isSwipeRef.current) {
+        setIsSwiping(true);
+        setOffsetX(deltaX);
+      }
+    };
+    
+    const handleMouseUp = (upEvent) => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      
+      const finalDeltaX = upEvent.clientX - startXRef.current;
+      console.log('[SwipeWrapper] Overlay mouse up - deltaX:', finalDeltaX);
+      
+      if (Math.abs(finalDeltaX) > SWIPE_THRESHOLD) {
+        if (finalDeltaX > 0) {
+          console.log('[SwipeWrapper] LIKE triggered!');
+          setOffsetX(SCREEN_W);
+          setTimeout(() => {
+            setOffsetX(0);
+            setIsSwiping(false);
+            onSwipeRight?.();
+          }, 200);
+        } else {
+          console.log('[SwipeWrapper] PASS triggered!');
+          setOffsetX(-SCREEN_W);
+          setTimeout(() => {
+            setOffsetX(0);
+            setIsSwiping(false);
+            onSwipeLeft?.();
+          }, 200);
+        }
+      } else {
+        setOffsetX(0);
+        setIsSwiping(false);
+      }
+      
+      isSwipeRef.current = false;
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [onSwipeLeft, onSwipeRight]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        transform: `translateX(${offsetX}px) rotate(${rotation}deg)`,
+        transition: isSwiping ? 'none' : 'transform 0.3s ease-out',
+        position: 'relative',
+        width: '100%',
+      }}
+    >
+      {/* Swipe capture overlay - covers entire card but allows button clicks */}
+      <div
+        onMouseDown={handleOverlayMouseDown}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 5,
+          cursor: isSwiping ? 'grabbing' : 'grab',
+          // Allow clicks to pass through to buttons underneath
+          pointerEvents: 'auto',
+        }}
+        onClick={(e) => {
+          // Allow clicks on buttons to pass through
+          const target = e.target;
+          if (target.tagName === 'BUTTON' || target.closest('button') || target.closest('[role="button"]')) {
+            e.stopPropagation();
+          }
+        }}
+      />
+      {children}
+    </div>
+  );
+};
+
 const DEFAULT_PREFS = {
   maxDistanceKm: 5,
   genders: ["female"],
@@ -727,6 +1039,9 @@ export default function Home({ onOpenTutorial }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Track swipe offset for displaying NOPE/LIKE labels at top level
+  const [swipeOffset, setSwipeOffset] = useState(0);
 
   // Track if we've initialized from URL (only do it once per mount)
   const initializedFromUrlRef = useRef(false);
@@ -1514,6 +1829,45 @@ export default function Home({ onOpenTutorial }) {
 
   return (
     <>
+      {/* Swipe Labels - NOPE/LIKE - rendered at top level for proper z-index */}
+      {swipeOffset < 0 && (
+        <Box 
+          sx={{ 
+            opacity: Math.min(1, Math.abs(swipeOffset) / 50), 
+            position: 'fixed', 
+            left: 40, 
+            top: '50%', 
+            transform: 'translateY(-50%) rotate(-15deg)', 
+            padding: '12px 24px', 
+            borderRadius: '12px', 
+            border: '4px solid #ef4444', 
+            backgroundColor: 'rgba(239, 68, 68, 0.2)', 
+            pointerEvents: 'none', 
+            zIndex: 99999,
+          }}
+        >
+          <Typography sx={{ fontSize: 32, fontWeight: 800, color: '#ef4444', letterSpacing: 3 }}>NOPE</Typography>
+        </Box>
+      )}
+      {swipeOffset > 0 && (
+        <Box 
+          sx={{ 
+            opacity: Math.min(1, swipeOffset / 50), 
+            position: 'fixed', 
+            right: 40, 
+            top: '50%', 
+            transform: 'translateY(-50%) rotate(15deg)', 
+            padding: '12px 24px', 
+            borderRadius: '12px', 
+            border: '4px solid #22c55e', 
+            backgroundColor: 'rgba(34, 197, 94, 0.2)', 
+            pointerEvents: 'none', 
+            zIndex: 99999,
+          }}
+        >
+          <Typography sx={{ fontSize: 32, fontWeight: 800, color: '#22c55e', letterSpacing: 3 }}>LIKE</Typography>
+        </Box>
+      )}
       {/* Top bar with avatar and help */}
       <Box
         sx={{
@@ -1649,6 +2003,7 @@ export default function Home({ onOpenTutorial }) {
             display: "flex",
             justifyContent: "center",
             pb: 4,
+            overflow: 'visible', // Allow swipe to extend beyond container
           }}
         >
           {!topUser ? (
@@ -1727,14 +2082,12 @@ export default function Home({ onOpenTutorial }) {
                   bgcolor: '#fff',
                   boxShadow: { xs: 'none', md: '0 0 40px rgba(0,0,0,0.08)' },
                   minHeight: '100vh',
+                  overflow: 'visible', // Allow swipe to extend beyond container
                 }}
               >
-              <ProfileTimeline
-                key={topUser.id}
-                user={transformToUserCardModel(topUser)}
-                onUndo={handleUndo}
-                canUndo={swipeHistory.length > 0}
-                onLike={async () => {
+              <SwipeWrapper
+                key={`swipe-${topUser.id}`}
+                onSwipeRight={async () => {
                 // Record like - NO need to increment deckIndex because the user
                 // is removed from filtered list, so current index now points to next user
                 if (topUser?.id != null) {
@@ -1825,7 +2178,7 @@ export default function Home({ onOpenTutorial }) {
                   }
                 }
               }}
-              onPass={() => {
+              onSwipeLeft={() => {
                 // Record pass - NO need to increment deckIndex because the user
                 // is removed from filtered list, so current index now points to next user
                 if (topUser?.id != null) {
@@ -1844,7 +2197,18 @@ export default function Home({ onOpenTutorial }) {
                   }
                 }
               }}
-              />
+              onOffsetChange={setSwipeOffset}
+              >
+                <Box sx={{ pointerEvents: 'auto' }}>
+                  <ProfileTimeline
+                    user={transformToUserCardModel(topUser)}
+                    onUndo={handleUndo}
+                    canUndo={swipeHistory.length > 0}
+                    onLike={() => {}}
+                    onPass={() => {}}
+                  />
+                </Box>
+              </SwipeWrapper>
               </Box>
             </>
           )}

@@ -27,6 +27,7 @@ import { motion } from 'framer-motion';
 import { EVENTS, DEMO_ATTENDEES } from './EventsByCategory';
 import { demoMatches } from './MatchesScreen';
 import useGestureMessagesStore from '../store/gestureMessagesStore';
+import { openPayPlusWindow } from '../services/payplus';
 
 const resolvePublicImageUrl = (url) => {
   if (!url) return url;
@@ -853,47 +854,65 @@ export default function EventDetailsPage() {
       </Container>
 
       <Dialog open={buyOpen} onClose={() => setBuyOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Buy ticket</DialogTitle>
+        <DialogTitle sx={{ textAlign: 'center', fontWeight: 700 }}>Buy Ticket</DialogTitle>
         <DialogContent dividers>
-          <Stack spacing={1.5}>
-            <TextField
-              label="Name"
-              value={buyerName}
-              onChange={(e) => setBuyerName(e.target.value)}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Email"
-              value={buyerEmail}
-              onChange={(e) => setBuyerEmail(e.target.value)}
-              fullWidth
-              size="small"
-            />
-            {!!buyErr && <Alert severity="error">{buyErr}</Alert>}
-            <Alert severity="info">
-              Demo purchase. After purchase, you'll unlock people you might meet at this event.
-            </Alert>
+          <Stack spacing={2}>
+            <Box sx={{ textAlign: 'center', py: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{event?.title}</Typography>
+              <Typography variant="body2" sx={{ color: '#64748b' }}>{event?.date} • {event?.venue}</Typography>
+            </Box>
+            
+            <Divider />
+            
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Typography variant="body1" sx={{ fontWeight: 700 }}>Total:</Typography>
+              <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#6C5CE7' }}>
+                ₪{Number(event?.price || 0).toFixed(2)}
+              </Typography>
+            </Stack>
+            
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button color="inherit" onClick={() => setBuyOpen(false)}>
-            Cancel
-          </Button>
+        <DialogActions sx={{ flexDirection: 'column', gap: 1, p: 2 }}>
           <Button
             variant="contained"
+            fullWidth
             onClick={() => {
-              if (!buyerName.trim()) return setBuyErr('Please enter your name.');
-              if (!buyerEmail.trim() || !buyerEmail.includes('@')) return setBuyErr('Please enter a valid email.');
-              setBuyErr('');
+              // Open PayPlus payment page
+              openPayPlusWindow({
+                type: 'event',
+                itemId: String(event?.id),
+                itemName: event?.title || 'Event Ticket',
+                amount: Number(event?.price || 0),
+                quantity: 1,
+                description: `Ticket for ${event?.title}`,
+                metadata: {
+                  eventId: event?.id,
+                  eventTitle: event?.title,
+                  eventDate: event?.date,
+                },
+              });
+              
+              // Mark as purchased (in production, this would happen after payment confirmation)
               const next = new Set(purchased);
               next.add(event.id);
               setPurchased(next);
               setPurchasedSet(next);
               setBuyOpen(false);
             }}
+            sx={{
+              py: 1.25,
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              '&:hover': { background: 'linear-gradient(135deg, #5b4cdb 0%, #9645e6 100%)' },
+            }}
           >
-            Confirm
+            Buy Ticket
+          </Button>
+          <Button color="inherit" fullWidth onClick={() => setBuyOpen(false)}>
+            Cancel
           </Button>
         </DialogActions>
       </Dialog>

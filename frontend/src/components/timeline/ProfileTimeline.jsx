@@ -76,6 +76,7 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo }) =>
       sx={{
         bgcolor: '#fff',
         minHeight: '100vh',
+        position: 'relative',
       }}
     >
       {/* ===== PHOTO 1 - HERO (mandatory) ===== */}
@@ -126,6 +127,29 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo }) =>
           src={photos[2]}
           alt={`${user.firstName || user.name} 3`}
         />
+      )}
+
+      {/* ===== 6.5. QUALITIES I VALUE (after photo 3, before interests) ===== */}
+      {user.qualities?.length > 0 && (
+        <TimelineSection title="Qualities I value">
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {user.qualities.slice(0, 5).map((quality, i) => (
+              <Chip
+                key={i}
+                label={quality}
+                size="medium"
+                sx={{
+                  bgcolor: 'rgba(108, 92, 231, 0.08)',
+                  color: '#6C5CE7',
+                  fontWeight: 500,
+                  fontSize: 13,
+                  border: '1px solid rgba(108, 92, 231, 0.2)',
+                  '&:hover': { bgcolor: 'rgba(108, 92, 231, 0.12)' },
+                }}
+              />
+            ))}
+          </Box>
+        </TimelineSection>
       )}
 
       {/* ===== 7. INTERESTS (moved before Lifestyle for connection-first flow) ===== */}
