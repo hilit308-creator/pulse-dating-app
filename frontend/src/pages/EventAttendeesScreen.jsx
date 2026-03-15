@@ -328,8 +328,8 @@ const EventAttendeesScreen = () => {
                 <Box sx={{ pointerEvents: 'auto' }}>
                   <ProfileTimeline
                     user={transformToProfileTimelineFormat(currentPerson)}
-                    onLike={() => {}}
-                    onPass={() => {}}
+                    onLike={() => handleSwipe('right', currentPerson)}
+                    onPass={() => handleSwipe('left', currentPerson)}
                     onUndo={handleUndo}
                     canUndo={currentIndex > 0}
                   />

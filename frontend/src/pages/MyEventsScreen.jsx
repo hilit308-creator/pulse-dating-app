@@ -26,12 +26,59 @@ const formatEventDate = (dateStr, time = "21:00") => {
   return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
 };
 
+// Get blocked user IDs from localStorage
+const getBlockedUserIds = () => {
+  try {
+    const blocked = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+    return new Set(blocked.map(u => u.id));
+  } catch {
+    return new Set();
+  }
+};
+
+// Get matched user IDs from localStorage (users we already liked back)
+const getMatchedUserIds = () => {
+  try {
+    const matches = JSON.parse(localStorage.getItem('pulse_matches') || '[]');
+    return new Set(matches.map(m => m.id));
+  } catch {
+    return new Set();
+  }
+};
+
 // Transform EVENTS data to MyEvents format
 const transformEventToMyEvent = (event) => {
+  const blockedIds = getBlockedUserIds();
+  const matchedIds = getMatchedUserIds();
+  
   const attendeesList = (event.attendees || []).map(id => DEMO_ATTENDEES.find(a => a.id === id)).filter(Boolean);
-  const matchingAttendees = attendeesList.filter(a => a.isMatch);
-  // "Likes" = non-match attendees (people who liked you but you haven't matched yet)
-  const likesAttendees = attendeesList.filter(a => !a.isMatch);
+  
+  // Matches = mutual matches (isMatch: true) + matches created from Like Back (in localStorage)
+  // Filter out blocked users
+  const matchingAttendees = attendeesList.filter(a => 
+    (a.isMatch || matchedIds.has(a.id)) && !blockedIds.has(a.id)
+  );
+  
+  // "Interested in You" = people who liked you but you haven't matched yet (interestedInYou: true)
+  // Filter out blocked users AND users we already matched with
+  const interestedAttendees = attendeesList.filter(a => 
+    a.interestedInYou && !a.isMatch && !blockedIds.has(a.id) && !matchedIds.has(a.id)
+  );
+  
+  // Also add matches from localStorage that are from this event
+  let savedEventMatches = [];
+  try {
+    const savedMatches = JSON.parse(localStorage.getItem('pulse_matches') || '[]');
+    savedEventMatches = savedMatches.filter(m => m.fromEvent === event.title && !blockedIds.has(m.id));
+  } catch {}
+  
+  // Combine demo matches with saved matches (avoid duplicates)
+  const allMatches = [...matchingAttendees];
+  savedEventMatches.forEach(saved => {
+    if (!allMatches.find(m => m.id === saved.id)) {
+      allMatches.push(saved);
+    }
+  });
   
   return {
     id: event.id,
@@ -40,9 +87,13 @@ const transformEventToMyEvent = (event) => {
     time: event.time,
     location: `${event.venue}, ${event.region}`,
     image: event.cover,
-    attendeesCount: attendeesList.length || event.capacity || 0,
-    matchingAttendeesCount: matchingAttendees.length,
-    likesCount: likesAttendees.length, // Synced with real data
+    attendeesCount: attendeesList.filter(a => !blockedIds.has(a.id)).length || event.capacity || 0,
+    matchingAttendeesCount: allMatches.length,
+    likesCount: interestedAttendees.length, // People who liked you (interestedInYou: true)
+    // Store the actual attendee data for navigation
+    matchingAttendees: allMatches,
+    interestedAttendees,
+    allAttendees: attendeesList.filter(a => !blockedIds.has(a.id)),
     category: event.category === 'large' ? 'Party' : 
               event.category === 'small' ? 'Social' : 
               event.category === 'twist' ? 'Experience' : 
@@ -52,6 +103,9 @@ const transformEventToMyEvent = (event) => {
 
 const MyEventsScreen = () => {
   const navigate = useNavigate();
+  
+  // Refresh key to force re-render when returning to this screen
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // Get purchased events from localStorage (synced with EventsByCategory)
   const [purchased, setPurchased] = useState(() => {
@@ -64,6 +118,7 @@ const MyEventsScreen = () => {
   });
 
   // Listen for localStorage changes (when user buys tickets in EventsByCategory)
+  // Also refresh when returning to this screen to pick up Like Back / Block changes
   useEffect(() => {
     const handleStorageChange = () => {
       try {
@@ -72,6 +127,8 @@ const MyEventsScreen = () => {
       } catch {
         // ignore
       }
+      // Force refresh to pick up matches/blocked changes
+      setRefreshKey(k => k + 1);
     };
     
     window.addEventListener('storage', handleStorageChange);
@@ -85,11 +142,12 @@ const MyEventsScreen = () => {
   }, []);
 
   // Filter and transform purchased events
+  // refreshKey dependency ensures we re-calculate when returning to screen
   const myEvents = useMemo(() => {
     return EVENTS
       .filter(ev => purchased.has(String(ev.id)))
       .map(transformEventToMyEvent);
-  }, [purchased]);
+  }, [purchased, refreshKey]);
 
   const handleEventClick = (event) => {
     navigate(`/events/${event.id}/attendees`, {
@@ -107,14 +165,20 @@ const MyEventsScreen = () => {
   const handleViewMatches = (event, e) => {
     e.stopPropagation();
     navigate(`/events/${event.id}/matches`, {
-      state: { event },
+      state: { 
+        event,
+        matches: event.matchingAttendees, // Pass actual match data
+      },
     });
   };
 
   const handleViewLikes = (event, e) => {
     e.stopPropagation();
     navigate(`/events/${event.id}/likes`, {
-      state: { event },
+      state: { 
+        event,
+        interestedPeople: event.interestedAttendees, // Pass actual interested data
+      },
     });
   };
 

@@ -35,6 +35,8 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from "framer-motion";
 import { HomeInlinePromoBanner } from '../components/SubscriptionPromoBanner';
+import ReportDialog from '../components/ReportDialog';
+import { ProfileTimeline } from '../components/timeline';
 import useHomeDeckStore from '../store/homeDeckStore';
 import {
   MessageCircle,
@@ -176,20 +178,41 @@ const demoLikes = [
   {
     id: 4,
     name: "Liza",
+    firstName: "Liza",
     age: 28,
+    city: "Tel Aviv",
+    distance: 2.3,
     photoUrl: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=256&q=80",
     photos: [
       "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=1400&h=1700&q=80",
       "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=1600&h=1000&q=80",
       "https://images.unsplash.com/photo-1496440737103-cd596325d314?auto=format&fit=crop&w=1400&h=1400&q=80",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1400&h=1400&q=80",
     ],
     status: "liked_you",
     interestHint: "Travel",
+    verified: true,
+    tagline: "Adventure seeker with a passion for discovering new places ✈️",
+    bio: "I believe life is too short to stay in one place. Currently exploring the world one city at a time. Looking for someone to share sunsets, street food, and spontaneous adventures with.",
+    profession: "Travel Photographer",
+    education: "Tel Aviv University",
+    height: "168 cm",
+    interests: ["Travel", "Photography", "Hiking", "Coffee", "Live Music", "Yoga"],
+    qualities: ["Adventurous", "Open-minded", "Curious", "Spontaneous"],
+    aboutMe: ["168 cm", "Non-smoker", "Social drinker"],
+    lookingFor: ["Long-term relationship", "Someone adventurous"],
+    drinking: "Socially",
+    smoking: "Never",
+    exercise: "Often",
+    languages: ["Hebrew", "English", "Spanish"],
   },
   {
     id: 5,
     name: "Gali",
+    firstName: "Gali",
     age: 25,
+    city: "Ramat Gan",
+    distance: 4.1,
     photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80",
     photos: [
       "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1400&h=1700&q=80",
@@ -198,19 +221,50 @@ const demoLikes = [
     ],
     status: "liked_you",
     interestHint: "Art",
+    verified: true,
+    tagline: "Creating beauty in everyday moments 🎨",
+    bio: "Artist by day, dreamer by night. I find inspiration in the little things - a perfect cup of coffee, a beautiful sunset, or a deep conversation. Let's create something beautiful together.",
+    profession: "Graphic Designer",
+    education: "Bezalel Academy",
+    height: "165 cm",
+    interests: ["Art", "Design", "Museums", "Coffee", "Reading", "Meditation"],
+    qualities: ["Creative", "Thoughtful", "Calm", "Artistic"],
+    aboutMe: ["165 cm", "Non-smoker", "Rarely drinks"],
+    lookingFor: ["Meaningful connection", "Someone creative"],
+    drinking: "Rarely",
+    smoking: "Never",
+    exercise: "Sometimes",
+    languages: ["Hebrew", "English"],
   },
   {
     id: 7,
     name: "Yael",
+    firstName: "Yael",
     age: 26,
-    photoUrl: "/gali_1.jpg",
+    city: "Herzliya",
+    distance: 5.8,
+    photoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=256&q=80",
     photos: [
-      "/gali_1.jpg",
-      "/gali_2.jpg",
-      "/gali_3.jpg",
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1400&h=1700&q=80",
+      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=1600&h=1000&q=80",
+      "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?auto=format&fit=crop&w=1400&h=1400&q=80",
     ],
     status: "liked_you",
     interestHint: "Design",
+    verified: false,
+    tagline: "Design enthusiast who loves good vibes ✨",
+    bio: "UX designer who believes in making the world more beautiful, one pixel at a time. When I'm not designing, you'll find me at the beach or trying new restaurants.",
+    profession: "UX Designer",
+    education: "Shenkar College",
+    height: "170 cm",
+    interests: ["Design", "Beach", "Food", "Tech", "Podcasts", "Pilates"],
+    qualities: ["Detail-oriented", "Friendly", "Ambitious", "Fun"],
+    aboutMe: ["170 cm", "Non-smoker", "Social drinker"],
+    lookingFor: ["Something real", "Good conversations"],
+    drinking: "Socially",
+    smoking: "Never",
+    exercise: "Often",
+    languages: ["Hebrew", "English", "French"],
   },
 ];
 
@@ -280,9 +334,25 @@ async function syncFromGoogleAccount(userEmail) {
     // });
     // const data = await response.json();
     
-    // For now, use demo data but store it with user-specific key
+    // For now, use demo data but merge with any new matches from events
+    // Get new matches created from EventLikesScreen (Like Back action)
+    let eventMatches = [];
+    try {
+      const storedEventMatches = localStorage.getItem('pulse_matches');
+      if (storedEventMatches) {
+        eventMatches = JSON.parse(storedEventMatches);
+      }
+    } catch (e) {
+      console.error('Error reading event matches:', e);
+    }
+    
+    // Merge event matches with demo matches (event matches first, then demo)
+    const allMatches = [...eventMatches, ...demoMatches.filter(dm => 
+      !eventMatches.find(em => em.id === dm.id)
+    )];
+    
     const syncedData = {
-      matches: demoMatches,
+      matches: allMatches,
       likes: demoLikes,
       timestamp: Date.now(),
     };
@@ -314,9 +384,21 @@ async function syncFromGoogleAccount(userEmail) {
       console.error('[Google Sync] Error reading cache:', cacheError);
     }
     
-    // Ultimate fallback to demo data
+    // Ultimate fallback to demo data, but still check for event matches
+    let eventMatches = [];
+    try {
+      const storedEventMatches = localStorage.getItem('pulse_matches');
+      if (storedEventMatches) {
+        eventMatches = JSON.parse(storedEventMatches);
+      }
+    } catch (e) {}
+    
+    const allMatches = [...eventMatches, ...demoMatches.filter(dm => 
+      !eventMatches.find(em => em.id === dm.id)
+    )];
+    
     return {
-      matches: demoMatches,
+      matches: allMatches,
       likes: demoLikes,
     };
   }
@@ -686,14 +768,50 @@ function CompactMatchCard({ profile, onPass, onOpenChat, onBlock, onReport, pend
   );
 }
 
-/* Full Profile Card for Interested in You - Opens identical to Discover/Home card per spec */
-function FullProfileCard({ profile, onLike, onPass, onClose }) {
-  const photos = profile.photos?.length ? profile.photos : [profile.photoUrl].filter(Boolean);
-  const [photoIdx, setPhotoIdx] = useState(0);
+// Transform profile to ProfileTimeline format
+const transformToProfileTimelineFormat = (profile) => ({
+  id: profile.id,
+  userId: String(profile.id),
+  name: profile.name || profile.firstName,
+  firstName: profile.firstName || profile.name,
+  age: profile.age,
+  city: profile.city || 'Nearby',
+  distance: profile.distance,
+  profession: profile.profession,
+  education: profile.education,
+  tagline: profile.tagline,
+  bio: profile.bio,
+  interests: profile.interests || [],
+  tags: profile.tags || profile.interests || [],
+  verified: profile.verified,
+  isOnline: profile.isOnline || profile.online,
+  photos: profile.photos?.length ? profile.photos : [profile.photoUrl].filter(Boolean),
+  primaryPhoto: profile.photos?.[0] || profile.photoUrl,
+  aboutMe: profile.aboutMe || [],
+  lookingFor: profile.lookingFor || [],
+  qualities: profile.qualities || [],
+  height: profile.height,
+  location: profile.location || profile.city,
+  hometown: profile.hometown,
+  exercise: profile.exercise,
+  drinking: profile.drinking,
+  smoking: profile.smoking,
+  kids: profile.kids,
+  starSign: profile.starSign,
+  politics: profile.politics,
+  languages: profile.languages || [],
+  causes: profile.causes || [],
+  spotifyConnected: profile.spotifyConnected,
+  spotifyPlaylists: profile.spotifyPlaylists || [],
+  userRhythm: profile.userRhythm,
+  prompts: profile.prompts || [],
+  favoriteSongs: profile.favoriteSongs || [],
+  likesYou: true, // They're in "Interested in You" so they like you
+});
 
-  const interests = profile.interests || [];
-  const aboutMe = profile.aboutMe || [];
-  const lookingFor = profile.lookingFor || [];
+/* Full Profile Card for Interested in You - Uses ProfileTimeline with scrolling */
+function FullProfileCard({ profile, onLike, onPass, onClose }) {
+  const transformedProfile = transformToProfileTimelineFormat(profile);
 
   return (
     <motion.div
@@ -718,14 +836,25 @@ function FullProfileCard({ profile, onLike, onPass, onClose }) {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        style={{ width: '100%', maxWidth: 380, maxHeight: '85vh', overflow: 'auto' }}
+        style={{ 
+          width: '100%', 
+          maxWidth: 400, 
+          height: 'calc(100vh - 100px)',
+          maxHeight: 700,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
       >
         <Box
           sx={{
+            flex: 1,
             backgroundColor: '#fff',
             borderRadius: '24px',
             overflow: 'hidden',
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
           }}
         >
           {/* Close button */}
@@ -735,7 +864,7 @@ function FullProfileCard({ profile, onLike, onPass, onClose }) {
               position: 'absolute',
               top: 12,
               right: 12,
-              zIndex: 10,
+              zIndex: 100,
               backgroundColor: 'rgba(0,0,0,0.5)',
               color: '#fff',
               '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' },
@@ -745,202 +874,25 @@ function FullProfileCard({ profile, onLike, onPass, onClose }) {
             <X size={18} />
           </IconButton>
 
-          {/* Photo */}
+          {/* Scrollable ProfileTimeline */}
           <Box
             sx={{
-              position: 'relative',
-              width: '100%',
-              height: 320,
-              overflow: 'hidden',
+              flex: 1,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              '&::-webkit-scrollbar': { width: 4 },
+              '&::-webkit-scrollbar-thumb': { 
+                backgroundColor: 'rgba(0,0,0,0.2)', 
+                borderRadius: 2 
+              },
             }}
           >
-            <img
-              src={photos[photoIdx]}
-              alt={profile.name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+            <ProfileTimeline
+              user={transformedProfile}
+              onLike={() => onLike(profile)}
+              onPass={() => onPass(profile)}
+              hideUndo={true}
             />
-            {/* Photo navigation */}
-            {photos.length > 1 && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 8,
-                  left: 0,
-                  right: 0,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: 0.5,
-                  px: 2,
-                }}
-              >
-                {photos.map((_, i) => (
-                  <Box
-                    key={i}
-                    onClick={() => setPhotoIdx(i)}
-                    sx={{
-                      flex: 1,
-                      height: 3,
-                      maxWidth: 50,
-                      borderRadius: 2,
-                      backgroundColor: i === photoIdx ? '#fff' : 'rgba(255,255,255,0.4)',
-                      cursor: 'pointer',
-                    }}
-                  />
-                ))}
-              </Box>
-            )}
-            {/* Gradient */}
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 100,
-                background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
-              }}
-            />
-            {/* Name overlay */}
-            <Box sx={{ position: 'absolute', bottom: 12, left: 16 }}>
-              <Typography variant="h5" sx={{ fontWeight: 800, color: '#fff' }}>
-                {profile.name}, {profile.age}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <MapPin size={14} color="#fff" />
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                  {profile.city || 'Nearby'}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* Content */}
-          <Box sx={{ p: 2.5 }}>
-            {/* Tagline */}
-            {profile.tagline && (
-              <Typography variant="body1" sx={{ color: '#1a1a2e', mb: 2 }}>
-                {profile.tagline}
-              </Typography>
-            )}
-
-            {/* Details */}
-            {aboutMe.length > 0 && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.75 }}>
-                  Details
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {aboutMe.map((item, i) => (
-                    <Box
-                      key={i}
-                      sx={{
-                        px: 1,
-                        py: 0.4,
-                        borderRadius: 999,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        bgcolor: '#efeaff',
-                        color: '#6C5CE7',
-                      }}
-                    >
-                      {item}
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
-
-            {/* Interests */}
-            {interests.length > 0 && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.75 }}>
-                  Interests
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {interests.map((item, i) => (
-                    <Box
-                      key={i}
-                      sx={{
-                        px: 1,
-                        py: 0.4,
-                        borderRadius: 999,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        bgcolor: 'rgba(108,92,231,0.08)',
-                        color: '#6C5CE7',
-                      }}
-                    >
-                      {item}
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
-
-            {/* Looking for */}
-            {lookingFor.length > 0 && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.75 }}>
-                  Looking for
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {lookingFor.map((item, i) => (
-                    <Box
-                      key={i}
-                      sx={{
-                        px: 1,
-                        py: 0.4,
-                        borderRadius: 999,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        bgcolor: 'rgba(244,63,94,0.08)',
-                        color: '#f43f5e',
-                      }}
-                    >
-                      {item}
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
-
-            {/* Actions - Same Like / Pass logic as Discover per spec */}
-            <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => onPass(profile)}
-                startIcon={<X size={20} />}
-                sx={{
-                  py: 1.25,
-                  borderRadius: '14px',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderColor: '#e2e8f0',
-                  color: '#64748b',
-                  '&:hover': { borderColor: '#cbd5e1', bgcolor: '#f8fafc' },
-                }}
-              >
-                Pass
-              </Button>
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={() => onLike(profile)}
-                startIcon={<Heart size={20} />}
-                sx={{
-                  py: 1.25,
-                  borderRadius: '14px',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  background: 'linear-gradient(135deg, #6C5CE7 0%, #8b5cf6 100%)',
-                  boxShadow: '0 4px 16px rgba(108,92,231,0.3)',
-                  '&:hover': { background: 'linear-gradient(135deg, #5b4cdb 0%, #7c4ddb 100%)' },
-                }}
-              >
-                Like
-              </Button>
-            </Stack>
           </Box>
         </Box>
       </motion.div>
@@ -1016,6 +968,10 @@ export default function MatchesScreen() {
   const [reportTarget, setReportTarget] = useState(null);
   const [reportNote, setReportNote] = useState("");
   const [snack, setSnack] = useState({ open: false, msg: "", severity: "success" });
+  
+  // Block confirmation dialog state
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+  const [blockTarget, setBlockTarget] = useState(null);
 
   // Interested in You - unlocked state per spec
   const [isSubscribed, setIsSubscribed] = useState(true); // Mock: user has subscription
@@ -1038,6 +994,47 @@ export default function MatchesScreen() {
         setPendingWorkshopInvite(JSON.parse(raw));
       }
     } catch {}
+  }, []);
+
+  // Listen for match updates from other screens (Nearby, Home)
+  useEffect(() => {
+    const reloadMatches = () => {
+      try {
+        const storedMatches = localStorage.getItem('pulse_matches');
+        console.log('[MatchesScreen] Reloading matches from localStorage');
+        if (storedMatches) {
+          const matches = JSON.parse(storedMatches);
+          matches.forEach(match => {
+            addMutualMatch(match);
+          });
+        }
+      } catch (e) {
+        console.error('[MatchesScreen] Error reloading matches:', e);
+      }
+    };
+    
+    // Listen for storage changes (from other tabs)
+    const handleStorageChange = (e) => {
+      if (e.key === 'pulse_matches') {
+        console.log('[MatchesScreen] Storage changed, reloading matches');
+        reloadMatches();
+      }
+    };
+    
+    // Listen for custom event (same-tab updates from Nearby/Home)
+    const handleMatchesUpdated = () => {
+      console.log('[MatchesScreen] pulse:matches_updated event received');
+      reloadMatches();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('pulse:matches_updated', handleMatchesUpdated);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('pulse:matches_updated', handleMatchesUpdated);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Get user's GPS location for distance filtering
@@ -1085,11 +1082,20 @@ export default function MatchesScreen() {
       try {
         setLoading(true);
         
-        // Sync likes from Google account (matches now come from global store)
+        // Sync likes from Google account
         const syncedData = await syncFromGoogleAccount(GOOGLE_USER_EMAIL);
         
         if (isMounted) {
           setLikes(syncedData.likes);
+          
+          // Also add synced matches to the store (in case they're not there yet)
+          if (syncedData.matches && Array.isArray(syncedData.matches)) {
+            console.log('[MatchesScreen] Adding synced matches to store:', syncedData.matches.length);
+            syncedData.matches.forEach(match => {
+              addMutualMatch(match);
+            });
+          }
+          
           setLoading(false);
           
           // Log sync info
@@ -1111,7 +1117,7 @@ export default function MatchesScreen() {
     return () => {
       isMounted = false;
     };
-  }, [mutualMatches.length]); // Re-run when mutualMatches changes
+  }, []); // Run only on mount
 
   // persist blocks & reports
   useEffect(() => saveBlocks(blocked), [blocked]);
@@ -1120,6 +1126,7 @@ export default function MatchesScreen() {
   const filteredMatches = useMemo(() => {
     // Use mutualMatches from global store
     const matches = mutualMatches || [];
+    console.log('[MatchesScreen] filteredMatches recalculating - mutualMatches:', matches.length, 'blocked:', blocked.size, 'names:', matches.map(m => m.name));
     
     // Calculate real distance from GPS if available, otherwise use static distance
     const matchesWithDistance = matches.map((m) => {
@@ -1151,14 +1158,49 @@ export default function MatchesScreen() {
     return [...res].sort((a, b) => (b.matchedAt || 0) - (a.matchedAt || 0));
   }, [mutualMatches, blocked, ageRange, maxDistance, onlyActiveChats, sortBy, userLocation, calculateDistance]);
 
-  const handlePass = (p) => removeMutualMatch(p.id);
+  const handlePass = (p) => {
+    console.log('[MatchesScreen] Passing on user:', p.id, p.name);
+    console.log('[MatchesScreen] Current mutualMatches count before pass:', mutualMatches.length);
+    removeMutualMatch(p.id);
+  };
   const handleOpenChat = (p) => {
     // Navigate to chat screen with match data
-    window.location.href = `/chat?matchId=${p.id}`;
+    // Include full profile data so ChatScreen can create a new chat if needed
+    navigate(`/chat/${p.id}`, { 
+      state: { 
+        profile: {
+          id: p.id,
+          name: p.name,
+          firstName: p.name,
+          age: p.age,
+          photoUrl: p.photos?.[0] || p.photoUrl,
+          photos: p.photos || [p.photoUrl],
+          verified: p.verified,
+          interests: p.interests || [],
+          tagline: p.tagline,
+        },
+        matchName: p.name,
+        matchPhoto: p.photos?.[0] || p.photoUrl,
+      } 
+    });
   };
 
   // === BLOCK (per user) ===
+  // Open confirmation dialog
   const handleBlock = (p) => {
+    setBlockTarget(p);
+    setBlockConfirmOpen(true);
+  };
+  
+  // Confirm block action
+  const confirmBlock = () => {
+    if (!blockTarget) return;
+    
+    const p = blockTarget;
+    console.log('[MatchesScreen] Blocking user:', p.id, p.name);
+    console.log('[MatchesScreen] Current blocked count:', blocked.size);
+    console.log('[MatchesScreen] Current mutualMatches count:', mutualMatches.length);
+    
     // Add to blocked users in localStorage for Settings page
     const blockedUser = {
       id: p.id,
@@ -1176,40 +1218,47 @@ export default function MatchesScreen() {
       console.error('Failed to save blocked user to localStorage:', e);
     }
     
+    // Create new Set with only the blocked user ID added
     const next = new Set(blocked);
     next.add(p.id);
+    console.log('[MatchesScreen] New blocked count:', next.size);
     setBlocked(next);
     setSnack({ open: true, msg: `${p.name} has been blocked.`, severity: "info" });
+    
+    // Close dialog
+    setBlockConfirmOpen(false);
+    setBlockTarget(null);
   };
 
   // === REPORT (with optional note; threshold->queue) ===
   const openReportDialog = (p) => {
     setReportTarget(p);
-    setReportNote("");
     setReportOpen(true);
   };
-  const submitReport = () => {
+  
+  const submitReport = (reportData) => {
     if (!reportTarget) return;
     const id = reportTarget.id;
-    const prev = reports[id] || { count: 0, notes: [] };
+    const prev = reports[id] || { count: 0, notes: [], reasons: [] };
     const next = {
       count: prev.count + 1,
-      notes: reportNote?.trim() ? [...prev.notes, reportNote.trim()] : prev.notes,
+      notes: reportData.note ? [...prev.notes, reportData.note] : prev.notes,
+      reasons: [...(prev.reasons || []), reportData.reason],
     };
     const merged = { ...reports, [id]: next };
     setReports(merged);
     setReportOpen(false);
-    setSnack({ open: true, msg: `Report submitted${reportNote.trim() ? " with note" : ""}.`, severity: "success" });
+    setReportTarget(null);
+    setSnack({ open: true, msg: `Report submitted. Thank you for helping keep Pulse safe.`, severity: "success" });
 
     // threshold = 5 → push to review queue (admin)
     if (next.count >= 5) {
       pushToReviewQueue({
         profileId: id,
         when: new Date().toISOString(),
-        notesSnapshot: next.notes.slice(-10), // last notes
+        notesSnapshot: next.notes.slice(-10),
+        reasons: next.reasons,
       });
-      // Here you would call your backend:
-      // await fetch("/api/moderation/review-queue", { method: "POST", body: JSON.stringify({...}) })
       setSnack({ open: true, msg: `Profile sent to admin review queue.`, severity: "warning" });
     }
   };
@@ -1536,6 +1585,8 @@ export default function MatchesScreen() {
       </Box>
 
       {/* Content */}
+      {/* DEV LOG */}
+      {console.log('[MatchesScreen RENDER] tab:', tab, 'mutualMatches:', mutualMatches.length, 'filteredMatches:', filteredMatches.length, 'loading:', loading)}
       {tab === 0 && (
         <Box sx={{ px: 1.25, pt: 1.25 }}>
           {loading ? (
@@ -1605,7 +1656,7 @@ export default function MatchesScreen() {
                   <CompactMatchCard
                     profile={m}
                     onPass={(p) => removeMutualMatch(p.id)}
-                    onOpenChat={(p) => navigate(`/chat?matchId=${p.id}`)}
+                    onOpenChat={handleOpenChat}
                     onBlock={handleBlock}
                     onReport={handleReport}
                     pendingWorkshopInvite={pendingWorkshopInvite}
@@ -1821,7 +1872,7 @@ export default function MatchesScreen() {
                     <CompactMatchCard
                       profile={profile}
                       onPass={(p) => removeLikedProfile(p.id)}
-                      onOpenChat={(p) => navigate(`/chat?matchId=${p.id}`)}
+                      onOpenChat={handleOpenChat}
                       onBlock={handleBlock}
                       onReport={handleReport}
                       isYouLikeTab={true}
@@ -1949,35 +2000,76 @@ export default function MatchesScreen() {
         </Box>
       </Drawer>
 
-      {/* Report Dialog */}
-      <Dialog open={reportOpen} onClose={() => setReportOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>{t('reportUser')}</DialogTitle>
-        <DialogContent dividers>
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            {t('tellUsWhatHappened')}
+      {/* Block Confirmation Dialog */}
+      <Dialog
+        open={blockConfirmOpen}
+        onClose={() => {
+          setBlockConfirmOpen(false);
+          setBlockTarget(null);
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            maxWidth: 340,
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, fontWeight: 600 }}>
+          Block {blockTarget?.name}?
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Are you sure you want to block this profile? They won't be able to see you or contact you anymore.
           </Typography>
-          <TextField
-            autoFocus
-            fullWidth
-            multiline
-            minRows={3}
-            placeholder={t('writeNote')}
-            value={reportNote}
-            onChange={(e) => setReportNote(e.target.value)}
-          />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setReportOpen(false)} color="inherit">{t('cancel')}</Button>
-          <Button onClick={submitReport} variant="contained" sx={{ background: "linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)" }}>{t('submitReport')}</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => {
+              setBlockConfirmOpen(false);
+              setBlockTarget(null);
+            }}
+            sx={{ color: '#64748b' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={confirmBlock}
+            sx={{
+              bgcolor: '#ef4444',
+              '&:hover': { bgcolor: '#dc2626' },
+            }}
+          >
+            Block
+          </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Report Dialog */}
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => {
+          setReportOpen(false);
+          setReportTarget(null);
+        }}
+        onSubmit={submitReport}
+        userName={reportTarget?.name || 'this user'}
+      />
 
       {/* Snackbars */}
       <Snackbar
         open={snack.open}
-        autoHideDuration={2500}
+        autoHideDuration={3500}
         onClose={() => setSnack((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        sx={{ 
+          top: 80,
+          zIndex: 99999,
+          '& .MuiAlert-root': {
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+          }
+        }}
       >
         <Alert severity={snack.severity} variant="filled" onClose={() => setSnack((s) => ({ ...s, open: false }))}>
           {snack.msg}

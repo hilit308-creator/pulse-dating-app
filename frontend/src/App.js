@@ -859,6 +859,7 @@ function AppShell() {
         copy: e?.detail?.copy,
         onLater: e?.detail?.onLater,
         onTertiary: e?.detail?.onTertiary,
+        onChat: e?.detail?.onChat,
       });
     };
 
@@ -933,9 +934,21 @@ function AppShell() {
           }}
           onStartChat={(m) => {
             setMatchPopup(null);
-            const matchId = m?.matchId || m?.id;
-            if (matchId) navigate(`/chat/${matchId}`);
-            else navigate('/chat');
+            // Use custom onChat callback if provided (e.g., from EventLikesScreen)
+            if (matchPopup.onChat) {
+              try {
+                matchPopup.onChat(m);
+              } catch {
+                // Fallback to default navigation
+                const matchId = m?.matchId || m?.id;
+                if (matchId) navigate(`/chat/${matchId}`);
+                else navigate('/chat');
+              }
+            } else {
+              const matchId = m?.matchId || m?.id;
+              if (matchId) navigate(`/chat/${matchId}`);
+              else navigate('/chat');
+            }
           }}
           onLater={() => {
             setMatchPopup(null);

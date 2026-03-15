@@ -10,6 +10,33 @@ import { Box, IconButton, Typography, Tooltip } from '@mui/material';
 import { X, Heart, Undo2 } from 'lucide-react';
 
 const DecisionZone = ({ onLike, onPass, onUndo, canUndo, hideUndo, userName }) => {
+  // Scroll to top instantly (no animation) for seamless profile transition
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
+  const handleLike = () => {
+    onLike?.();
+    // Small delay to let the new profile render, then scroll
+    requestAnimationFrame(() => {
+      scrollToTop();
+    });
+  };
+
+  const handlePass = () => {
+    onPass?.();
+    requestAnimationFrame(() => {
+      scrollToTop();
+    });
+  };
+
+  const handleUndo = () => {
+    onUndo?.();
+    requestAnimationFrame(() => {
+      scrollToTop();
+    });
+  };
+
   return (
     <Box
       sx={{
@@ -20,6 +47,8 @@ const DecisionZone = ({ onLike, onPass, onUndo, canUndo, hideUndo, userName }) =
         alignItems: 'center',
         gap: 3,
         bgcolor: '#fff',
+        position: 'relative',
+        zIndex: 100,
       }}
     >
       <Typography
@@ -38,7 +67,7 @@ const DecisionZone = ({ onLike, onPass, onUndo, canUndo, hideUndo, userName }) =
           <Tooltip title="Go back" placement="top">
             <span>
               <IconButton
-                onClick={onUndo}
+                onClick={handleUndo}
                 disabled={!canUndo}
                 sx={{
                   width: 48,
@@ -66,7 +95,7 @@ const DecisionZone = ({ onLike, onPass, onUndo, canUndo, hideUndo, userName }) =
 
         {/* Pass Button */}
         <IconButton
-          onClick={onPass}
+          onClick={handlePass}
           sx={{
             width: 72,
             height: 72,
@@ -85,7 +114,7 @@ const DecisionZone = ({ onLike, onPass, onUndo, canUndo, hideUndo, userName }) =
         
         {/* Like Button */}
         <IconButton
-          onClick={onLike}
+          onClick={handleLike}
           sx={{
             width: 72,
             height: 72,

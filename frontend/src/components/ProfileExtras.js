@@ -441,43 +441,80 @@ export default function ProfileExtras() {
         </DialogContent>
       </Dialog>
       {/* Politics Dialog */}
-      <Dialog open={politicsDialog} onClose={() => setPoliticsDialog(false)} sx={{ zIndex: 9999 }}>
-        <DialogTitle>Select your political leaning</DialogTitle>
-        <DialogContent>
-          <TextField
-            select
-            fullWidth
-            label="Politics"
-            value={politics}
-            onChange={e => setPolitics(e.target.value)}
-            sx={{ mt: 2 }}
-          >
-            {politicsOptions.map(opt => <MenuItem key={opt} value={opt}>{opt}</MenuItem>)}
-          </TextField>
+      <Dialog 
+        open={politicsDialog} 
+        onClose={() => setPoliticsDialog(false)} 
+        PaperProps={{ sx: { borderRadius: 3, minWidth: 320, maxWidth: 400, m: 2 } }}
+        sx={{ zIndex: 9999 }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Select your political leaning</DialogTitle>
+        <DialogContent sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {politicsOptions.map(opt => (
+              <Box
+                key={opt}
+                onClick={() => {
+                  setPolitics(opt);
+                  setPoliticsDialog(false);
+                }}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  cursor: 'pointer',
+                  border: politics === opt ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                  bgcolor: politics === opt ? 'rgba(108,92,231,0.1)' : '#fff',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: '#6C5CE7',
+                    bgcolor: 'rgba(108,92,231,0.05)',
+                  },
+                }}
+              >
+                <Typography sx={{ fontSize: 14, fontWeight: politics === opt ? 600 : 400 }}>{opt}</Typography>
+              </Box>
+            ))}
+          </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPoliticsDialog(false)}>Done</Button>
-        </DialogActions>
       </Dialog>
       {/* Language Dialog */}
-      <Dialog open={languageDialog} onClose={() => setLanguageDialog(false)} sx={{ zIndex: 9999 }}>
-        <DialogTitle>Add a language</DialogTitle>
-        <DialogContent>
-          <TextField
-            select
-            fullWidth
-            label="Language"
-            value={languageInput}
-            onChange={e => setLanguageInput(e.target.value)}
-            sx={{ mt: 2 }}
-          >
-            {allLanguages.filter(l => !languages.includes(l)).map(lang => <MenuItem key={lang} value={lang}>{lang}</MenuItem>)}
-          </TextField>
+      <Dialog 
+        open={languageDialog} 
+        onClose={() => setLanguageDialog(false)} 
+        PaperProps={{ sx: { borderRadius: 3, minWidth: 320, maxWidth: 400, m: 2 } }}
+        sx={{ zIndex: 9999 }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Add a language</DialogTitle>
+        <DialogContent sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {allLanguages.filter(l => !languages.includes(l)).map(lang => (
+              <Box
+                key={lang}
+                onClick={() => {
+                  if (languages.length < 5) {
+                    setLanguages([...languages, lang]);
+                    setLanguageDialog(false);
+                  }
+                }}
+                sx={{
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  cursor: languages.length >= 5 ? 'not-allowed' : 'pointer',
+                  border: '1px solid #e2e8f0',
+                  bgcolor: '#fff',
+                  opacity: languages.length >= 5 ? 0.5 : 1,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: languages.length >= 5 ? '#e2e8f0' : '#6C5CE7',
+                    bgcolor: languages.length >= 5 ? '#fff' : 'rgba(108,92,231,0.05)',
+                  },
+                }}
+              >
+                <Typography sx={{ fontSize: 14, fontWeight: 500 }}>{lang}</Typography>
+              </Box>
+            ))}
+          </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleAddLanguage} disabled={!languageInput || languages.length >= 5}>Add</Button>
-          <Button onClick={() => setLanguageDialog(false)}>Done</Button>
-        </DialogActions>
       </Dialog>
     </Box>
   );

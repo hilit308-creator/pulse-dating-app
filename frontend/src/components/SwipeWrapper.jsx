@@ -93,8 +93,21 @@ const SwipeWrapper = ({ children, onSwipeLeft, onSwipeRight, onOffsetChange }) =
   // Handle mouse down on the overlay
   const handleOverlayMouseDown = useCallback((e) => {
     // Don't interfere with clicks on buttons or interactive elements
-    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-      return;
+    // Use a more robust check that works with SVG elements
+    let element = e.target;
+    while (element && element !== containerRef.current) {
+      // Check tagName (works for both HTML and SVG)
+      const tagName = element.tagName?.toUpperCase();
+      if (tagName === 'BUTTON' || tagName === 'SVG' || tagName === 'PATH' || tagName === 'A') {
+        return;
+      }
+      // Check for MUI classes
+      if (element.classList?.contains('MuiIconButton-root') || 
+          element.classList?.contains('MuiButtonBase-root') ||
+          element.getAttribute?.('role') === 'button') {
+        return;
+      }
+      element = element.parentElement;
     }
     
     startXRef.current = e.clientX;
@@ -156,34 +169,15 @@ const SwipeWrapper = ({ children, onSwipeLeft, onSwipeRight, onOffsetChange }) =
   return (
     <div
       ref={containerRef}
+      onMouseDown={handleOverlayMouseDown}
       style={{
         transform: `translateX(${offsetX}px) rotate(${rotation}deg)`,
         transition: isSwiping ? 'none' : 'transform 0.3s ease-out',
         position: 'relative',
         width: '100%',
+        cursor: isSwiping ? 'grabbing' : 'default',
       }}
     >
-      {/* Swipe capture overlay - covers entire card but allows button clicks */}
-      <div
-        onMouseDown={handleOverlayMouseDown}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 5,
-          cursor: isSwiping ? 'grabbing' : 'grab',
-          pointerEvents: 'auto',
-        }}
-        onClick={(e) => {
-          // Allow clicks on buttons to pass through
-          const target = e.target;
-          if (target.tagName === 'BUTTON' || target.closest('button') || target.closest('[role="button"]')) {
-            e.stopPropagation();
-          }
-        }}
-      />
       {children}
     </div>
   );

@@ -3,7 +3,7 @@
 // NOT: bureaucratic, judgmental, gamified, punitive
 // "If editing the profile feels like work — the system failed"
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -542,28 +542,17 @@ export default function ProfileSettings({ onBack }) {
   const getBarColor = () =>
     completion < 40 ? "error" : completion < 80 ? "warning" : "success";
 
-  // --- Dirty flag (for sticky save bar) ---
-  const dirty = useMemo(() => {
-    return (
-      bio.length > 0 ||
-      interests.length !== mockInterests.length ||
-      photos.some((p, i) => p.url !== (mockPhotos[i]?.url || "")) ||
-      verified !== false ||
-      selectedCauses.length > 0 ||
-      selectedQualities.join(",") !== ["Humor", "Kindness", "Openness"].join(",") ||
-      selectedPrompts.length > 0 ||
-      bestPhoto !== true
-    );
-  }, [
-    bio,
-    interests,
-    photos,
-    verified,
-    selectedCauses,
-    selectedQualities,
-    selectedPrompts,
-    bestPhoto,
-  ]);
+  // --- Track if user has made any changes (for save prompt) ---
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Mark as dirty when user makes any change
+  const markDirty = () => setHasUnsavedChanges(true);
+  
+  // Reset dirty flag after save
+  const resetDirty = () => setHasUnsavedChanges(false);
+  
+  // Use hasUnsavedChanges for the sticky save bar
+  const dirty = hasUnsavedChanges;
 
   // --- Back navigation ---
   const handleBack = () => {
@@ -646,7 +635,7 @@ export default function ProfileSettings({ onBack }) {
       saveAndRefreshUserData({ photos: photosToSave });
       return updated;
     });
-    
+    markDirty();
     handleCloseCamera();
   };
 
@@ -676,6 +665,7 @@ export default function ProfileSettings({ onBack }) {
         saveAndRefreshUserData({ photos: photosToSave });
         return updated;
       });
+      markDirty();
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -689,6 +679,7 @@ export default function ProfileSettings({ onBack }) {
       saveAndRefreshUserData({ photos: photosToSave });
       return updated;
     });
+    markDirty();
   };
 
   const handlePhotoReorder = () => {
@@ -719,6 +710,7 @@ export default function ProfileSettings({ onBack }) {
       saveAndRefreshUserData({ interests: newInterests });
       return newInterests;
     });
+    markDirty();
   };
 
   const handleRemoveInterest = (interest) => {
@@ -728,6 +720,7 @@ export default function ProfileSettings({ onBack }) {
       saveAndRefreshUserData({ interests: newInterests });
       return newInterests;
     });
+    markDirty();
   };
 
   // --- Causes ---
@@ -739,6 +732,7 @@ export default function ProfileSettings({ onBack }) {
         ? [...prev, cause]
         : prev
     );
+    markDirty();
   };
 
   // --- Qualities ---
@@ -750,6 +744,7 @@ export default function ProfileSettings({ onBack }) {
         ? [...prev, q]
         : prev
     );
+    markDirty();
   };
 
   // --- Prompts ---
@@ -762,14 +757,37 @@ export default function ProfileSettings({ onBack }) {
       setSelectedPrompt(null);
       setPromptAnswer("");
       setPromptDialog(false);
+      markDirty();
     }
   };
 
-  // --- Save (demo) ---
+  // --- Save all profile data ---
   const handleSave = async () => {
     try {
-      await new Promise((r) => setTimeout(r, 500));
+      // Collect all profile data to save
+      const photosToSave = photos.filter(p => p.url).map(p => ({ url: p.url, isMain: p.label === "Primary" }));
+      
+      const profileData = {
+        photos: photosToSave,
+        bio,
+        interests,
+        isVerified: verified,
+        causes: selectedCauses,
+        qualities: selectedQualities,
+        prompts: selectedPrompts,
+        lookingFor,
+        ageRange,
+        maxDistance,
+      };
+      
+      // Save to localStorage
+      saveAndRefreshUserData(profileData);
+      
+      // Simulate API call delay
+      await new Promise((r) => setTimeout(r, 300));
+      
       setSnack({ open: true, msg: "Profile saved successfully", sev: "success" });
+      resetDirty(); // Reset dirty flag after successful save
     } catch (e) {
       setSnack({ open: true, msg: "Save failed, please try again", sev: "error" });
     }
@@ -1442,6 +1460,7 @@ export default function ProfileSettings({ onBack }) {
               onClick={() => {
                 setVerified(true);
                 setShowVerify(false);
+                markDirty();
               }}
               sx={{ 
                 borderRadius: '12px', 
@@ -1487,7 +1506,7 @@ export default function ProfileSettings({ onBack }) {
             size="small"
             placeholder="Write a few lines about yourself…"
             value={bio}
-            onChange={(e) => setBio(e.target.value)}
+            onChange={(e) => { setBio(e.target.value); markDirty(); }}
             sx={{ width: "100%", mb: 0.5 }}
             multiline
             minRows={2}
@@ -1641,7 +1660,7 @@ export default function ProfileSettings({ onBack }) {
                 <Chip
                   key={cause}
                   label={cause}
-                  onDelete={() => setSelectedCauses(prev => prev.filter(c => c !== cause))}
+                  onDelete={() => { setSelectedCauses(prev => prev.filter(c => c !== cause)); markDirty(); }}
                   sx={{
                     borderRadius: 999,
                     bgcolor: "#fff",
@@ -1690,7 +1709,7 @@ export default function ProfileSettings({ onBack }) {
                   key={q}
                   label={q}
                   variant="outlined"
-                  onDelete={() => setSelectedQualities(prev => prev.filter(quality => quality !== q))}
+                  onDelete={() => { setSelectedQualities(prev => prev.filter(quality => quality !== q)); markDirty(); }}
                   sx={{
                     borderRadius: 999,
                     bgcolor: "#fff",
@@ -2151,30 +2170,8 @@ export default function ProfileSettings({ onBack }) {
               width: "100%",
               mx: 2,
               mb: 1,
-              display: "flex",
-              gap: 1.5,
             }}
           >
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              sx={{
-                borderRadius: '12px',
-                textTransform: "none",
-                fontWeight: 600,
-                py: 1.5,
-                color: "#64748b",
-                borderColor: "#e2e8f0",
-                backgroundColor: '#fff',
-                "&:hover": {
-                  borderColor: "#cbd5e1",
-                  bgcolor: "#f8fafc",
-                },
-              }}
-            >
-              Preview
-            </Button>
             <Button
               fullWidth
               variant="contained"
@@ -2267,6 +2264,7 @@ export default function ProfileSettings({ onBack }) {
                 onClick={() => {
                   setBio(suggestion);
                   setShowBioSuggestions(false);
+                  markDirty();
                 }}
                 sx={{
                   p: 1.5,

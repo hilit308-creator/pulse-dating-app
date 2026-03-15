@@ -12,7 +12,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, Dialog, TextField, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Dialog, DialogContent, TextField, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, Sparkles, Eye, Zap, Clock, Shield, Ghost, CreditCard, X, Apple } from 'lucide-react';
 
@@ -859,50 +859,128 @@ const SubscriptionsScreen = () => {
   const [plusPricing, setPlusPricing] = useState(1); // Default to monthly
   const [proPricing, setProPricing] = useState(1); // Default to monthly
   const [activePlan, setActivePlan] = useState(null); // null, 'plus', 'pro'
-  const [paymentModal, setPaymentModal] = useState({ open: false, plan: '', price: '', type: '' });
+  const [purchasing, setPurchasing] = useState(false);
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  const [pendingPurchase, setPendingPurchase] = useState(null); // { planType, durationKey, product }
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  
+  // Duration keys for the hook
+  const PLUS_DURATION_KEYS = ['hourly', 'monthly', 'quarterly'];
+  const PRO_DURATION_KEYS = ['weekly', 'monthly', 'quarterly', 'biannual'];
   
   // Check for existing subscription on mount
   useEffect(() => {
     const existingPlan = localStorage.getItem('pulse_subscription');
     if (existingPlan) {
-      setActivePlan(existingPlan);
+      try {
+        const parsed = JSON.parse(existingPlan);
+        setActivePlan(parsed.type || existingPlan);
+      } catch {
+        setActivePlan(existingPlan);
+      }
     }
   }, []);
 
   useEffect(() => {
-    // Trigger fade-in after mount
     const timer = setTimeout(() => setIsLoaded(true), 50);
     return () => clearTimeout(timer);
   }, []);
 
-  const handlePaymentSuccess = useCallback((planType) => {
-    setActivePlan(planType);
-    localStorage.setItem('pulse_subscription', planType);
+  // Open purchase confirmation dialog
+  const openPurchaseDialog = useCallback(async (planType, durationKey) => {
+    console.log('[SubscriptionsScreen] Opening purchase dialog:', planType, durationKey);
+    try {
+      const { PRODUCTS } = await import('../services/storeBilling');
+      console.log('[SubscriptionsScreen] PRODUCTS loaded:', PRODUCTS);
+      const product = PRODUCTS[planType]?.[durationKey];
+      console.log('[SubscriptionsScreen] Product found:', product);
+      if (product) {
+        setPendingPurchase({ planType, durationKey, product });
+        setShowPurchaseDialog(true);
+        console.log('[SubscriptionsScreen] Dialog should be open now');
+      } else {
+        console.error('[SubscriptionsScreen] Product not found for:', planType, durationKey);
+      }
+    } catch (error) {
+      console.error('Failed to load product info:', error);
+    }
+  }, []);
+
+  // Confirm and execute purchase
+  const handleConfirmPurchase = useCallback(async () => {
+    if (purchasing || !pendingPurchase) return;
+    
+    setPurchasing(true);
+    
+    try {
+      const { storeBilling } = await import('../services/storeBilling');
+      const { planType, product } = pendingPurchase;
+      
+      // Use purchaseAndValidate for full flow with duplicate prevention
+      const result = await storeBilling.purchaseAndValidate(product.id);
+      
+      if (result.success) {
+        // Check if already processed (duplicate callback)
+        if (result.alreadyProcessed) {
+          console.log('[Subscriptions] Purchase already processed, skipping');
+          setShowPurchaseDialog(false);
+          setPendingPurchase(null);
+          return;
+        }
+        
+        // Subscription is saved by validateReceipt via _cacheEntitlements
+        // Update local state for immediate UI feedback
+        setActivePlan(planType);
+        
+        setShowPurchaseDialog(false);
+        setPendingPurchase(null);
+        setSnackbar({
+          open: true,
+          message: 'Purchase successful! Premium activated.',
+          severity: 'success',
+        });
+      } else {
+        throw new Error(result.error || 'Purchase failed');
+      }
+    } catch (error) {
+      console.error('[Store Billing] Purchase failed:', error);
+      const message = error.message === 'cancelled' 
+        ? 'Purchase cancelled' 
+        : 'Purchase failed. Please try again.';
+      setShowPurchaseDialog(false);
+      setPendingPurchase(null);
+      setSnackbar({ open: true, message, severity: 'error' });
+    } finally {
+      setPurchasing(false);
+    }
+  }, [purchasing, pendingPurchase]);
+
+  const handleRestorePurchases = useCallback(async () => {
+    setSnackbar({ open: true, message: 'Restoring purchases...', severity: 'info' });
+    
+    try {
+      const { storeBilling } = await import('../services/storeBilling');
+      const purchases = await storeBilling.restorePurchases();
+      
+      if (purchases && purchases.length > 0) {
+        setSnackbar({ open: true, message: 'Purchases restored!', severity: 'success' });
+      } else {
+        setSnackbar({ open: true, message: 'No purchases to restore', severity: 'info' });
+      }
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Restore failed', severity: 'error' });
+    }
   }, []);
 
   const handleActivatePlus = useCallback(() => {
-    const selectedOption = PLUS_PRICING_OPTIONS[plusPricing];
-    console.log('[IAP] Opening payment for Pulse Plus -', selectedOption.duration);
-    
-    setPaymentModal({
-      open: true,
-      plan: `Pulse Plus - ${selectedOption.duration}`,
-      price: selectedOption.price,
-      type: 'plus',
-    });
-  }, [plusPricing]);
+    const durationKey = PLUS_DURATION_KEYS[plusPricing];
+    openPurchaseDialog('plus', durationKey);
+  }, [plusPricing, openPurchaseDialog]);
 
   const handleActivatePro = useCallback(() => {
-    const selectedOption = PRO_PRICING_OPTIONS[proPricing];
-    console.log('[IAP] Opening payment for Pulse Pro -', selectedOption.duration);
-    
-    setPaymentModal({
-      open: true,
-      plan: `Pulse Pro - ${selectedOption.duration}`,
-      price: selectedOption.price,
-      type: 'pro',
-    });
-  }, [proPricing]);
+    const durationKey = PRO_DURATION_KEYS[proPricing];
+    openPurchaseDialog('pro', durationKey);
+  }, [proPricing, openPurchaseDialog]);
 
   const plusFeatures = [
     { icon: Eye, text: 'See who already liked you' },
@@ -919,6 +997,7 @@ const SubscriptionsScreen = () => {
   ];
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: isLoaded ? 1 : 0 }}
@@ -977,41 +1056,6 @@ const SubscriptionsScreen = () => {
         
         {/* ===== CONTENT ===== */}
         <Box sx={{ position: 'relative', zIndex: 10 }}>
-          
-          {/* Header with Back Button */}
-          <Box
-            sx={{
-              position: 'sticky',
-              top: 0,
-              display: 'flex',
-              alignItems: 'center',
-              p: 2,
-              pt: 'calc(env(safe-area-inset-top, 0px) + 16px)',
-              zIndex: 100,
-            }}
-          >
-            <Box
-              component="button"
-              onClick={() => navigate(-1)}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  background: 'rgba(255, 255, 255, 0.15)',
-                },
-              }}
-            >
-              <ArrowLeft size={20} color="#fff" />
-            </Box>
-          </Box>
           
           {/* ===== HERO AREA ===== */}
           <Box
@@ -1107,7 +1151,7 @@ const SubscriptionsScreen = () => {
                   sx={{
                     borderRadius: '12px',
                     borderColor: 'rgba(255,255,255,0.3)',
-                    color: '#fff',
+                    color: '#ffffff !important',
                     textTransform: 'none',
                     fontWeight: 600,
                     px: 3,
@@ -1117,7 +1161,7 @@ const SubscriptionsScreen = () => {
                     },
                   }}
                 >
-                  Manage subscription
+                  <span style={{ color: '#ffffff' }}>Manage subscription</span>
                 </Button>
               </Box>
             </motion.div>
@@ -1152,21 +1196,177 @@ const SubscriptionsScreen = () => {
             onActivate={handleActivatePro}
             isActive={activePlan === 'pro'}
           />
+
+          {/* Restore Purchases */}
+          <Box sx={{ textAlign: 'center', px: 2, mb: 2 }}>
+            <Typography
+              onClick={handleRestorePurchases}
+              sx={{
+                color: 'rgba(255, 255, 255, 0.5)',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                '&:hover': { color: 'rgba(255, 255, 255, 0.8)' },
+                transition: 'color 0.2s ease',
+              }}
+            >
+              Restore Purchases
+            </Typography>
+          </Box>
           
           {/* Bottom spacing */}
           <Box sx={{ height: 40 }} />
         </Box>
       </Box>
 
-      {/* Payment Modal */}
-      <PaymentModal
-        open={paymentModal.open}
-        onClose={() => setPaymentModal({ open: false, plan: '', price: '', type: '' })}
-        planName={paymentModal.plan}
-        price={paymentModal.price}
-        onSuccess={() => handlePaymentSuccess(paymentModal.type)}
-      />
     </motion.div>
+
+    {/* Purchase Confirmation Dialog */}
+    <Dialog
+      open={showPurchaseDialog}
+      onClose={() => !purchasing && setShowPurchaseDialog(false)}
+      PaperProps={{
+        sx: {
+          background: 'linear-gradient(180deg, #1a1025 0%, #0f0a15 100%)',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          maxWidth: 340,
+          mx: 2,
+        },
+      }}
+    >
+        <DialogContent sx={{ p: 3, textAlign: 'center' }}>
+          {/* Icon */}
+          <Box
+            sx={{
+              width: 60,
+              height: 60,
+              borderRadius: '50%',
+              background: pendingPurchase?.planType === 'pro' 
+                ? 'rgba(168, 85, 247, 0.15)' 
+                : 'rgba(236, 72, 153, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2,
+            }}
+          >
+            <Sparkles size={28} color={pendingPurchase?.planType === 'pro' ? '#a855f7' : '#ec4899'} />
+          </Box>
+          
+          {/* Title */}
+          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.2rem', mb: 1 }}>
+            {purchasing ? 'Processing...' : 'Confirm Purchase'}
+          </Typography>
+          
+          {/* Plan details */}
+          {!purchasing && pendingPurchase && (
+            <>
+              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem', mb: 2 }}>
+                You're about to subscribe to
+              </Typography>
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: '12px',
+                  background: pendingPurchase.planType === 'pro' 
+                    ? 'rgba(168, 85, 247, 0.1)' 
+                    : 'rgba(236, 72, 153, 0.1)',
+                  border: `1px solid ${pendingPurchase.planType === 'pro' 
+                    ? 'rgba(168, 85, 247, 0.3)' 
+                    : 'rgba(236, 72, 153, 0.3)'}`,
+                  mb: 3,
+                }}
+              >
+                <Typography sx={{ 
+                  color: pendingPurchase.planType === 'pro' ? '#a855f7' : '#ec4899', 
+                  fontWeight: 700, 
+                  fontSize: '1.3rem' 
+                }}>
+                  Pulse {pendingPurchase.planType === 'pro' ? 'Pro' : 'Plus'}
+                </Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
+                  {pendingPurchase.product?.duration} • {pendingPurchase.product?.currency}{pendingPurchase.product?.price}
+                </Typography>
+              </Box>
+            </>
+          )}
+          
+          {/* Loading state */}
+          {purchasing && (
+            <Box sx={{ py: 3 }}>
+              <CircularProgress sx={{ color: pendingPurchase?.planType === 'pro' ? '#a855f7' : '#ec4899' }} />
+              <Typography sx={{ color: 'rgba(255,255,255,0.6)', mt: 2, fontSize: '0.9rem' }}>
+                Connecting to store...
+              </Typography>
+            </Box>
+          )}
+          
+          {/* Buttons */}
+          {!purchasing && (
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                fullWidth
+                onClick={() => {
+                  setShowPurchaseDialog(false);
+                  setPendingPurchase(null);
+                }}
+                sx={{
+                  py: 1.5,
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: '#ffffff !important',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  background: 'rgba(255,255,255,0.08)',
+                  '&:hover': { background: 'rgba(255,255,255,0.12)' },
+                }}
+              >
+                <span style={{ color: '#ffffff' }}>Cancel</span>
+              </Button>
+              <Button
+                fullWidth
+                onClick={handleConfirmPurchase}
+                sx={{
+                  py: 1.5,
+                  borderRadius: '12px',
+                  background: pendingPurchase?.planType === 'pro'
+                    ? 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)'
+                    : 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
+                  color: '#fff',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  '&:hover': { 
+                    background: pendingPurchase?.planType === 'pro'
+                      ? 'linear-gradient(135deg, #9333ea 0%, #4f46e5 100%)'
+                      : 'linear-gradient(135deg, #db2777 0%, #9333ea 100%)',
+                  },
+                }}
+              >
+                Confirm
+              </Button>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Snackbar for purchase feedback */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: 8 }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%', borderRadius: '12px' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 

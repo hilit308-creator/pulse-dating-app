@@ -277,16 +277,16 @@ export default function MatchPulseScreen({
         >
           <Box
             sx={{
-              minHeight: '100vh',
+              height: 'calc(100vh - 70px)', // Leave space for tab bar
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               background: 'linear-gradient(180deg, #ffffff 0%, #f8f7ff 100%)',
               position: 'relative',
-              overflow: 'hidden',
+              overflow: 'auto',
               px: 3,
-              pb: 10, // Add padding to avoid bottom navigation bar
+              py: 2,
             }}
           >
             {/* Flowing path background */}
@@ -337,12 +337,12 @@ export default function MatchPulseScreen({
 
               {/* Title */}
               <Typography
-                variant="h4"
+                variant="h5"
                 sx={{
                   fontWeight: 800,
                   color: '#1a1a2e',
                   textAlign: 'center',
-                  mb: 1,
+                  mb: 0.5,
                 }}
               >
                 {resolvedCopy.title || "It's a Match"}
@@ -350,7 +350,7 @@ export default function MatchPulseScreen({
 
               {/* Subtitle */}
               <Typography
-                variant="h6"
+                variant="subtitle1"
                 sx={{
                   fontWeight: 600,
                   background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
@@ -358,18 +358,18 @@ export default function MatchPulseScreen({
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   textAlign: 'center',
-                  mb: 1,
+                  mb: 0.5,
                 }}
               >
                 {resolvedCopy.subtitle || "You're in sync"}
               </Typography>
 
               <Typography
-                variant="body1"
+                variant="body2"
                 sx={{
                   color: '#64748b',
                   textAlign: 'center',
-                  mb: 4,
+                  mb: 2,
                 }}
               >
                 {resolvedCopy.description || 'Something real can happen now'}
@@ -381,7 +381,7 @@ export default function MatchPulseScreen({
                 sx={{
                   fontWeight: 600,
                   color: '#1a1a2e',
-                  mb: 4,
+                  mb: 2.5,
                 }}
               >
                 {resolvedCopy.matchedLine || `You and ${resolvedMatch?.name || resolvedMatch?.firstName} matched!`}
@@ -394,22 +394,21 @@ export default function MatchPulseScreen({
                   variant="contained"
                   size="large"
                   onClick={handleStartChat}
-                  startIcon={<MessageCircle size={20} />}
+                  startIcon={<MessageCircle size={18} />}
                   sx={{
-                    py: 1.75,
-                    borderRadius: '16px',
-                    fontSize: '1rem',
+                    py: 1.5,
+                    borderRadius: '14px',
+                    fontSize: '0.95rem',
                     fontWeight: 700,
                     textTransform: 'none',
                     background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                    boxShadow: '0 8px 24px rgba(108,92,231,0.4)',
+                    boxShadow: '0 6px 20px rgba(108,92,231,0.35)',
                     '&:hover': {
                       background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
-                      boxShadow: '0 12px 32px rgba(108,92,231,0.5)',
                     },
                   }}
                 >
-                  {resolvedCopy.primaryCta || 'Start the Pulse'}
+                  {resolvedCopy.primaryCta || 'Start chat'}
                 </Button>
 
                 {!!resolvedCopy.tertiaryCta && (
@@ -419,11 +418,11 @@ export default function MatchPulseScreen({
                     size="large"
                     onClick={() => resolvedOnTertiary?.(resolvedMatch)}
                     sx={{
-                      mt: 2,
-                      py: 1.75,
-                      borderRadius: '16px',
-                      fontSize: '1rem',
-                      fontWeight: 700,
+                      mt: 1.5,
+                      py: 1.5,
+                      borderRadius: '14px',
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
                       textTransform: 'none',
                       borderColor: 'rgba(108,92,231,0.35)',
                       color: '#6C5CE7',
@@ -436,43 +435,30 @@ export default function MatchPulseScreen({
 
                 <Button
                   fullWidth
-                  variant="text"
+                  variant="outlined"
                   size="large"
                   onClick={handleLater}
-                  startIcon={<Clock size={18} />}
                   sx={{
-                    mt: 2,
+                    mt: 1.5,
                     py: 1.5,
-                    borderRadius: '16px',
+                    borderRadius: '14px',
                     fontSize: '0.95rem',
                     fontWeight: 600,
                     textTransform: 'none',
+                    borderColor: '#e2e8f0',
                     color: '#64748b',
+                    backgroundColor: '#fff',
                     '&:hover': {
-                      backgroundColor: 'rgba(0,0,0,0.04)',
+                      backgroundColor: '#f8fafc',
+                      borderColor: '#cbd5e1',
                     },
                   }}
                 >
-                  {resolvedCopy.secondaryCta || 'Later'}
+                  {resolvedCopy.secondaryCta || 'Keep browsing'}
                 </Button>
               </Box>
 
-              {/* Empowerment message */}
-              {empowermentText && (
-                <Typography
-                  variant="body2"
-                  sx={{
-                    mt: 4,
-                    color: '#94a3b8',
-                    textAlign: 'center',
-                    maxWidth: 280,
-                    lineHeight: 1.6,
-                    whiteSpace: 'pre-line',
-                  }}
-                >
-                  {empowermentText}
-                </Typography>
-              )}
+              {/* Empowerment message - hidden to save space */}
             </motion.div>
           </Box>
         </motion.div>

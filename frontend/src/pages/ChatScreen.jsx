@@ -40,6 +40,7 @@ import {
   Snackbar,
 } from "@mui/material";
 import { useLanguage } from '../context/LanguageContext';
+import ReportDialog from '../components/ReportDialog';
 import { ChatPointsStickyBanner } from '../components/PointsPromoBanner';
 import { HomeInlinePromoBanner } from '../components/SubscriptionPromoBanner';
 import {
@@ -1882,9 +1883,33 @@ export default function ChatScreen() {
         if (openChat !== foundChat.matchId) {
           setOpenChat(foundChat.matchId);
         }
+      } else if (location.state?.profile) {
+        // Create new chat from navigation state (e.g., from EventMatchesScreen)
+        const profile = location.state.profile;
+        const newChat = {
+          matchId: profile.id,
+          user: {
+            id: profile.id,
+            name: profile.name || profile.firstName,
+            age: profile.age,
+            photo: profile.photoUrl || profile.photos?.[0],
+            photos: profile.photos || [],
+            verified: profile.verified,
+            interests: profile.interests || [],
+          },
+          messages: [],
+          unread: 0,
+          disappearingSeconds: DEFAULT_DISAPPEARING_SECONDS,
+        };
+        setChats(prev => {
+          // Check if already exists
+          if (prev.some(c => c.matchId === profile.id)) return prev;
+          return [newChat, ...prev];
+        });
+        setOpenChat(profile.id);
       }
     }
-  }, [urlMatchId, chats, openChat]);
+  }, [urlMatchId, chats, openChat, location.state]);
   
   // Workshop reminders from localStorage
   const [workshopReminders, setWorkshopReminders] = useState([]);
@@ -1916,17 +1941,24 @@ export default function ChatScreen() {
     return `${mins}m`;
   }, []);
   
-  // Gesture messages from Explore screen
+  // Gesture messages from Explore screen - use shallow comparison to prevent unnecessary re-renders
   const gestureMessages = useGestureMessagesStore((state) => state.gestureMessages);
   const recipientUsers = useGestureMessagesStore((state) => state.recipientUsers);
   const clearMessagesForUser = useGestureMessagesStore((state) => state.clearMessagesForUser);
   
+  // Track last processed gesture messages to prevent re-processing
+  const lastGestureMessagesRef = useRef(null);
+  
   // Persisted gesture chats
-  const gestureChats = useChatStore((state) => state.gestureChats);
   const addGestureChat = useChatStore((state) => state.addGestureChat);
   
-  // Load persisted gesture chats on mount
+  // Load persisted gesture chats on mount (only once)
+  const gestureChatsLoadedRef = useRef(false);
   useEffect(() => {
+    if (gestureChatsLoadedRef.current) return;
+    gestureChatsLoadedRef.current = true;
+    
+    const gestureChats = useChatStore.getState().gestureChats;
     const persistedChats = Object.values(gestureChats || {});
     if (persistedChats.length > 0) {
       setChats(prevChats => {
@@ -2161,9 +2193,20 @@ export default function ChatScreen() {
   }, []);
   
   // Load gesture messages into chats when they arrive
+  const processedGestureMessagesRef = useRef(new Set());
   useEffect(() => {
     const recipientIds = Object.keys(gestureMessages);
     if (recipientIds.length === 0) return;
+    
+    // Check if we've already processed these messages
+    const allMessageIds = recipientIds.flatMap(id => 
+      (gestureMessages[id] || []).map(m => m.id)
+    );
+    const newMessageIds = allMessageIds.filter(id => !processedGestureMessagesRef.current.has(id));
+    if (newMessageIds.length === 0) return;
+    
+    // Mark as processed
+    newMessageIds.forEach(id => processedGestureMessagesRef.current.add(id));
     
     // Track chats to persist and messages to clear
     const chatsToPersist = [];
@@ -2250,21 +2293,29 @@ export default function ChatScreen() {
     // Apply sort based on tab
     if (chatListSort === 'new') {
       // New connections: chats with 1 or fewer messages, sorted by date
+      // Use stable sort by adding matchId as tiebreaker
       return [...filtered].sort((a, b) => {
         const aNew = a.messages.length <= 1;
         const bNew = b.messages.length <= 1;
         if (aNew && !bNew) return -1;
         if (!aNew && bNew) return 1;
-        return (b.lastSentAt || 0) - (a.lastSentAt || 0);
+        const dateDiff = (b.lastSentAt || 0) - (a.lastSentAt || 0);
+        if (dateDiff !== 0) return dateDiff;
+        // Stable sort: use matchId as tiebreaker
+        return String(a.matchId).localeCompare(String(b.matchId));
       });
     }
     
     // Active: default sort (pinned first, then by date)
-    return [...filtered].sort(
-      (a, b) =>
-        (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) ||
-        (b.lastSentAt || 0) - (a.lastSentAt || 0)
-    );
+    // Use stable sort by adding matchId as tiebreaker
+    return [...filtered].sort((a, b) => {
+      const pinnedDiff = (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+      if (pinnedDiff !== 0) return pinnedDiff;
+      const dateDiff = (b.lastSentAt || 0) - (a.lastSentAt || 0);
+      if (dateDiff !== 0) return dateDiff;
+      // Stable sort: use matchId as tiebreaker
+      return String(a.matchId).localeCompare(String(b.matchId));
+    });
   }, [chats, chatListSort]);
 
   // Note: Removed body overflow manipulation - it was causing scroll issues on other pages
@@ -2892,6 +2943,9 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
   
   // report user popup
   const [reportPopup, setReportPopup] = useState({ open: false, reason: '', details: '' });
+  
+  // block confirmation dialog state
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const openGallery = () =>
     setGallery({
       open: true,
@@ -4263,23 +4317,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                     </MenuItem>
                     <MenuItem 
                       onClick={() => {
-                        if (window.confirm('Are you sure you want to block this user?')) {
-                          const blockedUser = {
-                            id: chat.user?.id || chat.matchId,
-                            name: chat.user?.name || 'Unknown',
-                            photoUrl: chat.user?.photoUrl || '',
-                            blockedAt: Date.now(),
-                          };
-                          try {
-                            const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
-                            if (!existing.some(u => u.id === blockedUser.id)) {
-                              localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
-                            }
-                          } catch {}
-                          setChats(prev => prev.filter(c => c.matchId !== openChat));
-                          setOpenChat(null);
-                          navigate('/chat', { replace: true });
-                        }
+                        setBlockConfirmOpen(true);
                         setMenuEl(null);
                       }}
                       sx={{ color: '#dc2626' }}
@@ -5397,85 +5435,75 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
         </Box>
       </Modal>
 
-      {/* Report User Modal */}
-      <Modal open={reportPopup.open} onClose={() => setReportPopup({ open: false, reason: '', details: '' })}>
-        <Box sx={{ bgcolor: "#fff", borderRadius: 3, width: 320, maxWidth: "90vw", maxHeight: "70vh", overflowY: "auto", p: 2.5 }}>
-            <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: "#1a1a1a", fontSize: "1.1rem" }}>
-              Report User
-            </Typography>
-            <Typography sx={{ mb: 1.5, color: "#666", fontSize: "0.85rem" }}>
-              Why are you reporting {chat?.user?.name || "this user"}?
-            </Typography>
-            
-            {/* Report reasons */}
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mb: 1.5 }}>
-              {[
-                { value: "inappropriate", label: "Inappropriate content" },
-                { value: "harassment", label: "Harassment or bullying" },
-                { value: "fake", label: "Fake profile / Catfishing" },
-                { value: "spam", label: "Spam or scam" },
-                { value: "other", label: "Other" },
-              ].map((option) => (
-                <Box
-                  key={option.value}
-                  onClick={() => setReportPopup(prev => ({ ...prev, reason: option.value }))}
-                  sx={{
-                    p: 1,
-                    borderRadius: 1.5,
-                    border: reportPopup.reason === option.value ? "2px solid #d1d5db" : "1px solid #E5E7EB",
-                    bgcolor: reportPopup.reason === option.value ? "rgba(108, 92, 231, 0.08)" : "#fff",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    "&:hover": { bgcolor: "rgba(108, 92, 231, 0.05)" },
-                  }}
-                >
-                  <Typography sx={{ fontSize: "0.85rem", color: reportPopup.reason === option.value ? "#6C5CE7" : "#333" }}>
-                    {option.label}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-            
-            {/* Additional details */}
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              placeholder="Additional details (optional)"
-              value={reportPopup.details}
-              onChange={(e) => setReportPopup(prev => ({ ...prev, details: e.target.value }))}
-              sx={{ mb: 1.5 }}
-              size="small"
-            />
-            
-            {/* Buttons */}
-            <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-              <Button
-                size="small"
-                onClick={() => setReportPopup({ open: false, reason: '', details: '' })}
-                sx={{ color: "#666" }}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="small"
-                variant="contained"
-                disabled={!reportPopup.reason}
-                onClick={() => {
-                  alert('Report submitted. Thank you for helping keep Pulse safe.');
-                  setReportPopup({ open: false, reason: '', details: '' });
-                }}
-                sx={{
-                  bgcolor: "#dc2626",
-                  "&:hover": { bgcolor: "#b91c1c" },
-                  "&:disabled": { bgcolor: "#fca5a5" },
-                }}
-              >
-                Submit
-              </Button>
-            </Box>
-        </Box>
-      </Modal>
+      {/* Report User Dialog */}
+      <ReportDialog
+        open={reportPopup.open}
+        onClose={() => setReportPopup({ open: false, reason: '', details: '' })}
+        onSubmit={(reportData) => {
+          setReportPopup({ open: false, reason: '', details: '' });
+          // Show success notification
+          setContactNotifySuccess('Report submitted. Thank you for helping keep Pulse safe.');
+        }}
+        userName={chat?.user?.name || 'this user'}
+      />
+
+      {/* Block Confirmation Dialog */}
+      <Dialog
+        open={blockConfirmOpen}
+        onClose={() => setBlockConfirmOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            maxWidth: 340,
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, fontWeight: 600 }}>
+          Block {chat?.user?.name}?
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Are you sure you want to block this profile? They won't be able to see you or contact you anymore.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setBlockConfirmOpen(false)}
+            sx={{ color: '#64748b' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              const blockedUser = {
+                id: chat?.user?.id || chat?.matchId,
+                name: chat?.user?.name || 'Unknown',
+                photoUrl: chat?.user?.photoUrl || '',
+                blockedAt: Date.now(),
+              };
+              try {
+                const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+                if (!existing.some(u => u.id === blockedUser.id)) {
+                  localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
+                }
+              } catch {}
+              setChats(prev => prev.filter(c => c.matchId !== openChat));
+              setOpenChat(null);
+              setBlockConfirmOpen(false);
+              navigate('/chat', { replace: true });
+              setContactNotifySuccess(`${chat?.user?.name || 'User'} has been blocked.`);
+            }}
+            sx={{
+              bgcolor: '#ef4444',
+              '&:hover': { bgcolor: '#dc2626' },
+            }}
+          >
+            Block
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Profile modal */}
       <Modal open={viewProfile.open} onClose={() => setViewProfile({ open: false, user: null })}>

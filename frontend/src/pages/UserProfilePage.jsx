@@ -293,8 +293,8 @@ export default function UserProfilePage() {
           <Box sx={{ pointerEvents: 'auto' }}>
             <ProfileTimeline
               user={transformedUser}
-              onLike={() => {}}
-              onPass={() => {}}
+              onLike={handleLike}
+              onPass={handlePass}
               onUndo={null}
               canUndo={false}
               hideUndo={true}

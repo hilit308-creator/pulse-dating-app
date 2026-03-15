@@ -24,7 +24,10 @@ import {
   DialogActions,
   TextField,
   Divider,
+  Snackbar,
+  Alert,
 } from '@mui/material';
+import ReportDialog from '../components/ReportDialog';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -165,7 +168,7 @@ export default function UserDetailsScreen() {
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
-  const [reportReason, setReportReason] = useState('');
+  const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' });
 
   useEffect(() => {
     // Validate ID before fetching
@@ -505,8 +508,8 @@ export default function UserDetailsScreen() {
     setMenuAnchor(null);
   };
 
-  const handleReport = useCallback(async () => {
-    if (!user?.id || !reportReason.trim()) return;
+  const handleReportSubmit = useCallback(async (reportData) => {
+    if (!user?.id) return;
     
     const currentUserId = localStorage.getItem('pulse_user_id');
     
@@ -517,7 +520,8 @@ export default function UserDetailsScreen() {
         body: JSON.stringify({
           reporter_id: currentUserId ? parseInt(currentUserId) : 1,
           reported_id: user.id,
-          reason: reportReason,
+          reason: reportData.reason,
+          note: reportData.note,
         }),
       });
       console.log('[UserDetails] Reported user:', user.id);
@@ -525,13 +529,14 @@ export default function UserDetailsScreen() {
       // Also block the user after reporting
       addPassedUser(user.id);
       setReportDialogOpen(false);
-      setReportReason('');
+      setSnack({ open: true, msg: 'Report submitted. Thank you for helping keep Pulse safe.', severity: 'success' });
       sessionStorage.removeItem('pulse_profile_source');
-      navigate(-1);
+      setTimeout(() => navigate(-1), 1500);
     } catch (err) {
       console.error('[UserDetails] Failed to report:', err);
+      setSnack({ open: true, msg: 'Failed to submit report. Please try again.', severity: 'error' });
     }
-  }, [user?.id, reportReason, addPassedUser, navigate]);
+  }, [user?.id, addPassedUser, navigate]);
 
   const handleBlock = useCallback(async () => {
     if (!user?.id) return;
@@ -1052,36 +1057,24 @@ export default function UserDetailsScreen() {
       </Box>
 
       {/* Report Dialog */}
-      <Dialog open={reportDialogOpen} onClose={() => setReportDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>Report {user.firstName}</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
-            Please tell us why you're reporting this profile. This helps us keep the community safe.
-          </Typography>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            placeholder="Describe the issue..."
-            value={reportReason}
-            onChange={(e) => setReportReason(e.target.value)}
-            sx={{ mt: 1 }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 0 }}>
-          <Button onClick={() => setReportDialogOpen(false)} sx={{ color: '#64748b' }}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleReport} 
-            variant="contained" 
-            color="error"
-            disabled={!reportReason.trim()}
-          >
-            Report
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ReportDialog
+        open={reportDialogOpen}
+        onClose={() => setReportDialogOpen(false)}
+        onSubmit={handleReportSubmit}
+        userName={user?.firstName || 'this user'}
+      />
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3000}
+        onClose={() => setSnack(s => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snack.severity} variant="filled">
+          {snack.msg}
+        </Alert>
+      </Snackbar>
 
       {/* Block Dialog */}
       <Dialog open={blockDialogOpen} onClose={() => setBlockDialogOpen(false)} maxWidth="xs" fullWidth>

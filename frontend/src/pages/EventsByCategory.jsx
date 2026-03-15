@@ -79,12 +79,15 @@ const resolvePublicImageUrl = (url) => {
 const VIBE_TYPES = ['Chill', 'Social', 'Flirty', 'Deep', 'Energetic'];
 
 // Demo people going to events
+// isMatch = mutual match (both liked each other)
+// interestedInYou = they liked you but you haven't liked them back yet
 export const DEMO_ATTENDEES = [
   {
     id: "a1",
     name: "Maya",
     photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=800&auto=format&fit=crop",
     isMatch: true,
+    interestedInYou: false, // Already matched, so not in "interested" list
     gender: "female",
     age: 26,
     location: "Tel Aviv",
@@ -114,6 +117,7 @@ export const DEMO_ATTENDEES = [
     name: "Noam",
     photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop",
     isMatch: true,
+    interestedInYou: false, // Already matched
     gender: "male",
     age: 26,
     location: "Tel Aviv",
@@ -143,6 +147,7 @@ export const DEMO_ATTENDEES = [
     name: "Amit",
     photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=800&auto=format&fit=crop",
     isMatch: false,
+    interestedInYou: true, // Liked you, waiting for your response
     gender: "male",
     age: 28,
     location: "Ramat Gan",
@@ -172,6 +177,7 @@ export const DEMO_ATTENDEES = [
     name: "Shira",
     photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=800&auto=format&fit=crop",
     isMatch: false,
+    interestedInYou: true, // Liked you, waiting for your response
     gender: "female",
     age: 26,
     location: "Givatayim",
@@ -201,6 +207,7 @@ export const DEMO_ATTENDEES = [
     name: "Yoni",
     photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=800&auto=format&fit=crop",
     isMatch: false,
+    interestedInYou: true, // Liked you, waiting for your response
     gender: "male",
     age: 29,
     location: "Tel Aviv",
@@ -230,6 +237,7 @@ export const DEMO_ATTENDEES = [
     name: "Noa",
     photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=800&auto=format&fit=crop",
     isMatch: true,
+    interestedInYou: false, // Already matched
     gender: "female",
     age: 25,
     location: "Herzliya",
@@ -259,6 +267,7 @@ export const DEMO_ATTENDEES = [
     name: "Daniel",
     photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=800&auto=format&fit=crop",
     isMatch: false,
+    interestedInYou: true, // Liked you, waiting for your response
     gender: "male",
     age: 27,
     location: "Ramat Gan",
@@ -288,6 +297,7 @@ export const DEMO_ATTENDEES = [
     name: "Yael",
     photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=800&auto=format&fit=crop",
     isMatch: false,
+    interestedInYou: false, // Just attending, no interest yet
     gender: "female",
     age: 26,
     location: "Tel Aviv",
@@ -317,6 +327,7 @@ export const DEMO_ATTENDEES = [
     name: "Omer",
     photo: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop",
     isMatch: false,
+    interestedInYou: false, // Just attending, no interest yet
     gender: "male",
     age: 28,
     location: "Jaffa",
@@ -346,6 +357,7 @@ export const DEMO_ATTENDEES = [
     name: "Tamar",
     photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop",
     isMatch: false,
+    interestedInYou: false, // Just attending, no interest yet
     gender: "female",
     age: 27,
     location: "Tel Aviv",
@@ -374,7 +386,7 @@ export const DEMO_ATTENDEES = [
 
 export const EVENTS = [
   // Large parties
-  { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2027-03-28", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a3", "a5", "a6", "a7", "a10"] },
+  { id: "lp1", title: "Summer Festival", category: "large", price: 149, date: "2027-03-28", time: "16:00", venue: "Central Park", country: "USA", region: "New York", coords: { lat: 40.7812, lng: -73.9665 }, cover: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-crowd-of-people-at-a-concert-4248-large.mp4", tags: ["Outdoor", "Live Music", "Dancing"], blurb: "All-day stages, food trucks and fireworks.", details: "Multiple stages, 40+ artists, VIP lounge, family area, and late-night DJ set.", badges: ["Verified"], hostedBy: "NYC Events Co.", capacity: 5000, whoFor: "Music lovers, festival goers, anyone looking for a fun summer day", vibe: "Energetic", attendees: ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10"] },
   { id: "lp2", title: "Mega Dance Night", category: "large", price: 99, date: "2027-03-14", time: "21:00", venue: "Sky Dome", country: "USA", region: "Metro", coords: { lat: 40.7306, lng: -73.9352 }, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop", videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-dj-playing-music-in-a-club-4819-large.mp4", tags: ["DJ", "Dancing", "Drinks"], blurb: "Top DJs with immersive light show.", details: "Doors 21:00 • Main act 23:30 • Dress code: casual chic.", badges: ["18+"], hostedBy: "NightLife Productions", capacity: 2000, whoFor: "EDM fans, night owls, people who love to dance", vibe: "Energetic", attendees: ["a2", "a4", "a8", "a9"] },
   // Small / Private
   { id: "sp1", title: "Private Loft Party", category: "small", price: 60, date: "2027-03-15", time: "20:00", venue: "Maple St. 123", country: "USA", region: "Uptown", coords: { lat: 40.7644, lng: -73.9747 }, cover: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1600&auto=format&fit=crop", tags: ["Social", "Drinks"], blurb: "Intimate house vibes, 80 guests max.", details: "BYOB, rooftop chill zone, quiet room available.", badges: ["New"], hostedBy: "The Loft Collective", capacity: 80, whoFor: "People seeking intimate connections in a relaxed setting", vibe: "Flirty", attendees: ["a1", "a2"] },

@@ -2153,8 +2153,9 @@ export default function Home({ onOpenTutorial }) {
                     console.log('[Home] Triggering match popup for:', topUser.name);
                     // Remove from YOU LIKE tab since it's now a match
                     removeLikedProfile(topUser.id);
-                    // Add to MUTUAL MATCHES tab
-                    addMutualMatch({
+                    
+                    // Create match object
+                    const matchProfile = {
                       id: topUser.id,
                       name: topUser.name || topUser.firstName,
                       age: topUser.age,
@@ -2168,7 +2169,24 @@ export default function Home({ onOpenTutorial }) {
                       tagline: topUser.tagline || topUser.bio,
                       aboutMe: topUser.aboutMe || [],
                       lookingFor: topUser.lookingFor || [],
-                    });
+                    };
+                    
+                    // Add to MUTUAL MATCHES tab (store)
+                    addMutualMatch(matchProfile);
+                    
+                    // Also save to localStorage for persistence
+                    try {
+                      const existingMatches = JSON.parse(localStorage.getItem('pulse_matches') || '[]');
+                      if (!existingMatches.find(m => m.id === matchProfile.id)) {
+                        existingMatches.unshift(matchProfile);
+                        localStorage.setItem('pulse_matches', JSON.stringify(existingMatches));
+                        // Dispatch custom event for same-tab listeners
+                        window.dispatchEvent(new CustomEvent('pulse:matches_updated'));
+                      }
+                    } catch (e) {
+                      console.error('[Home] Failed to save match to localStorage:', e);
+                    }
+                    
                     setMatchUser(topUser);
                   }
                   
@@ -2204,8 +2222,94 @@ export default function Home({ onOpenTutorial }) {
                     user={transformToUserCardModel(topUser)}
                     onUndo={handleUndo}
                     canUndo={swipeHistory.length > 0}
-                    onLike={() => {}}
-                    onPass={() => {}}
+                    onLike={async () => {
+                      // Same logic as onSwipeRight
+                      if (topUser?.id != null) {
+                        const currentFilteredLen = filtered.length;
+                        const isLastCard = deckIndex >= currentFilteredLen - 1;
+                        const willBeMatch = topUser.likesYou || topUser.isMatch;
+                        
+                        addSwipeHistory({ userId: topUser.id, action: 'like', index: deckIndex });
+                        addLikedUser(topUser.id);
+                        
+                        if (!willBeMatch) {
+                          addLikedProfile({
+                            id: topUser.id,
+                            name: topUser.name || topUser.firstName,
+                            age: topUser.age,
+                            distance: topUser.distance,
+                            city: topUser.city,
+                            photoUrl: topUser.photos?.[0] || topUser.photoUrl || '',
+                            photos: topUser.photos || [],
+                            verified: topUser.verified,
+                            interests: topUser.interests || topUser.tags || [],
+                            profession: topUser.profession,
+                            tagline: topUser.tagline || topUser.bio,
+                            aboutMe: topUser.aboutMe || [],
+                            lookingFor: topUser.lookingFor || [],
+                            status: 'you_liked',
+                          });
+                        }
+                        
+                        const currentUserId = localStorage.getItem('pulse_user_id');
+                        let apiMatch = false;
+                        try {
+                          const response = await fetch(`${API_URL}/api/likes`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              liker_id: currentUserId ? parseInt(currentUserId) : 1,
+                              liked_id: topUser.id,
+                              source: 'discover',
+                            }),
+                          });
+                          if (response.ok) {
+                            const data = await response.json();
+                            apiMatch = data.isMatch;
+                          }
+                        } catch (err) {
+                          console.error('[Home] Failed to send like:', err);
+                        }
+                        
+                        if (apiMatch || willBeMatch) {
+                          removeLikedProfile(topUser.id);
+                          addMutualMatch({
+                            id: topUser.id,
+                            name: topUser.name || topUser.firstName,
+                            age: topUser.age,
+                            distance: topUser.distance,
+                            city: topUser.city,
+                            photoUrl: topUser.photos?.[0] || topUser.photoUrl || '',
+                            photos: topUser.photos || [],
+                            verified: topUser.verified,
+                            interests: topUser.interests || topUser.tags || [],
+                            profession: topUser.profession,
+                            tagline: topUser.tagline || topUser.bio,
+                            aboutMe: topUser.aboutMe || [],
+                            lookingFor: topUser.lookingFor || [],
+                          });
+                          setMatchUser(topUser);
+                        }
+                        
+                        if (isLastCard && deckIndex > 0) {
+                          setDeckIndex(deckIndex - 1, 'buttonLikeLastCard');
+                        }
+                      }
+                    }}
+                    onPass={() => {
+                      // Same logic as onSwipeLeft
+                      if (topUser?.id != null) {
+                        const currentFilteredLen = filtered.length;
+                        const isLastCard = deckIndex >= currentFilteredLen - 1;
+                        
+                        addSwipeHistory({ userId: topUser.id, action: 'pass', index: deckIndex });
+                        addPassedUser(topUser.id);
+                        
+                        if (isLastCard && deckIndex > 0) {
+                          setDeckIndex(deckIndex - 1, 'buttonPassLastCard');
+                        }
+                      }
+                    }}
                   />
                 </Box>
               </SwipeWrapper>

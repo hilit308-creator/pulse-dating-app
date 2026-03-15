@@ -242,28 +242,35 @@ export default function AboutSections() {
                       />
                     </Box>
                   ) : (
-                    <TextField
-                      select
-                      fullWidth
-                      size="small"
-                      value={editValue}
-                      onChange={e => {
-                        setEditValue(e.target.value);
-                        setFields(fields.map(f => f.key === editingKey ? { ...f, value: e.target.value } : f));
-                        setEditingKey(null);
-                        setEditValue("");
-                      }}
-                      sx={{ 
-                        '& .MuiOutlinedInput-root': { 
-                          borderRadius: '10px',
-                          bgcolor: '#fff',
-                        } 
-                      }}
-                    >
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
                       {field.options.map(opt => (
-                        <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                        <Box
+                          key={opt}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFields(fields.map(f => f.key === editingKey ? { ...f, value: opt } : f));
+                            setEditingKey(null);
+                            setEditValue("");
+                          }}
+                          sx={{
+                            px: 1.5,
+                            py: 0.75,
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            bgcolor: field.value === opt ? '#6C5CE7' : '#f1f5f9',
+                            color: field.value === opt ? '#fff' : '#475569',
+                            fontSize: 13,
+                            fontWeight: 500,
+                            transition: 'all 0.15s ease',
+                            '&:hover': {
+                              bgcolor: field.value === opt ? '#5b4cdb' : '#e2e8f0',
+                            },
+                          }}
+                        >
+                          {opt}
+                        </Box>
                       ))}
-                    </TextField>
+                    </Box>
                   )}
                 </Box>
               ) : (
@@ -311,7 +318,7 @@ export default function AboutSections() {
         bgcolor: '#fff', 
         borderRadius: '16px', 
         border: '1px solid #e2e8f0',
-        overflow: 'hidden',
+        overflow: 'visible',
         boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
       }}>
         {moreFields.map((field, idx) => {
@@ -371,29 +378,32 @@ export default function AboutSections() {
               </Box>
               
               {isEditing && (
-                <Box sx={{ px: 2, pb: 2, bgcolor: `${color}08` }}>
-                  <TextField
-                    select
-                    fullWidth
-                    size="small"
-                    value={editMoreValue}
-                    onChange={e => {
-                      setEditMoreValue(e.target.value);
-                      setMoreFields(moreFields.map(f => f.key === editingMoreKey ? { ...f, value: e.target.value } : f));
-                      setEditingMoreKey(null);
-                      setEditMoreValue("");
-                    }}
-                    sx={{ 
-                      '& .MuiOutlinedInput-root': { 
-                        borderRadius: '10px',
-                        bgcolor: '#fff',
-                      } 
-                    }}
-                  >
-                    {field.options.map(opt => (
-                      <MenuItem key={opt} value={opt}>{opt}</MenuItem>
-                    ))}
-                  </TextField>
+                <Box sx={{ bgcolor: `${color}08`, borderTop: `1px solid ${color}20` }}>
+                  {field.options.map((opt, optIdx) => (
+                    <Box
+                      key={opt}
+                      onClick={() => {
+                        setMoreFields(moreFields.map(f => f.key === editingMoreKey ? { ...f, value: opt } : f));
+                        setEditingMoreKey(null);
+                        setEditMoreValue("");
+                      }}
+                      sx={{
+                        px: 2,
+                        py: 1.25,
+                        cursor: 'pointer',
+                        bgcolor: editMoreValue === opt || field.value === opt ? `${color}15` : 'transparent',
+                        borderBottom: optIdx !== field.options.length - 1 ? `1px solid ${color}10` : 'none',
+                        transition: 'all 0.15s ease',
+                        '&:hover': {
+                          bgcolor: `${color}12`,
+                        },
+                      }}
+                    >
+                      <Typography sx={{ fontSize: 14, color: '#1a1a2e', fontWeight: field.value === opt ? 600 : 400 }}>
+                        {opt}
+                      </Typography>
+                    </Box>
+                  ))}
                 </Box>
               )}
               

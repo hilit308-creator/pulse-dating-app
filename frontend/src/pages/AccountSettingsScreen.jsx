@@ -17,7 +17,7 @@
  * 10. Help & Legal
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -126,11 +126,27 @@ const AccountSettingsScreen = () => {
     return saved === 'true';
   });
   
-  // Mock blocked users
-  const [blockedUsers] = useState([
-    { id: 1, name: 'Alex', avatar: null },
-    { id: 2, name: 'Jordan', avatar: null },
-  ]);
+  // Get blocked users from localStorage
+  const [blockedUsers, setBlockedUsers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pulse_blocked_users');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  
+  // Refresh blocked users when screen is focused
+  useEffect(() => {
+    const handleFocus = () => {
+      try {
+        const saved = localStorage.getItem('pulse_blocked_users');
+        setBlockedUsers(saved ? JSON.parse(saved) : []);
+      } catch {}
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   const handleBack = () => {
     navigate(-1);

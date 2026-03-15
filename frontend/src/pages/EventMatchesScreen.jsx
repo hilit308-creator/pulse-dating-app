@@ -14,6 +14,12 @@ import {
   Button,
   Stack,
   Chip,
+  Snackbar,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
@@ -24,56 +30,134 @@ import {
   Heart,
   Flag,
   UserCheck,
+  Ban,
 } from 'lucide-react';
 import { EVENTS, DEMO_ATTENDEES } from './EventsByCategory';
+import ReportDialog from '../components/ReportDialog';
 
 // Demo fallback matches (shown when no real data available)
+// Unique IDs (301-308) to avoid conflicts with other demo data
 const DEMO_FALLBACK_MATCHES = [
   {
-    id: 1,
+    id: 301,
     name: "Maya",
-    age: 27,
-    distance: 0.6,
+    age: 26,
+    distance: 0.9,
     city: "Tel Aviv",
     photoUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80",
     photos: [
       "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80",
     ],
-    tagline: "Here for the rooftop event tonight 🌃",
-    interests: ["Design", "Yoga", "Music", "Coffee", "Bars"],
-    aboutMe: ["170 cm", "Sometimes drinks", "Likes pets"],
+    tagline: "Design systems and tiny UX details.",
+    interests: ["Live music", "Rooftop sunsets", "Coffee"],
+    aboutMe: ["165 cm", "I drink sometimes", "Never smoker"],
     lookingFor: ["Relationship"],
   },
   {
-    id: 2,
-    name: "Shira",
-    age: 26,
-    distance: 0.8,
-    city: "Tel Aviv",
-    photoUrl: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80",
-    photos: [
-      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80",
-    ],
-    tagline: "Always up for an adventure 🌟",
-    interests: ["Wine", "Travel", "Music", "Dancing"],
-    aboutMe: ["165 cm", "Social drinker"],
-    lookingFor: ["New connections"],
-  },
-  {
-    id: 3,
+    id: 302,
     name: "Noa",
     age: 25,
-    distance: 1.2,
+    distance: 2.2,
     city: "Ramat Gan",
     photoUrl: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
     photos: [
       "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
     ],
-    tagline: "Creating beautiful things ✨",
-    interests: ["Art", "Design", "Photography", "Hiking"],
-    aboutMe: ["168 cm", "Non-smoker"],
-    lookingFor: ["Something casual"],
+    tagline: "I love yoga, I hate coffee, I can surf.",
+    interests: ["Beach", "Yoga", "Festivals"],
+    aboutMe: ["162 cm", "Rarely", "Never smoker"],
+    lookingFor: ["Casual"],
+  },
+  {
+    id: 303,
+    name: "Shira",
+    age: 28,
+    distance: 1.5,
+    city: "Tel Aviv",
+    photoUrl: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80",
+    photos: [
+      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80",
+    ],
+    tagline: "Wine enthusiast & sunset chaser �",
+    interests: ["Wine", "Travel", "Music", "Dancing"],
+    aboutMe: ["168 cm", "Social drinker"],
+    lookingFor: ["New connections"],
+  },
+  {
+    id: 304,
+    name: "Yael",
+    age: 27,
+    distance: 0.7,
+    city: "Tel Aviv",
+    photoUrl: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=800&q=80",
+    photos: [
+      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=800&q=80",
+    ],
+    tagline: "Let's grab coffee and talk about life.",
+    interests: ["Coffee", "Books", "Art galleries"],
+    aboutMe: ["170 cm", "Rarely", "Non-smoker"],
+    lookingFor: ["Relationship"],
+  },
+  {
+    id: 305,
+    name: "Talia",
+    age: 24,
+    distance: 3.1,
+    city: "Herzliya",
+    photoUrl: "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=800&q=80",
+    photos: [
+      "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=800&q=80",
+    ],
+    tagline: "Dancing through life 💃",
+    interests: ["Dancing", "Fitness", "Cooking"],
+    aboutMe: ["163 cm", "Socially", "Never smoker"],
+    lookingFor: ["Casual"],
+  },
+  {
+    id: 306,
+    name: "Roni",
+    age: 29,
+    distance: 1.8,
+    city: "Tel Aviv",
+    photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+    photos: [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+    ],
+    tagline: "Tech by day, music by night 🎵",
+    interests: ["Tech", "Live music", "Startups"],
+    aboutMe: ["172 cm", "Sometimes", "Non-smoker"],
+    lookingFor: ["Relationship"],
+  },
+  {
+    id: 307,
+    name: "Michal",
+    age: 26,
+    distance: 2.4,
+    city: "Ramat Gan",
+    photoUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
+    photos: [
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
+    ],
+    tagline: "Nature lover & weekend hiker 🏔️",
+    interests: ["Hiking", "Photography", "Camping"],
+    aboutMe: ["166 cm", "Rarely", "Never smoker"],
+    lookingFor: ["New friends"],
+  },
+  {
+    id: 308,
+    name: "Dana",
+    age: 27,
+    distance: 1.1,
+    city: "Tel Aviv",
+    photoUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80",
+    photos: [
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80",
+    ],
+    tagline: "Foodie exploring the city 🍜",
+    interests: ["Food", "Restaurants", "Wine bars"],
+    aboutMe: ["169 cm", "Social drinker", "Non-smoker"],
+    lookingFor: ["Relationship"],
   },
 ];
 
@@ -97,7 +181,7 @@ const transformAttendeeToMatch = (attendee) => ({
 });
 
 // Compact Match Card Component - Same style as MatchesScreen
-function EventMatchCard({ profile, onChat, onPass }) {
+function EventMatchCard({ profile, onChat, onPass, onReport, onBlock }) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const photos = profile.photos?.length ? profile.photos : [profile.photoUrl].filter(Boolean);
 
@@ -255,9 +339,20 @@ function EventMatchCard({ profile, onChat, onPass }) {
             <Button
               variant="text"
               size="small"
-              sx={{ minWidth: 36, p: 0.5, color: "#94a3b8" }}
+              onClick={() => onReport?.(profile)}
+              sx={{ minWidth: 36, p: 0.5, color: "#94a3b8", "&:hover": { color: "#f59e0b", bgcolor: "rgba(245,158,11,0.1)" } }}
+              title="Report"
             >
               <Flag size={16} />
+            </Button>
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => onBlock?.(profile)}
+              sx={{ minWidth: 36, p: 0.5, color: "#94a3b8", "&:hover": { color: "#ef4444", bgcolor: "rgba(239,68,68,0.1)" } }}
+              title="Block"
+            >
+              <Ban size={16} />
             </Button>
           </Stack>
         </CardContent>
@@ -317,30 +412,159 @@ const EventMatchesScreen = () => {
   const location = useLocation();
   const event = location.state?.event;
 
+  // Get matches passed from navigation state, or fetch from EVENTS data
+  const passedMatches = location.state?.matches;
+  
   // Get matches from synced EVENTS data, fallback to demo
+  // Also include matches created from "Like Back" in Interested in You (saved to localStorage)
   const eventMatches = useMemo(() => {
-    if (!event?.id) return DEMO_FALLBACK_MATCHES;
+    let matches = [];
     
-    // Find the full event data from EVENTS
-    const fullEvent = EVENTS.find(e => String(e.id) === String(event.id));
-    if (!fullEvent?.attendees?.length) return DEMO_FALLBACK_MATCHES;
+    // First priority: use matches passed from navigation
+    if (passedMatches?.length > 0) {
+      matches = passedMatches.map(transformAttendeeToMatch);
+    } else if (event?.id) {
+      // Second priority: fetch from EVENTS data
+      const fullEvent = EVENTS.find(e => String(e.id) === String(event.id));
+      if (fullEvent?.attendees?.length) {
+        // Get attendees who are matches (isMatch: true)
+        matches = fullEvent.attendees
+          .map(id => DEMO_ATTENDEES.find(a => a.id === id))
+          .filter(a => a && a.isMatch)
+          .map(transformAttendeeToMatch);
+      }
+    }
     
-    // Get attendees who are matches (isMatch: true)
-    const matchAttendees = fullEvent.attendees
-      .map(id => DEMO_ATTENDEES.find(a => a.id === id))
-      .filter(a => a && a.isMatch)
-      .map(transformAttendeeToMatch);
+    // Also include matches from localStorage (created via Like Back)
+    try {
+      const savedMatches = JSON.parse(localStorage.getItem('pulse_matches') || '[]');
+      // Filter to only matches from this event (if event exists)
+      const eventSavedMatches = event?.title 
+        ? savedMatches.filter(m => m.fromEvent === event.title)
+        : savedMatches;
+      
+      // Add saved matches that aren't already in the list
+      eventSavedMatches.forEach(saved => {
+        if (!matches.find(m => m.id === saved.id)) {
+          matches.push({
+            id: saved.id,
+            name: saved.name,
+            age: saved.age,
+            distance: saved.distance || Math.random() * 3 + 0.5,
+            city: saved.city || 'Tel Aviv',
+            photoUrl: saved.photoUrl || saved.photos?.[0],
+            photos: saved.photos || [saved.photoUrl],
+            tagline: saved.tagline,
+            interests: saved.interests || [],
+            aboutMe: saved.aboutMe || [],
+            lookingFor: saved.lookingFor || [],
+            matchedAt: saved.matchedAt,
+          });
+        }
+      });
+    } catch (e) {
+      console.error('Failed to load saved matches:', e);
+    }
     
     // If no matches found, show demo fallback
-    return matchAttendees.length > 0 ? matchAttendees : DEMO_FALLBACK_MATCHES;
-  }, [event?.id]);
+    return matches.length > 0 ? matches : DEMO_FALLBACK_MATCHES;
+  }, [event?.id, event?.title, passedMatches]);
+
+  // State for removed profiles (passed/blocked)
+  const [removedIds, setRemovedIds] = useState(new Set());
+
+  // Get blocked users from localStorage
+  const blockedUserIds = useMemo(() => {
+    try {
+      const blocked = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+      return new Set(blocked.map(u => u.id));
+    } catch {
+      return new Set();
+    }
+  }, []);
+
+  // Filter out removed profiles AND blocked users
+  const visibleMatches = useMemo(() => {
+    return eventMatches.filter(p => !removedIds.has(p.id) && !blockedUserIds.has(p.id));
+  }, [eventMatches, removedIds, blockedUserIds]);
 
   const handleChat = (profile) => {
-    navigate('/chat/new', { state: { profile, fromEvent: event } });
+    // Navigate to specific chat with this user
+    // Use profile.id as matchId for the chat route
+    navigate(`/chat/${profile.id}`, { 
+      state: { 
+        profile,
+        matchName: profile.name,
+        matchPhoto: profile.photoUrl || profile.photos?.[0],
+        fromEvent: event 
+      } 
+    });
   };
 
   const handlePass = (profile) => {
     console.log('Passed on:', profile.name);
+    // Remove from visible list
+    setRemovedIds(prev => new Set([...prev, profile.id]));
+    // TODO: Send pass action to backend
+  };
+
+  // Report dialog state
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' });
+  
+  // Block confirmation dialog state
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+  const [blockTarget, setBlockTarget] = useState(null);
+
+  const handleReport = (profile) => {
+    setReportTarget(profile);
+    setReportOpen(true);
+  };
+
+  const submitReport = (reportData) => {
+    if (!reportTarget) return;
+    // Remove from visible list
+    setRemovedIds(prev => new Set([...prev, reportTarget.id]));
+    setReportOpen(false);
+    setReportTarget(null);
+    setSnack({ open: true, msg: 'Report submitted. Thank you for helping keep Pulse safe.', severity: 'success' });
+    // TODO: Send report to backend
+  };
+
+  // Open block confirmation dialog
+  const handleBlock = (profile) => {
+    setBlockTarget(profile);
+    setBlockConfirmOpen(true);
+  };
+  
+  // Confirm block action
+  const confirmBlock = () => {
+    if (!blockTarget) return;
+    
+    const profile = blockTarget;
+    setRemovedIds(prev => new Set([...prev, profile.id]));
+    
+    // Save to blocked users in localStorage for Settings page
+    const blockedUser = {
+      id: profile.id,
+      name: profile.name || 'User',
+      photo: profile.photoUrl || profile.photos?.[0],
+      source: 'event',
+      blockedAt: new Date().toISOString().split('T')[0],
+    };
+    try {
+      const existing = JSON.parse(localStorage.getItem('pulse_blocked_users') || '[]');
+      if (!existing.find(u => u.id === blockedUser.id)) {
+        localStorage.setItem('pulse_blocked_users', JSON.stringify([...existing, blockedUser]));
+      }
+    } catch (e) {
+      console.error('Failed to save blocked user to localStorage:', e);
+    }
+    
+    setSnack({ open: true, msg: `${profile.name} has been blocked.`, severity: 'info' });
+    setBlockConfirmOpen(false);
+    setBlockTarget(null);
   };
 
   return (
@@ -371,25 +595,27 @@ const EventMatchesScreen = () => {
         </Box>
         {event && (
           <Typography variant="body2" sx={{ color: '#64748b' }}>
-            {event.title} • {eventMatches.length} matches
+            {event.title} • {visibleMatches.length} matches
           </Typography>
         )}
       </Box>
 
       {/* Matches List */}
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {eventMatches.map((profile) => (
+        {visibleMatches.map((profile) => (
           <EventMatchCard
             key={profile.id}
             profile={profile}
             onChat={handleChat}
             onPass={handlePass}
+            onReport={handleReport}
+            onBlock={handleBlock}
           />
         ))}
       </Box>
 
       {/* Empty state */}
-      {eventMatches.length === 0 && (
+      {visibleMatches.length === 0 && (
         <Box
           sx={{
             flex: 1,
@@ -411,6 +637,76 @@ const EventMatchesScreen = () => {
           </Typography>
         </Box>
       )}
+
+      {/* Report Dialog */}
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => {
+          setReportOpen(false);
+          setReportTarget(null);
+        }}
+        onSubmit={submitReport}
+        userName={reportTarget?.name || 'this user'}
+      />
+
+      {/* Block Confirmation Dialog */}
+      <Dialog
+        open={blockConfirmOpen}
+        onClose={() => {
+          setBlockConfirmOpen(false);
+          setBlockTarget(null);
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            maxWidth: 340,
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, fontWeight: 600 }}>
+          Block {blockTarget?.name}?
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Are you sure you want to block this profile? They won't be able to see you or contact you anymore.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => {
+              setBlockConfirmOpen(false);
+              setBlockTarget(null);
+            }}
+            sx={{ color: '#64748b' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={confirmBlock}
+            sx={{
+              bgcolor: '#ef4444',
+              '&:hover': { bgcolor: '#dc2626' },
+            }}
+          >
+            Block
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3500}
+        onClose={() => setSnack(s => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: 80, zIndex: 99999 }}
+      >
+        <Alert severity={snack.severity} variant="filled">
+          {snack.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

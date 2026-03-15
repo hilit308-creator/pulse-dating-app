@@ -796,8 +796,8 @@ export default function ViewNearbyPeopleScreen() {
   // Get data from NearbyScreen navigation (if coming from radar screen)
   const { liveNowCount = 0, scanCompleted = false, scanRequestedAt } = location.state || {};
   
-  // Global store for liked profiles (YOU LIKE tab)
-  const { addLikedProfile, addLikedUser, removeLikedProfile } = useHomeDeckStore();
+  // Global store for liked profiles (YOU LIKE tab) and mutual matches
+  const { addLikedProfile, addLikedUser, removeLikedProfile, addMutualMatch } = useHomeDeckStore();
   
   // States - load cards directly, no scanning
   const [people, setPeople] = useState([]);
@@ -936,9 +936,12 @@ export default function ViewNearbyPeopleScreen() {
   // DEV: Force Maya to appear first for testing venues integration
   useEffect(() => {
     const maya = MOCK_NEARBY_PEOPLE.find(p => p.firstName === 'Maya' && p.likesYou);
+    console.log('[ViewNearbyPeopleScreen] Found Maya:', maya?.firstName, 'likesYou:', maya?.likesYou);
     if (maya) {
       const normalized = normalizeNearbyPerson(maya, 0);
+      console.log('[ViewNearbyPeopleScreen] Normalized Maya likesYou:', normalized.likesYou);
       const testPeople = [normalized, ...MOCK_NEARBY_PEOPLE.filter(p => p.id !== maya.id).map((p, i) => normalizeNearbyPerson(p, i + 1))];
+      console.log('[ViewNearbyPeopleScreen] Test people:', testPeople.map(p => ({ name: p.firstName, likesYou: p.likesYou })));
       setPeople(testPeople);
       setCurrentIndex(0);
       setHasScanned(true);
@@ -989,6 +992,7 @@ export default function ViewNearbyPeopleScreen() {
     
     if (direction === 'right') {
       trackEvent("nearby_swipe_right", { personId: person.id });
+      console.log('[ViewNearbyPeopleScreen] Swipe right on:', person.firstName, 'likesYou:', person.likesYou);
       setSwipedPeople(prev => ({
         ...prev,
         liked: [...prev.liked, person]
@@ -998,11 +1002,53 @@ export default function ViewNearbyPeopleScreen() {
       addLikedUser(person.id);
       
       // Check for mutual like (match!)
+      console.log('[ViewNearbyPeopleScreen] Checking for match - person.likesYou:', person.likesYou, 'person:', person);
       if (person.likesYou) {
         trackEvent("match_created", { personId: person.id });
         if (navigator?.vibrate) navigator.vibrate([50, 50, 100]);
         // Remove from likedProfiles since it's now a match
         removeLikedProfile(person.id);
+        
+        // Create match profile
+        const matchProfile = {
+          id: person.id,
+          name: person.firstName || person.name,
+          age: person.age,
+          distance: person.distance,
+          city: person.city,
+          photoUrl: person.photos?.[0] || '',
+          photos: person.photos || [],
+          verified: person.verified,
+          interests: person.tags || [],
+          profession: person.profession,
+          tagline: person.tagline,
+          aboutMe: person.aboutMe || [],
+          lookingFor: person.lookingFor || [],
+        };
+        
+        console.log('[ViewNearbyPeopleScreen] Creating match for:', matchProfile.name, matchProfile.id);
+        
+        // Add to MUTUAL MATCHES tab (store)
+        addMutualMatch(matchProfile);
+        console.log('[ViewNearbyPeopleScreen] Added to store');
+        
+        // Also save to localStorage for persistence
+        try {
+          const existingMatches = JSON.parse(localStorage.getItem('pulse_matches') || '[]');
+          console.log('[ViewNearbyPeopleScreen] Existing matches in localStorage:', existingMatches.length);
+          if (!existingMatches.find(m => m.id === matchProfile.id)) {
+            existingMatches.unshift(matchProfile);
+            localStorage.setItem('pulse_matches', JSON.stringify(existingMatches));
+            console.log('[ViewNearbyPeopleScreen] Saved to localStorage, new count:', existingMatches.length);
+            // Dispatch custom event for same-tab listeners
+            window.dispatchEvent(new CustomEvent('pulse:matches_updated'));
+          } else {
+            console.log('[ViewNearbyPeopleScreen] Match already exists in localStorage');
+          }
+        } catch (e) {
+          console.error('[ViewNearbyPeopleScreen] Failed to save match to localStorage:', e);
+        }
+        
         setMatchPerson(person);
         return; // Don't move to next card yet - show match screen first
       } else {
@@ -1507,8 +1553,8 @@ export default function ViewNearbyPeopleScreen() {
                 <Box sx={{ pointerEvents: 'auto' }}>
                   <ProfileTimeline
                     user={transformToUserCardModel(currentPerson)}
-                    onLike={() => {}}
-                    onPass={() => {}}
+                    onLike={handleLike}
+                    onPass={handlePass}
                     onUndo={handleUndo}
                     canUndo={currentIndex > 0}
                     hideUndo={false}

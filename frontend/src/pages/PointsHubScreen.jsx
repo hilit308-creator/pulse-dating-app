@@ -38,6 +38,8 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  Dialog,
+  DialogContent,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
@@ -235,35 +237,43 @@ const CTAButton = ({ children, onClick, disabled }) => (
   </Button>
 );
 
-// Feature definitions (LOCKED - do not modify)
+// Feature definitions with descriptions
 const FEATURES = [
   {
     id: 'undo',
     icon: Undo2,
     duration: 30, // minutes
     cost: 40,
-    note: 'swipe_screens_only',
+    name: 'Undo',
+    description: 'Changed your mind? Go back and undo your last swipe decision.',
+    note: 'Works on Home & Nearby screens',
   },
   {
     id: 'likes_you',
     icon: Heart,
     duration: 10,
     cost: 80,
-    note: 'list_opens_immediately',
+    name: 'See Who Likes You',
+    description: 'See the list of people who already liked your profile.',
+    note: 'List opens immediately',
   },
   {
     id: 'nearby_priority',
     icon: MapPin,
     duration: 10,
     cost: 70,
-    note: 'no_distance_change',
+    name: 'Nearby Priority',
+    description: 'Get shown first to people near you for more matches.',
+    note: 'Boosts your visibility locally',
   },
   {
     id: 'beat_pulse',
     icon: Zap,
     duration: 15,
     cost: 70,
-    note: 'no_user_statistics',
+    name: 'BeatPulse Boost',
+    description: 'Your profile gets a surge of visibility to more people.',
+    note: 'Up to 10x more views',
   },
 ];
 
@@ -287,14 +297,17 @@ const PointsHubScreen = () => {
   // State - all from server
   const [loading, setLoading] = useState(true);
   const [pointsBalance, setPointsBalance] = useState(0);
-  const [activeFeature, setActiveFeature] = useState(null); // { id, endsAt }
+  const [activeFeatures, setActiveFeatures] = useState({}); // { featureId: { endsAt } }
+  const [selectedFeatures, setSelectedFeatures] = useState([]); // Features selected for purchase
   const [hasSubscription, setHasSubscription] = useState(false);
-  const [activatingFeature, setActivatingFeature] = useState(null);
-  const [purchasingPackage, setPurchasingPackage] = useState(null);
+  const [activatingFeatures, setActivatingFeatures] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState('medium'); // Selected package for purchase
+  const [purchasingPackage, setPurchasingPackage] = useState(null); // Currently purchasing (loading state)
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false); // Purchase confirmation dialog
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   
-  // Timer state for active feature
-  const [remainingTime, setRemainingTime] = useState(null);
+  // Timer state for active features
+  const [remainingTimes, setRemainingTimes] = useState({}); // { featureId: remainingMs }
 
   // Fetch points data from server
   const fetchPointsData = useCallback(async () => {
@@ -306,12 +319,12 @@ const PointsHubScreen = () => {
       // Mock data for development
       const mockData = {
         balance: 150,
-        activeFeature: null, // or { id: 'undo', endsAt: Date.now() + 1000 * 60 * 15 }
+        activeFeatures: {}, // or { undo: { endsAt: Date.now() + 1000 * 60 * 15 } }
         hasSubscription: false,
       };
       
       setPointsBalance(mockData.balance);
-      setActiveFeature(mockData.activeFeature);
+      setActiveFeatures(mockData.activeFeatures || {});
       setHasSubscription(mockData.hasSubscription);
       setLoading(false);
       
@@ -327,32 +340,50 @@ const PointsHubScreen = () => {
     fetchPointsData();
   }, [fetchPointsData]);
 
-  // Timer countdown for active feature
+  // Timer countdown for active features
   useEffect(() => {
-    if (!activeFeature?.endsAt) {
-      setRemainingTime(null);
+    const activeIds = Object.keys(activeFeatures);
+    if (activeIds.length === 0) {
+      setRemainingTimes({});
       return;
     }
 
-    const updateTimer = () => {
+    const updateTimers = () => {
       const now = Date.now();
-      const remaining = Math.max(0, activeFeature.endsAt - now);
+      const newTimes = {};
+      const expiredFeatures = [];
       
-      if (remaining === 0) {
-        // Feature ended - refresh from server
-        setActiveFeature(null);
-        setRemainingTime(null);
-        trackEvent('feature_ended', { feature: activeFeature.id });
-        fetchPointsData();
-      } else {
-        setRemainingTime(remaining);
+      activeIds.forEach(featureId => {
+        const feature = activeFeatures[featureId];
+        if (feature?.endsAt) {
+          const remaining = Math.max(0, feature.endsAt - now);
+          if (remaining === 0) {
+            expiredFeatures.push(featureId);
+          } else {
+            newTimes[featureId] = remaining;
+          }
+        }
+      });
+      
+      setRemainingTimes(newTimes);
+      
+      // Remove expired features
+      if (expiredFeatures.length > 0) {
+        setActiveFeatures(prev => {
+          const updated = { ...prev };
+          expiredFeatures.forEach(id => {
+            delete updated[id];
+            trackEvent('feature_ended', { feature: id });
+          });
+          return updated;
+        });
       }
     };
 
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
+    updateTimers();
+    const interval = setInterval(updateTimers, 1000);
     return () => clearInterval(interval);
-  }, [activeFeature, fetchPointsData]);
+  }, [activeFeatures]);
 
   // Format remaining time as mm:ss
   const formatTime = (ms) => {
@@ -363,99 +394,196 @@ const PointsHubScreen = () => {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Activate feature - NO CONFIRMATION
-  const handleActivateFeature = async (feature) => {
-    if (activatingFeature) return;
-    if (activeFeature) return; // Another feature is active
-    if (pointsBalance < feature.cost) return; // Not enough points
-    if (hasSubscription) return; // Has subscription
+  // Toggle feature selection (for purchase)
+  const toggleFeatureSelection = (featureId) => {
+    if (activeFeatures[featureId]) return; // Already active, can't select
+    if (hasSubscription) return;
     
-    setActivatingFeature(feature.id);
+    setSelectedFeatures(prev => {
+      if (prev.includes(featureId)) {
+        return prev.filter(id => id !== featureId);
+      } else {
+        return [...prev, featureId];
+      }
+    });
+  };
+
+  // Calculate total cost of selected features
+  const getSelectedTotalCost = () => {
+    return selectedFeatures.reduce((total, featureId) => {
+      const feature = FEATURES.find(f => f.id === featureId);
+      return total + (feature?.cost || 0);
+    }, 0);
+  };
+
+  // Activate selected features (after clicking Activate button)
+  const handleActivateSelectedFeatures = async () => {
+    if (activatingFeatures) return;
+    if (selectedFeatures.length === 0) return;
+    
+    const totalCost = getSelectedTotalCost();
+    if (pointsBalance < totalCost) {
+      setSnackbar({
+        open: true,
+        message: 'Not enough points. Purchase more points below.',
+        severity: 'warning',
+      });
+      return;
+    }
+    
+    setActivatingFeatures(true);
     
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/v1/points/activate', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ featureId: feature.id }),
-      // });
-      
-      // Mock response
+      // Mock response - activate all selected features
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const newBalance = pointsBalance - feature.cost;
-      const endsAt = Date.now() + feature.duration * 60 * 1000;
-      
-      setPointsBalance(newBalance);
-      setActiveFeature({ id: feature.id, endsAt });
-      
-      trackEvent('points_spent', { 
-        feature: feature.id, 
-        points_amount: feature.cost 
+      const newActiveFeatures = { ...activeFeatures };
+      selectedFeatures.forEach(featureId => {
+        const feature = FEATURES.find(f => f.id === featureId);
+        if (feature) {
+          newActiveFeatures[featureId] = {
+            endsAt: Date.now() + feature.duration * 60 * 1000,
+          };
+          trackEvent('points_spent', { 
+            feature: featureId, 
+            points_amount: feature.cost 
+          });
+          trackEvent('feature_started', { 
+            feature: featureId, 
+            duration: feature.duration 
+          });
+        }
       });
-      trackEvent('feature_started', { 
-        feature: feature.id, 
-        duration: feature.duration 
+      
+      setPointsBalance(prev => prev - totalCost);
+      setActiveFeatures(newActiveFeatures);
+      setSelectedFeatures([]);
+      
+      setSnackbar({
+        open: true,
+        message: `${selectedFeatures.length} feature${selectedFeatures.length > 1 ? 's' : ''} activated!`,
+        severity: 'success',
       });
       
     } catch (error) {
       setSnackbar({
         open: true,
-        message: t('activationFailed') || 'Activation failed. Please try again.',
+        message: 'Activation failed. Please try again.',
         severity: 'error',
       });
     } finally {
-      setActivatingFeature(null);
+      setActivatingFeatures(false);
     }
   };
 
-  // Purchase points package
+  // Package size keys for the service
+  const PACKAGE_KEYS = { small: 'small', medium: 'medium', large: 'large' };
+
+  // Purchase points package via store billing service
   const handlePurchasePackage = async (pkg) => {
     if (purchasingPackage) return;
     
     setPurchasingPackage(pkg.id);
+    setSnackbar({ open: true, message: 'Processing purchase...', severity: 'info' });
     
     try {
-      // TODO: Implement native checkout (App Store / Google Play)
-      // This would open the native payment flow
+      // Import store billing service
+      const { storeBilling, PRODUCTS } = await import('../services/storeBilling');
       
-      // Mock response
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const product = PRODUCTS.points[pkg.id];
+      if (!product) {
+        throw new Error('Invalid package');
+      }
       
-      const newBalance = pointsBalance + pkg.points;
-      setPointsBalance(newBalance);
-      
-      trackEvent('points_purchase_success', {
+      trackEvent('points_purchase_initiated', {
         package: pkg.id,
-        points_amount: pkg.points,
-        price: pkg.price,
+        product_id: product.id,
+        platform: storeBilling.getPlatform(),
       });
-      trackEvent('points_earned', {
-        points_amount: pkg.points,
-        source: 'purchase',
-      });
+
+      // Use purchaseAndValidate for full flow with duplicate prevention
+      const result = await storeBilling.purchaseAndValidate(product.id);
       
-      // NO success screen, NO celebration animation
-      
+      if (result.success) {
+        // Check if already processed (duplicate callback)
+        if (result.alreadyProcessed) {
+          console.log('[PointsHub] Purchase already processed, skipping');
+          setShowPurchaseDialog(false);
+          return;
+        }
+        
+        // Points are added by validateReceipt via _cacheEntitlements
+        // But also update local state for immediate UI feedback
+        const newBalance = storeBilling.getPointsBalance();
+        setPointsBalance(newBalance);
+        
+        // Close dialog and show success
+        setShowPurchaseDialog(false);
+        setSnackbar({
+          open: true,
+          message: `${product.points} Points added successfully!`,
+          severity: 'success',
+        });
+        
+        trackEvent('points_purchase_success', {
+          package: pkg.id,
+          points_amount: product.points,
+          price: product.price,
+          transactionId: result.transactionId,
+        });
+        trackEvent('points_earned', {
+          points_amount: product.points,
+          source: 'purchase',
+        });
+      } else {
+        throw new Error(result.error || 'Purchase failed');
+      }
     } catch (error) {
+      const errorMessage = error.message === 'cancelled' 
+        ? 'Purchase cancelled' 
+        : 'Payment failed. Please try again.';
+      
+      setShowPurchaseDialog(false);
       setSnackbar({
         open: true,
-        message: t('purchaseFailed') || 'Purchase failed. Please try again.',
+        message: errorMessage,
         severity: 'error',
+      });
+      
+      trackEvent('points_purchase_failed', {
+        package: pkg.id,
+        error: error.message,
       });
     } finally {
       setPurchasingPackage(null);
     }
   };
 
-  // Get feature display info
-  const getFeatureInfo = (feature) => {
-    const names = {
-      undo: t('featureUndo') || 'Undo',
-      likes_you: t('featureLikesYou') || 'See Who Likes You',
-      nearby_priority: t('featureNearbyPriority') || 'Nearby Priority',
-      beat_pulse: t('featureBeatPulse') || 'BeatPulse Boost',
-    };
-    return names[feature.id] || feature.id;
+  // Restore purchases from store
+  const handleRestorePurchases = async () => {
+    setSnackbar({ open: true, message: 'Restoring purchases...', severity: 'info' });
+    
+    try {
+      trackEvent('restore_purchases_initiated');
+      const { storeBilling } = await import('../services/storeBilling');
+      const purchases = await storeBilling.restorePurchases();
+      
+      if (purchases && purchases.length > 0) {
+        setSnackbar({ open: true, message: 'Purchases restored!', severity: 'success' });
+      } else {
+        setSnackbar({
+          open: true,
+          message: 'No purchases to restore',
+          severity: 'info',
+        });
+      }
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to restore purchases',
+        severity: 'error',
+      });
+    }
   };
 
   if (loading) {
@@ -529,7 +657,7 @@ const PointsHubScreen = () => {
               fontSize: { xs: '1.75rem', sm: '2.25rem' },
             }}
           >
-            {t('chooseHowYouWant') || 'Choose how you'}
+            Choose how you
           </Typography>
           <Typography
             variant="h4"
@@ -540,7 +668,7 @@ const PointsHubScreen = () => {
               fontSize: { xs: '1.75rem', sm: '2.25rem' },
             }}
           >
-            {t('wantToBePresent') || 'want to be present'}
+            want to be present
           </Typography>
         </motion.div>
 
@@ -565,7 +693,7 @@ const PointsHubScreen = () => {
               {pointsBalance}
             </Typography>
             <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
-              {t('pointsAvailable') || 'points'}
+              points
             </Typography>
           </Box>
         </motion.div>
@@ -626,7 +754,7 @@ const PointsHubScreen = () => {
                 fontSize: '1.5rem',
               }}
             >
-              {t('boostYourVisibility') || 'Boost your visibility'}
+              Boost your visibility
             </Typography>
             
             {/* Subline */}
@@ -637,55 +765,160 @@ const PointsHubScreen = () => {
                 mb: 3,
               }}
             >
-              {t('spendPointsDesc') || 'Spend points to stand out'}
+              Spend points to stand out
             </Typography>
             
-            {/* Features list */}
+            {/* Feature Selection Cards */}
             <Box sx={{ mb: 3 }}>
-              {FEATURES.map((feature) => (
-                <FeatureItem 
-                  key={feature.id} 
-                  text={`${getFeatureInfo(feature)} - ${feature.duration} ${t('minutes') || 'min'}`} 
-                />
-              ))}
-            </Box>
-            
-            {/* Pricing Options */}
-            <Box sx={{ mb: 3 }}>
-              {FEATURES.map((feature, idx) => {
-                const isActive = activeFeature?.id === feature.id;
-                const isDisabled = hasSubscription || (activeFeature && !isActive) || pointsBalance < feature.cost;
+              {FEATURES.map((feature) => {
+                const isActive = !!activeFeatures[feature.id];
+                const isSelected = selectedFeatures.includes(feature.id);
+                const Icon = feature.icon;
                 
                 return (
-                  <PricingOption
+                  <Box
                     key={feature.id}
-                    label={getFeatureInfo(feature)}
-                    price={`${feature.cost} pts`}
-                    note={isActive ? `⏱ ${formatTime(remainingTime)}` : `${feature.duration} min`}
-                    selected={isActive}
-                    onSelect={() => !isDisabled && !isActive && handleActivateFeature(feature)}
-                  />
+                    onClick={() => toggleFeatureSelection(feature.id)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 1.5,
+                      p: 2,
+                      mb: 1.5,
+                      borderRadius: '14px',
+                      border: isActive 
+                        ? '2px solid rgba(34, 197, 94, 0.6)'
+                        : isSelected 
+                          ? '2px solid rgba(236, 72, 153, 0.8)' 
+                          : '1px solid rgba(255, 255, 255, 0.15)',
+                      background: isActive
+                        ? 'rgba(34, 197, 94, 0.1)'
+                        : isSelected 
+                          ? 'rgba(236, 72, 153, 0.1)' 
+                          : 'rgba(255, 255, 255, 0.03)',
+                      cursor: isActive ? 'default' : 'pointer',
+                      transition: 'all 0.2s ease',
+                      opacity: isActive ? 0.8 : 1,
+                      '&:hover': !isActive ? {
+                        background: 'rgba(236, 72, 153, 0.08)',
+                        borderColor: 'rgba(236, 72, 153, 0.5)',
+                      } : {},
+                    }}
+                  >
+                    {/* Checkbox / Active indicator */}
+                    <Box
+                      sx={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: '50%',
+                        border: isActive 
+                          ? '2px solid #22c55e'
+                          : isSelected 
+                            ? '6px solid #ec4899' 
+                            : '2px solid rgba(255, 255, 255, 0.3)',
+                        background: isActive ? '#22c55e' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        mt: 0.25,
+                      }}
+                    >
+                      {isActive && <Check size={14} color="#fff" />}
+                    </Box>
+                    
+                    {/* Feature content */}
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Icon size={18} color={isActive ? '#22c55e' : '#ec4899'} />
+                        <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.95rem' }}>
+                          {feature.name}
+                        </Typography>
+                      </Box>
+                      <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.8rem', mb: 0.5 }}>
+                        {feature.description}
+                      </Typography>
+                      <Typography sx={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.7rem', fontStyle: 'italic' }}>
+                        {feature.note}
+                      </Typography>
+                    </Box>
+                    
+                    {/* Price / Timer */}
+                    <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                      {isActive ? (
+                        <>
+                          <Typography sx={{ color: '#22c55e', fontWeight: 700, fontSize: '0.9rem' }}>
+                            Active
+                          </Typography>
+                          <Typography sx={{ color: '#22c55e', fontSize: '0.75rem' }}>
+                            ⏱ {formatTime(remainingTimes[feature.id])}
+                          </Typography>
+                        </>
+                      ) : (
+                        <>
+                          <Typography sx={{ color: '#ec4899', fontWeight: 700, fontSize: '0.95rem' }}>
+                            {feature.cost} pts
+                          </Typography>
+                          <Typography sx={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
+                            {feature.duration} min
+                          </Typography>
+                        </>
+                      )}
+                    </Box>
+                  </Box>
                 );
               })}
             </Box>
             
-            {/* Active Feature Notice */}
-            {activeFeature && (
+            {/* Activate Selected Button */}
+            {selectedFeatures.length > 0 && (
+              <CTAButton 
+                onClick={handleActivateSelectedFeatures}
+                disabled={activatingFeatures || pointsBalance < getSelectedTotalCost()}
+              >
+                {activatingFeatures ? (
+                  <CircularProgress size={20} sx={{ color: '#fff' }} />
+                ) : (
+                  <>
+                    Activate {selectedFeatures.length} feature{selectedFeatures.length > 1 ? 's' : ''} 
+                    <span style={{ marginLeft: 8, opacity: 0.8 }}>
+                      ({getSelectedTotalCost()} pts)
+                    </span>
+                  </>
+                )}
+              </CTAButton>
+            )}
+            
+            {/* Not enough points warning */}
+            {selectedFeatures.length > 0 && pointsBalance < getSelectedTotalCost() && (
+              <Typography sx={{ 
+                color: '#f59e0b', 
+                fontSize: '0.85rem', 
+                textAlign: 'center',
+                mt: 1.5,
+              }}>
+                Not enough points. You need {getSelectedTotalCost() - pointsBalance} more points.
+              </Typography>
+            )}
+            
+            {/* Active Features Summary */}
+            {Object.keys(activeFeatures).length > 0 && (
               <Box
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 1,
-                  py: 1.75,
+                  py: 1.5,
+                  mt: 2,
                   borderRadius: '14px',
                   background: 'rgba(34, 197, 94, 0.15)',
                   border: '1px solid rgba(34, 197, 94, 0.3)',
                 }}
               >
-                <Check size={20} color="#22c55e" />
-                <Typography sx={{ color: '#22c55e', fontWeight: 600 }}>
-                  {getFeatureInfo({ id: activeFeature.id })} {t('active') || 'Active'}
+                <Check size={18} color="#22c55e" />
+                <Typography sx={{ color: '#22c55e', fontWeight: 600, fontSize: '0.9rem' }}>
+                  {Object.keys(activeFeatures).length} feature{Object.keys(activeFeatures).length > 1 ? 's' : ''} active
                 </Typography>
               </Box>
             )}
@@ -769,7 +1002,7 @@ const PointsHubScreen = () => {
                 fontSize: '1.5rem',
               }}
             >
-              {t('getMorePoints') || 'Get more points'}
+              Get more points
             </Typography>
             
             {/* Subline */}
@@ -780,40 +1013,53 @@ const PointsHubScreen = () => {
                 mb: 3,
               }}
             >
-              {t('buyPointsDesc') || 'One-time purchase, no subscription'}
+              One-time purchase, no subscription
             </Typography>
             
-            {/* Pricing Options */}
+            {/* Pricing Options - Click to SELECT, not purchase */}
             <Box sx={{ mb: 3 }}>
               {PACKAGES.map((pkg) => (
                 <PricingOption
                   key={pkg.id}
-                  label={`${pkg.points} ${t('points') || 'Points'}`}
+                  label={`${pkg.points} Points`}
                   price={`${pkg.currency}${pkg.price}`}
-                  note={t('oneTimePurchase') || 'one-time'}
-                  selected={purchasingPackage === pkg.id}
-                  onSelect={() => handlePurchasePackage(pkg)}
+                  note="one-time"
+                  selected={selectedPackage === pkg.id}
+                  onSelect={() => setSelectedPackage(pkg.id)}
                 />
               ))}
             </Box>
             
-            {/* CTA */}
+            {/* CTA - Opens purchase confirmation dialog */}
             <CTAButton 
-              onClick={() => {
-                const selectedPkg = PACKAGES.find(p => p.id === purchasingPackage) || PACKAGES[1];
-                handlePurchasePackage(selectedPkg);
-              }}
+              onClick={() => setShowPurchaseDialog(true)}
               disabled={!!purchasingPackage}
             >
               {purchasingPackage ? (
                 <CircularProgress size={20} sx={{ color: '#fff' }} />
               ) : (
-                t('buyNow') || 'Buy Now'
+                `Buy Now - ${PACKAGES.find(p => p.id === selectedPackage)?.points || 250} Points`
               )}
             </CTAButton>
           </Box>
         </Box>
       </motion.div>
+
+      {/* Restore Purchases */}
+      <Box sx={{ textAlign: 'center', px: 2, mb: 2 }}>
+        <Typography
+          onClick={handleRestorePurchases}
+          sx={{
+            color: 'rgba(255, 255, 255, 0.5)',
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+            '&:hover': { color: 'rgba(255, 255, 255, 0.8)' },
+            transition: 'color 0.2s ease',
+          }}
+        >
+          Restore Purchases
+        </Typography>
+      </Box>
 
       {/* Premium upsell link */}
       <Box sx={{ textAlign: 'center', px: 2, mb: 4 }}>
@@ -828,9 +1074,125 @@ const PointsHubScreen = () => {
           }}
         >
           <Crown size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-          {t('premiumUnlocksEverything') || 'Premium unlocks everything — anytime'}
+          Premium unlocks everything — anytime
         </Typography>
       </Box>
+
+      {/* Purchase Confirmation Dialog */}
+      <Dialog
+        open={showPurchaseDialog}
+        onClose={() => !purchasingPackage && setShowPurchaseDialog(false)}
+        PaperProps={{
+          sx: {
+            background: 'linear-gradient(180deg, #1a1025 0%, #0f0a15 100%)',
+            borderRadius: '20px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            maxWidth: 340,
+            mx: 2,
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 3, textAlign: 'center' }}>
+          {/* Icon */}
+          <Box
+            sx={{
+              width: 60,
+              height: 60,
+              borderRadius: '50%',
+              background: 'rgba(236, 72, 153, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2,
+            }}
+          >
+            <Coins size={28} color="#ec4899" />
+          </Box>
+          
+          {/* Title */}
+          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.2rem', mb: 1 }}>
+            {purchasingPackage ? 'Processing...' : 'Confirm Purchase'}
+          </Typography>
+          
+          {/* Package details */}
+          {!purchasingPackage && (
+            <>
+              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem', mb: 2 }}>
+                You're about to purchase
+              </Typography>
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: '12px',
+                  background: 'rgba(236, 72, 153, 0.1)',
+                  border: '1px solid rgba(236, 72, 153, 0.3)',
+                  mb: 3,
+                }}
+              >
+                <Typography sx={{ color: '#ec4899', fontWeight: 700, fontSize: '1.5rem' }}>
+                  {PACKAGES.find(p => p.id === selectedPackage)?.points} Points
+                </Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
+                  for {PACKAGES.find(p => p.id === selectedPackage)?.currency}
+                  {PACKAGES.find(p => p.id === selectedPackage)?.price}
+                </Typography>
+              </Box>
+            </>
+          )}
+          
+          {/* Loading state */}
+          {purchasingPackage && (
+            <Box sx={{ py: 3 }}>
+              <CircularProgress sx={{ color: '#ec4899' }} />
+              <Typography sx={{ color: 'rgba(255,255,255,0.6)', mt: 2, fontSize: '0.9rem' }}>
+                Connecting to store...
+              </Typography>
+            </Box>
+          )}
+          
+          {/* Buttons */}
+          {!purchasingPackage && (
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                fullWidth
+                onClick={() => setShowPurchaseDialog(false)}
+                sx={{
+                  py: 1.5,
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: '#ffffff !important',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  background: 'rgba(255,255,255,0.08)',
+                  '&:hover': { background: 'rgba(255,255,255,0.12)' },
+                  '& .MuiButton-label': { color: '#ffffff' },
+                }}
+              >
+                <span style={{ color: '#ffffff' }}>Cancel</span>
+              </Button>
+              <Button
+                fullWidth
+                onClick={() => {
+                  const pkg = PACKAGES.find(p => p.id === selectedPackage);
+                  if (pkg) handlePurchasePackage(pkg);
+                }}
+                sx={{
+                  py: 1.5,
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)',
+                  color: '#fff',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  '&:hover': { background: 'linear-gradient(135deg, #db2777 0%, #9333ea 100%)' },
+                }}
+              >
+                Confirm
+              </Button>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Snackbar */}
       <Snackbar
@@ -838,6 +1200,7 @@ const PointsHubScreen = () => {
         autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: 8 }}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
