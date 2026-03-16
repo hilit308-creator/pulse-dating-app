@@ -1009,21 +1009,34 @@ export default function ViewNearbyPeopleScreen() {
         // Remove from likedProfiles since it's now a match
         removeLikedProfile(person.id);
         
-        // Create match profile
+        // Create match profile with all user data for consistent display
         const matchProfile = {
           id: person.id,
           name: person.firstName || person.name,
+          firstName: person.firstName || person.name,
           age: person.age,
           distance: person.distance,
           city: person.city,
+          location: person.location || person.city,
           photoUrl: person.photos?.[0] || '',
           photos: person.photos || [],
           verified: person.verified,
-          interests: person.tags || [],
+          interests: person.tags || person.interests || [],
+          tags: person.tags || person.interests || [],
           profession: person.profession,
+          education: person.education,
           tagline: person.tagline,
+          bio: person.bio,
           aboutMe: person.aboutMe || [],
           lookingFor: person.lookingFor || [],
+          qualities: person.qualities || [],
+          height: person.height,
+          drinking: person.drinking,
+          smoking: person.smoking,
+          kids: person.kids,
+          exercise: person.exercise,
+          starSign: person.starSign,
+          languages: person.languages || [],
         };
         
         console.log('[ViewNearbyPeopleScreen] Creating match for:', matchProfile.name, matchProfile.id);
@@ -1055,18 +1068,31 @@ export default function ViewNearbyPeopleScreen() {
         // Not a match yet - add full profile to YOU LIKE tab
         addLikedProfile({
           id: person.id,
-          name: person.firstName,
+          name: person.firstName || person.name,
+          firstName: person.firstName || person.name,
           age: person.age,
           distance: person.distance,
           city: person.city,
+          location: person.location || person.city,
           photoUrl: person.photos?.[0] || '',
           photos: person.photos || [],
           verified: person.verified,
-          interests: person.tags || [],
+          interests: person.tags || person.interests || [],
+          tags: person.tags || person.interests || [],
           profession: person.profession,
+          education: person.education,
           tagline: person.tagline,
+          bio: person.bio,
           aboutMe: person.aboutMe || [],
           lookingFor: person.lookingFor || [],
+          qualities: person.qualities || [],
+          height: person.height,
+          drinking: person.drinking,
+          smoking: person.smoking,
+          kids: person.kids,
+          exercise: person.exercise,
+          starSign: person.starSign,
+          languages: person.languages || [],
           status: 'you_liked',
         });
       }

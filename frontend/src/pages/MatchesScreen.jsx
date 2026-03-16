@@ -277,7 +277,8 @@ const SYNC_ENDPOINT = "https://your-backend-api.com/sync"; // TODO: Replace with
 /* =============================
    Local Storage helpers (per current user)
 ============================= */
-const LS_BLOCKS_KEY = `pulse_blocks_v1_${GOOGLE_USER_EMAIL}`;         // Set<number>
+// Use shared blocked users key (same as Settings/BlockedUsersScreen)
+const LS_BLOCKED_USERS_KEY = 'pulse_blocked_users';                   // Array<{id, name, photo, source, blockedAt}>
 const LS_REPORTS_KEY = `pulse_reports_v1_${GOOGLE_USER_EMAIL}`;       // { [profileId]: { count: number, notes: string[] } }
 const LS_REVIEW_QUEUE_KEY = `pulse_review_queue_v1_${GOOGLE_USER_EMAIL}`; // Array<{profileId, when, notesSnapshot}>
 const LS_MATCHES_KEY = `pulse_matches_v1_${GOOGLE_USER_EMAIL}`;       // Synced matches data
@@ -286,12 +287,17 @@ const LS_LAST_SYNC_KEY = `pulse_last_sync_${GOOGLE_USER_EMAIL}`;      // Last sy
 
 function loadBlocks() {
   try {
-    const raw = localStorage.getItem(LS_BLOCKS_KEY);
-    return raw ? new Set(JSON.parse(raw)) : new Set();
+    // Load from shared blocked users storage (same as Settings page)
+    const raw = localStorage.getItem(LS_BLOCKED_USERS_KEY);
+    if (!raw) return new Set();
+    const users = JSON.parse(raw);
+    // Extract just the IDs into a Set
+    return new Set(users.map(u => u.id));
   } catch { return new Set(); }
 }
 function saveBlocks(set) {
-  try { localStorage.setItem(LS_BLOCKS_KEY, JSON.stringify(Array.from(set))); } catch {}
+  // Don't save here - blocking is handled by confirmBlock which saves full user objects
+  // This function is kept for compatibility but we don't want to overwrite the full objects
 }
 
 function loadReports() {
@@ -946,10 +952,23 @@ export default function MatchesScreen() {
   const { t } = useLanguage();
   
   // Global store for liked profiles (YOU LIKE tab) and mutual matches (MUTUAL MATCHES tab)
-  const { likedProfiles, removeLikedProfile, mutualMatches, removeMutualMatch, addMutualMatch } = useHomeDeckStore();
+  const { likedProfiles, removeLikedProfile, mutualMatches, removeMutualMatch, addMutualMatch, _hasHydrated } = useHomeDeckStore();
+  
+  // Log hydration and matches state for debugging
+  useEffect(() => {
+    console.log('[MatchesScreen] Store state - hydrated:', _hasHydrated, 'mutualMatches:', mutualMatches?.length, 'likedProfiles:', likedProfiles?.length);
+  }, [_hasHydrated, mutualMatches, likedProfiles]);
 
   const [tab, setTab] = useState(0);
-  const [likes, setLikes] = useState([]);
+  // Initialize likes from localStorage cache (same source as sync function saves to)
+  const [likes, setLikes] = useState(() => {
+    try {
+      const cached = localStorage.getItem(LS_LIKES_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(true);
   
   // GPS location for distance calculation
@@ -986,6 +1005,18 @@ export default function MatchesScreen() {
   // Reports state
   const [reports, setReports] = useState(() => loadReports());
 
+  // Reload blocked users when page gains focus (e.g., returning from Settings after unblock)
+  useEffect(() => {
+    const handleFocus = () => {
+      const freshBlocked = loadBlocks();
+      setBlocked(freshBlocked);
+      console.log('[MatchesScreen] Reloaded blocked users on focus:', freshBlocked.size);
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   // Load pending workshop invite from localStorage
   useEffect(() => {
     try {
@@ -997,44 +1028,20 @@ export default function MatchesScreen() {
   }, []);
 
   // Listen for match updates from other screens (Nearby, Home)
+  // NOTE: We don't load from pulse_matches on mount anymore - homeDeckStore handles persistence
+  // This only listens for real-time updates from other screens
   useEffect(() => {
-    const reloadMatches = () => {
-      try {
-        const storedMatches = localStorage.getItem('pulse_matches');
-        console.log('[MatchesScreen] Reloading matches from localStorage');
-        if (storedMatches) {
-          const matches = JSON.parse(storedMatches);
-          matches.forEach(match => {
-            addMutualMatch(match);
-          });
-        }
-      } catch (e) {
-        console.error('[MatchesScreen] Error reloading matches:', e);
-      }
-    };
-    
-    // Listen for storage changes (from other tabs)
-    const handleStorageChange = (e) => {
-      if (e.key === 'pulse_matches') {
-        console.log('[MatchesScreen] Storage changed, reloading matches');
-        reloadMatches();
-      }
-    };
-    
     // Listen for custom event (same-tab updates from Nearby/Home)
     const handleMatchesUpdated = () => {
-      console.log('[MatchesScreen] pulse:matches_updated event received');
-      reloadMatches();
+      console.log('[MatchesScreen] pulse:matches_updated event received - store will auto-update');
+      // No need to manually load - homeDeckStore is reactive
     };
     
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('pulse:matches_updated', handleMatchesUpdated);
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('pulse:matches_updated', handleMatchesUpdated);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Get user's GPS location for distance filtering
@@ -1075,6 +1082,8 @@ export default function MatchesScreen() {
   }, []);
 
   // Load "Interested in You" data (likes) on mount
+  // NOTE: mutualMatches come from homeDeckStore (persisted in localStorage)
+  // We only load "likes" (people who liked you) from the sync function
   useEffect(() => {
     let isMounted = true;
     
@@ -1082,20 +1091,13 @@ export default function MatchesScreen() {
       try {
         setLoading(true);
         
-        // Sync likes from Google account
+        // Sync likes from Google account - but DON'T add matches to store
+        // Matches are managed by homeDeckStore which persists to localStorage
         const syncedData = await syncFromGoogleAccount(GOOGLE_USER_EMAIL);
         
         if (isMounted) {
+          // Only set likes (people who liked you) - NOT matches
           setLikes(syncedData.likes);
-          
-          // Also add synced matches to the store (in case they're not there yet)
-          if (syncedData.matches && Array.isArray(syncedData.matches)) {
-            console.log('[MatchesScreen] Adding synced matches to store:', syncedData.matches.length);
-            syncedData.matches.forEach(match => {
-              addMutualMatch(match);
-            });
-          }
-          
           setLoading(false);
           
           // Log sync info

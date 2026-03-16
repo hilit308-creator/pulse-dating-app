@@ -277,7 +277,8 @@ export default function MatchPulseScreen({
         >
           <Box
             sx={{
-              height: 'calc(100vh - 70px)', // Leave space for tab bar
+              height: '100vh',
+              width: '100%',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -388,17 +389,17 @@ export default function MatchPulseScreen({
               </Typography>
 
               {/* Action buttons */}
-              <Box sx={{ width: '100%', maxWidth: 320 }}>
+              <Box sx={{ width: '100%', maxWidth: 320, mb: 2 }}>
                 <Button
                   fullWidth
                   variant="contained"
-                  size="large"
+                  size="medium"
                   onClick={handleStartChat}
-                  startIcon={<MessageCircle size={18} />}
+                  startIcon={<MessageCircle size={16} />}
                   sx={{
-                    py: 1.5,
-                    borderRadius: '14px',
-                    fontSize: '0.95rem',
+                    py: 1.25,
+                    borderRadius: '12px',
+                    fontSize: '0.9rem',
                     fontWeight: 700,
                     textTransform: 'none',
                     background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
@@ -415,13 +416,13 @@ export default function MatchPulseScreen({
                   <Button
                     fullWidth
                     variant="outlined"
-                    size="large"
+                    size="medium"
                     onClick={() => resolvedOnTertiary?.(resolvedMatch)}
                     sx={{
-                      mt: 1.5,
-                      py: 1.5,
-                      borderRadius: '14px',
-                      fontSize: '0.95rem',
+                      mt: 1,
+                      py: 1.25,
+                      borderRadius: '12px',
+                      fontSize: '0.9rem',
                       fontWeight: 600,
                       textTransform: 'none',
                       borderColor: 'rgba(108,92,231,0.35)',
@@ -436,13 +437,13 @@ export default function MatchPulseScreen({
                 <Button
                   fullWidth
                   variant="outlined"
-                  size="large"
+                  size="medium"
                   onClick={handleLater}
                   sx={{
-                    mt: 1.5,
-                    py: 1.5,
-                    borderRadius: '14px',
-                    fontSize: '0.95rem',
+                    mt: 1,
+                    py: 1.25,
+                    borderRadius: '12px',
+                    fontSize: '0.9rem',
                     fontWeight: 600,
                     textTransform: 'none',
                     borderColor: '#e2e8f0',

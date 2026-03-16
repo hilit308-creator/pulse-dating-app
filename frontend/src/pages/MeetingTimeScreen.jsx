@@ -108,10 +108,20 @@ export default function MeetingTimeScreen() {
     }
     
     const message = contact.message || PRESET_MESSAGES[0].text;
-    const phone = contact.phone.replace(/\D/g, ''); // Remove non-digits
+    // Remove non-digits but keep the number clean for WhatsApp
+    let phone = contact.phone.replace(/\D/g, '');
     
-    // Create WhatsApp URL with message
-    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    // Ensure phone starts with country code (add Israel code if missing)
+    if (phone.startsWith('0')) {
+      phone = '972' + phone.substring(1);
+    } else if (!phone.startsWith('972') && !phone.startsWith('+')) {
+      phone = '972' + phone;
+    }
+    
+    console.log('[MeetingTimeScreen] Sharing to WhatsApp:', { phone, message });
+    
+    // Create WhatsApp URL with message - use api.whatsapp.com for better compatibility
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
     
     // Mark as shared
