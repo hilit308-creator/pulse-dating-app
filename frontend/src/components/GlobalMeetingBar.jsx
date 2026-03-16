@@ -1,27 +1,40 @@
-import React, { useState } from 'react';
-import { Box, Typography, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert } from '@mui/material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, Tooltip } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Shield, HelpCircle, User, Settings, ChevronRight } from 'lucide-react';
 import { useMeeting, MEETING_STATE, SOS_STATE } from '../context/MeetingContext';
 import MeetingStatusIcon from './MeetingStatusIcon';
 
 function GlobalMeetingBar() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const {
     meetingState,
     meetingWith,
-    showMeetingScreen,
-    setShowMeetingScreen,
-    triggerShowMeetingScreen,
-    setPreviousPath,
+    meetingStartTime,
     sosState,
     sosHelperDistance,
     sosMessage,
     triggerSOS,
     cancelSOS,
   } = useMeeting();
+
+  // Calculate meeting duration
+  const [meetingDuration, setMeetingDuration] = useState('0:00');
+  useEffect(() => {
+    if (!meetingStartTime || meetingState !== MEETING_STATE.ACTIVE) return;
+    
+    const updateDuration = () => {
+      const elapsed = Date.now() - meetingStartTime;
+      const minutes = Math.floor(elapsed / 60000);
+      const seconds = Math.floor((elapsed % 60000) / 1000);
+      setMeetingDuration(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+    };
+    
+    updateDuration();
+    const interval = setInterval(updateDuration, 1000);
+    return () => clearInterval(interval);
+  }, [meetingStartTime, meetingState]);
 
   // Don't render if no active meeting (but show during ENDING state)
   if (meetingState !== MEETING_STATE.ACTIVE && meetingState !== MEETING_STATE.ENDING) {
@@ -96,17 +109,8 @@ function GlobalMeetingBar() {
             },
           }}
           onClick={() => {
-            // Save current path before navigating to meeting screen
-            setPreviousPath(location.pathname);
-            
-            // Use trigger function to reliably show meeting screen
-            triggerShowMeetingScreen();
-            
-            // Navigate to chat with meeting param to force show meeting screen
-            if (meetingWith?.matchId) {
-              const targetPath = `/chat/${meetingWith.matchId}?showMeeting=true&t=${Date.now()}`;
-              navigate(targetPath, { replace: true });
-            }
+            // Navigate to dedicated Meeting Time page
+            navigate('/meeting-time');
           }}
           role="button"
           aria-label="Return to Meeting Time"
@@ -114,21 +118,50 @@ function GlobalMeetingBar() {
           {/* Meeting Status Icon with connecting line states */}
           <MeetingStatusIcon sosState={sosState} size={32} />
           <Box>
-            <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                {meetingWith?.name && `with ${meetingWith.name}`}
+              </Typography>
+              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.NONE && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'rgba(255,255,255,0.2)', px: 1, py: 0.25, borderRadius: 1 }}>
+                  <Box sx={{ 
+                    width: 8, 
+                    height: 8, 
+                    borderRadius: '50%', 
+                    bgcolor: '#10B981', 
+                    boxShadow: '0 0 6px #10B981',
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                    '@keyframes pulse': {
+                      '0%, 100%': { opacity: 1 },
+                      '50%': { opacity: 0.5 },
+                    },
+                  }} />
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#10B981', fontSize: '0.65rem' }}>
+                    LIVE
+                  </Typography>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontWeight: 800, 
+                      fontFamily: 'monospace',
+                      fontSize: '0.85rem',
+                      color: '#fff',
+                    }}
+                  >
+                    {meetingDuration}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+            <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
               {meetingState === MEETING_STATE.ENDING && 'Meeting ended'}
-              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.NONE && 'Meeting in progress'}
+              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.NONE && 'Tap to view'}
               {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.SEARCHING && 'Finding helper...'}
               {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.HELPER_FOUND && 'Helper found'}
               {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.HELPER_APPROACHING && 'Helper approaching'}
               {sosState === SOS_STATE.HELPER_ARRIVED && 'Helper arrived'}
-            </Typography>
-            <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              {meetingWith?.name && `with ${meetingWith.name}`}
               {sosHelperDistance !== null && sosState !== SOS_STATE.NONE && 
                 ` • ${sosHelperDistance < 0.1 ? '<100m' : `${sosHelperDistance.toFixed(1)}km`}`}
-              <Typography component="span" sx={{ fontSize: '0.65rem', opacity: 0.8, ml: 0.5 }}>
-                • Tap to view
-              </Typography>
             </Typography>
           </Box>
           {/* Arrow indicator */}
@@ -156,23 +189,29 @@ function GlobalMeetingBar() {
             Cancel
           </Button>
         )}
-        {/* SOS Button */}
-        <IconButton
-          aria-label="SOS"
+        {/* SOS Button - With text label */}
+        <Box
           onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined}
-          disabled={sosState !== SOS_STATE.NONE}
-          size="small"
           sx={{
-            bgcolor: 'rgba(255,255,255,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            bgcolor: 'rgba(0,0,0,0.3)',
             color: '#fff',
-            width: 36,
-            height: 36,
-            border: '2px solid rgba(255,255,255,0.4)',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' },
+            px: 1,
+            py: 0.5,
+            borderRadius: 1.5,
+            cursor: sosState === SOS_STATE.NONE ? 'pointer' : 'default',
+            opacity: sosState !== SOS_STATE.NONE ? 0.5 : 1,
+            border: '1px solid rgba(255,255,255,0.3)',
+            '&:hover': sosState === SOS_STATE.NONE ? { bgcolor: 'rgba(0,0,0,0.4)' } : {},
           }}
         >
-          <Shield size={18} />
-        </IconButton>
+          <Shield size={14} />
+          <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.7rem' }}>
+            SOS
+          </Typography>
+        </Box>
         {/* Help button */}
         <IconButton
           size="small"

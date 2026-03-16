@@ -1882,6 +1882,27 @@ export default function ChatScreen() {
         // Set openChat directly without navigation to avoid loops
         if (openChat !== foundChat.matchId) {
           setOpenChat(foundChat.matchId);
+          
+          // If coming from meeting screen, add a meeting-specific welcome message
+          if (location.state?.fromMeeting && foundChat.isAgent) {
+            const meetingWith = location.state?.meetingWith || 'someone';
+            const meetingWelcomeMsg = {
+              id: `meeting_welcome_${Date.now()}`,
+              from: "them",
+              type: "text",
+              text: `I see you're on a date with ${meetingWith}! 💜\n\nI'm here if you need:\n• Conversation tips or icebreakers\n• Help if something feels off\n• Someone to talk to\n\nHow's it going? Is there anything I can help with?`,
+              timestamp: Date.now(),
+              status: "read",
+              reactions: {},
+            };
+            setChats(prev => prev.map(c => 
+              c.matchId === foundChat.matchId 
+                ? { ...c, messages: [...c.messages, meetingWelcomeMsg] }
+                : c
+            ));
+            // Clear the state to prevent duplicate messages on re-render
+            navigate(location.pathname, { replace: true, state: {} });
+          }
         }
       } else if (location.state?.profile) {
         // Create new chat from navigation state (e.g., from EventMatchesScreen)
@@ -2436,11 +2457,9 @@ export default function ChatScreen() {
     };
   }, [meetingState, locationSharing]);
 
-  // Sync local showMeetingScreen with global context
+  // Sync local meeting state with global context (no longer shows overlay, just syncs state)
   useEffect(() => {
-    if (globalMeeting.showMeetingScreen && globalMeeting.meetingState === GLOBAL_MEETING_STATE.ACTIVE) {
-      // If global context says to show meeting screen and we're in the right chat
-      // Compare matchId loosely (could be number or string)
+    if (globalMeeting.meetingState === GLOBAL_MEETING_STATE.ACTIVE) {
       const globalMatchId = globalMeeting.meetingWith?.matchId;
       const chatMatchId = chat?.matchId;
       const isMatchingChat = chat && (
@@ -2449,8 +2468,6 @@ export default function ChatScreen() {
       );
       
       if (isMatchingChat) {
-        console.log('[ChatScreen] Syncing meeting screen from global context');
-        setShowMeetingScreen(true);
         setMeetingState(MEETING_STATE.ACTIVE);
         setMeetingWith(chat.user);
         if (!meetingStartTime) {
@@ -2458,24 +2475,7 @@ export default function ChatScreen() {
         }
       }
     }
-  }, [globalMeeting.showMeetingScreen, globalMeeting.meetingState, globalMeeting.meetingWith, chat, meetingStartTime, globalMeeting.meetingStartTime]);
-
-  // Also sync when chat loads and global meeting is active
-  useEffect(() => {
-    if (chat && globalMeeting.meetingState === GLOBAL_MEETING_STATE.ACTIVE && globalMeeting.showMeetingScreen) {
-      const globalMatchId = globalMeeting.meetingWith?.matchId;
-      const chatMatchId = chat.matchId;
-      if (globalMatchId === chatMatchId || String(globalMatchId) === String(chatMatchId)) {
-        console.log('[ChatScreen] Chat loaded, showing meeting screen');
-        setShowMeetingScreen(true);
-        setMeetingState(MEETING_STATE.ACTIVE);
-        setMeetingWith(chat.user);
-        if (!meetingStartTime) {
-          setMeetingStartTime(globalMeeting.meetingStartTime || Date.now());
-        }
-      }
-    }
-  }, [chat, globalMeeting.showMeetingScreen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [globalMeeting.meetingState, globalMeeting.meetingWith, chat, meetingStartTime, globalMeeting.meetingStartTime]);
 
   // Handle pending meeting invite from Nearby screen
   useEffect(() => {
@@ -2521,26 +2521,14 @@ export default function ChatScreen() {
     }
   }, [location.search, chat, openChat, setChats, navigate]);
 
-  // Handle showMeeting URL parameter from GlobalMeetingBar click
+  // Handle showMeeting URL parameter - redirect to dedicated Meeting Time page
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('showMeeting') === 'true' && chat && globalMeeting.meetingState === GLOBAL_MEETING_STATE.ACTIVE) {
-      const globalMatchId = globalMeeting.meetingWith?.matchId;
-      const chatMatchId = chat.matchId;
-      if (globalMatchId === chatMatchId || String(globalMatchId) === String(chatMatchId)) {
-        console.log('[ChatScreen] URL param showMeeting=true, opening meeting screen');
-        setShowMeetingScreen(true);
-        setMeetingState(MEETING_STATE.ACTIVE);
-        setMeetingWith(chat.user);
-        setWaitingForMeetingScreen(false); // Meeting screen is now ready
-        if (!meetingStartTime) {
-          setMeetingStartTime(globalMeeting.meetingStartTime || Date.now());
-        }
-        // Clean up URL param
-        navigate(`/chat/${chat.matchId}`, { replace: true });
-      }
+    if (params.get('showMeeting') === 'true' && globalMeeting.meetingState === GLOBAL_MEETING_STATE.ACTIVE) {
+      // Redirect to dedicated Meeting Time page
+      navigate('/meeting-time', { replace: true });
     }
-  }, [location.search, chat, globalMeeting.meetingState, globalMeeting.meetingWith, globalMeeting.meetingStartTime, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.search, globalMeeting.meetingState, navigate]);
   
   // Clear waiting state when chat opens (in case meeting screen doesn't load)
   useEffect(() => {
@@ -2576,12 +2564,14 @@ export default function ChatScreen() {
     setMeetingWith(chat.user);
     setMeetingStartTime(Date.now());
     setLocationSharing(true);
-    setShowMeetingScreen(true);
     setContactsNotifiedThisMeeting([]);
     
     // Update global meeting context so bar shows on all pages
     globalMeeting.startMeeting({ ...chat.user, matchId: chat.matchId });
-  }, [chat, meetingContacts, globalMeeting]);
+    
+    // Navigate to dedicated Meeting Time page
+    navigate('/meeting-time');
+  }, [chat, meetingContacts, globalMeeting, navigate]);
 
   // Continue without contacts (WhatsApp only)
   const handleContinueWithoutContacts = useCallback(() => {
@@ -2600,12 +2590,14 @@ export default function ChatScreen() {
     setMeetingWith(chat.user);
     setMeetingStartTime(Date.now());
     setLocationSharing(true);
-    setShowMeetingScreen(true);
     setContactsNotifiedThisMeeting([]);
     
     // Update global meeting context
     globalMeeting.startMeeting({ ...chat.user, matchId: chat.matchId });
-  }, [chat, globalMeeting]);
+    
+    // Navigate to dedicated Meeting Time page
+    navigate('/meeting-time');
+  }, [chat, globalMeeting, navigate]);
 
   const handleClosePostMeetingFeedback = useCallback(() => {
     setShowPostMeetingFeedback(false);
@@ -5785,401 +5777,6 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
           </Box>
         </Box>
       </Popover>
-
-      {/* ==================== Meeting Time Screen ==================== */}
-      {showMeetingScreen && meetingState === MEETING_STATE.ACTIVE && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 56,
-            width: '100vw',
-            height: 'calc(100vh - 56px)',
-            background: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'auto',
-            outline: 'none',
-            zIndex: 1000,
-          }}
-        >
-          {/* Header Bar */}
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            px: 2, 
-            py: 1,
-            bgcolor: '#fff',
-            borderBottom: '1px solid #E5E7EB',
-            flexShrink: 0,
-          }}>
-            <IconButton 
-              onClick={() => {
-                setShowMeetingScreen(false);
-                // Navigate back to previous page if we came from another page
-                if (globalMeeting.previousPath && globalMeeting.previousPath !== location.pathname) {
-                  navigate(globalMeeting.previousPath);
-                  globalMeeting.setPreviousPath(null);
-                }
-              }} 
-              size="small" 
-              sx={{ 
-                color: '#6C5CE7',
-                bgcolor: 'rgba(108, 92, 231, 0.1)',
-                '&:hover': { bgcolor: 'rgba(108, 92, 231, 0.2)' },
-              }}
-            >
-              <Minimize2 size={18} />
-            </IconButton>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#6C5CE7', boxShadow: '0 0 6px #6C5CE7' }} />
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#1F2937' }}>Meeting Time</Typography>
-            </Box>
-            <Button 
-              variant="text" 
-              size="small" 
-              onClick={handleEndMeeting} 
-              sx={{ 
-                fontWeight: 600, 
-                fontSize: '0.8rem', 
-                minWidth: 'auto',
-                color: '#DC2626 !important',
-                '&:hover': {
-                  bgcolor: 'rgba(220, 38, 38, 0.1)',
-                },
-              }}
-            >
-              END
-            </Button>
-          </Box>
-
-          {/* Meeting Quick Actions Block - At top, below header */}
-          <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', px: 1.5, pt: 3, pb: 10, overflowY: 'auto' }}>
-            <Box sx={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-              {/* 1. Meeting Status with motivational message */}
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
-                gap: 1, 
-                width: '100%', 
-                p: 2.5, 
-                background: 'linear-gradient(135deg, #F3F0FF 0%, #E9E4FF 100%)',
-                borderRadius: 3, 
-                border: '2px solid #C4B5FD',
-                boxShadow: '0 4px 16px rgba(108, 92, 231, 0.15)',
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '3px',
-                  background: 'linear-gradient(90deg, #6C5CE7 0%, #8B7CF7 50%, #6C5CE7 100%)',
-                  backgroundSize: '200% 100%',
-                  animation: 'shimmer 3s linear infinite',
-                },
-                '@keyframes shimmer': {
-                  '0%': { backgroundPosition: '200% 0' },
-                  '100%': { backgroundPosition: '-200% 0' },
-                }
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ 
-                    width: 36, 
-                    height: 36, 
-                    borderRadius: '50%', 
-                    background: 'linear-gradient(135deg, #6C5CE7 0%, #8B7CF7 100%)',
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(108, 92, 231, 0.4)',
-                    border: '2px solid rgba(255,255,255,0.9)',
-                  }}>
-                    <Users size={18} color="#fff" />
-                  </Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#4C1D95', fontSize: '1.1rem' }}>
-                    Meeting with {meetingWith?.name} ✓
-                  </Typography>
-                </Box>
-                {/* Encouraging copy - rotates through messages */}
-                <Typography variant="body2" sx={{ color: '#5B21B6', fontStyle: 'italic', textAlign: 'center', fontWeight: 500, fontSize: '0.9rem' }}>
-                  {(() => {
-                    const messages = [
-                      "✨ Be yourself, stay safe, and enjoy the moment",
-                      "💜 This is a moment to pause and stay present",
-                      "🌟 The meeting happens at your pace, without pressure",
-                      "💫 We're here in the background so you can feel safe",
-                    ];
-                    // Use meeting start time to pick a consistent message
-                    const index = meetingStartTime ? Math.floor((meetingStartTime / 1000) % messages.length) : 0;
-                    return messages[index];
-                  })()}
-                </Typography>
-              </Box>
-
-              {/* Explanation Line - per spec */}
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: '#6B7280', 
-                  textAlign: 'center', 
-                  fontSize: '0.75rem', 
-                  lineHeight: 1.4,
-                  px: 2,
-                  mb: 1,
-                }}
-              >
-                Good to know - the buttons below are available at any time. There's no need to use them unless you want to.
-              </Typography>
-
-              {/* 2. Quick Actions */}
-              <Box sx={{ width: '100%' }}>
-                <Typography variant="overline" sx={{ 
-                  color: '#6B7280', 
-                  fontWeight: 700, 
-                  letterSpacing: 1.5, 
-                  fontSize: '0.65rem', 
-                  display: 'block', 
-                  textAlign: 'center', 
-                  mb: 1.5,
-                  textTransform: 'uppercase',
-                }}>
-                  Quick Actions
-                </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-              {/* In-App Contact Circles */}
-              {meetingContacts.map((contact) => (
-                <Box
-                  key={contact.id}
-                  onClick={() => handleContactCircleClick(contact)}
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    p: 1.25,
-                    borderRadius: 2.5,
-                    bgcolor: '#fff',
-                    boxShadow: contactsNotifiedThisMeeting.includes(contact.id) 
-                      ? '0 0 0 3px #6C5CE7, 0 4px 16px rgba(108, 92, 231, 0.3)' 
-                      : '0 4px 12px rgba(0,0,0,0.08)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: contactsNotifiedThisMeeting.includes(contact.id)
-                        ? '0 0 0 3px #6C5CE7, 0 8px 24px rgba(108, 92, 231, 0.4)'
-                        : '0 8px 20px rgba(0,0,0,0.12)',
-                    },
-                    '&:active': { transform: 'translateY(-2px) scale(0.98)' },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      mb: 0.75,
-                      boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                      border: '2px solid rgba(255,255,255,0.9)',
-                    }}
-                  >
-                    <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>
-                      {contact.name.charAt(0).toUpperCase()}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" sx={{ fontWeight: 700, textAlign: 'center', color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
-                    {contact.name.length > 6 ? contact.name.slice(0, 6) + '…' : contact.name}
-                  </Typography>
-                  <Typography variant="caption" sx={{ 
-                    color: contactsNotifiedThisMeeting.includes(contact.id) ? '#6C5CE7' : '#9CA3AF', 
-                    fontSize: '0.65rem',
-                    fontWeight: 600,
-                    mt: 0.25,
-                  }}>
-                    {contactsNotifiedThisMeeting.includes(contact.id) ? '✓ Notified' : 'Notify'}
-                  </Typography>
-                </Box>
-              ))}
-
-              {/* WhatsApp Circle */}
-              <Box
-                onClick={shareViaWhatsApp}
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  p: 1.25,
-                  borderRadius: 2.5,
-                  bgcolor: '#fff',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
-                  },
-                  '&:active': { transform: 'translateY(-2px) scale(0.98)' },
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #8B7CF7 0%, #6C5CE7 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mb: 0.75,
-                    boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                    border: '2px solid rgba(255,255,255,0.9)',
-                  }}
-                >
-                  <MessageCircle size={20} color="#fff" />
-                </Box>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
-                  Share
-                </Typography>
-              </Box>
-
-              {/* Support Chat Circle */}
-              <Box
-                onClick={() => {
-                  setShowMeetingScreen(false);
-                  openChatWithNav(AGENT_ID);
-                  setTimeout(() => {
-                    setChats((prev) =>
-                      prev.map((c) =>
-                        c.matchId !== AGENT_ID
-                          ? c
-                          : {
-                              ...c,
-                              messages: [
-                                ...c.messages,
-                                {
-                                  id: Date.now() + 1,
-                                  from: "them",
-                                  type: "text",
-                                  text: "I'm here with you. What would help right now?",
-                                  timestamp: Date.now(),
-                                  status: "read",
-                                  reactions: {},
-                                },
-                              ],
-                              lastSentAt: Date.now(),
-                            }
-                      )
-                    );
-                  }, 300);
-                }}
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  p: 1.25,
-                  borderRadius: 2.5,
-                  bgcolor: '#fff',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
-                  },
-                  '&:active': { transform: 'translateY(-2px) scale(0.98)' },
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #9F7AEA 0%, #6C5CE7 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mb: 0.75,
-                    boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                    border: '2px solid rgba(255,255,255,0.9)',
-                  }}
-                >
-                  <HeartHandshake size={20} color="#fff" />
-                </Box>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
-                  Support
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem', fontWeight: 600, mt: 0.25 }}>
-                  Chat
-                </Typography>
-              </Box>
-
-              {/* Quick Add Contact */}
-              <Box
-                onClick={() => setShowQuickAddContact(true)}
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  p: 1.25,
-                  borderRadius: 2.5,
-                  bgcolor: '#fff',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  border: '2px dashed #D1D5DB',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
-                    borderColor: '#6C5CE7',
-                  },
-                  '&:active': { transform: 'translateY(-2px) scale(0.98)' },
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    bgcolor: '#F3F4F6',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mb: 0.75,
-                    border: '2px solid #E5E7EB',
-                  }}
-                >
-                  <UserPlus size={20} color="#6B7280" />
-                </Box>
-                <Typography variant="caption" sx={{ fontWeight: 700, textAlign: 'center', color: '#1F2937', fontSize: '0.7rem', lineHeight: 1.2 }}>
-                  Add
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF', fontSize: '0.65rem', fontWeight: 600, mt: 0.25 }}>
-                  Contact
-                </Typography>
-                </Box>
-              </Box>
-              </Box>
-
-              {/* 3. Need Support */}
-              <Box onClick={() => setShowMeetingHelpDialog(true)} sx={{ width: '100%', p: 1, borderRadius: 2, bgcolor: '#F9FAFB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', '&:hover': { bgcolor: '#F3F4F6' } }}>
-                <Shield size={18} color="#6B7280" />
-                <Typography variant="caption" sx={{ color: '#6B7280', flex: 1 }}>Need support? Tap for help</Typography>
-                <Typography variant="caption" sx={{ color: '#9CA3AF' }}>→</Typography>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-      )}
 
       {/* ==================== Meeting Help Dialog ==================== */}
       <Dialog

@@ -103,6 +103,7 @@ import LikesYouScreen from './pages/LikesYouScreen';
 import AdminDashboard from './pages/AdminDashboard';
 import ReportProblemScreen from './pages/ReportProblemScreen';
 import MeetingsSafetyScreen from './pages/MeetingsSafetyScreen';
+import MeetingTimeScreen from './pages/MeetingTimeScreen';
 import UserDetailsScreen from './pages/UserDetailsScreen';
 import UserDetailsScreen2 from './pages/UserDetailsScreen2';
 import UserProfilePage from './pages/UserProfilePage';
@@ -1141,6 +1142,7 @@ function AppShell() {
             <Route path="/match-pulse" element={<ProtectedRoute><MatchPulseScreen /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><ChatScreen /></ProtectedRoute>} />
             <Route path="/chat/:matchId" element={<ProtectedRoute><ChatScreen /></ProtectedRoute>} />
+            <Route path="/meeting-time" element={<ProtectedRoute><MeetingTimeScreen /></ProtectedRoute>} />
             <Route path="/nearby" element={<ProtectedRoute><NearbyScreen /></ProtectedRoute>} />
             <Route path="/nearby/people" element={<ProtectedRoute><ViewNearbyPeopleScreen /></ProtectedRoute>} />
             <Route path="/nearby/event" element={<ProtectedRoute><EventPreviewScreen /></ProtectedRoute>} />
