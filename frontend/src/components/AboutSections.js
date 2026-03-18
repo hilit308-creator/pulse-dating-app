@@ -105,14 +105,14 @@ export default function AboutSections() {
     setEditMoreValue(field.value || "");
   };
 
-  // Color palette for each field
-  const fieldColors = {
-    gender: { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', light: 'rgba(102, 126, 234, 0.08)' },
-    height: { bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', light: 'rgba(240, 147, 251, 0.08)' },
-    location: { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', light: 'rgba(79, 172, 254, 0.08)' },
-    hometown: { bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', light: 'rgba(67, 233, 123, 0.08)' },
-    work: { bg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', light: 'rgba(250, 112, 154, 0.08)' },
-    education: { bg: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', light: 'rgba(161, 140, 209, 0.08)' },
+  // Color palette for My Details - 4 colors: green, orange, pink, gray
+  const detailColors = {
+    gender: '#10b981',    // green
+    height: '#f59e0b',    // orange
+    location: '#ec4899',  // pink
+    hometown: '#64748b',  // gray
+    work: '#10b981',      // green
+    education: '#f59e0b', // orange
   };
 
   return (
@@ -147,7 +147,7 @@ export default function AboutSections() {
         mb: 3 
       }}>
         {fields.map((field) => {
-          const colors = fieldColors[field.key] || fieldColors.gender;
+          const color = detailColors[field.key] || '#6C5CE7';
           const isEditing = editingKey === field.key;
           
           return (
@@ -155,11 +155,9 @@ export default function AboutSections() {
               key={field.key}
               onClick={() => isEditing ? setEditingKey(null) : handleEdit(field.key)}
               sx={{
-                bgcolor: isEditing ? colors.light : '#fff',
+                bgcolor: isEditing ? `${color}08` : '#fff',
                 borderRadius: '16px',
-                border: isEditing ? '2px solid' : '1px solid #e2e8f0',
-                borderColor: isEditing ? 'transparent' : '#e2e8f0',
-                borderImage: isEditing ? `${colors.bg} 1` : 'none',
+                border: isEditing ? `2px solid ${color}` : '1px solid #e2e8f0',
                 p: 2,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
@@ -168,7 +166,7 @@ export default function AboutSections() {
                   transform: 'translateY(-2px)',
                   boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
                 },
-                gridColumn: field.key === 'work' || field.key === 'education' ? 'span 2' : 'span 1',
+                gridColumn: 'span 1',
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -176,12 +174,12 @@ export default function AboutSections() {
                   width: 28, 
                   height: 28, 
                   borderRadius: '8px', 
-                  background: colors.bg,
+                  bgcolor: `${color}15`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                  {React.cloneElement(field.icon, { sx: { color: '#fff', fontSize: 16 } })}
+                  {React.cloneElement(field.icon, { sx: { color: color, fontSize: 16 } })}
                 </Box>
                 <Typography sx={{ fontWeight: 600, fontSize: 13, color: '#64748b' }}>
                   {field.label}
@@ -210,6 +208,15 @@ export default function AboutSections() {
                         '& .MuiOutlinedInput-root': { 
                           borderRadius: '10px',
                           bgcolor: '#fff',
+                          '& fieldset': {
+                            borderColor: '#e2e8f0',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#cbd5e1',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#94a3b8',
+                          },
                         } 
                       }}
                     />
@@ -229,14 +236,14 @@ export default function AboutSections() {
                         min={140}
                         max={220}
                         sx={{
-                          color: '#f093fb',
+                          color: '#6C5CE7',
                           '& .MuiSlider-thumb': { 
                             width: 22, 
                             height: 22,
-                            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                            background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
                           },
                           '& .MuiSlider-track': {
-                            background: 'linear-gradient(90deg, #f093fb 0%, #f5576c 100%)',
+                            background: 'linear-gradient(90deg, #6C5CE7 0%, #a855f7 100%)',
                           },
                         }}
                       />
@@ -298,11 +305,11 @@ export default function AboutSections() {
           width: 36, 
           height: 36, 
           borderRadius: '10px', 
-          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+          boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
         }}>
           <DirectionsRunIcon sx={{ color: '#fff', fontSize: 20 }} />
         </Box>

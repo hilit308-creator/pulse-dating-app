@@ -2148,52 +2148,7 @@ export default function ProfileSettings({ onBack }) {
         <ProfileExtras />
       </Box>
 
-      {/* Sticky save bar */}
-      {dirty && (
-        <Box
-          sx={{
-            position: "fixed",
-            left: 0,
-            right: 0,
-            bottom: 80, // Above bottom navigation
-            pb: "env(safe-area-inset-bottom, 0px)",
-            display: "flex",
-            justifyContent: "center",
-            zIndex: 20,
-            background: 'linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0.95) 80%, rgba(255,255,255,0) 100%)',
-            pt: 3,
-          }}
-        >
-          <Box
-            sx={{
-              maxWidth: 520,
-              width: "100%",
-              mx: 2,
-              mb: 1,
-            }}
-          >
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={handleSave}
-              sx={{
-                borderRadius: '12px',
-                textTransform: "none",
-                fontWeight: 600,
-                py: 1.5,
-                background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
-                boxShadow: "0 4px 14px rgba(108,92,231,0.4)",
-                "&:hover": {
-                  background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)',
-                  boxShadow: "0 6px 20px rgba(108,92,231,0.5)",
-                },
-              }}
-            >
-              Save changes
-            </Button>
-          </Box>
-        </Box>
-      )}
+      {/* Sticky save bar - REMOVED: Changes now auto-save */}
 
       {/* Profile Checklist Dialog */}
       <Dialog 
