@@ -76,6 +76,9 @@ import {
   User,
   Settings,
   BarChart2,
+  Coffee,
+  Flower2,
+  Gift,
 } from "lucide-react";
 // Chat Gates - ready for integration when needed
 // import ChatGateBanner from "../components/ChatGateBanner";
@@ -718,6 +721,8 @@ function ChatBubble({
   onEventInviteDecline,
   onEventInviteOfferPay,
   onWorkshopInviteRespond,
+  onGestureAccept,
+  onGestureDecline,
 }) {
   const bg = isMe ? "#F3F0FF" : "#FFFFFF";
   const tailSide = isMe ? "right" : "left";
@@ -1081,6 +1086,130 @@ function ChatBubble({
             isInviter={isMe}
             personName={msg.personName}
           />
+        ) : msg.type === "gesture_received" ? (
+          /* Sweet Gesture received message - styled like workshop_invite */
+          (() => {
+            // Get the correct icon and emoji based on gesture type
+            const gestureConfig = {
+              coffee: { Icon: Coffee, emoji: '☕', label: 'Coffee', color: '#6C5CE7' },
+              flower: { Icon: Flower2, emoji: '🌸', label: 'Flower', color: '#ec4899' },
+              note: { Icon: Gift, emoji: '🎁', label: 'Gift', color: '#f59e0b' },
+              gift: { Icon: Gift, emoji: '🎁', label: 'Gift', color: '#f59e0b' },
+              hi: { Icon: MessageCircle, emoji: '👋', label: 'Message', color: '#6C5CE7' },
+            };
+            const config = gestureConfig[msg.gestureType] || gestureConfig.coffee;
+            const GestureIcon = config.Icon;
+            
+            return (
+          <Box sx={{ mt: 0.25 }}>
+            <Box 
+              sx={{ 
+                border: "1px solid rgba(17,24,39,0.10)", 
+                borderRadius: 3, 
+                bgcolor: "#fff",
+                overflow: "hidden",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.08)",
+              }}
+            >
+              {/* Header with gradient */}
+              <Box 
+                sx={{ 
+                  background: `linear-gradient(135deg, ${config.color} 0%, ${config.color}cc 100%)`,
+                  p: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                <GestureIcon size={20} color="#fff" />
+                <Typography sx={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>
+                  Sweet Gesture from {msg.senderName}
+                </Typography>
+              </Box>
+              
+              {/* Content */}
+              <Box sx={{ p: 1.5 }}>
+                <Typography sx={{ fontWeight: 900, fontSize: '0.95rem', color: '#1a1a2e' }}>
+                  {config.emoji} {msg.gestureLabel || config.label}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#6b7280", display: 'block', mt: 0.5 }}>
+                  {msg.gestureMessage}
+                </Typography>
+
+                {/* Show status if already responded */}
+                {msg.inviteStatus === 'accepted' && (
+                  <Box sx={{ 
+                    mt: 1.5, 
+                    p: 1, 
+                    borderRadius: 2, 
+                    bgcolor: 'rgba(108,92,231,0.1)', 
+                    border: '1px solid rgba(108,92,231,0.3)' 
+                  }}>
+                    <Typography variant="body2" sx={{ color: '#6C5CE7', fontWeight: 700 }}>
+                      ✅ Accepted
+                    </Typography>
+                  </Box>
+                )}
+                {msg.inviteStatus === 'declined' && (
+                  <Box sx={{ 
+                    mt: 1.5, 
+                    p: 1, 
+                    borderRadius: 2, 
+                    bgcolor: 'rgba(100,116,139,0.1)', 
+                    border: '1px solid rgba(100,116,139,0.3)' 
+                  }}>
+                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 600 }}>
+                      Maybe next time 💭
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Show buttons if not yet responded */}
+                {!msg.inviteStatus && (
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1.5 }}>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={() => onGestureAccept?.(msg)}
+                      sx={{
+                        py: 0.75,
+                        px: 2,
+                        borderRadius: '20px',
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        bgcolor: '#6C5CE7',
+                        color: '#fff',
+                        boxShadow: 'none',
+                        '&:hover': { bgcolor: '#5B4BD5', boxShadow: 'none' },
+                      }}
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      size="small"
+                      color="inherit"
+                      onClick={() => onGestureDecline?.(msg)}
+                      sx={{
+                        py: 0.75,
+                        px: 2,
+                        borderRadius: '20px',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        color: '#64748b',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+                      }}
+                    >
+                      Decline
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          </Box>
+            );
+          })()
         ) : msg.type === "workshop_invite" ? (
           <Box sx={{ mt: 0.25 }}>
             <Box 
@@ -1576,6 +1705,11 @@ export default function ChatScreen() {
   const { matchId: urlMatchId } = useParams();
   const [chats, setChats] = useState([AGENT_ROW, ...demoChats]);
   const [openChat, setOpenChat] = useState(null);
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Gesture billing store selectors - must be declared before callbacks that use them
+  const acceptGestureInStore = useGestureMessagesStore((state) => state.acceptGesture);
+  const declineGestureInStore = useGestureMessagesStore((state) => state.declineGesture);
   
   // Helper to open chat and update URL
   const openChatWithNav = useCallback((matchId) => {
@@ -1826,6 +1960,71 @@ export default function ChatScreen() {
     [openChat, setChats, chat]
   );
 
+  // Handle Sweet Gesture accept/decline with billing logic
+  const handleGestureAccept = useCallback(
+    (msg) => {
+      if (!openChat) return;
+      
+      // Call store to process acceptance and charge sender
+      const result = acceptGestureInStore(msg.id);
+      console.log('[ChatScreen] Gesture accepted:', result);
+      
+      // Update message status in chat
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat
+            ? {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === msg.id ? { ...m, inviteStatus: 'accepted' } : m
+                ),
+              }
+            : c
+        )
+      );
+      
+      // Show toast notification
+      setToast({ 
+        open: true, 
+        message: `✅ Accepted! ${msg.senderName} has been charged and notified.`, 
+        severity: 'success' 
+      });
+    },
+    [openChat, setChats, acceptGestureInStore]
+  );
+
+  const handleGestureDecline = useCallback(
+    (msg) => {
+      if (!openChat) return;
+      
+      // Call store to process decline - no charge, notify sender
+      const result = declineGestureInStore(msg.id);
+      console.log('[ChatScreen] Gesture declined:', result);
+      
+      // Update message status in chat
+      setChats((prev) =>
+        prev.map((c) =>
+          c.matchId === openChat
+            ? {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === msg.id ? { ...m, inviteStatus: 'declined' } : m
+                ),
+              }
+            : c
+        )
+      );
+      
+      // Show toast notification
+      setToast({ 
+        open: true, 
+        message: `💭 Declined politely. ${msg.senderName} was notified (no charge).`, 
+        severity: 'info' 
+      });
+    },
+    [openChat, setChats, declineGestureInStore]
+  );
+
   // Handle workshop invite response (accept/decline)
   const handleWorkshopInviteRespond = useCallback(
     (messageId, status) => {
@@ -1929,8 +2128,33 @@ export default function ChatScreen() {
         });
         setOpenChat(profile.id);
       }
+      
+      // Handle pending gesture from Sweet Gestures "Send a message first"
+      // Add it as a message bubble in the chat with Accept/Decline buttons
+      if (location.state?.pendingGesture) {
+        const gesture = location.state.pendingGesture;
+        const gestureMsg = {
+          id: `gesture_received_${Date.now()}`,
+          from: "them",
+          type: "gesture_received",
+          gestureType: gesture.type,
+          gestureLabel: gesture.label,
+          senderName: gesture.senderName,
+          gestureMessage: gesture.message,
+          timestamp: Date.now(),
+          status: "read",
+          inviteStatus: null, // null = pending, 'accepted', 'declined'
+        };
+        setChats(prev => prev.map(c => 
+          c.matchId === openChat || c.matchId === parseInt(urlMatchId, 10) || c.matchId === urlMatchId
+            ? { ...c, messages: [...c.messages, gestureMsg] }
+            : c
+        ));
+        // Clear the state to prevent showing again on re-render
+        navigate(location.pathname, { replace: true, state: {} });
+      }
     }
-  }, [urlMatchId, chats, openChat, location.state]);
+  }, [urlMatchId, chats, openChat, location.state, navigate]);
   
   // Workshop reminders from localStorage
   const [workshopReminders, setWorkshopReminders] = useState([]);
@@ -4094,6 +4318,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
     >
       {/* In-chat header - fixed below main app header */}
       <Box
+        data-testid="chat-header"
         sx={{
           position: "fixed",
           left: 0,
@@ -4202,6 +4427,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                   startIcon={<Users size={12} />}
                   onClick={handleStartMeeting}
                   aria-label="Start Meeting"
+                  data-testid="start-meeting-button"
                   sx={{
                     background: 'linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)',
                     color: '#fff',
@@ -4677,6 +4903,8 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
                     onEventInviteDecline={handleEventInviteDecline}
                     onEventInviteOfferPay={handleEventInviteOfferPay}
                     onWorkshopInviteRespond={handleWorkshopInviteRespond}
+                    onGestureAccept={handleGestureAccept}
+                    onGestureDecline={handleGestureDecline}
                   />
                 </div>
               </Fade>
@@ -6423,6 +6651,28 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
           }}
         >
           {contactNotifySuccess}
+        </Alert>
+      </Snackbar>
+
+      {/* Gesture Accept/Decline Toast */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={() => setToast({ ...toast, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: 120, zIndex: 99999 }}
+      >
+        <Alert 
+          severity={toast.severity}
+          onClose={() => setToast({ ...toast, open: false })}
+          sx={{ 
+            width: '100%',
+            bgcolor: toast.severity === 'success' ? '#10B981' : '#6C5CE7',
+            color: '#fff',
+            '& .MuiAlert-icon': { color: '#fff' },
+          }}
+        >
+          {toast.message}
         </Alert>
       </Snackbar>
 

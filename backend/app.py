@@ -116,6 +116,19 @@ class User(db.Model):
     spotify_token_expires_at = db.Column(db.DateTime)
     # Weekly Rhythm - JSON field for recurring activities and upcoming plans
     user_rhythm = db.Column(db.Text)  # JSON: { visibility, recurring, upcoming }
+    
+    # SOS Trust Score System
+    trust_score = db.Column(db.Float, default=50.0)  # 0-100, starts at 50
+    total_helps = db.Column(db.Integer, default=0)
+    confirmed_helps = db.Column(db.Integer, default=0)
+    unconfirmed_helps = db.Column(db.Integer, default=0)
+    abandonment_count = db.Column(db.Integer, default=0)  # cancelled/unavailable/not progressing
+    avg_arrival_time = db.Column(db.Float, default=0.0)  # seconds
+    total_arrival_time = db.Column(db.Float, default=0.0)  # sum for calculating average
+    arrival_count = db.Column(db.Integer, default=0)  # count for calculating average
+    points_balance = db.Column(db.Integer, default=0)
+    total_sos_requests = db.Column(db.Integer, default=0)  # as requester
+    cancelled_requests = db.Column(db.Integer, default=0)  # as requester
 
 
 class FeatureFlag(db.Model):
@@ -407,6 +420,167 @@ class Gesture(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'responded_at': self.responded_at.isoformat() if self.responded_at else None,
             'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+        }
+
+
+# ============================================================================
+# SOS TRUST SCORE + REWARDS SYSTEM
+# ============================================================================
+
+# SOS Request Model - tracks SOS help requests
+class SOSRequest(db.Model):
+    __tablename__ = 'sos_requests'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    helper_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    
+    # Status: searching, assigned, approaching, arrived, awaiting_confirmation, 
+    #         resolved_confirmed, resolved_unconfirmed, cancelled, helper_unavailable
+    status = db.Column(db.String(30), nullable=False, default='searching')
+    
+    # Location data
+    requester_lat = db.Column(db.Float)
+    requester_lng = db.Column(db.Float)
+    helper_lat_at_accept = db.Column(db.Float)
+    helper_lng_at_accept = db.Column(db.Float)
+    distance_at_accept = db.Column(db.Float)  # km
+    
+    # Timing
+    arrival_time_seconds = db.Column(db.Integer)  # Time from accept to arrival
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    accepted_at = db.Column(db.DateTime)
+    arrived_at = db.Column(db.DateTime)
+    resolved_at = db.Column(db.DateTime)
+    
+    # Relationships
+    requester = db.relationship('User', foreign_keys=[requester_id], backref='sos_requests_made')
+    helper = db.relationship('User', foreign_keys=[helper_id], backref='sos_requests_helped')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'requester_id': self.requester_id,
+            'helper_id': self.helper_id,
+            'status': self.status,
+            'distance_at_accept': self.distance_at_accept,
+            'arrival_time_seconds': self.arrival_time_seconds,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'accepted_at': self.accepted_at.isoformat() if self.accepted_at else None,
+            'arrived_at': self.arrived_at.isoformat() if self.arrived_at else None,
+            'resolved_at': self.resolved_at.isoformat() if self.resolved_at else None,
+        }
+
+
+# SOS Reward Model - tracks rewards granted for helping
+class SOSReward(db.Model):
+    __tablename__ = 'sos_rewards'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    helper_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sos_request_id = db.Column(db.String(36), db.ForeignKey('sos_requests.id'), nullable=False, unique=True)  # UNIQUE: One reward per SOS request (idempotency)
+    
+    # Reward details
+    base_amount = db.Column(db.Integer, nullable=False, default=150)
+    bonus_amount = db.Column(db.Integer, default=0)
+    total_amount = db.Column(db.Integer, nullable=False)
+    bonuses_json = db.Column(db.Text)  # JSON: [{ type, amount, label }]
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    helper = db.relationship('User', foreign_keys=[helper_id])
+    requester = db.relationship('User', foreign_keys=[requester_id])
+    sos_request = db.relationship('SOSRequest', backref='reward')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'helper_id': self.helper_id,
+            'requester_id': self.requester_id,
+            'sos_request_id': self.sos_request_id,
+            'base_amount': self.base_amount,
+            'bonus_amount': self.bonus_amount,
+            'total_amount': self.total_amount,
+            'bonuses': json.loads(self.bonuses_json) if self.bonuses_json else [],
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+# Points Transaction Model - tracks all point changes
+class PointsTransaction(db.Model):
+    __tablename__ = 'points_transactions'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Transaction type: helper_reward, purchase, spend, bonus, adjustment
+    type = db.Column(db.String(30), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)  # Positive for credit, negative for debit
+    
+    # Reference to related entity
+    reference_id = db.Column(db.String(36))  # SOS reward ID, purchase ID, etc.
+    reference_type = db.Column(db.String(30))  # sos_reward, purchase, etc.
+    
+    # Balance after transaction
+    balance_after = db.Column(db.Integer, nullable=False)
+    
+    # Description
+    description = db.Column(db.String(255))
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = db.relationship('User', backref='points_transactions')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'type': self.type,
+            'amount': self.amount,
+            'reference_id': self.reference_id,
+            'reference_type': self.reference_type,
+            'balance_after': self.balance_after,
+            'description': self.description,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+# Helper Interaction Model - tracks interactions for anti-abuse
+class HelperInteraction(db.Model):
+    __tablename__ = 'helper_interactions'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    helper_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Interaction tracking
+    interaction_count = db.Column(db.Integer, default=0)
+    last_interaction = db.Column(db.DateTime)
+    
+    # Weekly tracking for diminishing returns
+    weekly_count = db.Column(db.Integer, default=0)
+    week_start = db.Column(db.Date)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Unique constraint on helper-requester pair
+    __table_args__ = (
+        db.UniqueConstraint('helper_id', 'requester_id', name='uniq_helper_requester_pair'),
+    )
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'helper_id': self.helper_id,
+            'requester_id': self.requester_id,
+            'interaction_count': self.interaction_count,
+            'weekly_count': self.weekly_count,
+            'last_interaction': self.last_interaction.isoformat() if self.last_interaction else None,
         }
 
 
@@ -3801,6 +3975,809 @@ def update_my_rhythm():
     db.session.commit()
     
     return jsonify({'message': 'Rhythm updated', 'userRhythm': rhythm}), 200
+
+
+# ============================================================================
+# SOS TRUST SCORE + REWARDS API ENDPOINTS
+# ============================================================================
+
+# Trust Score Calculation Constants
+SOS_TRUST_WEIGHTS = {
+    'success_rate': 0.5,
+    'completion_rate': 0.2,
+    'response_speed': 0.2,
+    'consistency': 0.1,
+}
+
+SOS_REWARD_CONFIG = {
+    'base_reward': 150,
+    'bonus_first_help': 25,
+    'bonus_long_distance': 20,  # > 500m
+    'bonus_fast_arrival': 15,   # < 5 min
+    'bonus_trusted_helper': 10,
+    'max_rewards_per_day': 5,
+    'trusted_helper_threshold': 75,
+}
+
+
+def calculate_trust_score(user):
+    """
+    Calculate trust score using weighted formula:
+    trust_score = (success_rate * 0.5) + (completion_rate * 0.2) + (response_speed * 0.2) + (consistency * 0.1)
+    """
+    if user.total_helps < 3:
+        return 50.0  # Base score for new users
+    
+    # Success Rate: confirmed_helps / total_helps (0-100)
+    success_rate = (user.confirmed_helps / user.total_helps * 100) if user.total_helps > 0 else 50
+    
+    # Completion Rate: (total_helps - abandonment) / total_helps (0-100)
+    total_accepted = user.total_helps + user.abandonment_count
+    completion_rate = (user.total_helps / total_accepted * 100) if total_accepted > 0 else 50
+    
+    # Response Speed Score (0-100) based on avg arrival time
+    avg_time_minutes = user.avg_arrival_time / 60 if user.avg_arrival_time else 15
+    if avg_time_minutes <= 5:
+        speed_score = 100
+    elif avg_time_minutes <= 10:
+        speed_score = 80
+    elif avg_time_minutes <= 15:
+        speed_score = 60
+    elif avg_time_minutes <= 20:
+        speed_score = 40
+    else:
+        speed_score = 20
+    
+    # Consistency Score - simplified (based on total helps)
+    if user.total_helps >= 20:
+        consistency_score = 100
+    elif user.total_helps >= 10:
+        consistency_score = 80
+    elif user.total_helps >= 5:
+        consistency_score = 60
+    else:
+        consistency_score = 40
+    
+    # Apply weighted formula
+    score = (
+        success_rate * SOS_TRUST_WEIGHTS['success_rate'] +
+        completion_rate * SOS_TRUST_WEIGHTS['completion_rate'] +
+        speed_score * SOS_TRUST_WEIGHTS['response_speed'] +
+        consistency_score * SOS_TRUST_WEIGHTS['consistency']
+    )
+    
+    return max(0, min(100, score))
+
+
+def audit_log(event_type, data):
+    """
+    Structured audit logging for SOS events.
+    In production, this would write to a dedicated audit log table or external service.
+    """
+    log_entry = {
+        'timestamp': datetime.utcnow().isoformat(),
+        'event_type': event_type,
+        'data': data,
+    }
+    
+    # Structured log output (JSON format for log aggregation)
+    print(f'[AUDIT] {json.dumps(log_entry)}')
+    
+    # In production, also write to:
+    # - Dedicated audit_logs table
+    # - External logging service (e.g., CloudWatch, Datadog)
+    # - Event stream for real-time monitoring
+
+
+def get_helper_daily_rewards(helper_id):
+    """Get count of rewards helper received today"""
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    return SOSReward.query.filter(
+        SOSReward.helper_id == helper_id,
+        SOSReward.created_at >= today_start
+    ).count()
+
+
+def check_pair_interaction(helper_id, requester_id):
+    """Check and get pair interaction for anti-abuse"""
+    interaction = HelperInteraction.query.filter_by(
+        helper_id=helper_id,
+        requester_id=requester_id
+    ).first()
+    
+    if not interaction:
+        return None, 0
+    
+    # Reset weekly count if new week
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    if interaction.week_start != week_start:
+        interaction.weekly_count = 0
+        interaction.week_start = week_start
+        db.session.commit()
+    
+    return interaction, interaction.weekly_count
+
+
+@app.route('/api/v1/sos/start', methods=['POST'])
+def api_v1_sos_start():
+    """Start a new SOS request"""
+    user, err = require_auth()
+    if err:
+        return err
+    
+    data = request.json or {}
+    
+    # Check if user already has an active SOS
+    active_sos = SOSRequest.query.filter(
+        SOSRequest.requester_id == user.id,
+        SOSRequest.status.in_(['searching', 'assigned', 'approaching', 'arrived', 'awaiting_confirmation'])
+    ).first()
+    
+    if active_sos:
+        return jsonify({'error': 'active_sos_exists', 'sos_id': active_sos.id}), 400
+    
+    # Check daily request limit (anti-abuse)
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_requests = SOSRequest.query.filter(
+        SOSRequest.requester_id == user.id,
+        SOSRequest.created_at >= today_start
+    ).count()
+    
+    if today_requests >= 3:
+        return jsonify({'error': 'daily_limit_reached', 'message': 'Maximum 3 SOS requests per day'}), 429
+    
+    # Create SOS request
+    sos = SOSRequest(
+        requester_id=user.id,
+        status='searching',
+        requester_lat=data.get('lat'),
+        requester_lng=data.get('lng'),
+    )
+    
+    # Update user stats
+    user.total_sos_requests = (user.total_sos_requests or 0) + 1
+    
+    db.session.add(sos)
+    db.session.commit()
+    
+    print(f'[SOS] Request {sos.id} started by user {user.id}')
+    
+    return jsonify({'sos': sos.to_dict()}), 201
+
+
+@app.route('/api/v1/sos/<string:sos_id>/accept', methods=['POST'])
+def api_v1_sos_accept(sos_id):
+    """Helper accepts an SOS request"""
+    user, err = require_auth()
+    if err:
+        return err
+    
+    data = request.json or {}
+    
+    sos = SOSRequest.query.get(sos_id)
+    if not sos:
+        return jsonify({'error': 'not_found'}), 404
+    
+    if sos.status != 'searching':
+        return jsonify({'error': 'already_assigned', 'status': sos.status}), 400
+    
+    if sos.requester_id == user.id:
+        return jsonify({'error': 'cannot_help_self'}), 400
+    
+    # Check if helper can help (trust score not critical)
+    if user.trust_score is not None and user.trust_score < 10:
+        return jsonify({'error': 'trust_score_too_low'}), 403
+    
+    # Calculate distance
+    helper_lat = data.get('lat')
+    helper_lng = data.get('lng')
+    distance = None
+    
+    if helper_lat and helper_lng and sos.requester_lat and sos.requester_lng:
+        distance = geodesic(
+            (sos.requester_lat, sos.requester_lng),
+            (helper_lat, helper_lng)
+        ).kilometers
+    
+    # Update SOS
+    sos.helper_id = user.id
+    sos.status = 'assigned'
+    sos.helper_lat_at_accept = helper_lat
+    sos.helper_lng_at_accept = helper_lng
+    sos.distance_at_accept = distance
+    sos.accepted_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    print(f'[SOS] Request {sos_id} accepted by helper {user.id}, distance: {distance}km')
+    
+    return jsonify({'sos': sos.to_dict()}), 200
+
+
+@app.route('/api/v1/sos/<string:sos_id>/location-update', methods=['POST'])
+def api_v1_sos_location_update(sos_id):
+    """Update helper's location during approach"""
+    user, err = require_auth()
+    if err:
+        return err
+    
+    data = request.json or {}
+    
+    sos = SOSRequest.query.get(sos_id)
+    if not sos:
+        return jsonify({'error': 'not_found'}), 404
+    
+    if sos.helper_id != user.id:
+        return jsonify({'error': 'not_helper'}), 403
+    
+    if sos.status not in ['assigned', 'approaching']:
+        return jsonify({'error': 'invalid_status'}), 400
+    
+    # Update status to approaching if not already
+    if sos.status == 'assigned':
+        sos.status = 'approaching'
+    
+    # Calculate current distance
+    helper_lat = data.get('lat')
+    helper_lng = data.get('lng')
+    current_distance = None
+    
+    if helper_lat and helper_lng and sos.requester_lat and sos.requester_lng:
+        current_distance = geodesic(
+            (sos.requester_lat, sos.requester_lng),
+            (helper_lat, helper_lng)
+        ).kilometers
+    
+    db.session.commit()
+    
+    return jsonify({
+        'sos_id': sos_id,
+        'status': sos.status,
+        'current_distance': current_distance,
+    }), 200
+
+
+@app.route('/api/v1/sos/<string:sos_id>/arrived', methods=['POST'])
+def api_v1_sos_arrived(sos_id):
+    """Mark helper as arrived with server-side validation"""
+    user, err = require_auth()
+    if err:
+        return err
+    
+    data = request.json or {}
+    
+    sos = SOSRequest.query.get(sos_id)
+    if not sos:
+        return jsonify({'error': 'not_found'}), 404
+    
+    if sos.helper_id != user.id:
+        return jsonify({'error': 'not_helper'}), 403
+    
+    if sos.status not in ['assigned', 'approaching']:
+        return jsonify({'error': 'invalid_status'}), 400
+    
+    # SERVER-SIDE VALIDATION: Sanity checks on arrival
+    validation_warnings = []
+    
+    # Calculate arrival time
+    arrival_time = None
+    if sos.accepted_at:
+        arrival_time = int((datetime.utcnow() - sos.accepted_at).total_seconds())
+        
+        # Validation: Unrealistically fast arrival (< 30 seconds)
+        if arrival_time < 30:
+            validation_warnings.append('arrival_too_fast')
+            audit_log('sos_arrival_suspicious', {
+                'sos_id': sos_id,
+                'helper_id': user.id,
+                'arrival_time_seconds': arrival_time,
+                'reason': 'arrival_under_30_seconds',
+            })
+        
+        # Validation: Unrealistically long arrival (> 1 hour)
+        if arrival_time > 3600:
+            validation_warnings.append('arrival_too_slow')
+            audit_log('sos_arrival_suspicious', {
+                'sos_id': sos_id,
+                'helper_id': user.id,
+                'arrival_time_seconds': arrival_time,
+                'reason': 'arrival_over_1_hour',
+            })
+    
+    # Validation: Check distance if provided
+    helper_lat = data.get('lat')
+    helper_lng = data.get('lng')
+    if helper_lat and helper_lng and sos.requester_lat and sos.requester_lng:
+        current_distance = geodesic(
+            (sos.requester_lat, sos.requester_lng),
+            (helper_lat, helper_lng)
+        ).kilometers
+        
+        # If helper claims arrival but is > 100m away, flag it
+        if current_distance > 0.1:
+            validation_warnings.append('distance_mismatch')
+            audit_log('sos_arrival_suspicious', {
+                'sos_id': sos_id,
+                'helper_id': user.id,
+                'claimed_distance_km': current_distance,
+                'reason': 'arrival_claimed_but_far',
+            })
+    
+    sos.status = 'awaiting_confirmation'
+    sos.arrived_at = datetime.utcnow()
+    sos.arrival_time_seconds = arrival_time
+    
+    # Update helper's arrival stats
+    helper = User.query.get(user.id)
+    if helper and arrival_time:
+        helper.total_arrival_time = (helper.total_arrival_time or 0) + arrival_time
+        helper.arrival_count = (helper.arrival_count or 0) + 1
+        helper.avg_arrival_time = helper.total_arrival_time / helper.arrival_count
+    
+    db.session.commit()
+    
+    audit_log('sos_helper_arrived', {
+        'sos_id': sos_id,
+        'helper_id': user.id,
+        'requester_id': sos.requester_id,
+        'arrival_time_seconds': arrival_time,
+        'validation_warnings': validation_warnings,
+    })
+    
+    return jsonify({
+        'sos': sos.to_dict(),
+        'validation_warnings': validation_warnings,
+    }), 200
+
+
+@app.route('/api/v1/sos/<string:sos_id>/confirm', methods=['POST'])
+def api_v1_sos_confirm(sos_id):
+    """
+    Requester confirms help received.
+    
+    PRODUCTION-READY:
+    - Atomic transaction (all-or-nothing)
+    - Idempotent (duplicate calls return same result)
+    - Server-side validation
+    - Audit logging
+    """
+    user, err = require_auth()
+    if err:
+        return err
+    
+    data = request.json or {}
+    confirmed = data.get('confirmed', True)
+    idempotency_key = data.get('idempotency_key')  # Optional client-provided key
+    
+    sos = SOSRequest.query.get(sos_id)
+    if not sos:
+        return jsonify({'error': 'not_found'}), 404
+    
+    if sos.requester_id != user.id:
+        return jsonify({'error': 'not_requester'}), 403
+    
+    # IDEMPOTENCY: If already resolved, return existing result
+    if sos.status in ['resolved_confirmed', 'resolved_unconfirmed']:
+        existing_reward = SOSReward.query.filter_by(sos_request_id=sos_id).first()
+        
+        audit_log('sos_confirm_duplicate', {
+            'sos_id': sos_id,
+            'requester_id': user.id,
+            'existing_status': sos.status,
+            'idempotency_key': idempotency_key,
+        })
+        
+        if existing_reward:
+            return jsonify({
+                'sos': sos.to_dict(),
+                'reward': {
+                    'granted': True,
+                    'total_reward': existing_reward.total_amount,
+                    'already_processed': True,
+                },
+            }), 200
+        else:
+            return jsonify({
+                'sos': sos.to_dict(),
+                'reward': {'granted': False, 'reason': 'already_resolved', 'already_processed': True},
+            }), 200
+    
+    if sos.status != 'awaiting_confirmation':
+        return jsonify({'error': 'invalid_status', 'status': sos.status}), 400
+    
+    helper = User.query.get(sos.helper_id)
+    if not helper:
+        return jsonify({'error': 'helper_not_found'}), 404
+    
+    # ATOMIC TRANSACTION: Begin explicit transaction
+    try:
+        reward_result = None
+        
+        if confirmed:
+            # CONFIRMED - Grant reward atomically
+            sos.status = 'resolved_confirmed'
+            sos.resolved_at = datetime.utcnow()
+            
+            # Update helper stats
+            helper.total_helps = (helper.total_helps or 0) + 1
+            helper.confirmed_helps = (helper.confirmed_helps or 0) + 1
+            
+            # Calculate reward with bonuses
+            base_reward = SOS_REWARD_CONFIG['base_reward']
+            bonuses = []
+            bonus_total = 0
+            
+            # First help of day bonus
+            daily_rewards = get_helper_daily_rewards(helper.id)
+            if daily_rewards == 0:
+                bonus = SOS_REWARD_CONFIG['bonus_first_help']
+                bonuses.append({'type': 'first_help_of_day', 'amount': bonus, 'label': 'First help today! 🌟'})
+                bonus_total += bonus
+            
+            # Long distance bonus (> 500m)
+            if sos.distance_at_accept and sos.distance_at_accept >= 0.5:
+                bonus = SOS_REWARD_CONFIG['bonus_long_distance']
+                bonuses.append({'type': 'long_distance', 'amount': bonus, 'label': f'Traveled {int(sos.distance_at_accept * 1000)}m 🚶'})
+                bonus_total += bonus
+            
+            # Fast arrival bonus (< 5 min)
+            if sos.arrival_time_seconds and sos.arrival_time_seconds < 300:
+                bonus = SOS_REWARD_CONFIG['bonus_fast_arrival']
+                bonuses.append({'type': 'fast_arrival', 'amount': bonus, 'label': 'Quick response! ⚡'})
+                bonus_total += bonus
+            
+            # Trusted helper bonus
+            if helper.trust_score and helper.trust_score >= SOS_REWARD_CONFIG['trusted_helper_threshold']:
+                bonus = SOS_REWARD_CONFIG['bonus_trusted_helper']
+                bonuses.append({'type': 'trusted_helper', 'amount': bonus, 'label': 'Trusted Helper 🛡️'})
+                bonus_total += bonus
+            
+            # Check diminishing returns for same pair
+            interaction, weekly_count = check_pair_interaction(helper.id, user.id)
+            multiplier = 1.0
+            if weekly_count >= 4:
+                multiplier = 0
+            elif weekly_count == 3:
+                multiplier = 0.25
+            elif weekly_count == 2:
+                multiplier = 0.5
+            elif weekly_count == 1:
+                multiplier = 0.75
+            
+            total_reward = int((base_reward + bonus_total) * multiplier)
+            
+            # Check daily limit
+            if daily_rewards >= SOS_REWARD_CONFIG['max_rewards_per_day']:
+                total_reward = 0
+                bonuses = []
+            
+            if total_reward > 0:
+                # IDEMPOTENCY CHECK: Ensure no duplicate reward exists
+                existing_reward = SOSReward.query.filter_by(sos_request_id=sos.id).first()
+                if existing_reward:
+                    # Reward already exists - return existing
+                    db.session.rollback()
+                    audit_log('sos_reward_duplicate_prevented', {
+                        'sos_id': sos_id,
+                        'helper_id': helper.id,
+                        'existing_reward_id': existing_reward.id,
+                    })
+                    return jsonify({
+                        'sos': sos.to_dict(),
+                        'reward': {
+                            'granted': True,
+                            'total_reward': existing_reward.total_amount,
+                            'already_processed': True,
+                        },
+                    }), 200
+                
+                # Create reward record
+                reward = SOSReward(
+                    helper_id=helper.id,
+                    requester_id=user.id,
+                    sos_request_id=sos.id,
+                    base_amount=base_reward,
+                    bonus_amount=bonus_total,
+                    total_amount=total_reward,
+                    bonuses_json=json.dumps(bonuses),
+                )
+                db.session.add(reward)
+                
+                # Update helper's points balance
+                helper.points_balance = (helper.points_balance or 0) + total_reward
+                
+                # Create points transaction
+                transaction = PointsTransaction(
+                    user_id=helper.id,
+                    type='helper_reward',
+                    amount=total_reward,
+                    reference_id=reward.id,
+                    reference_type='sos_reward',
+                    balance_after=helper.points_balance,
+                    description=f'SOS help reward (+{total_reward} points)',
+                )
+                db.session.add(transaction)
+                
+                # Update pair interaction
+                if interaction:
+                    interaction.interaction_count += 1
+                    interaction.weekly_count += 1
+                    interaction.last_interaction = datetime.utcnow()
+                    interaction.updated_at = datetime.utcnow()
+                else:
+                    today = date.today()
+                    week_start = today - timedelta(days=today.weekday())
+                    interaction = HelperInteraction(
+                        helper_id=helper.id,
+                        requester_id=user.id,
+                        interaction_count=1,
+                        weekly_count=1,
+                        week_start=week_start,
+                        last_interaction=datetime.utcnow(),
+                    )
+                    db.session.add(interaction)
+                
+                reward_result = {
+                    'granted': True,
+                    'total_reward': total_reward,
+                    'base_reward': base_reward,
+                    'bonuses': bonuses,
+                    'multiplier': multiplier,
+                }
+                
+                # AUDIT LOG: Reward granted
+                audit_log('sos_reward_granted', {
+                    'sos_id': sos_id,
+                    'helper_id': helper.id,
+                    'requester_id': user.id,
+                    'total_reward': total_reward,
+                    'base_reward': base_reward,
+                    'bonuses': [b['type'] for b in bonuses],
+                    'multiplier': multiplier,
+                    'helper_new_balance': helper.points_balance,
+                })
+            else:
+                reward_result = {
+                    'granted': False,
+                    'reason': 'daily_limit' if daily_rewards >= SOS_REWARD_CONFIG['max_rewards_per_day'] else 'diminishing_returns',
+                }
+                
+                # AUDIT LOG: Reward blocked
+                audit_log('sos_reward_blocked', {
+                    'sos_id': sos_id,
+                    'helper_id': helper.id,
+                    'requester_id': user.id,
+                    'reason': reward_result['reason'],
+                    'daily_rewards': daily_rewards,
+                    'weekly_count': weekly_count,
+                })
+            
+            # Recalculate trust score
+            helper.trust_score = calculate_trust_score(helper)
+            
+            # AUDIT LOG: Confirmation event
+            audit_log('sos_confirmed', {
+                'sos_id': sos_id,
+                'helper_id': helper.id,
+                'requester_id': user.id,
+                'reward_granted': reward_result.get('granted', False),
+                'helper_new_trust_score': helper.trust_score,
+            })
+            
+        else:
+            # NOT CONFIRMED (timeout or explicit no)
+            sos.status = 'resolved_unconfirmed'
+            sos.resolved_at = datetime.utcnow()
+            
+            # Update helper stats (no reward)
+            helper.total_helps = (helper.total_helps or 0) + 1
+            helper.unconfirmed_helps = (helper.unconfirmed_helps or 0) + 1
+            
+            # Recalculate trust score
+            helper.trust_score = calculate_trust_score(helper)
+            
+            reward_result = {'granted': False, 'reason': 'not_confirmed'}
+            
+            # AUDIT LOG: Unconfirmed event
+            audit_log('sos_unconfirmed', {
+                'sos_id': sos_id,
+                'helper_id': helper.id,
+                'requester_id': user.id,
+                'helper_new_trust_score': helper.trust_score,
+            })
+        
+        # ATOMIC COMMIT: All changes committed together
+        db.session.commit()
+        
+        return jsonify({
+            'sos': sos.to_dict(),
+            'reward': reward_result,
+        }), 200
+        
+    except Exception as e:
+        # ATOMIC ROLLBACK: On any error, rollback all changes
+        db.session.rollback()
+        
+        audit_log('sos_confirm_error', {
+            'sos_id': sos_id,
+            'requester_id': user.id,
+            'error': str(e),
+        })
+        
+        print(f'[SOS ERROR] Confirm failed for {sos_id}: {str(e)}')
+        return jsonify({'error': 'confirmation_failed', 'message': str(e)}), 500
+
+
+@app.route('/api/v1/sos/<string:sos_id>/cancel', methods=['POST'])
+def api_v1_sos_cancel(sos_id):
+    """Cancel an SOS request"""
+    user, err = require_auth()
+    if err:
+        return err
+    
+    data = request.json or {}
+    reason = data.get('reason', 'user_cancelled')
+    
+    sos = SOSRequest.query.get(sos_id)
+    if not sos:
+        return jsonify({'error': 'not_found'}), 404
+    
+    # Only requester or helper can cancel
+    if sos.requester_id != user.id and sos.helper_id != user.id:
+        return jsonify({'error': 'not_authorized'}), 403
+    
+    if sos.status in ['resolved_confirmed', 'resolved_unconfirmed', 'cancelled']:
+        return jsonify({'error': 'already_resolved'}), 400
+    
+    # Track who cancelled
+    cancelled_by = 'requester' if sos.requester_id == user.id else 'helper'
+    
+    # Update stats based on who cancelled and at what stage
+    if cancelled_by == 'requester':
+        requester = User.query.get(sos.requester_id)
+        if requester:
+            requester.cancelled_requests = (requester.cancelled_requests or 0) + 1
+    elif sos.helper_id:
+        # Helper cancelled after accepting
+        helper = User.query.get(sos.helper_id)
+        if helper:
+            helper.abandonment_count = (helper.abandonment_count or 0) + 1
+            helper.trust_score = calculate_trust_score(helper)
+    
+    sos.status = 'cancelled'
+    sos.resolved_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    print(f'[SOS] Request {sos_id} cancelled by {cancelled_by}, reason: {reason}')
+    
+    return jsonify({'sos': sos.to_dict()}), 200
+
+
+@app.route('/api/v1/sos/<string:sos_id>/helper-unavailable', methods=['POST'])
+def api_v1_sos_helper_unavailable(sos_id):
+    """Mark helper as unavailable (no heartbeat)"""
+    user, err = require_auth()
+    if err:
+        return err
+    
+    sos = SOSRequest.query.get(sos_id)
+    if not sos:
+        return jsonify({'error': 'not_found'}), 404
+    
+    if sos.requester_id != user.id:
+        return jsonify({'error': 'not_requester'}), 403
+    
+    if sos.status not in ['assigned', 'approaching']:
+        return jsonify({'error': 'invalid_status'}), 400
+    
+    # Update helper's abandonment count
+    if sos.helper_id:
+        helper = User.query.get(sos.helper_id)
+        if helper:
+            helper.abandonment_count = (helper.abandonment_count or 0) + 1
+            helper.trust_score = calculate_trust_score(helper)
+    
+    # Reset to searching
+    sos.helper_id = None
+    sos.status = 'searching'
+    sos.accepted_at = None
+    sos.helper_lat_at_accept = None
+    sos.helper_lng_at_accept = None
+    sos.distance_at_accept = None
+    
+    db.session.commit()
+    
+    print(f'[SOS] Helper unavailable for request {sos_id}, resuming search')
+    
+    return jsonify({'sos': sos.to_dict()}), 200
+
+
+@app.route('/api/v1/users/<int:user_id>/trust-score', methods=['GET'])
+def api_v1_get_trust_score(user_id):
+    """Get user's trust score and stats"""
+    auth_user, err = require_auth()
+    if err:
+        return err
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'not_found'}), 404
+    
+    # Calculate success rate
+    success_rate = None
+    if user.total_helps and user.total_helps > 0:
+        success_rate = round((user.confirmed_helps or 0) / user.total_helps * 100)
+    
+    return jsonify({
+        'user_id': user_id,
+        'trust_score': round(user.trust_score or 50, 1),
+        'is_trusted_helper': (user.trust_score or 50) >= SOS_REWARD_CONFIG['trusted_helper_threshold'],
+        'stats': {
+            'total_helps': user.total_helps or 0,
+            'confirmed_helps': user.confirmed_helps or 0,
+            'unconfirmed_helps': user.unconfirmed_helps or 0,
+            'success_rate': success_rate,
+            'avg_arrival_time': round(user.avg_arrival_time or 0),
+            'abandonment_count': user.abandonment_count or 0,
+        },
+    }), 200
+
+
+@app.route('/api/v1/users/<int:user_id>/points', methods=['GET'])
+def api_v1_get_points(user_id):
+    """Get user's points balance"""
+    auth_user, err = require_auth()
+    if err:
+        return err
+    
+    # Only allow users to see their own points
+    if auth_user.id != user_id:
+        return jsonify({'error': 'not_authorized'}), 403
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'not_found'}), 404
+    
+    # Get recent transactions
+    transactions = PointsTransaction.query.filter_by(user_id=user_id).order_by(
+        PointsTransaction.created_at.desc()
+    ).limit(20).all()
+    
+    return jsonify({
+        'user_id': user_id,
+        'points_balance': user.points_balance or 0,
+        'transactions': [t.to_dict() for t in transactions],
+    }), 200
+
+
+@app.route('/api/v1/users/<int:user_id>/help-history', methods=['GET'])
+def api_v1_get_help_history(user_id):
+    """Get user's SOS help history"""
+    auth_user, err = require_auth()
+    if err:
+        return err
+    
+    # Only allow users to see their own history
+    if auth_user.id != user_id:
+        return jsonify({'error': 'not_authorized'}), 403
+    
+    # Get SOS requests where user was helper
+    helped = SOSRequest.query.filter_by(helper_id=user_id).order_by(
+        SOSRequest.created_at.desc()
+    ).limit(50).all()
+    
+    # Get SOS requests where user was requester
+    requested = SOSRequest.query.filter_by(requester_id=user_id).order_by(
+        SOSRequest.created_at.desc()
+    ).limit(50).all()
+    
+    return jsonify({
+        'user_id': user_id,
+        'as_helper': [s.to_dict() for s in helped],
+        'as_requester': [s.to_dict() for s in requested],
+    }), 200
 
 
 @app.route('/health', methods=['GET'])

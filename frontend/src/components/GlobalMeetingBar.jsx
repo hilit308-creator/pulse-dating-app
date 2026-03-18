@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, Tooltip } from '@mui/material';
+import { Box, Typography, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Shield, HelpCircle, User, Settings, ChevronRight } from 'lucide-react';
 import { useMeeting, MEETING_STATE, SOS_STATE } from '../context/MeetingContext';
@@ -8,6 +8,7 @@ import MeetingStatusIcon from './MeetingStatusIcon';
 function GlobalMeetingBar() {
   const navigate = useNavigate();
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showEndMeetingPopover, setShowEndMeetingPopover] = useState(false);
   const {
     meetingState,
     meetingWith,
@@ -17,6 +18,7 @@ function GlobalMeetingBar() {
     sosMessage,
     triggerSOS,
     cancelSOS,
+    endMeeting,
   } = useMeeting();
 
   // Calculate meeting duration
@@ -54,6 +56,7 @@ function GlobalMeetingBar() {
 
   return (
     <Box
+      data-testid="global-meeting-bar"
       sx={{
         position: 'fixed',
         left: 0,
@@ -117,52 +120,78 @@ function GlobalMeetingBar() {
         >
           {/* Meeting Status Icon with connecting line states */}
           <MeetingStatusIcon sosState={sosState} size={32} />
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box>
               <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
                 {meetingWith?.name && `with ${meetingWith.name}`}
               </Typography>
-              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.NONE && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'rgba(255,255,255,0.2)', px: 1, py: 0.25, borderRadius: 1 }}>
+              <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {meetingState === MEETING_STATE.ENDING && 'Meeting ended'}
+                {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.NONE && 'Tap to view'}
+                {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.SEARCHING && 'Searching for nearby help'}
+                {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.HELPER_FOUND && 'Someone is on the way'}
+                {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.HELPER_APPROACHING && 'Helper approaching'}
+                {sosState === SOS_STATE.HELPER_ARRIVED && 'Helper arrived'}
+                {sosHelperDistance !== null && sosState !== SOS_STATE.NONE && sosState !== SOS_STATE.SEARCHING && 
+                  ` • ${sosHelperDistance < 0.1 ? '<100m' : `${sosHelperDistance.toFixed(1)}km`}`}
+              </Typography>
+            </Box>
+            {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.NONE && (
+              <Box 
+                sx={{ 
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', 
+                  bgcolor: showEndMeetingPopover ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.2)', 
+                  px: 1.5, py: 0.5, borderRadius: 1.5,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: 'rgba(239,68,68,0.2)' },
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Direct click ends the meeting
+                  endMeeting();
+                  navigate('/home');
+                }}
+                onMouseEnter={() => {
+                  setShowEndMeetingPopover(true);
+                }}
+                onMouseLeave={() => {
+                  setShowEndMeetingPopover(false);
+                }}
+              >
+                {/* LIVE/END status row */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <Box sx={{ 
                     width: 8, 
                     height: 8, 
                     borderRadius: '50%', 
-                    bgcolor: '#10B981', 
-                    boxShadow: '0 0 6px #10B981',
+                    bgcolor: showEndMeetingPopover ? '#ef4444' : '#10B981', 
+                    boxShadow: showEndMeetingPopover ? '0 0 6px #ef4444' : '0 0 6px #10B981',
                     animation: 'pulse 1.5s ease-in-out infinite',
                     '@keyframes pulse': {
                       '0%, 100%': { opacity: 1 },
                       '50%': { opacity: 0.5 },
                     },
                   }} />
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#10B981', fontSize: '0.65rem' }}>
-                    LIVE
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      fontWeight: 800, 
-                      fontFamily: 'monospace',
-                      fontSize: '0.85rem',
-                      color: '#fff',
-                    }}
-                  >
-                    {meetingDuration}
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: showEndMeetingPopover ? '#fca5a5' : '#10B981', fontSize: '0.7rem' }}>
+                    {showEndMeetingPopover ? 'END' : 'LIVE'}
                   </Typography>
                 </Box>
-              )}
-            </Box>
-            <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              {meetingState === MEETING_STATE.ENDING && 'Meeting ended'}
-              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.NONE && 'Tap to view'}
-              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.SEARCHING && 'Finding helper...'}
-              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.HELPER_FOUND && 'Helper found'}
-              {meetingState === MEETING_STATE.ACTIVE && sosState === SOS_STATE.HELPER_APPROACHING && 'Helper approaching'}
-              {sosState === SOS_STATE.HELPER_ARRIVED && 'Helper arrived'}
-              {sosHelperDistance !== null && sosState !== SOS_STATE.NONE && 
-                ` • ${sosHelperDistance < 0.1 ? '<100m' : `${sosHelperDistance.toFixed(1)}km`}`}
-            </Typography>
+                {/* Timer below */}
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontWeight: 800, 
+                    fontFamily: 'monospace',
+                    fontSize: '0.85rem',
+                    color: '#fff',
+                    lineHeight: 1,
+                  }}
+                >
+                  {meetingDuration}
+                </Typography>
+              </Box>
+            )}
           </Box>
           {/* Arrow indicator */}
           <ChevronRight size={16} style={{ opacity: 0.7 }} />
@@ -176,6 +205,7 @@ function GlobalMeetingBar() {
             size="small"
             variant="outlined"
             onClick={cancelSOS}
+            data-testid="global-cancel-sos-button"
             sx={{ 
               color: '#fff', 
               borderColor: 'rgba(255,255,255,0.5)',
@@ -192,6 +222,7 @@ function GlobalMeetingBar() {
         {/* SOS Button - With text label */}
         <Box
           onClick={sosState === SOS_STATE.NONE ? triggerSOS : undefined}
+          data-testid="global-sos-button"
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -304,6 +335,7 @@ function GlobalMeetingBar() {
         </DialogActions>
       </Dialog>
 
+      
       {/* SOS Message Toast */}
       <Snackbar
         open={!!sosMessage}

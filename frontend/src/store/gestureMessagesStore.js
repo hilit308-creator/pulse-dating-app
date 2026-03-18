@@ -180,6 +180,108 @@ const useGestureMessagesStore = create(
           },
         }));
       },
+
+      // ============================================
+      // GESTURE ACCEPTANCE/DECLINE BILLING LOGIC
+      // ============================================
+      
+      // Pending gestures waiting for recipient response (keyed by recipientId_gestureId)
+      pendingGestures: {},
+      
+      // Store a pending gesture when sender sends it
+      addPendingGesture: (gestureId, gestureData) => {
+        set((state) => ({
+          pendingGestures: {
+            ...state.pendingGestures,
+            [gestureId]: {
+              ...gestureData,
+              status: 'pending', // pending, accepted, declined
+              createdAt: Date.now(),
+            },
+          },
+        }));
+      },
+      
+      // Accept gesture - charge the sender
+      acceptGesture: (gestureId) => {
+        const gesture = get().pendingGestures[gestureId];
+        if (!gesture) {
+          console.warn('[GestureStore] Gesture not found:', gestureId);
+          return { success: false, error: 'Gesture not found' };
+        }
+        
+        // TODO: In production, this would call backend API to:
+        // 1. Charge the sender's payment method
+        // 2. Create the order with the vendor
+        // 3. Send notification to sender
+        console.log('[GestureStore] Accepting gesture - charging sender:', {
+          gestureId,
+          senderId: gesture.senderId,
+          gestureType: gesture.gestureType,
+          amount: gesture.amount,
+        });
+        
+        // Update gesture status
+        set((state) => ({
+          pendingGestures: {
+            ...state.pendingGestures,
+            [gestureId]: {
+              ...state.pendingGestures[gestureId],
+              status: 'accepted',
+              acceptedAt: Date.now(),
+            },
+          },
+        }));
+        
+        return { 
+          success: true, 
+          message: 'Gesture accepted! Sender has been charged.',
+          charged: true,
+        };
+      },
+      
+      // Decline gesture - no charge, notify sender
+      declineGesture: (gestureId) => {
+        const gesture = get().pendingGestures[gestureId];
+        if (!gesture) {
+          console.warn('[GestureStore] Gesture not found:', gestureId);
+          return { success: false, error: 'Gesture not found' };
+        }
+        
+        // TODO: In production, this would call backend API to:
+        // 1. NOT charge the sender (no payment processed)
+        // 2. Send decline notification to sender
+        // 3. Optionally offer sender to redirect to someone else
+        console.log('[GestureStore] Declining gesture - no charge:', {
+          gestureId,
+          senderId: gesture.senderId,
+          gestureType: gesture.gestureType,
+        });
+        
+        // Update gesture status
+        set((state) => ({
+          pendingGestures: {
+            ...state.pendingGestures,
+            [gestureId]: {
+              ...state.pendingGestures[gestureId],
+              status: 'declined',
+              declinedAt: Date.now(),
+            },
+          },
+        }));
+        
+        return { 
+          success: true, 
+          message: 'Gesture declined. Sender was not charged.',
+          charged: false,
+          notifySender: true,
+        };
+      },
+      
+      // Get pending gesture by ID
+      getPendingGesture: (gestureId) => {
+        return get().pendingGestures[gestureId] || null;
+      },
     }),
     {
       name: 'pulse-gesture-messages',

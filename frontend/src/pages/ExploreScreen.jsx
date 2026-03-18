@@ -1598,7 +1598,7 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
               fontSize: '0.65rem',
             }}
           />
-          {/* Toggle to accept/decline gestures */}
+          {/* Toggle to accept/decline gestures - combined gesture icons */}
           <Tooltip 
             title={acceptsGestures 
               ? "You're accepting Sweet Gestures. Click to disable receiving gestures from others." 
@@ -1611,16 +1611,47 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
               onClick={onToggleAcceptsGestures}
               size="small"
               sx={{
-                width: 32,
-                height: 32,
-                bgcolor: acceptsGestures ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                color: acceptsGestures ? '#22c55e' : '#ef4444',
+                width: 36,
+                height: 36,
+                borderRadius: '10px',
+                bgcolor: acceptsGestures ? 'rgba(108, 92, 231, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                border: acceptsGestures ? '1.5px solid rgba(108, 92, 231, 0.3)' : '1.5px solid rgba(239, 68, 68, 0.3)',
                 '&:hover': {
-                  bgcolor: acceptsGestures ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                  bgcolor: acceptsGestures ? 'rgba(108, 92, 231, 0.2)' : 'rgba(239, 68, 68, 0.2)',
                 },
+                p: 0,
+                overflow: 'hidden',
               }}
             >
-              {acceptsGestures ? <Bell size={16} /> : <BellOff size={16} />}
+              {/* 2x2 grid of gesture icons with diagonal line when disabled */}
+              <Box sx={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '2px',
+                p: '4px',
+                opacity: acceptsGestures ? 1 : 0.5,
+                position: 'relative',
+              }}>
+                <Coffee size={12} color={acceptsGestures ? '#6C5CE7' : '#ef4444'} />
+                <Flower2 size={12} color={acceptsGestures ? '#6C5CE7' : '#ef4444'} />
+                <Gift size={12} color={acceptsGestures ? '#6C5CE7' : '#ef4444'} />
+                <MessageCircle size={12} color={acceptsGestures ? '#6C5CE7' : '#ef4444'} />
+                {/* Diagonal strikethrough line when disabled */}
+                {!acceptsGestures && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      width: '140%',
+                      height: '2px',
+                      bgcolor: '#ef4444',
+                      transform: 'translate(-50%, -50%) rotate(-45deg)',
+                      borderRadius: '1px',
+                    }}
+                  />
+                )}
+              </Box>
             </IconButton>
           </Tooltip>
         </Box>
@@ -1703,13 +1734,15 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
                 {GESTURE_TYPES.map((gesture) => {
                   const Icon = gesture.icon;
                   const isMain = gesture.id === 'coffee';
+                  const isMessage = gesture.id === 'hi'; // Message/Say Hi is always available
                   const isSent = Boolean(sentGestures[person.id]?.[gesture.id]);
                   const personAcceptsGestures = person.acceptsGestures !== false;
-                  const isDisabled = isSent || !personAcceptsGestures;
+                  // Message is always enabled, other gestures respect the disabled setting
+                  const isDisabled = isMessage ? isSent : (isSent || !personAcceptsGestures);
                   
                   // Determine tooltip text
                   const getTooltipText = () => {
-                    if (!personAcceptsGestures) {
+                    if (!personAcceptsGestures && !isMessage) {
                       return `${person.name} has disabled Sweet Gestures`;
                     }
                     if (isSent) {
@@ -1741,21 +1774,21 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
                               height: isMain ? 44 : 34,
                               borderRadius: isMain ? '12px' : '10px',
                               background: isMain 
-                                ? (personAcceptsGestures ? gesture.gradient : '#e2e8f0') 
+                                ? ((personAcceptsGestures || isMessage) ? gesture.gradient : '#e2e8f0') 
                                 : 'transparent',
                               border: isMain ? 'none' : '1.5px solid #e2e8f0',
-                              boxShadow: isMain && personAcceptsGestures ? `0 4px 16px ${gesture.shadowColor}` : 'none',
+                              boxShadow: isMain && (personAcceptsGestures || isMessage) ? `0 4px 16px ${gesture.shadowColor}` : 'none',
                               opacity: isDisabled ? 0.5 : 1,
                               transition: 'all 0.3s ease',
                               '&:hover': {
                                 background: isMain 
-                                  ? (personAcceptsGestures ? gesture.gradient : '#e2e8f0')
+                                  ? ((personAcceptsGestures || isMessage) ? gesture.gradient : '#e2e8f0')
                                   : 'rgba(108,92,231,0.08)',
                                 borderColor: isMain ? 'transparent' : '#6C5CE7',
                               },
                               '&.Mui-disabled': {
                                 background: isMain 
-                                  ? (personAcceptsGestures ? gesture.gradient : '#e2e8f0')
+                                  ? ((personAcceptsGestures || isMessage) ? gesture.gradient : '#e2e8f0')
                                   : 'transparent',
                                 border: isMain ? 'none' : '1.5px solid #e2e8f0',
                                 opacity: 0.5,
@@ -1764,7 +1797,7 @@ function SweetGesturesSection({ people, onSendGesture, onSeeMore, sentGestures =
                           >
                             <Icon 
                               size={isMain ? 18 : 14} 
-                              color={isMain && personAcceptsGestures ? '#fff' : '#94a3b8'} 
+                              color={(isMain && (personAcceptsGestures || isMessage)) ? '#fff' : '#94a3b8'} 
                             />
                           </IconButton>
                         </span>
@@ -5730,6 +5763,7 @@ export default function ExploreScreen() {
   const cancelGestureProcess = useGestureMessagesStore((state) => state.cancelGestureProcess);
   const gestureInProgress = useGestureMessagesStore((state) => state.gestureInProgress);
   const isPulsePro = useGestureMessagesStore((state) => state.isPulsePro);
+  const addPendingGesture = useGestureMessagesStore((state) => state.addPendingGesture);
   const pointsBalance = useGestureMessagesStore((state) => state.pointsBalance);
   const monthlyGestureUsage = useGestureMessagesStore((state) => state.monthlyGestureUsage);
   const [showGestureLimitDialog, setShowGestureLimitDialog] = useState(false);
@@ -6083,12 +6117,27 @@ export default function ExploreScreen() {
     // Get the message from current gesture details
     const gestureMessage = currentGestureDetails?.message || '';
     
+    // Generate unique gesture ID for billing tracking
+    const gestureId = `gesture_${Date.now()}_${selectedPerson?.id}`;
+    
+    // Add pending gesture for billing - will be charged when recipient accepts
+    addPendingGesture(gestureId, {
+      senderId: 'current_user', // TODO: Replace with actual user ID
+      recipientId: selectedPerson?.id,
+      recipientName: selectedPerson?.name,
+      gestureType: paymentData.gestureType,
+      message: gestureMessage,
+      details: currentGestureDetails,
+      amount: currentGestureDetails?.price || 0,
+    });
+    
     // Save gesture message to store (will appear in chat)
     if (selectedPerson && gestureMessage) {
       addGestureMessage(selectedPerson.id, {
         gestureType: paymentData.gestureType,
         message: gestureMessage,
         details: currentGestureDetails,
+        pendingGestureId: gestureId, // Link to pending gesture for billing
       }, {
         id: selectedPerson.id,
         name: selectedPerson.name,
@@ -6720,8 +6769,19 @@ export default function ExploreScreen() {
         }}
         onSendMessage={() => {
           setShowGestureReceivedDemo(false);
-          // Navigate to specific chat with Maya (sender)
-          navigate('/chat/1');
+          // Navigate to chat with Maya, passing gesture info so chat can show Accept/Decline
+          navigate('/chat/1', { 
+            state: { 
+              pendingGesture: {
+                type: 'coffee',
+                label: 'Coffee',
+                senderName: 'Maya',
+                message: "Coffee's on me! ☕ Would love to chat!",
+                drink: { name: 'Cappuccino', price: '₪16' },
+                cafe: { name: 'Cafe Nordoy', distance: '150m' },
+              }
+            }
+          });
         }}
       />
 

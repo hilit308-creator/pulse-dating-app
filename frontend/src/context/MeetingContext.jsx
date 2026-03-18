@@ -1,4 +1,19 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import {
+  startSOSSession,
+  trackSOSHelperFound,
+  trackSOSHelperApproaching,
+  trackSOSHelperArrived,
+  trackSOSCancelled,
+  trackSOSHelperUnavailable,
+  trackSOSHelperNotProgressing,
+  trackMeetingStarted,
+  trackMeetingEnded,
+} from '../services/analytics';
+import {
+  canMakeRequest,
+  recordRequest,
+} from '../services/sosAbusePrevention';
 
 // Meeting states
 export const MEETING_STATE = {
@@ -113,10 +128,20 @@ export function MeetingProvider({ children }) {
     setLocationSharing(true);
     setShowMeetingScreen(true);
     setContactsNotifiedThisMeeting([]);
+    
+    // Analytics: Track meeting started
+    trackMeetingStarted(user.matchId || user.id, user.firstName || user.name);
   }, []);
 
   // End meeting with brief ending indication
   const endMeeting = useCallback(() => {
+    // Analytics: Track meeting ended
+    const hadSOS = sosState !== SOS_STATE.NONE || sosRequestId !== null;
+    const durationMs = meetingStartTime ? Date.now() - meetingStartTime : 0;
+    if (meetingWith) {
+      trackMeetingEnded(meetingWith.matchId || meetingWith.id, durationMs, hadSOS);
+    }
+    
     if (locationWatchRef.current) {
       navigator.geolocation.clearWatch(locationWatchRef.current);
       locationWatchRef.current = null;
@@ -144,7 +169,7 @@ export function MeetingProvider({ children }) {
       setMeetingWith(null);
       setMeetingStartTime(null);
     }, 1500);
-  }, [clearAllSosTimeouts]);
+  }, [clearAllSosTimeouts, sosState, sosRequestId, meetingStartTime, meetingWith]);
 
   // Show SOS message (auto-clears after 5s)
   const showSosMessage = useCallback((message) => {
@@ -153,13 +178,20 @@ export function MeetingProvider({ children }) {
   }, []);
 
   // Auto-resume scanning when helper fails
-  const resumeScanning = useCallback(() => {
+  const resumeScanning = useCallback((reason) => {
     clearAllSosTimeouts();
     setSosHelper(null);
     setSosHelperDistance(null);
     sosHelperLastDistanceRef.current = null;
     sosRequestLockedRef.current = false;
     setSosState(SOS_STATE.SEARCHING);
+    
+    // Analytics: Track why we're resuming
+    if (reason === 'unavailable') {
+      trackSOSHelperUnavailable();
+    } else if (reason === 'not_progressing') {
+      trackSOSHelperNotProgressing();
+    }
     
     // Simulate finding another helper after 5s (in production: real network call)
     sosSearchTimeoutRef.current = setTimeout(() => {
@@ -190,11 +222,14 @@ export function MeetingProvider({ children }) {
     setSosHelperDistance(1.2);
     sosHelperLastDistanceRef.current = 1.2;
     
+    // Analytics: Track helper found
+    trackSOSHelperFound(helper.id, 1.2);
+    
     // Start heartbeat timeout (90s)
     sosHelperHeartbeatTimeoutRef.current = setTimeout(() => {
       // Helper unavailable - no heartbeat for 90s
       showSosMessage("It looks like the person who responded is currently unavailable. We're continuing to search.");
-      resumeScanning();
+      resumeScanning('unavailable');
     }, SOS_HELPER_UNAVAILABLE_TIMEOUT);
     
     // Start no-progress timeout (3 min)
@@ -202,7 +237,7 @@ export function MeetingProvider({ children }) {
       // Check if distance decreased
       if (sosHelperLastDistanceRef.current !== null && sosHelperDistance >= sosHelperLastDistanceRef.current) {
         showSosMessage("It looks like the person who responded isn't approaching right now. We're continuing to search.");
-        resumeScanning();
+        resumeScanning('not_progressing');
       }
     }, SOS_NO_PROGRESS_TIMEOUT);
     
@@ -212,13 +247,17 @@ export function MeetingProvider({ children }) {
         setSosState(SOS_STATE.HELPER_APPROACHING);
         setSosHelperDistance(0.8);
         sosHelperLastDistanceRef.current = 0.8;
+        
+        // Analytics: Track helper approaching
+        trackSOSHelperApproaching(helper.id, 0.8);
+        
         // Reset heartbeat timeout on update
         if (sosHelperHeartbeatTimeoutRef.current) {
           clearTimeout(sosHelperHeartbeatTimeoutRef.current);
         }
         sosHelperHeartbeatTimeoutRef.current = setTimeout(() => {
           showSosMessage("It looks like the person who responded is currently unavailable. We're continuing to search.");
-          resumeScanning();
+          resumeScanning('unavailable');
         }, SOS_HELPER_UNAVAILABLE_TIMEOUT);
       }
     }, 3000);
@@ -238,6 +277,9 @@ export function MeetingProvider({ children }) {
         setSosState(SOS_STATE.HELPER_ARRIVED);
         setSosHelperDistance(0);
         sosHelperLastDistanceRef.current = 0;
+        
+        // Analytics: Track helper arrived
+        trackSOSHelperArrived(helper.id);
       }
     }, 10000);
   }, [sosState, sosHelperDistance, showSosMessage, resumeScanning, clearAllSosTimeouts]);
@@ -245,6 +287,22 @@ export function MeetingProvider({ children }) {
   // Trigger SOS
   const triggerSOS = useCallback(() => {
     if (meetingState !== MEETING_STATE.ACTIVE) return;
+    
+    // Get current user ID for abuse prevention
+    const currentUserId = JSON.parse(localStorage.getItem('pulse_user') || '{}').id || 'unknown';
+    
+    // Abuse Prevention: Check if request is allowed
+    const requestCheck = canMakeRequest(currentUserId);
+    if (!requestCheck.allowed) {
+      showSosMessage(requestCheck.message);
+      return;
+    }
+    
+    // Record the request for abuse prevention tracking
+    recordRequest(currentUserId);
+    
+    // Analytics: Start SOS session
+    const analyticsSessionId = startSOSSession();
     
     const requestId = `sos_${Date.now()}`;
     setSosRequestId(requestId);
@@ -258,10 +316,17 @@ export function MeetingProvider({ children }) {
     sosSearchTimeoutRef.current = setTimeout(() => {
       simulateHelperAccept();
     }, 3000);
-  }, [meetingState, simulateHelperAccept]);
+  }, [meetingState, simulateHelperAccept, showSosMessage]);
 
   // Cancel SOS
   const cancelSOS = useCallback(() => {
+    // Analytics: Track cancellation with current stage
+    let stage = 'searching';
+    if (sosState === SOS_STATE.HELPER_FOUND) stage = 'helper_found';
+    else if (sosState === SOS_STATE.HELPER_APPROACHING) stage = 'helper_approaching';
+    else if (sosState === SOS_STATE.HELPER_ARRIVED) stage = 'helper_arrived';
+    trackSOSCancelled(stage);
+    
     clearAllSosTimeouts();
     sosRequestLockedRef.current = false;
     setSosState(SOS_STATE.NONE);
@@ -269,8 +334,7 @@ export function MeetingProvider({ children }) {
     setSosHelper(null);
     setSosHelperDistance(null);
     sosHelperLastDistanceRef.current = null;
-    showSosMessage("The request was cancelled.");
-  }, [clearAllSosTimeouts, showSosMessage]);
+  }, [clearAllSosTimeouts, sosState]);
 
   // Handle late helper accept (called when another helper tries to accept after lock)
   const handleLateHelperAccept = useCallback(() => {

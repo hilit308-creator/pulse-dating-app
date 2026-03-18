@@ -1,10 +1,10 @@
 /**
  * ReportDialog.jsx
  * Global report dialog component used across the entire app
- * Includes automatic reason options and optional note
+ * Includes automatic reason options, optional note, and image upload
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,8 +15,9 @@ import {
   Box,
   Typography,
   Chip,
+  IconButton,
 } from '@mui/material';
-import { Flag, AlertTriangle, UserX, Camera, MessageSquare, Shield } from 'lucide-react';
+import { Flag, AlertTriangle, UserX, Camera, MessageSquare, Shield, ImagePlus, X } from 'lucide-react';
 
 // Report reason options
 const REPORT_REASONS = [
@@ -37,22 +38,58 @@ const ReportDialog = ({
 }) => {
   const [selectedReason, setSelectedReason] = useState(null);
   const [note, setNote] = useState('');
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const fileInputRef = useRef(null);
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
+    // Limit to 3 images
+    const remainingSlots = 3 - uploadedImages.length;
+    const filesToAdd = files.slice(0, remainingSlots);
+    
+    filesToAdd.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUploadedImages(prev => [...prev, {
+          id: Date.now() + Math.random(),
+          file: file,
+          preview: event.target.result,
+          name: file.name,
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = (imageId) => {
+    setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+  };
 
   const handleSubmit = () => {
     onSubmit?.({
       reason: selectedReason,
       note: note.trim(),
+      images: uploadedImages.map(img => img.file),
       timestamp: new Date().toISOString(),
     });
     // Reset state
     setSelectedReason(null);
     setNote('');
+    setUploadedImages([]);
     onClose?.();
   };
 
   const handleClose = () => {
     setSelectedReason(null);
     setNote('');
+    setUploadedImages([]);
     onClose?.();
   };
 
@@ -131,6 +168,100 @@ const ReportDialog = ({
             },
           }}
         />
+
+        {/* Image upload section */}
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>
+            Add screenshot (optional)
+          </Typography>
+          
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            accept="image/*"
+            multiple
+            style={{ display: 'none' }}
+          />
+          
+          {/* Upload button and preview */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {/* Uploaded images preview */}
+            {uploadedImages.map((img) => (
+              <Box
+                key={img.id}
+                sx={{
+                  position: 'relative',
+                  width: 70,
+                  height: 70,
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                <img
+                  src={img.preview}
+                  alt="Upload preview"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
+                <IconButton
+                  size="small"
+                  onClick={() => handleRemoveImage(img.id)}
+                  sx={{
+                    position: 'absolute',
+                    top: 2,
+                    right: 2,
+                    bgcolor: 'rgba(0,0,0,0.6)',
+                    color: '#fff',
+                    p: 0.25,
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+                  }}
+                >
+                  <X size={14} />
+                </IconButton>
+              </Box>
+            ))}
+            
+            {/* Add image button (show if less than 3 images) */}
+            {uploadedImages.length < 3 && (
+              <Box
+                onClick={() => fileInputRef.current?.click()}
+                sx={{
+                  width: 70,
+                  height: 70,
+                  borderRadius: '10px',
+                  border: '2px dashed #e2e8f0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    borderColor: '#6C5CE7',
+                    bgcolor: 'rgba(108,92,231,0.05)',
+                  },
+                }}
+              >
+                <ImagePlus size={20} color="#94a3b8" />
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.65rem', mt: 0.5 }}>
+                  Add
+                </Typography>
+              </Box>
+            )}
+          </Box>
+          
+          {uploadedImages.length > 0 && (
+            <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', mt: 1 }}>
+              {uploadedImages.length}/3 images added
+            </Typography>
+          )}
+        </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
