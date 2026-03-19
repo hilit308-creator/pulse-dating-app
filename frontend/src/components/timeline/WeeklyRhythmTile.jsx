@@ -7,7 +7,8 @@
  */
 
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, IconButton } from '@mui/material';
+import { X } from 'lucide-react';
 
 // Activity-to-image mapping for recurring tiles
 const activityImages = {
@@ -44,7 +45,7 @@ const getActivityImage = (activity) => {
   return activityImages.default;
 };
 
-const WeeklyRhythmTile = ({ item, index, isVisible }) => {
+const WeeklyRhythmTile = ({ item, index, isVisible, isPreview = false, onDelete }) => {
   const timeLabel = item.timeLabel || item.customText || item.frequency || 'Flexible';
   const activity = item.label || item.title || item.activity;
   const backgroundImage = getActivityImage(activity);
@@ -69,6 +70,30 @@ const WeeklyRhythmTile = ({ item, index, isVisible }) => {
         },
       }}
     >
+      {/* Delete button - only in preview mode */}
+      {isPreview && onDelete && (
+        <IconButton
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(item);
+          }}
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 10,
+            width: 28,
+            height: 28,
+            bgcolor: 'rgba(100, 116, 139, 0.85)',
+            color: '#fff',
+            '&:hover': {
+              bgcolor: 'rgba(71, 85, 105, 0.95)',
+            },
+          }}
+        >
+          <X size={16} />
+        </IconButton>
+      )}
       {/* Background image with blur */}
       <Box
         sx={{

@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import React, { useEffect, useCallback } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Flame,
   Radar,
@@ -20,6 +20,9 @@ const getTabsConfig = () => [
   { to: "/events", labelKey: "events", icon: <CalendarPlus size={24} />, key: "events" },
   { to: "/explore", labelKey: "explore", icon: <Coffee size={24} />, key: "explore" },
 ];
+
+// Event name for scroll-to-focus functionality
+export const TAB_SCROLL_EVENT = 'pulse:tab_scroll_to_focus';
 
 const activeColor = "#ff6f61";
 const inactiveColor = "#b0b0b0";
@@ -43,6 +46,7 @@ const ActivityBadge = () => (
 
 export default function TabNavigation() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { hasUnreadActivity, markActivityAsRead } = useActivity();
   const { t } = useLanguage();
   const tabs = getTabsConfig();
@@ -55,6 +59,21 @@ export default function TabNavigation() {
       }
     }
   }, [location.pathname, hasUnreadActivity, markActivityAsRead]);
+
+  // Handle tab click - scroll to focus area if already on that tab
+  const handleTabClick = useCallback((e, tab) => {
+    const isCurrentTab = (tab.to === '/' && location.pathname === '/') || 
+                         (tab.to !== '/' && location.pathname === tab.to);
+    
+    if (isCurrentTab) {
+      // Already on this tab - dispatch scroll event
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent(TAB_SCROLL_EVENT, { 
+        detail: { tab: tab.key } 
+      }));
+    }
+    // If not on current tab, let NavLink handle navigation normally
+  }, [location.pathname]);
 
   return (
     <nav 
@@ -81,6 +100,7 @@ export default function TabNavigation() {
           className={({ isActive }) => `tab-item${isActive ? ' active' : ''}`}
           end={tab.to === "/"}
           style={{ position: 'relative' }}
+          onClick={(e) => handleTabClick(e, tab)}
         >
           <span style={{ position: 'relative', display: 'inline-block' }}>
             {tab.icon}

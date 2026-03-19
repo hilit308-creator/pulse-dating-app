@@ -70,6 +70,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import AboutSections from "../components/AboutSections";
 import ProfileExtras from "../components/ProfileExtras";
 import { useAuth } from "../context/AuthContext";
+import { ProfileTimeline } from "../components/timeline";
+import { Eye } from "lucide-react";
 
 /* ---------------------------------------
    Brand / theme settings (same as Home)
@@ -193,12 +195,60 @@ const mockQualities = [
   "Patience",
 ];
 
-const mockPrompts = [
-  "The key to my heart is…",
-  "My ideal weekend is…",
-  "A fun fact about me…",
-  "Friends describe me as…",
-];
+// Prompts with AI-generated suggestions
+const promptsWithSuggestions = {
+  "The key to my heart is…": [
+    "Good conversation and spontaneous adventures 💫",
+    "Someone who makes me laugh until my stomach hurts 😂",
+    "Authenticity and a shared love for good food 🍝",
+    "Deep talks and comfortable silences ✨",
+    "A genuine smile and kind heart 💕",
+  ],
+  "My ideal weekend is…": [
+    "Brunch, beach, and good company 🏖️",
+    "Exploring a new neighborhood with coffee in hand ☕",
+    "Morning hike, afternoon nap, evening concert 🎵",
+    "Farmers market, cooking together, movie night 🎬",
+    "Spontaneous road trip to somewhere new 🚗",
+  ],
+  "A fun fact about me…": [
+    "Data nerd by day, bookworm by night 📚",
+    "I can name any song within 3 seconds 🎧",
+    "I've visited 20 countries and counting 🌍",
+    "I make the best homemade pasta you'll ever taste 🍝",
+    "I once ran a marathon on a dare 🏃‍♀️",
+  ],
+  "Friends describe me as…": [
+    "The one who always has a plan (and a backup plan) 📋",
+    "The friend who remembers everyone's birthday 🎂",
+    "Spontaneous, curious, and always up for an adventure 🌟",
+    "The calm in the storm with great playlist taste 🎵",
+    "A good listener with terrible dance moves 💃",
+  ],
+  "Currently obsessed with…": [
+    "Training for the TLV marathon 🏃‍♀️",
+    "Finding the city's best coffee spots ☕",
+    "Learning to play guitar (my neighbors love me) 🎸",
+    "Perfecting my sourdough recipe 🍞",
+    "Binge-watching true crime documentaries 🔍",
+  ],
+  "You'll find me at…": [
+    "The rooftop event tonight 🌃",
+    "Working from the coffee shop nearby ☕",
+    "The yoga studio every morning 🧘‍♀️",
+    "The dog park with my best friend 🐕",
+    "Any live music venue on weekends 🎤",
+  ],
+  "My happy place is…": [
+    "Living mindfully, one breath at a time 🧘",
+    "Just moved to the neighborhood 🏠",
+    "Anywhere with good music and better company 🎵",
+    "By the ocean, watching the sunset 🌅",
+    "In the kitchen, experimenting with new recipes 👨‍🍳",
+  ],
+};
+
+const mockPrompts = Object.keys(promptsWithSuggestions);
 
 // Looking For options - matching registration screen style
 const LOOKING_FOR_OPTIONS = [
@@ -340,6 +390,7 @@ export default function ProfileSettings({ onBack }) {
   // --- Dialogs / selections ---
   const [showChecklist, setShowChecklist] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const [selectedCauses, setSelectedCauses] = useState([]);
   const [causesDialog, setCausesDialog] = useState(false);
@@ -487,6 +538,12 @@ export default function ProfileSettings({ onBack }) {
   const [cameraStream, setCameraStream] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  
+  // --- Verification camera state ---
+  const [showVerificationCamera, setShowVerificationCamera] = useState(false);
+  const [verificationStream, setVerificationStream] = useState(null);
+  const verificationVideoRef = useRef(null);
+  const verificationCanvasRef = useRef(null);
 
   // --- Snackbar ---
   const [snack, setSnack] = useState({
@@ -647,6 +704,67 @@ export default function ProfileSettings({ onBack }) {
     setShowCamera(false);
   };
 
+  // --- Verification Camera Functions ---
+  const handleStartVerificationCamera = async () => {
+    try {
+      setShowVerify(false); // Close the intro dialog
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+      });
+      setVerificationStream(stream);
+      setShowVerificationCamera(true);
+      
+      // Wait for video element to be ready
+      setTimeout(() => {
+        if (verificationVideoRef.current) {
+          verificationVideoRef.current.srcObject = stream;
+          verificationVideoRef.current.onloadedmetadata = () => {
+            verificationVideoRef.current.play();
+          };
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Camera permission error:', error);
+      setSnack({ open: true, msg: 'Could not access camera. Please allow camera access.', sev: 'error' });
+    }
+  };
+
+  const handleCaptureVerificationPhoto = () => {
+    if (!verificationVideoRef.current || !verificationCanvasRef.current) return;
+    
+    const video = verificationVideoRef.current;
+    const canvas = verificationCanvasRef.current;
+    
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      setSnack({ open: true, msg: 'Camera not ready', sev: 'error' });
+      return;
+    }
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    
+    // Verification successful - mark as verified
+    setVerified(true);
+    saveAndRefreshUserData({ isVerified: true });
+    markDirty();
+    handleCloseVerificationCamera();
+    setSnack({ open: true, msg: 'Profile verified successfully! ✓', sev: 'success' });
+  };
+
+  const handleCloseVerificationCamera = () => {
+    if (verificationStream) {
+      verificationStream.getTracks().forEach(track => track.stop());
+      setVerificationStream(null);
+    }
+    setShowVerificationCamera(false);
+  };
+
   const handlePickInstagram = () => {
     setPhotoModalOpen(false);
     window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
@@ -672,6 +790,17 @@ export default function ProfileSettings({ onBack }) {
   };
 
   const handlePhotoRemove = (idx) => {
+    // Check if removing this photo would leave less than 4 photos
+    const currentPhotoCount = photos.filter(p => p.url).length;
+    if (currentPhotoCount <= 4) {
+      setSnack({ 
+        open: true, 
+        msg: 'You need at least 4 photos. Add more photos before removing this one.', 
+        sev: 'warning' 
+      });
+      return;
+    }
+    
     setPhotos((prev) => {
       const updated = prev.map((p, i) => (i === idx ? { ...p, url: "" } : p));
       // Save and refresh userData
@@ -750,10 +879,22 @@ export default function ProfileSettings({ onBack }) {
   // --- Prompts ---
   const handleAddPrompt = () => {
     if (selectedPrompt && promptAnswer.trim()) {
-      setSelectedPrompts((prev) => [
-        ...prev,
-        { prompt: selectedPrompt, answer: promptAnswer.trim() },
-      ]);
+      const newPrompt = { prompt: selectedPrompt, answer: promptAnswer.trim() };
+      setSelectedPrompts((prev) => [...prev, newPrompt]);
+      
+      // Save the intro line (first prompt answer) to localStorage for Profile Preview
+      try {
+        const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+        // Use the first prompt as the intro line
+        if (!stored.introLine) {
+          stored.introLine = promptAnswer.trim();
+        }
+        // Also save all prompts
+        const existingPrompts = stored.prompts || [];
+        stored.prompts = [...existingPrompts, newPrompt];
+        localStorage.setItem('pulse_user', JSON.stringify(stored));
+      } catch (e) { console.error('Error saving prompt:', e); }
+      
       setSelectedPrompt(null);
       setPromptAnswer("");
       setPromptDialog(false);
@@ -939,6 +1080,41 @@ export default function ProfileSettings({ onBack }) {
               </Box>
             </Box>
           </Box>
+          
+          {/* Preview Profile Button */}
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={() => setShowPreview(true)}
+            startIcon={<Eye size={18} />}
+            sx={{
+              mt: 1.5,
+              py: 1,
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              borderColor: 'rgba(255,255,255,0.3)',
+              color: '#fff',
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              '&:hover': {
+                borderColor: 'rgba(255,255,255,0.5)',
+                backgroundColor: 'rgba(255,255,255,0.15)',
+              },
+              '&:focus': {
+                borderColor: 'rgba(255,255,255,0.5)',
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                color: '#fff',
+              },
+              '&:active': {
+                borderColor: 'rgba(255,255,255,0.5)',
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                color: '#fff',
+              },
+            }}
+          >
+            Preview Profile
+          </Button>
         </Box>
 
         {/* Points - Dark theme banner matching SubscriptionsScreen */}
@@ -1457,11 +1633,8 @@ export default function ProfileSettings({ onBack }) {
             <Button
               fullWidth
               variant="contained"
-              onClick={() => {
-                setVerified(true);
-                setShowVerify(false);
-                markDirty();
-              }}
+              onClick={handleStartVerificationCamera}
+              startIcon={<Camera size={18} />}
               sx={{ 
                 borderRadius: '12px', 
                 textTransform: 'none', 
@@ -1481,6 +1654,101 @@ export default function ProfileSettings({ onBack }) {
               Maybe Later
             </Button>
           </DialogActions>
+        </Dialog>
+
+        {/* Verification Camera Modal */}
+        <Dialog
+          open={showVerificationCamera}
+          onClose={handleCloseVerificationCamera}
+          fullScreen
+          PaperProps={{ sx: { backgroundColor: '#000' } }}
+        >
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Header */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              p: 2,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+            }}>
+              <IconButton onClick={handleCloseVerificationCamera} sx={{ color: '#fff' }}>
+                <XIcon size={24} />
+              </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Shield size={20} color="#10b981" />
+                <Typography sx={{ color: '#fff', fontWeight: 600 }}>
+                  Verify Your Profile
+                </Typography>
+              </Box>
+              <Box sx={{ width: 40 }} />
+            </Box>
+
+            {/* Instructions */}
+            <Box sx={{ 
+              px: 3, 
+              py: 2, 
+              backgroundColor: 'rgba(16,185,129,0.15)',
+              textAlign: 'center',
+            }}>
+              <Typography sx={{ color: '#10b981', fontWeight: 600, fontSize: '0.95rem' }}>
+                📸 Position your face in the frame
+              </Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', mt: 0.5 }}>
+                Make sure your face is clearly visible and well-lit
+              </Typography>
+            </Box>
+
+            {/* Video preview */}
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
+              <video
+                ref={verificationVideoRef}
+                autoPlay
+                playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+              />
+              {/* Face guide overlay */}
+              <Box sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 220,
+                height: 280,
+                border: '3px dashed rgba(16,185,129,0.6)',
+                borderRadius: '50%',
+                pointerEvents: 'none',
+              }} />
+              <canvas ref={verificationCanvasRef} style={{ display: 'none' }} />
+            </Box>
+
+            {/* Capture button */}
+            <Box sx={{ 
+              p: 3, 
+              display: 'flex', 
+              justifyContent: 'center',
+              backgroundColor: 'rgba(0,0,0,0.5)',
+            }}>
+              <Button
+                variant="contained"
+                onClick={handleCaptureVerificationPhoto}
+                sx={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: '50%',
+                  minWidth: 'auto',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  border: '4px solid rgba(255,255,255,0.3)',
+                  boxShadow: '0 4px 20px rgba(16,185,129,0.4)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  },
+                }}
+              >
+                <Camera size={28} color="#fff" />
+              </Button>
+            </Box>
+          </Box>
         </Dialog>
 
         {/* Bio & interests */}
@@ -1749,21 +2017,110 @@ export default function ProfileSettings({ onBack }) {
             <Typography sx={{ fontWeight: 700, mb: 0.3, color: "#0f172a" }}>
               Prompts
             </Typography>
-            <Typography variant="body2" sx={{ color: "#6B7280", mb: 2 }}>
+            <Typography variant="body2" sx={{ color: "#6B7280", mb: 1 }}>
               Help people get a feel for your vibe.
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#9CA3AF", display: 'block', mb: 2 }}>
+              You can add up to {photos.filter(p => p.url).length} prompts (one per photo). The first prompt appears after your main photo, others appear between your photos.
             </Typography>
             <Stack spacing={1} sx={{ mb: 2 }}>
               {selectedPrompts.map((p, i) => (
                 <Box
                   key={`${p.prompt}-${i}`}
                   sx={{
-                    bgcolor: "#f5f5f5",
+                    bgcolor: i === 0 ? 'rgba(108,92,231,0.08)' : "#f5f5f5",
                     borderRadius: 2,
                     p: 1.2,
                     fontWeight: 500,
+                    position: 'relative',
+                    border: i === 0 ? '2px solid #6C5CE7' : '1px solid transparent',
                   }}
                 >
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {/* Main prompt badge */}
+                  {i === 0 && (
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        position: 'absolute', 
+                        top: -10, 
+                        left: 12, 
+                        bgcolor: '#6C5CE7', 
+                        color: '#fff', 
+                        px: 1, 
+                        py: 0.2, 
+                        borderRadius: 1,
+                        fontSize: 10,
+                        fontWeight: 600,
+                      }}
+                    >
+                      MAIN INTRO
+                    </Typography>
+                  )}
+                  {/* Make main button - only show if not already main */}
+                  {i > 0 && (
+                    <IconButton
+                      size="small"
+                      title="Make this the main intro"
+                      onClick={() => {
+                        // Move this prompt to first position
+                        const newPrompts = [...selectedPrompts];
+                        const [moved] = newPrompts.splice(i, 1);
+                        newPrompts.unshift(moved);
+                        setSelectedPrompts(newPrompts);
+                        // Update localStorage
+                        try {
+                          const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                          stored.prompts = newPrompts;
+                          stored.introLine = moved.answer;
+                          localStorage.setItem('pulse_user', JSON.stringify(stored));
+                        } catch (e) { console.error('Error updating main prompt:', e); }
+                        markDirty();
+                      }}
+                      sx={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 32,
+                        width: 24,
+                        height: 24,
+                        bgcolor: 'rgba(108, 92, 231, 0.8)',
+                        color: '#fff',
+                        '&:hover': { bgcolor: 'rgba(108, 92, 231, 0.95)' },
+                      }}
+                    >
+                      <Star size={12} />
+                    </IconButton>
+                  )}
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      const newPrompts = selectedPrompts.filter((_, idx) => idx !== i);
+                      setSelectedPrompts(newPrompts);
+                      // Update localStorage
+                      try {
+                        const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                        stored.prompts = newPrompts;
+                        // Update introLine if we deleted the first prompt
+                        if (i === 0) {
+                          stored.introLine = newPrompts[0]?.answer || null;
+                        }
+                        localStorage.setItem('pulse_user', JSON.stringify(stored));
+                      } catch (e) { console.error('Error deleting prompt:', e); }
+                      markDirty();
+                    }}
+                    sx={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      width: 24,
+                      height: 24,
+                      bgcolor: 'rgba(100, 116, 139, 0.8)',
+                      color: '#fff',
+                      '&:hover': { bgcolor: 'rgba(71, 85, 105, 0.95)' },
+                    }}
+                  >
+                    <X size={14} />
+                  </IconButton>
+                  <Typography variant="body2" sx={{ fontWeight: 600, pr: 3 }}>
                     {p.prompt}
                   </Typography>
                   <Typography variant="body2" sx={{ color: "#374151", mt: 0.5 }}>
@@ -1776,6 +2133,7 @@ export default function ProfileSettings({ onBack }) {
               variant="outlined"
               fullWidth
               onClick={() => setPromptDialog(true)}
+              disabled={selectedPrompts.length >= photos.filter(p => p.url).length}
               sx={{
                 justifyContent: "flex-start",
                 borderRadius: 999,
@@ -1785,7 +2143,9 @@ export default function ProfileSettings({ onBack }) {
               }}
               startIcon={<Plus />}
             >
-              Add prompt
+              {selectedPrompts.length >= photos.filter(p => p.url).length 
+                ? `Add more photos to add more prompts` 
+                : `Add prompt (${selectedPrompts.length}/${photos.filter(p => p.url).length})`}
             </Button>
           </Box>
         </Box>
@@ -1833,46 +2193,139 @@ export default function ProfileSettings({ onBack }) {
           </DialogActions>
         </Dialog>
 
-        <Dialog open={promptDialog} onClose={() => setPromptDialog(false)} sx={{ zIndex: 9999 }}>
-          <DialogTitle>Choose a prompt</DialogTitle>
-          <DialogContent>
-            <Stack spacing={2}>
-              {mockPrompts.map((p) => (
-                <Button
-                  key={p}
-                  variant={selectedPrompt === p ? "contained" : "outlined"}
-                  onClick={() => setSelectedPrompt(p)}
-                  sx={{
-                    borderRadius: 999,
-                    textTransform: "none",
-                    fontWeight: 500,
-                  }}
-                >
-                  {p}
-                </Button>
-              ))}
-              {selectedPrompt && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Your answer:
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    value={promptAnswer}
-                    onChange={(e) => setPromptAnswer(e.target.value)}
-                    placeholder="Type your answer…"
-                  />
+        <Dialog 
+          open={promptDialog} 
+          onClose={() => setPromptDialog(false)} 
+          sx={{ 
+            zIndex: 9999,
+            '& .MuiDialog-container': {
+              alignItems: 'center',
+            },
+            '& .MuiDialog-paper': {
+              overflow: 'hidden !important',
+            },
+            '& *::-webkit-scrollbar': { 
+              display: 'none !important',
+              width: '0 !important',
+            },
+            '& *': {
+              scrollbarWidth: 'none !important',
+              msOverflowStyle: 'none !important',
+            },
+          }}
+          PaperProps={{ 
+            sx: { 
+              maxHeight: '70vh', 
+              minWidth: 340,
+              maxWidth: 400,
+              m: 2,
+              borderRadius: '16px',
+              overflow: 'hidden !important',
+            } 
+          }}
+        >
+          <DialogTitle sx={{ pb: 1 }}>
+            {selectedPrompt ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <IconButton size="small" onClick={() => setSelectedPrompt(null)}>
+                  <ArrowLeft size={20} />
+                </IconButton>
+                <Typography sx={{ fontWeight: 600, fontSize: 18 }}>{selectedPrompt}</Typography>
+              </Box>
+            ) : (
+              'Choose a prompt'
+            )}
+          </DialogTitle>
+          <DialogContent sx={{ 
+            overflowY: 'auto', 
+            pt: 1,
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}>
+            {!selectedPrompt ? (
+              <Stack spacing={1.5}>
+                {mockPrompts.map((p) => (
                   <Button
-                    sx={{ mt: 1 }}
-                    variant="contained"
-                    onClick={handleAddPrompt}
-                    disabled={!promptAnswer.trim()}
+                    key={p}
+                    variant="outlined"
+                    onClick={() => setSelectedPrompt(p)}
+                    sx={{
+                      borderRadius: '20px',
+                      textTransform: "none",
+                      fontWeight: 500,
+                      py: 1.5,
+                      borderColor: '#e2e8f0',
+                      color: '#1a1a2e',
+                      '&:hover': {
+                        borderColor: '#6C5CE7',
+                        bgcolor: 'rgba(108,92,231,0.05)',
+                      },
+                    }}
                   >
-                    Save
+                    {p}
                   </Button>
-                </Box>
-              )}
-            </Stack>
+                ))}
+              </Stack>
+            ) : (
+              <Box>
+                {/* AI Suggestions */}
+                <Typography sx={{ fontSize: 13, color: '#64748b', mb: 1.5, fontWeight: 500 }}>
+                  ✨ AI Suggestions (tap to use)
+                </Typography>
+                <Stack spacing={1} sx={{ mb: 3 }}>
+                  {promptsWithSuggestions[selectedPrompt]?.map((suggestion, idx) => (
+                    <Box
+                      key={idx}
+                      onClick={() => setPromptAnswer(suggestion)}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: '12px',
+                        border: promptAnswer === suggestion ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                        bgcolor: promptAnswer === suggestion ? 'rgba(108,92,231,0.08)' : '#fff',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          borderColor: '#6C5CE7',
+                          bgcolor: 'rgba(108,92,231,0.05)',
+                        },
+                      }}
+                    >
+                      <Typography sx={{ fontSize: 14, color: '#1a1a2e', fontStyle: 'italic' }}>
+                        "{suggestion}"
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+                
+                {/* Custom answer */}
+                <Typography sx={{ fontSize: 13, color: '#64748b', mb: 1, fontWeight: 500 }}>
+                  Or write your own:
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  value={promptAnswer}
+                  onChange={(e) => setPromptAnswer(e.target.value)}
+                  placeholder="Type your answer…"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                    },
+                  }}
+                />
+                <Button
+                  fullWidth
+                  sx={{ mt: 2, borderRadius: '12px', py: 1.2 }}
+                  variant="contained"
+                  onClick={handleAddPrompt}
+                  disabled={!promptAnswer.trim()}
+                >
+                  Save to Profile
+                </Button>
+              </Box>
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setPromptDialog(false)}>Done</Button>
@@ -2697,6 +3150,118 @@ export default function ProfileSettings({ onBack }) {
           {snack.msg}
         </Alert>
       </Snackbar>
+
+      {/* Profile Preview Modal - Reuses ProfileTimeline with no interactivity */}
+      <Dialog
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        fullScreen
+        PaperProps={{
+          sx: {
+            bgcolor: '#fff',
+          },
+        }}
+      >
+        {/* Preview Header */}
+        <Box
+          sx={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            py: 1.5,
+            bgcolor: '#fff',
+            borderBottom: '1px solid rgba(0,0,0,0.08)',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton onClick={() => setShowPreview(false)} size="small">
+              <ArrowLeft size={20} />
+            </IconButton>
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem' }}>
+              Profile Preview
+            </Typography>
+          </Box>
+          <Chip
+            label="This is how others see you"
+            size="small"
+            sx={{
+              bgcolor: 'rgba(108,92,231,0.1)',
+              color: '#6C5CE7',
+              fontWeight: 500,
+              fontSize: '0.7rem',
+            }}
+          />
+        </Box>
+
+        {/* Profile Timeline - Reusing existing component with preview mode (no actions) */}
+        <Box sx={{ overflowY: 'auto', flex: 1 }}>
+          <ProfileTimeline
+            user={(() => {
+              // Read fresh data from localStorage when preview opens
+              const freshData = getUserDataFromStorage();
+              return {
+                // Use existing state from this component - reflects current edits
+                firstName: freshData?.firstName || freshData?.name || user?.firstName || 'You',
+                name: freshData?.firstName || freshData?.name || user?.firstName || 'You',
+                age: freshData?.age || user?.age || 25,
+                verified: verified,
+                tagline: null, // Don't show tagline on hero photo
+                // Use first prompt answer as intro line
+                introLine: freshData?.introLine || (selectedPrompts[0]?.answer) || null,
+                bio: bio,
+                photos: photos.filter(p => p.url).map(p => p.url),
+                primaryPhoto: photos[0]?.url,
+                interests: interests,
+                qualities: selectedQualities,
+                causes: selectedCauses,
+                lookingFor: lookingFor,
+                // My Details / Quick Facts fields
+                gender: freshData?.gender || user?.gender,
+                city: freshData?.city || freshData?.location || user?.city || user?.location,
+                location: freshData?.location || freshData?.city || user?.location || user?.city,
+                height: freshData?.height || user?.height,
+                hometown: freshData?.hometown || user?.hometown,
+                work: freshData?.work || user?.work,
+                religion: freshData?.religion || user?.religion,
+                politics: freshData?.politics || user?.politics,
+                // Lifestyle fields
+                drinking: freshData?.drinking || user?.drinking,
+                smoking: freshData?.smoking || user?.smoking,
+                kids: freshData?.kids || user?.kids,
+                exercise: freshData?.exercise || user?.exercise,
+                starSign: freshData?.starSign || user?.starSign,
+                // Snapshot fields
+                profession: freshData?.profession || freshData?.job || freshData?.occupation || user?.profession || user?.job,
+                jobTitle: freshData?.jobTitle || freshData?.job || user?.jobTitle,
+                education: freshData?.education || user?.education,
+                hometown: freshData?.hometown || user?.hometown,
+                languages: freshData?.languages || user?.languages,
+                // Weekly rhythm & music
+                weeklyRhythm: freshData?.weeklyRhythm || freshData?.weeklyTimeline || user?.weeklyRhythm,
+                weeklyTimeline: freshData?.weeklyTimeline || freshData?.weeklyRhythm || user?.weeklyTimeline,
+                favoriteMusic: freshData?.favoriteMusic || freshData?.spotifyArtists || user?.favoriteMusic,
+                spotifyPlaylists: freshData?.spotifyPlaylists || user?.spotifyPlaylists,
+                spotifyConnected: freshData?.spotifyConnected || user?.spotifyConnected,
+                spotifyArtists: freshData?.spotifyArtists || user?.spotifyArtists,
+                pets: freshData?.pets || user?.pets,
+                // Prompts for display after photos
+                prompts: freshData?.prompts || selectedPrompts,
+              };
+            })()}
+            // Disable all interactive actions for preview mode
+            onLike={() => {}}
+            onPass={() => {}}
+            onUndo={() => {}}
+            canUndo={false}
+            hideUndo={true}
+            isPreview={true}
+          />
+        </Box>
+      </Dialog>
     </Box>
   );
 }

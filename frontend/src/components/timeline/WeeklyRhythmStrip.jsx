@@ -18,7 +18,8 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, ArrowRight } from 'lucide-react';
 import WeeklyRhythmTile from './WeeklyRhythmTile';
 import WeeklyRhythmEventTile from './WeeklyRhythmEventTile';
-import { loadPlans } from '../QuickPlanModal';
+import { loadPlans, deletePlan } from '../QuickPlanModal';
+import { EVENTS } from '../../pages/EventsByCategory';
 
 // Time context labels
 const timeLabels = {
@@ -89,8 +90,9 @@ const DiscoverEventsTile = ({ index, isVisible, onClick }) => (
   </Box>
 );
 
-const WeeklyRhythmStrip = ({ user, viewerIsMatch = false }) => {
+const WeeklyRhythmStrip = ({ user, viewerIsMatch = false, isPreview = false }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [storedPlans, setStoredPlans] = useState(() => loadPlans()); // Load plans as state
   const containerRef = useRef(null);
   const navigate = useNavigate();
   
@@ -98,8 +100,17 @@ const WeeklyRhythmStrip = ({ user, viewerIsMatch = false }) => {
   const userRhythm = user?.userRhythm || user?.weeklyRhythm;
   const legacyRhythm = user?.weeklyTimeline;
   
-  // Load plans from QuickPlanModal (stored in localStorage)
-  const storedPlans = loadPlans();
+  // Handle delete plan item
+  const handleDeletePlan = (item) => {
+    // Extract plan ID from item.id (format: "plan-{planId}")
+    if (item.id && item.id.startsWith('plan-')) {
+      const planIdStr = item.id.replace('plan-', '');
+      const planId = parseInt(planIdStr, 10); // Convert to number since plan.id is Date.now()
+      deletePlan(planId);
+      // Reload plans from localStorage to update UI
+      setStoredPlans(loadPlans());
+    }
+  };
   
   // Check privacy toggle from Settings
   const RHYTHM_VISIBILITY_KEY = 'pulse.weeklyRhythmVisibility';
@@ -112,14 +123,57 @@ const WeeklyRhythmStrip = ({ user, viewerIsMatch = false }) => {
     }
   })();
   
-  // Visibility settings
+  // Visibility settings - always show in preview mode
   const visibility = userRhythm?.visibility || 'everyone';
-  const shouldHide = isRhythmHiddenByUser || visibility === 'hidden' || (visibility === 'matches' && !viewerIsMatch);
+  const shouldHide = !isPreview && (isRhythmHiddenByUser || visibility === 'hidden' || (visibility === 'matches' && !viewerIsMatch));
   
   // Get items from different sources
   let events = userRhythm?.events || []; // Event attendance (highest priority)
   let recurring = userRhythm?.recurring || []; // Manual recurring
   let upcoming = userRhythm?.upcoming || []; // Upcoming items
+  
+  // Load user's registered events from localStorage (synced with MyEventsScreen)
+  const purchasedEventIds = (() => {
+    try {
+      const raw = localStorage.getItem("event_purchased");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })();
+  
+  // Helper to check if event date has passed
+  const isEventPast = (dateStr) => {
+    if (!dateStr) return false;
+    const eventDate = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Compare dates only, not time
+    return eventDate < today;
+  };
+  
+  // Convert purchased events to event items for display (filter out past events)
+  const purchasedEventItems = purchasedEventIds
+    .map(eventId => EVENTS.find(e => e.id === eventId))
+    .filter(Boolean)
+    .filter(event => !isEventPast(event.date)) // Remove past events
+    .map(event => ({
+      id: `event-${event.id}`,
+      title: event.title,
+      venue: event.venue,
+      date: event.date,
+      time: event.time,
+      cover: event.cover,
+      type: 'event',
+      timeLabel: event.time ? `${event.date} · ${event.time}` : event.date,
+    }));
+  
+  // Merge purchased events with existing events (avoid duplicates)
+  const existingEventIds = new Set(events.map(e => e.id));
+  const newPurchasedEvents = purchasedEventItems.filter(e => !existingEventIds.has(e.id));
+  events = [...events, ...newPurchasedEvents];
+  
+  // Also filter out past events from all events
+  events = events.filter(e => !isEventPast(e.date));
   
   // Add stored plans from QuickPlanModal
   const planItems = storedPlans.map(plan => {
@@ -182,15 +236,15 @@ const WeeklyRhythmStrip = ({ user, viewerIsMatch = false }) => {
     timeLabel: item.customText || timeLabels[item.frequency] || item.frequency,
   }));
   
-  // V4 Ordering: Events first (soonest), then plans, then recurring
+  // V4 Ordering: Plans first, then recurring, then events at the end
   // Max 5 items total (per spec)
   const allItems = [
-    ...eventItems,
-    ...upcomingItems.filter(i => i.type === 'event'),
     ...planItems.filter(p => !p.isRecurring), // One-time plans
     ...recurringItems,
     ...planItems.filter(p => p.isRecurring), // Recurring plans
     ...upcomingItems.filter(i => i.type === 'rhythm'),
+    ...eventItems, // Events at the end
+    ...upcomingItems.filter(i => i.type === 'event'),
   ].slice(0, 5);
   
   const hasItems = allItems.length > 0 || storedPlans.length > 0;
@@ -288,6 +342,8 @@ const WeeklyRhythmStrip = ({ user, viewerIsMatch = false }) => {
                 item={item}
                 index={index}
                 isVisible={isVisible}
+                isPreview={isPreview}
+                onDelete={handleDeletePlan}
               />
             )}
           </Box>

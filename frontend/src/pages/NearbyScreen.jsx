@@ -14,6 +14,7 @@ import { useAuth, PERMISSION_STATE } from "../context/AuthContext";
 import { useLanguage } from '../context/LanguageContext';
 import { NearbyStickyStickyBanner } from '../components/SubscriptionPromoBanner';
 import { updateUserLocation } from '../config/api';
+import { TAB_SCROLL_EVENT } from '../components/TabNavigation';
 
 /* ------------------------------ Theme & tokens ----------------------------- */
 const APP_BG =
@@ -87,6 +88,9 @@ export default function NearbyScreen() {
   const { t } = useLanguage();
   const [containerRef, containerW] = useElementWidth();
   const timersRef = useRef([]);
+  
+  // Ref for radar center to scroll to
+  const radarRef = useRef(null);
 
   // Radar sizes - 65% viewport width, max 380px (larger radar)
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
@@ -111,6 +115,29 @@ export default function NearbyScreen() {
   // Cleanup timers on unmount
   useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
   const pushTimer = (id) => timersRef.current.push(id);
+
+  // Scroll to top on mount (when navigating to Nearby)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
+  // Listen for tab scroll event - scroll to center radar in viewport
+  useEffect(() => {
+    const handleTabScroll = (e) => {
+      if (e.detail?.tab === 'nearby' && radarRef.current) {
+        // Calculate position to center the radar in the viewport
+        const headerHeight = 56;
+        const bottomNavHeight = 56;
+        const viewportHeight = window.innerHeight - headerHeight - bottomNavHeight;
+        const radarRect = radarRef.current.getBoundingClientRect();
+        const radarCenter = radarRect.top + window.scrollY + (radarRect.height / 2);
+        const targetScroll = radarCenter - headerHeight - (viewportHeight / 2);
+        window.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+      }
+    };
+    window.addEventListener(TAB_SCROLL_EVENT, handleTabScroll);
+    return () => window.removeEventListener(TAB_SCROLL_EVENT, handleTabScroll);
+  }, []);
 
   // Track page view on mount
   useEffect(() => {
@@ -535,7 +562,7 @@ export default function NearbyScreen() {
               }}
             >
               {/* People Radar */}
-              <Box sx={{ position: 'relative', width: ringSize, height: ringSize }}>
+              <Box ref={radarRef} sx={{ position: 'relative', width: ringSize, height: ringSize }}>
                 {/* Live Indicator - Circular Badge with Glow */}
                 <Box
                   component={motion.div}

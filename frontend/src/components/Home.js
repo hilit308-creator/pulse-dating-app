@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import useHomeDeckStore from "../store/homeDeckStore";
 import { resolvePrimaryPhoto } from "../utils/photoUtils";
+import { TAB_SCROLL_EVENT } from "./TabNavigation";
 import {
   Box,
   Typography,
@@ -68,6 +69,7 @@ import { ProfileTimeline } from "./timeline";
 import { PointsBannerCompact } from "./PointsBanner";
 import { demoUsers, personPhotos } from '../data/demoUsers';
 import QuickPlanModal from './QuickPlanModal';
+import ExternalSwipeWrapper, { SwipeLabels } from "./SwipeWrapper";
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -414,6 +416,7 @@ const SwipeWrapper = ({ children, onSwipeLeft, onSwipeRight, onOffsetChange }) =
         transition: isSwiping ? 'none' : 'transform 0.3s ease-out',
         position: 'relative',
         width: '100%',
+        backgroundColor: 'rgba(108, 92, 231, 0.08)',
       }}
     >
       {/* Swipe capture overlay - covers entire card but allows button clicks */}
@@ -1090,6 +1093,40 @@ export default function Home({ onOpenTutorial }) {
   const setUsers = isCachedUsersLoaded ? setCachedUsers : setLocalUsers;
   
   const [isLoadingUsers, setIsLoadingUsers] = useState(!isCachedUsersLoaded);
+  
+  // Ref for the card stack area to scroll to
+  const cardStackRef = useRef(null);
+
+  // Scroll to Discover section on mount (when navigating to Home)
+  useEffect(() => {
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      const discoverSection = document.querySelector('[data-section="discover"]');
+      if (discoverSection) {
+        discoverSection.scrollIntoView({ behavior: 'instant' });
+      } else {
+        // Fallback to top if section not found
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Listen for tab scroll event - scroll to Discover section
+  useEffect(() => {
+    const handleTabScroll = (e) => {
+      if (e.detail?.tab === 'home') {
+        const discoverSection = document.querySelector('[data-section="discover"]');
+        if (discoverSection) {
+          discoverSection.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    };
+    window.addEventListener(TAB_SCROLL_EVENT, handleTabScroll);
+    return () => window.removeEventListener(TAB_SCROLL_EVENT, handleTabScroll);
+  }, []);
 
   // Fetch users from API on mount (only if not already cached)
   useEffect(() => {
@@ -1891,7 +1928,7 @@ export default function Home({ onOpenTutorial }) {
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             color: '#6C5CE7',
             '&:hover': {
-              backgroundColor: '#fff',
+              backgroundColor: 'rgba(108, 92, 231, 0.08)',
             },
           }}
           size="small"
@@ -1967,7 +2004,16 @@ export default function Home({ onOpenTutorial }) {
           </Box>
         )}
 
-        {/* Today's Picks - MOVED TO TOP per Story Timeline spec */}
+        {/* Personal Status Card (Add a plan) - Phase 1.3 - hide when expanded */}
+        {!isExpanded && (
+          <PersonalStatusCard 
+            userStatus={userStatus}
+            onUpdate={() => setQuickPlanOpen(true)}
+            onTurnOff={() => setUserStatus({ ...userStatus, enabled: false })}
+          />
+        )}
+
+        {/* Today's Picks - after Add a plan */}
         {!isExpanded && (
           <TodaysPicks 
             users={todaysPicks} 
@@ -1980,15 +2026,6 @@ export default function Home({ onOpenTutorial }) {
             onPickViewed={() => {
               console.log('[Analytics] todays_picks_viewed', { count: todaysPicks.length });
             }}
-          />
-        )}
-
-        {/* Personal Status Card - Phase 1.3 - hide when expanded */}
-        {!isExpanded && (
-          <PersonalStatusCard 
-            userStatus={userStatus}
-            onUpdate={() => setQuickPlanOpen(true)}
-            onTurnOff={() => setUserStatus({ ...userStatus, enabled: false })}
           />
         )}
 
@@ -2074,18 +2111,47 @@ export default function Home({ onOpenTutorial }) {
                 data-filtered-count={filtered.length}
                 style={{ display: 'none' }}
               />
-              {/* Desktop Canvas Wrapper - 520px centered, white background */}
+              {/* Desktop Canvas Wrapper - 520px centered, light purple background */}
               <Box
+                ref={cardStackRef}
                 sx={{
                   width: '100%',
                   maxWidth: '520px',
-                  bgcolor: '#fff',
+                  bgcolor: 'rgba(108, 92, 231, 0.08)',
                   boxShadow: { xs: 'none', md: '0 0 40px rgba(0,0,0,0.08)' },
                   minHeight: '100vh',
                   overflow: 'visible', // Allow swipe to extend beyond container
+                  pt: { xs: 4, sm: 0 }, // Top padding on mobile (32px)
+                  position: 'relative', // Container for card stack layering
                 }}
               >
-              <SwipeWrapper
+              {/* Background Card - Next user preview (only visible during swipe) */}
+              {nextUser && swipeOffset !== 0 && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: { xs: 32, sm: 0 }, // Match pt padding
+                    left: 0,
+                    right: 0,
+                    zIndex: 1,
+                    pointerEvents: 'none',
+                    transform: `scale(${0.97 + Math.min(Math.abs(swipeOffset) / SWIPE_THRESHOLD, 1) * 0.03})`,
+                    transition: swipeOffset === 0 ? 'transform 0.2s ease-out' : 'none',
+                    willChange: 'transform',
+                    border: '2px solid rgba(108, 92, 231, 0.3)',
+                    borderRadius: '24px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <ProfileTimeline
+                    user={transformToUserCardModel(nextUser)}
+                    hideUndo={true}
+                  />
+                </Box>
+              )}
+              {/* Active Card - Draggable foreground card */}
+              <Box sx={{ position: 'relative', zIndex: 2 }}>
+              <ExternalSwipeWrapper
                 key={`swipe-${topUser.id}`}
                 onSwipeRight={async () => {
                 // Record like - NO need to increment deckIndex because the user
@@ -2312,7 +2378,8 @@ export default function Home({ onOpenTutorial }) {
                     }}
                   />
                 </Box>
-              </SwipeWrapper>
+              </ExternalSwipeWrapper>
+              </Box>
               </Box>
             </>
           )}

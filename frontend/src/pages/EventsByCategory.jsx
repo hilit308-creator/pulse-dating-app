@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { openPayPlusWindow } from '../services/payplus';
+import { TAB_SCROLL_EVENT } from '../components/TabNavigation';
 import {
   Box,
   Container,
@@ -1663,6 +1664,26 @@ export default function EventsByCategory() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Ref for page start to scroll to
+  const pageTopRef = useRef(null);
+
+  // Scroll to top on mount (when navigating to Events)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
+  // Listen for tab scroll event - scroll to page start (top of page)
+  useEffect(() => {
+    const handleTabScroll = (e) => {
+      if (e.detail?.tab === 'events') {
+        // Scroll to absolute top of page
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    window.addEventListener(TAB_SCROLL_EVENT, handleTabScroll);
+    return () => window.removeEventListener(TAB_SCROLL_EVENT, handleTabScroll);
+  }, []);
 
   const pairsByEventId = useEventInvitesStore((s) => s.pairsByEventId);
 
@@ -2028,7 +2049,7 @@ export default function EventsByCategory() {
   const skipUser = (u) => setMatches((arr) => arr.filter((id) => id !== u.id));
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#fafbfc", pb: 10 }}>
+    <Box ref={pageTopRef} sx={{ minHeight: "100vh", bgcolor: "#fafbfc", pb: 10 }}>
       {/* Page Title - scrolls with content (like Explore) */}
       <Box sx={{ px: 3, pt: 3, pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
         <Box>

@@ -139,7 +139,15 @@ export default function ProfileExtras() {
       if (response.ok) {
         const data = await response.json();
         console.log('[Spotify] Top artists response:', data);
-        setSpotifyArtists(data.artists || []);
+        const artists = data.artists || [];
+        setSpotifyArtists(artists);
+        // Save to localStorage for Preview Profile
+        try {
+          const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+          stored.spotifyConnected = true;
+          stored.spotifyArtists = artists;
+          localStorage.setItem('pulse_user', JSON.stringify(stored));
+        } catch (e) { console.error('Error saving Spotify artists:', e); }
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('[Spotify] Failed to fetch artists:', response.status, errorData);
@@ -171,6 +179,13 @@ export default function ProfileExtras() {
       if (response.ok) {
         setSpotifyConnected(false);
         setSpotifyArtists([]);
+        // Remove from localStorage
+        try {
+          const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+          stored.spotifyConnected = false;
+          stored.spotifyArtists = [];
+          localStorage.setItem('pulse_user', JSON.stringify(stored));
+        } catch (e) { console.error('Error removing Spotify data:', e); }
       } else {
         setSpotifyError('Failed to disconnect');
       }
@@ -415,6 +430,12 @@ export default function ProfileExtras() {
                 key={sign.name}
                 onClick={() => {
                   setStarSign(sign.name);
+                  // Save to localStorage for Preview Profile
+                  try {
+                    const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                    stored.starSign = sign.name;
+                    localStorage.setItem('pulse_user', JSON.stringify(stored));
+                  } catch (e) { console.error('Error saving starSign:', e); }
                   setStarSignDialog(false);
                 }}
                 sx={{
@@ -455,6 +476,12 @@ export default function ProfileExtras() {
                 key={opt}
                 onClick={() => {
                   setPolitics(opt);
+                  // Save to localStorage for Preview Profile
+                  try {
+                    const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                    stored.politics = opt;
+                    localStorage.setItem('pulse_user', JSON.stringify(stored));
+                  } catch (e) { console.error('Error saving politics:', e); }
                   setPoliticsDialog(false);
                 }}
                 sx={{
@@ -476,45 +503,84 @@ export default function ProfileExtras() {
           </Box>
         </DialogContent>
       </Dialog>
-      {/* Language Dialog */}
+      {/* Language Dialog - Multi-select */}
       <Dialog 
         open={languageDialog} 
         onClose={() => setLanguageDialog(false)} 
         PaperProps={{ sx: { borderRadius: 3, minWidth: 320, maxWidth: 400, m: 2 } }}
         sx={{ zIndex: 9999 }}
       >
-        <DialogTitle sx={{ fontWeight: 700 }}>Add a language</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          Select languages
+          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 400 }}>
+            {languages.length}/5 selected
+          </Typography>
+        </DialogTitle>
         <DialogContent sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {allLanguages.filter(l => !languages.includes(l)).map(lang => (
-              <Box
-                key={lang}
-                onClick={() => {
-                  if (languages.length < 5) {
-                    setLanguages([...languages, lang]);
-                    setLanguageDialog(false);
-                  }
-                }}
-                sx={{
-                  px: 2,
-                  py: 1,
-                  borderRadius: 2,
-                  cursor: languages.length >= 5 ? 'not-allowed' : 'pointer',
-                  border: '1px solid #e2e8f0',
-                  bgcolor: '#fff',
-                  opacity: languages.length >= 5 ? 0.5 : 1,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    borderColor: languages.length >= 5 ? '#e2e8f0' : '#6C5CE7',
-                    bgcolor: languages.length >= 5 ? '#fff' : 'rgba(108,92,231,0.05)',
-                  },
-                }}
-              >
-                <Typography sx={{ fontSize: 14, fontWeight: 500 }}>{lang}</Typography>
-              </Box>
-            ))}
+            {allLanguages.map(lang => {
+              const isSelected = languages.includes(lang);
+              const isDisabled = !isSelected && languages.length >= 5;
+              return (
+                <Box
+                  key={lang}
+                  onClick={() => {
+                    let newLanguages;
+                    if (isSelected) {
+                      // Remove language
+                      newLanguages = languages.filter(l => l !== lang);
+                    } else if (!isDisabled) {
+                      // Add language
+                      newLanguages = [...languages, lang];
+                    } else {
+                      return;
+                    }
+                    setLanguages(newLanguages);
+                    // Save to localStorage for Preview Profile
+                    try {
+                      const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                      stored.languages = newLanguages;
+                      localStorage.setItem('pulse_user', JSON.stringify(stored));
+                    } catch (e) { console.error('Error saving languages:', e); }
+                  }}
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    border: isSelected ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
+                    bgcolor: isSelected ? 'rgba(108,92,231,0.1)' : '#fff',
+                    opacity: isDisabled ? 0.5 : 1,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      borderColor: isDisabled ? '#e2e8f0' : '#6C5CE7',
+                      bgcolor: isDisabled ? '#fff' : isSelected ? 'rgba(108,92,231,0.15)' : 'rgba(108,92,231,0.05)',
+                    },
+                  }}
+                >
+                  <Typography sx={{ fontSize: 14, fontWeight: isSelected ? 600 : 500, color: isSelected ? '#6C5CE7' : '#1a1a2e' }}>
+                    {isSelected && '✓ '}{lang}
+                  </Typography>
+                </Box>
+              );
+            })}
           </Box>
         </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => setLanguageDialog(false)}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+            }}
+          >
+            Done
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

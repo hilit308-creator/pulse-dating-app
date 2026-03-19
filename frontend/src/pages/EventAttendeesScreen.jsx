@@ -19,6 +19,8 @@ import {
 import ProfileTimeline from '../components/timeline/ProfileTimeline';
 import SwipeWrapper, { SwipeLabels } from '../components/SwipeWrapper';
 
+const SWIPE_THRESHOLD = 100; // px to trigger swipe action
+
 // Mock attendees data - formatted for ProfileTimeline
 const MOCK_ATTENDEES = [
   {
@@ -198,6 +200,7 @@ const EventAttendeesScreen = () => {
   }, [matchPerson]);
 
   const currentPerson = attendees[currentIndex];
+  const nextPerson = attendees[currentIndex + 1] || null;
 
   if (!event) {
     navigate('/my-events');
@@ -313,12 +316,39 @@ const EventAttendeesScreen = () => {
               width: '100%',
               maxWidth: '520px',
               mx: 'auto',
-              bgcolor: '#fff',
+              bgcolor: 'rgba(108, 92, 231, 0.08)',
               boxShadow: { xs: 'none', md: '0 0 40px rgba(0,0,0,0.08)' },
               minHeight: '100vh',
+              position: 'relative',
             }}
           >
+            {/* Background Card - Next person preview (visible underneath during swipe) */}
+            {nextPerson && Math.abs(swipeOffset) > 10 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                  transform: `scale(${0.97 + Math.min(Math.abs(swipeOffset) / SWIPE_THRESHOLD, 1) * 0.03})`,
+                  transition: 'none',
+                  willChange: 'transform',
+                  border: '2px solid rgba(108, 92, 231, 0.3)',
+                  borderRadius: '24px',
+                  overflow: 'hidden',
+                }}
+              >
+                <ProfileTimeline
+                  user={transformToProfileTimelineFormat(nextPerson)}
+                  hideUndo={true}
+                />
+              </Box>
+            )}
+            {/* Active Card - Draggable foreground card */}
             {currentPerson && (
+              <Box sx={{ position: 'relative', zIndex: 2 }}>
               <SwipeWrapper
                 key={`swipe-${currentPerson.id}`}
                 onSwipeRight={() => handleSwipe('right', currentPerson)}
@@ -335,6 +365,7 @@ const EventAttendeesScreen = () => {
                   />
                 </Box>
               </SwipeWrapper>
+              </Box>
             )}
           </Box>
         </Box>

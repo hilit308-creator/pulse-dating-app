@@ -185,7 +185,7 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
   
   // New state for recurring plans
   const [selectedDays, setSelectedDays] = useState([]); // Array of day ids
-  const [selectedTimeOfDay, setSelectedTimeOfDay] = useState(null);
+  const [selectedTimesOfDay, setSelectedTimesOfDay] = useState([]); // Array for multiple selection
   
   // Privacy toggle state
   const [showOnProfile, setShowOnProfile] = useState(() => {
@@ -228,7 +228,7 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
       setSelectedTime(null);
       setSearchQuery('');
       setSelectedDays([]);
-      setSelectedTimeOfDay(null);
+      setSelectedTimesOfDay([]);
       setPlaceSuggestions([]);
     }
   }, [open]);
@@ -363,8 +363,12 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
     );
   };
 
-  const handleSelectTimeOfDay = (time) => {
-    setSelectedTimeOfDay(time);
+  const handleToggleTimeOfDay = (time) => {
+    setSelectedTimesOfDay(prev => 
+      prev.some(t => t.id === time.id)
+        ? prev.filter(t => t.id !== time.id)
+        : [...prev, time]
+    );
   };
 
   // Format days for display
@@ -376,19 +380,39 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
     return dayLabels.join(' • ');
   };
 
+  // Format times of day for display
+  const formatSelectedTimesOfDay = () => {
+    if (selectedTimesOfDay.length === 0) return '';
+    return selectedTimesOfDay.map(t => t.label.toLowerCase()).join(' • ');
+  };
+
   const handleSave = () => {
     if (!selectedPlace) return;
 
     let plan;
     
     if (planType === 'onetime') {
-      // Time is now OPTIONAL for one-time plans
+      // One-time plan - support "This week" with day selection
+      const isThisWeek = selectedTime?.id === 'this_week';
+      const daysDisplay = isThisWeek && selectedDays.length > 0 ? formatSelectedDays() : '';
+      const timesDisplay = selectedTimesOfDay.length > 0 ? formatSelectedTimesOfDay() : '';
+      
+      let timeDisplay = selectedTime?.label || 'Flexible';
+      if (isThisWeek && (daysDisplay || timesDisplay)) {
+        const parts = [daysDisplay, timesDisplay].filter(Boolean);
+        timeDisplay = parts.length > 0 ? parts.join(' • ') : 'This week';
+      } else if (timesDisplay && !isThisWeek) {
+        timeDisplay = selectedTime ? `${selectedTime.label} • ${timesDisplay}` : timesDisplay;
+      }
+      
       plan = {
         place: selectedPlace.label,
         placeId: selectedPlace.id,
         emoji: selectedPlace.emoji || '📍',
-        time: selectedTime?.label || 'Flexible',
+        time: timeDisplay,
         timeId: selectedTime?.id || 'flexible',
+        days: isThisWeek ? selectedDays : [],
+        timesOfDay: selectedTimesOfDay.map(t => t.id),
         isRecurring: false,
         // Google Places data
         googlePlaceId: selectedPlace.placeId,
@@ -397,12 +421,13 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
         address: selectedPlace.address,
       };
     } else {
-      // Recurring plan - days and time are now OPTIONAL
+      // Recurring plan - days and time are now OPTIONAL, multiple times supported
       const daysDisplay = formatSelectedDays() || 'Flexible';
-      const timeDisplay = selectedDays.length > 0 && selectedTimeOfDay 
-        ? `${daysDisplay} ${selectedTimeOfDay.label.toLowerCase()}s`
-        : selectedTimeOfDay 
-          ? selectedTimeOfDay.label
+      const timesDisplay = formatSelectedTimesOfDay();
+      const timeDisplay = selectedDays.length > 0 && timesDisplay 
+        ? `${daysDisplay} ${timesDisplay}s`
+        : timesDisplay 
+          ? timesDisplay
           : daysDisplay;
       
       plan = {
@@ -411,8 +436,8 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
         emoji: selectedPlace.emoji || '📍',
         time: timeDisplay,
         days: selectedDays,
-        timeOfDay: selectedTimeOfDay?.id || 'flexible',
-        timeOfDayLabel: selectedTimeOfDay?.label || 'Flexible',
+        timesOfDay: selectedTimesOfDay.map(t => t.id),
+        timesOfDayLabels: selectedTimesOfDay.map(t => t.label),
         isRecurring: true,
         // Google Places data
         googlePlaceId: selectedPlace.placeId,
@@ -814,7 +839,7 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
                   <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     When? <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: selectedTime?.id === 'this_week' ? 2 : 0 }}>
                     {TIME_OPTIONS.map((time) => (
                       <Chip
                         key={time.id}
@@ -840,6 +865,78 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
                       />
                     ))}
                   </Box>
+
+                  {/* Day selection when "This week" is selected */}
+                  {selectedTime?.id === 'this_week' && (
+                    <>
+                      <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Which days? <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 2 }}>
+                        {DAYS_OF_WEEK.map((day) => (
+                          <Chip
+                            key={day.id}
+                            label={day.label}
+                            onClick={() => handleToggleDay(day.id)}
+                            sx={{
+                              borderRadius: '8px',
+                              py: 1.5,
+                              px: 0.5,
+                              fontSize: 13,
+                              fontWeight: 600,
+                              minWidth: 44,
+                              backgroundColor: selectedDays.includes(day.id) ? '#6C5CE7' : '#f3f4f6',
+                              color: selectedDays.includes(day.id) ? '#fff' : '#4b5563',
+                              border: selectedDays.includes(day.id) ? '2px solid #6C5CE7' : '1px solid #e5e7eb',
+                              '&:hover': {
+                                backgroundColor: selectedDays.includes(day.id) ? '#5B4BD5' : 'rgba(108,92,231,0.1)',
+                              },
+                            }}
+                          />
+                        ))}
+                      </Box>
+
+                      {/* Time of day selection for This week */}
+                      <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        What time? <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {TIME_OF_DAY.map((time) => (
+                          <Chip
+                            key={time.id}
+                            label={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <span>{time.icon}</span>
+                                <span>{time.label}</span>
+                              </Box>
+                            }
+                            onClick={() => handleToggleTimeOfDay(time)}
+                            sx={{
+                              borderRadius: '10px',
+                              py: 2,
+                              px: 0.5,
+                              fontSize: 14,
+                              fontWeight: 500,
+                              backgroundColor: selectedTimesOfDay.some(t => t.id === time.id) ? 'rgba(108,92,231,0.15)' : '#f3f4f6',
+                              border: selectedTimesOfDay.some(t => t.id === time.id) ? '2px solid #6C5CE7' : '1px solid transparent',
+                              '&:hover': {
+                                backgroundColor: 'rgba(108,92,231,0.1)',
+                              },
+                            }}
+                          />
+                        ))}
+                      </Box>
+
+                      {/* Preview of selection */}
+                      {(selectedDays.length > 0 || selectedTimesOfDay.length > 0) && (
+                        <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(34,197,94,0.08)', borderRadius: '10px' }}>
+                          <Typography sx={{ fontSize: 13, color: '#22c55e', fontWeight: 500 }}>
+                            ✓ {selectedPlace?.label} • {formatSelectedDays() || 'This week'}{selectedTimesOfDay.length > 0 ? ` ${formatSelectedTimesOfDay()}` : ''}
+                          </Typography>
+                        </Box>
+                      )}
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -871,7 +968,7 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
                     ))}
                   </Box>
 
-                  {/* Time of day selection */}
+                  {/* Time of day selection - multiple selection */}
                   <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     What time? <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
                   </Typography>
@@ -885,15 +982,15 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
                             <span>{time.label}</span>
                           </Box>
                         }
-                        onClick={() => handleSelectTimeOfDay(time)}
+                        onClick={() => handleToggleTimeOfDay(time)}
                         sx={{
                           borderRadius: '10px',
                           py: 2,
                           px: 0.5,
                           fontSize: 14,
                           fontWeight: 500,
-                          backgroundColor: selectedTimeOfDay?.id === time.id ? 'rgba(108,92,231,0.15)' : '#f3f4f6',
-                          border: selectedTimeOfDay?.id === time.id ? '2px solid #6C5CE7' : '1px solid transparent',
+                          backgroundColor: selectedTimesOfDay.some(t => t.id === time.id) ? 'rgba(108,92,231,0.15)' : '#f3f4f6',
+                          border: selectedTimesOfDay.some(t => t.id === time.id) ? '2px solid #6C5CE7' : '1px solid transparent',
                           '&:hover': {
                             backgroundColor: 'rgba(108,92,231,0.1)',
                           },
@@ -903,10 +1000,10 @@ export default function QuickPlanModal({ open, onClose, onPlanAdded }) {
                   </Box>
 
                   {/* Preview of selection */}
-                  {selectedDays.length > 0 && selectedTimeOfDay && (
+                  {(selectedDays.length > 0 || selectedTimesOfDay.length > 0) && (
                     <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(34,197,94,0.08)', borderRadius: '10px' }}>
                       <Typography sx={{ fontSize: 13, color: '#22c55e', fontWeight: 500 }}>
-                        ✓ {selectedPlace?.label} • {formatSelectedDays()} {selectedTimeOfDay.label.toLowerCase()}s
+                        ✓ {selectedPlace?.label} • {formatSelectedDays() || 'Flexible'}{selectedTimesOfDay.length > 0 ? ` ${formatSelectedTimesOfDay()}` : ''}
                       </Typography>
                     </Box>
                   )}

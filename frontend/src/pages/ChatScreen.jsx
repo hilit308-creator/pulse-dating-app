@@ -8,6 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { TAB_SCROLL_EVENT } from '../components/TabNavigation';
 import {
   Box,
   Typography,
@@ -1706,6 +1707,21 @@ export default function ChatScreen() {
   const [chats, setChats] = useState([AGENT_ROW, ...demoChats]);
   const [openChat, setOpenChat] = useState(null);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Ref for page start to scroll to
+  const pageTopRef = useRef(null);
+
+  // Listen for tab scroll event - scroll to page start (top of page)
+  useEffect(() => {
+    const handleTabScroll = (e) => {
+      if (e.detail?.tab === 'chat') {
+        // Scroll to absolute top of page
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    window.addEventListener(TAB_SCROLL_EVENT, handleTabScroll);
+    return () => window.removeEventListener(TAB_SCROLL_EVENT, handleTabScroll);
+  }, []);
   
   // Gesture billing store selectors - must be declared before callbacks that use them
   const acceptGestureInStore = useGestureMessagesStore((state) => state.acceptGesture);
@@ -3946,6 +3962,7 @@ If you don't hear from me within 2 hours, please reach out! 💜`;
   if (!openChat) {
     return (
       <Box 
+        ref={pageTopRef}
         sx={{ 
           minHeight: "calc(100vh - 56px)",
           bgcolor: "#fff",

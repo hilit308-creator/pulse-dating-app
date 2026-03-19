@@ -1371,6 +1371,7 @@ export default function ViewNearbyPeopleScreen() {
   }
 
   const currentPerson = people[currentIndex];
+  const nextPerson = people[currentIndex + 1] || null;
 
   return (
     <>
@@ -1563,13 +1564,40 @@ export default function ViewNearbyPeopleScreen() {
               width: '100%',
               mx: 'auto',
               overflow: 'auto',
+              bgcolor: '#fff',
               // Hide scrollbar but keep scroll functionality
               '&::-webkit-scrollbar': { display: 'none' },
               msOverflowStyle: 'none',
               scrollbarWidth: 'none',
             }}
           >
+            {/* Background Card - Next person preview (visible underneath during swipe) */}
+            {nextPerson && Math.abs(swipeOffset) > 10 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                  transform: `scale(${0.97 + Math.min(Math.abs(swipeOffset) / SWIPE_THRESHOLD, 1) * 0.03})`,
+                  transition: 'none',
+                  willChange: 'transform',
+                  border: '2px solid rgba(108, 92, 231, 0.3)',
+                  borderRadius: '24px',
+                  overflow: 'hidden',
+                }}
+              >
+                <ProfileTimeline
+                  user={transformToUserCardModel(nextPerson)}
+                  hideUndo={true}
+                />
+              </Box>
+            )}
+            {/* Active Card - Draggable foreground card */}
             {currentPerson && (
+              <Box sx={{ position: 'relative', zIndex: 2 }}>
               <SwipeWrapper
                 key={`swipe-${currentPerson.id}`}
                 onSwipeRight={handleLike}
@@ -1587,6 +1615,7 @@ export default function ViewNearbyPeopleScreen() {
                   />
                 </Box>
               </SwipeWrapper>
+              </Box>
             )}
           </Box>
         )}

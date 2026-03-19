@@ -33,7 +33,7 @@ import DecisionZone from './DecisionZone';
 import WeeklyRhythmStrip from './WeeklyRhythmStrip';
 import PlaylistSection from './PlaylistSection';
 
-const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo }) => {
+const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo, isPreview = false }) => {
   // Extract photos array
   const photos = useMemo(() => {
     if (!user) return [];
@@ -98,7 +98,7 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo }) =>
       {/* ===== 2.5. QUALITIES I VALUE (after intro line, before photo 2) ===== */}
       {user.qualities?.length > 0 && (
         <TimelineSection title="Qualities I value">
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
             {user.qualities.slice(0, 5).map((quality, i) => (
               <Chip
                 key={i}
@@ -124,6 +124,18 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo }) =>
           src={photos[1]}
           alt={`${user.firstName || user.name} 2`}
         />
+      )}
+
+      {/* ===== PROMPT 2 (after photo 2, shows topic + answer) ===== */}
+      {user.prompts?.[1] && (
+        <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
+            {user.prompts[1].prompt}
+          </Typography>
+          <Typography sx={{ fontSize: 16, color: '#374151', fontWeight: 500, fontStyle: 'italic' }}>
+            "{user.prompts[1].answer}"
+          </Typography>
+        </Box>
       )}
 
       {/* ===== 4. QUICK FACTS (always visible) ===== */}
@@ -152,10 +164,22 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo }) =>
         />
       )}
 
+      {/* ===== PROMPT 3 (after photo 3, shows topic + answer) ===== */}
+      {user.prompts?.[2] && (
+        <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
+            {user.prompts[2].prompt}
+          </Typography>
+          <Typography sx={{ fontSize: 16, color: '#374151', fontWeight: 500, fontStyle: 'italic' }}>
+            "{user.prompts[2].answer}"
+          </Typography>
+        </Box>
+      )}
+
       {/* ===== 7. INTERESTS (moved before Lifestyle for connection-first flow) ===== */}
       {user.interests?.length > 0 && (
         <TimelineSection title={`${user.firstName || 'She'}'s into`}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
             {user.interests.slice(0, 12).map((interest, i) => (
               <Chip
                 key={i}
@@ -186,6 +210,18 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo }) =>
         />
       )}
 
+      {/* ===== PROMPT 4 (after photo 4, shows topic + answer) ===== */}
+      {user.prompts?.[3] && (
+        <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
+            {user.prompts[3].prompt}
+          </Typography>
+          <Typography sx={{ fontSize: 16, color: '#374151', fontWeight: 500, fontStyle: 'italic' }}>
+            "{user.prompts[3].answer}"
+          </Typography>
+        </Box>
+      )}
+
       {/* ===== 10. LIFESTYLE & VALUES (2-column grid on desktop) - after Photo 4 ===== */}
       <LifestyleSection user={user} />
 
@@ -195,6 +231,18 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo }) =>
           src={photos[4]}
           alt={`${user.firstName || user.name} 5`}
         />
+      )}
+
+      {/* ===== PROMPT 5 (after photo 5, shows topic + answer) ===== */}
+      {user.prompts?.[4] && (
+        <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
+            {user.prompts[4].prompt}
+          </Typography>
+          <Typography sx={{ fontSize: 16, color: '#374151', fontWeight: 500, fontStyle: 'italic' }}>
+            "{user.prompts[4].answer}"
+          </Typography>
+        </Box>
       )}
 
       {/* ===== 13. PLAYLIST (if exists) ===== */}
@@ -208,8 +256,20 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo }) =>
         />
       )}
 
+      {/* ===== PROMPT 6 (after photo 6, shows topic + answer) ===== */}
+      {user.prompts?.[5] && (
+        <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
+            {user.prompts[5].prompt}
+          </Typography>
+          <Typography sx={{ fontSize: 16, color: '#374151', fontWeight: 500, fontStyle: 'italic' }}>
+            "{user.prompts[5].answer}"
+          </Typography>
+        </Box>
+      )}
+
       {/* ===== 15. MY WEEKLY RHYTHM (V3: Horizontal Strip - after last photo) ===== */}
-      <WeeklyRhythmStrip user={user} viewerIsMatch={user.likesYou || user.isMatch} />
+      <WeeklyRhythmStrip user={user} viewerIsMatch={user.likesYou || user.isMatch} isPreview={isPreview} />
 
       {/* ===== DECISION ZONE ===== */}
       <DecisionZone

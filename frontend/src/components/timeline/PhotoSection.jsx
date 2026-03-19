@@ -35,7 +35,7 @@ const PhotoSection = ({
           minHeight: isHero ? 420 : 200,
           maxHeight: isHero ? 720 : '45vh',
           overflow: 'hidden',
-          borderRadius: isHero ? 0 : '16px',
+          borderRadius: '16px',
         }}
       >
         <Box
@@ -73,7 +73,7 @@ const PhotoSection = ({
               left: 0,
               right: 0,
               p: 3,
-              pb: 4,
+              pb: 1,
             }}
           >
             {/* Name + Age + Verified */}

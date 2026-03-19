@@ -58,9 +58,11 @@ import {
   Navigation,
   CheckCircle,
   XCircle,
+  Check,
   RefreshCw,
 } from "lucide-react";
 import { useMeeting, MEETING_STATE } from "../context/MeetingContext";
+import SOSHelperNotification, { HELPER_STATE } from "../components/SOSHelperNotification";
 
 // SOS Demo States (matching spec)
 const SOS_DEMO_STATE = {
@@ -539,8 +541,8 @@ function SOSDemoDialog({ open, onClose, meetingWith, meetingContacts }) {
           </Box>
         )}
 
-        {/* Helper View Demo */}
-        {showHelperView && demoState === SOS_DEMO_STATE.IDLE && (
+        {/* Helper View Demo - Uses SOSHelperNotification component */}
+        {showHelperView && (
           <Box sx={{ 
             mt: 2, p: 2, borderRadius: '12px', 
             bgcolor: '#f8fafc', border: '1px solid #e2e8f0',
@@ -549,41 +551,64 @@ function SOSDemoDialog({ open, onClose, meetingWith, meetingContacts }) {
               📱 What helpers see:
             </Typography>
             
-            {/* Incoming Request */}
-            <Box sx={{ 
-              p: 2, borderRadius: '12px', bgcolor: '#fff',
-              border: '2px solid #6C5CE7', mb: 1.5,
-            }}>
-              <Typography sx={{ fontWeight: 700, color: '#1a1a2e', fontSize: '0.95rem', mb: 0.5 }}>
-                Someone nearby needs help
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748b', mb: 1.5 }}>
-                Can you come help right now?
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button size="small" variant="contained" sx={{ 
-                  flex: 1, bgcolor: '#6C5CE7', textTransform: 'none', fontWeight: 600,
-                }}>
-                  Accept
-                </Button>
-                <Button size="small" variant="outlined" sx={{ 
-                  flex: 1, borderColor: '#94a3b8', color: '#64748b', textTransform: 'none',
-                }}>
-                  Not now
-                </Button>
+            {/* Embedded SOSHelperNotification preview (not as dialog) */}
+            <SOSHelperNotification
+              open={true}
+              onClose={() => setShowHelperView(false)}
+              requester={{
+                name: 'Liza',
+                age: 28,
+                photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
+                tagline: 'Adventure seeker with a passion for discovering new places ✈️',
+                verified: true,
+              }}
+              location={{
+                address: 'Dizengoff Center, Tel Aviv',
+                lat: 32.0753,
+                lng: 34.7748,
+                distance: helperDistance || 1.2,
+              }}
+              onAccept={startDemo}
+              onDecline={() => setShowHelperView(false)}
+              onCancel={cancelDemo}
+              helperState={
+                demoState === SOS_DEMO_STATE.IDLE ? HELPER_STATE.INCOMING :
+                demoState === SOS_DEMO_STATE.HELPER_ASSIGNED ? HELPER_STATE.ACCEPTED :
+                demoState === SOS_DEMO_STATE.HELPER_APPROACHING ? HELPER_STATE.APPROACHING :
+                demoState === SOS_DEMO_STATE.AWAITING_CONFIRMATION ? HELPER_STATE.ARRIVED :
+                demoState === SOS_DEMO_STATE.RESOLVED_CONFIRMED ? HELPER_STATE.CONFIRMED :
+                HELPER_STATE.INCOMING
+              }
+              rewardPoints={150}
+              embedded={true}
+            />
+
+            {/* Searching State */}
+            {demoState === SOS_DEMO_STATE.SEARCHING && (
+              <Box sx={{ 
+                p: 2, borderRadius: '12px', bgcolor: '#fff',
+                border: '2px dashed #94a3b8', textAlign: 'center', mt: 1.5,
+              }}>
+                <Typography sx={{ color: '#64748b', fontSize: '0.9rem' }}>
+                  Waiting for a helper to accept...
+                </Typography>
               </Box>
-            </Box>
+            )}
             
-            {/* Other messages */}
-            <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
-              Other helper messages:
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', fontStyle: 'italic' }}>
-              • "Someone has already responded. Thank you."
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', fontStyle: 'italic' }}>
-              • "This request is no longer active. Thank you."
-            </Typography>
+            {/* Other messages info */}
+            {demoState === SOS_DEMO_STATE.IDLE && (
+              <Box sx={{ mt: 1.5 }}>
+                <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                  Other helper messages:
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', fontStyle: 'italic' }}>
+                  • "Someone has already responded. Thank you."
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', fontStyle: 'italic' }}>
+                  • "This request is no longer active. Thank you."
+                </Typography>
+              </Box>
+            )}
           </Box>
         )}
 
@@ -845,6 +870,7 @@ export default function MeetingTimeScreen() {
   const [selectedPresetMessage, setSelectedPresetMessage] = useState(4); // Default to personalized message with name
   const [customMessage, setCustomMessage] = useState('');
   const [useCustomMessage, setUseCustomMessage] = useState(false);
+  const [editedPresetMessages, setEditedPresetMessages] = useState({}); // Track edited versions of preset messages
   const [includeLocation, setIncludeLocation] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
@@ -971,13 +997,41 @@ export default function MeetingTimeScreen() {
     setEditingContact(contact);
     setContactName(contact.name);
     setContactPhone(contact.phone);
-    const presetMatch = PRESET_MESSAGES.find(p => p.text === contact.message);
-    if (presetMatch) {
-      setSelectedPresetMessage(presetMatch.id);
+    
+    // If contact has a saved presetId, use it to restore the correct preset with the edited message
+    if (contact.presetId && contact.message) {
+      setSelectedPresetMessage(contact.presetId);
       setUseCustomMessage(false);
+      setEditedPresetMessages({ [contact.presetId]: contact.message });
     } else {
-      setCustomMessage(contact.message || '');
-      setUseCustomMessage(true);
+      // Check if the saved message matches any preset exactly
+      const presetMatch = PRESET_MESSAGES.find(p => p.text === contact.message);
+      if (presetMatch) {
+        // Exact match - select that preset
+        setSelectedPresetMessage(presetMatch.id);
+        setUseCustomMessage(false);
+        setEditedPresetMessages({});
+      } else {
+        // Check if it's a personalized preset with name replaced
+        const personalizedPreset = PRESET_MESSAGES.find(p => 
+          p.personalized && contact.message === p.text.replace('{name}', contact.name)
+        );
+        if (personalizedPreset) {
+          setSelectedPresetMessage(personalizedPreset.id);
+          setUseCustomMessage(false);
+          setEditedPresetMessages({});
+        } else if (contact.message) {
+          // Custom/edited message - load it into the first preset slot for editing
+          setSelectedPresetMessage(1);
+          setUseCustomMessage(false);
+          setEditedPresetMessages({ 1: contact.message });
+        } else {
+          // No message - use default
+          setSelectedPresetMessage(4);
+          setUseCustomMessage(false);
+          setEditedPresetMessages({});
+        }
+      }
     }
     setShowEditContactDialog(true);
   };
@@ -994,16 +1048,26 @@ export default function MeetingTimeScreen() {
   const handleSaveNewContact = () => {
     if (!contactName.trim()) return;
     
-    let message = useCustomMessage ? customMessage : PRESET_MESSAGES.find(p => p.id === selectedPresetMessage)?.text;
-    // Replace {name} placeholder with actual contact name
-    if (message && message.includes('{name}')) {
-      message = message.replace('{name}', contactName.trim());
+    // Use edited preset message if available, otherwise fall back to original preset or custom
+    let message;
+    if (useCustomMessage) {
+      message = customMessage;
+    } else if (editedPresetMessages[selectedPresetMessage] !== undefined) {
+      message = editedPresetMessages[selectedPresetMessage];
+    } else {
+      message = PRESET_MESSAGES.find(p => p.id === selectedPresetMessage)?.text;
+      // Replace {name} placeholder with actual contact name
+      if (message && message.includes('{name}')) {
+        message = message.replace('{name}', contactName.trim());
+      }
     }
+    
     const newContact = {
       id: Date.now().toString(),
       name: contactName.trim(),
       phone: contactPhone.trim(),
       message: message,
+      presetId: selectedPresetMessage,
       location: includeLocation ? currentLocation : null,
     };
     
@@ -1017,14 +1081,23 @@ export default function MeetingTimeScreen() {
   const handleUpdateContact = () => {
     if (!editingContact || (!contactName.trim() && !contactPhone.trim())) return;
     
-    let message = useCustomMessage ? customMessage : PRESET_MESSAGES.find(p => p.id === selectedPresetMessage)?.text;
-    // Replace {name} placeholder with actual contact name
-    if (message && message.includes('{name}')) {
-      message = message.replace('{name}', contactName.trim());
+    // Use edited preset message if available, otherwise fall back to original preset or custom
+    let message;
+    if (useCustomMessage) {
+      message = customMessage;
+    } else if (editedPresetMessages[selectedPresetMessage] !== undefined) {
+      message = editedPresetMessages[selectedPresetMessage];
+    } else {
+      message = PRESET_MESSAGES.find(p => p.id === selectedPresetMessage)?.text;
+      // Replace {name} placeholder with actual contact name
+      if (message && message.includes('{name}')) {
+        message = message.replace('{name}', contactName.trim());
+      }
     }
+    
     const updated = meetingContacts.map(c => 
       c.id === editingContact.id 
-        ? { ...c, name: contactName.trim(), phone: contactPhone.trim(), message, location: includeLocation ? currentLocation : null }
+        ? { ...c, name: contactName.trim(), phone: contactPhone.trim(), message, presetId: selectedPresetMessage, location: includeLocation ? currentLocation : null }
         : c
     );
     
@@ -1042,6 +1115,7 @@ export default function MeetingTimeScreen() {
     setSelectedPresetMessage(4); // Default to personalized message with name
     setCustomMessage('');
     setUseCustomMessage(false);
+    setEditedPresetMessages({}); // Reset edited messages
     setIncludeLocation(false);
     setCurrentLocation(null);
   };
@@ -1404,23 +1478,31 @@ export default function MeetingTimeScreen() {
           />
           
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#1a1a2e' }}>
-            Choose a message
+            Choose a message (tap to edit)
           </Typography>
           
-          {/* Message cards - Explorer style */}
+          {/* Message cards - All editable */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {PRESET_MESSAGES.map((preset) => {
               const isSelected = !useCustomMessage && selectedPresetMessage === preset.id;
-              // Replace {name} placeholder with actual contact name
-              const displayText = preset.personalized && contactName 
+              // Get the current text - either edited version or original with name replacement
+              const originalText = preset.personalized && contactName 
                 ? preset.text.replace('{name}', contactName) 
                 : preset.text;
+              const currentText = editedPresetMessages[preset.id] !== undefined 
+                ? editedPresetMessages[preset.id] 
+                : originalText;
+              
               return (
                 <Box
                   key={preset.id}
                   onClick={() => {
                     setSelectedPresetMessage(preset.id);
                     setUseCustomMessage(false);
+                    // Initialize edited text if not already set
+                    if (editedPresetMessages[preset.id] === undefined) {
+                      setEditedPresetMessages(prev => ({ ...prev, [preset.id]: originalText }));
+                    }
                   }}
                   sx={{
                     p: 1.5,
@@ -1435,52 +1517,40 @@ export default function MeetingTimeScreen() {
                     },
                   }}
                 >
-                  <Typography sx={{ 
-                    fontSize: '0.85rem', 
-                    color: isSelected ? '#6C5CE7' : '#374151',
-                    fontWeight: isSelected ? 600 : 400,
-                  }}>
-                    {displayText}
-                  </Typography>
+                  {isSelected ? (
+                    <TextField
+                      fullWidth
+                      multiline
+                      minRows={1}
+                      maxRows={4}
+                      value={currentText}
+                      onChange={(e) => {
+                        setEditedPresetMessages(prev => ({ ...prev, [preset.id]: e.target.value }));
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      variant="standard"
+                      InputProps={{ disableUnderline: true }}
+                      sx={{ 
+                        '& .MuiInputBase-input': { 
+                          fontSize: '0.85rem', 
+                          p: 0,
+                          color: '#6C5CE7',
+                          fontWeight: 600,
+                        } 
+                      }}
+                    />
+                  ) : (
+                    <Typography sx={{ 
+                      fontSize: '0.85rem', 
+                      color: '#374151',
+                      fontWeight: 400,
+                    }}>
+                      {currentText}
+                    </Typography>
+                  )}
                 </Box>
               );
             })}
-            
-            {/* Custom message option */}
-            <Box
-              onClick={() => setUseCustomMessage(true)}
-              sx={{
-                p: 1.5,
-                borderRadius: '12px',
-                border: useCustomMessage ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
-                bgcolor: useCustomMessage ? 'rgba(108,92,231,0.08)' : '#fff',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  borderColor: useCustomMessage ? '#6C5CE7' : '#cbd5e1',
-                  bgcolor: useCustomMessage ? 'rgba(108,92,231,0.08)' : '#f8fafc',
-                },
-              }}
-            >
-              {useCustomMessage ? (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  placeholder="Write custom message..."
-                  variant="standard"
-                  InputProps={{ disableUnderline: true }}
-                  sx={{ '& .MuiInputBase-input': { fontSize: '0.85rem', p: 0 } }}
-                  autoFocus
-                />
-              ) : (
-                <Typography sx={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                  Write custom message...
-                </Typography>
-              )}
-            </Box>
           </Box>
           
           {/* Share Location Toggle */}
@@ -1573,12 +1643,11 @@ export default function MeetingTimeScreen() {
               textTransform: 'none', 
               fontWeight: 700,
               px: 3,
-              bgcolor: '#25D366', 
-              '&:hover': { bgcolor: '#128C7E' } 
+              background: 'linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%)',
+              '&:hover': { background: 'linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%)' } 
             }}
-            startIcon={<Send size={16} />}
           >
-            Add & Share
+            Add Contact
           </Button>
         </DialogActions>
       </Dialog>
@@ -1625,23 +1694,31 @@ export default function MeetingTimeScreen() {
           />
           
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#1a1a2e' }}>
-            Choose a message
+            Choose a message (tap to edit)
           </Typography>
           
-          {/* Message cards - Explorer style */}
+          {/* Message cards - All editable */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {PRESET_MESSAGES.map((preset) => {
               const isSelected = !useCustomMessage && selectedPresetMessage === preset.id;
-              // Replace {name} placeholder with actual contact name
-              const displayText = preset.personalized && contactName 
+              // Get the current text - either edited version or original with name replacement
+              const originalText = preset.personalized && contactName 
                 ? preset.text.replace('{name}', contactName) 
                 : preset.text;
+              const currentText = editedPresetMessages[preset.id] !== undefined 
+                ? editedPresetMessages[preset.id] 
+                : originalText;
+              
               return (
                 <Box
                   key={preset.id}
                   onClick={() => {
                     setSelectedPresetMessage(preset.id);
                     setUseCustomMessage(false);
+                    // Initialize edited text if not already set
+                    if (editedPresetMessages[preset.id] === undefined) {
+                      setEditedPresetMessages(prev => ({ ...prev, [preset.id]: originalText }));
+                    }
                   }}
                   sx={{
                     p: 1.5,
@@ -1656,52 +1733,40 @@ export default function MeetingTimeScreen() {
                     },
                   }}
                 >
-                  <Typography sx={{ 
-                    fontSize: '0.85rem', 
-                    color: isSelected ? '#6C5CE7' : '#374151',
-                    fontWeight: isSelected ? 600 : 400,
-                  }}>
-                    {displayText}
-                  </Typography>
+                  {isSelected ? (
+                    <TextField
+                      fullWidth
+                      multiline
+                      minRows={1}
+                      maxRows={4}
+                      value={currentText}
+                      onChange={(e) => {
+                        setEditedPresetMessages(prev => ({ ...prev, [preset.id]: e.target.value }));
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      variant="standard"
+                      InputProps={{ disableUnderline: true }}
+                      sx={{ 
+                        '& .MuiInputBase-input': { 
+                          fontSize: '0.85rem', 
+                          p: 0,
+                          color: '#6C5CE7',
+                          fontWeight: 600,
+                        } 
+                      }}
+                    />
+                  ) : (
+                    <Typography sx={{ 
+                      fontSize: '0.85rem', 
+                      color: '#374151',
+                      fontWeight: 400,
+                    }}>
+                      {currentText}
+                    </Typography>
+                  )}
                 </Box>
               );
             })}
-            
-            {/* Custom message option */}
-            <Box
-              onClick={() => setUseCustomMessage(true)}
-              sx={{
-                p: 1.5,
-                borderRadius: '12px',
-                border: useCustomMessage ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
-                bgcolor: useCustomMessage ? 'rgba(108,92,231,0.08)' : '#fff',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  borderColor: useCustomMessage ? '#6C5CE7' : '#cbd5e1',
-                  bgcolor: useCustomMessage ? 'rgba(108,92,231,0.08)' : '#f8fafc',
-                },
-              }}
-            >
-              {useCustomMessage ? (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  placeholder="Write custom message..."
-                  variant="standard"
-                  InputProps={{ disableUnderline: true }}
-                  sx={{ '& .MuiInputBase-input': { fontSize: '0.85rem', p: 0 } }}
-                  autoFocus
-                />
-              ) : (
-                <Typography sx={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                  Write custom message...
-                </Typography>
-              )}
-            </Box>
           </Box>
           
           {/* Share Location Toggle */}

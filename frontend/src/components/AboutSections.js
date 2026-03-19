@@ -57,22 +57,37 @@ const initialMoreAboutFields = [
 export default function AboutSections() {
   const { user } = useAuth();
   
-  // Build fields from user data
-  const buildFieldsFromUser = () => [
-    { icon: <WcIcon />, label: 'Gender', value: user?.gender || '', key: 'gender', type: 'select', options: genderOptions },
-    { icon: <HeightIcon />, label: 'Height', value: user?.height ? String(user.height) : '', key: 'height', type: 'height' },
-    { icon: <LocationOnIcon />, label: 'Location', value: user?.location || user?.city || '', key: 'location', type: 'text', required: true },
-    { icon: <HomeIcon />, label: 'Hometown', value: user?.hometown || '', key: 'hometown', type: 'text' },
-    { icon: <WorkIcon />, label: 'Work', value: user?.jobTitle || user?.company ? `${user?.jobTitle || ''}${user?.jobTitle && user?.company ? ' at ' : ''}${user?.company || ''}` : '', key: 'work', type: 'text' },
-    { icon: <SchoolIcon />, label: 'Education', value: user?.education || user?.school ? `${user?.education || ''}${user?.education && user?.school ? ' - ' : ''}${user?.school || ''}` : '', key: 'education', type: 'text' },
-  ];
+  // Build fields from user data - read from localStorage first
+  const buildFieldsFromUser = () => {
+    let localData = {};
+    try {
+      localData = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+    } catch (e) { /* ignore */ }
+    
+    return [
+      { icon: <WcIcon />, label: 'Gender', value: localData.gender || user?.gender || '', key: 'gender', type: 'select', options: genderOptions },
+      { icon: <HeightIcon />, label: 'Height', value: localData.height || (user?.height ? String(user.height) : ''), key: 'height', type: 'height' },
+      { icon: <LocationOnIcon />, label: 'Location', value: localData.location || user?.location || user?.city || '', key: 'location', type: 'text', required: true },
+      { icon: <HomeIcon />, label: 'Hometown', value: localData.hometown || user?.hometown || '', key: 'hometown', type: 'text' },
+      { icon: <WorkIcon />, label: 'Work', value: localData.work || (user?.jobTitle || user?.company ? `${user?.jobTitle || ''}${user?.jobTitle && user?.company ? ' at ' : ''}${user?.company || ''}` : ''), key: 'work', type: 'text' },
+      { icon: <SchoolIcon />, label: 'Education', value: localData.education || (user?.education || user?.school ? `${user?.education || ''}${user?.education && user?.school ? ' - ' : ''}${user?.school || ''}` : ''), key: 'education', type: 'text' },
+    ];
+  };
 
-  const buildMoreFieldsFromUser = () => [
-    { icon: <DirectionsRunIcon />, label: 'Exercise', value: user?.exercise || '', key: 'exercise', type: 'select', options: exerciseOptions },
-    { icon: <LocalBarIcon />, label: 'Drinking', value: user?.drinking || '', key: 'drinking', type: 'select', options: drinkingOptions },
-    { icon: <SmokingRoomsIcon />, label: 'Smoking', value: user?.smoking || '', key: 'smoking', type: 'select', options: smokingOptions },
-    { icon: <ChildCareIcon />, label: 'Kids', value: user?.kids || '', key: 'kids', type: 'select', options: kidsOptions },
-  ];
+  const buildMoreFieldsFromUser = () => {
+    // Read from localStorage first, then fall back to user context
+    let localData = {};
+    try {
+      localData = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+    } catch (e) { /* ignore */ }
+    
+    return [
+      { icon: <DirectionsRunIcon />, label: 'Exercise', value: localData.exercise || user?.exercise || '', key: 'exercise', type: 'select', options: exerciseOptions },
+      { icon: <LocalBarIcon />, label: 'Drinking', value: localData.drinking || user?.drinking || '', key: 'drinking', type: 'select', options: drinkingOptions },
+      { icon: <SmokingRoomsIcon />, label: 'Smoking', value: localData.smoking || user?.smoking || '', key: 'smoking', type: 'select', options: smokingOptions },
+      { icon: <ChildCareIcon />, label: 'Kids', value: localData.kids || user?.kids || '', key: 'kids', type: 'select', options: kidsOptions },
+    ];
+  };
 
   // About You state - initialize from user data
   const [fields, setFields] = useState(buildFieldsFromUser);
@@ -199,6 +214,12 @@ export default function AboutSections() {
                       onBlur={e => {
                         if (editValue.trim()) {
                           setFields(fields.map(f => f.key === editingKey ? { ...f, value: editValue } : f));
+                          // Save to localStorage for Preview Profile
+                          try {
+                            const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                            stored[editingKey] = editValue;
+                            localStorage.setItem('pulse_user', JSON.stringify(stored));
+                          } catch (e) { console.error('Error saving field:', e); }
                         }
                         setEditingKey(null);
                         setEditValue("");
@@ -230,6 +251,12 @@ export default function AboutSections() {
                         onChange={(_, v) => setEditValue(String(v))}
                         onChangeCommitted={(_, v) => {
                           setFields(fields.map(f => f.key === editingKey ? { ...f, value: String(v) } : f));
+                          // Save height to localStorage for Preview Profile
+                          try {
+                            const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                            stored.height = String(v);
+                            localStorage.setItem('pulse_user', JSON.stringify(stored));
+                          } catch (e) { console.error('Error saving height:', e); }
                           setEditingKey(null);
                           setEditValue("");
                         }}
@@ -256,6 +283,12 @@ export default function AboutSections() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setFields(fields.map(f => f.key === editingKey ? { ...f, value: opt } : f));
+                            // Save to localStorage for Preview Profile
+                            try {
+                              const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                              stored[editingKey] = opt;
+                              localStorage.setItem('pulse_user', JSON.stringify(stored));
+                            } catch (err) { console.error('Error saving field:', err); }
                             setEditingKey(null);
                             setEditValue("");
                           }}
@@ -391,6 +424,12 @@ export default function AboutSections() {
                       key={opt}
                       onClick={() => {
                         setMoreFields(moreFields.map(f => f.key === editingMoreKey ? { ...f, value: opt } : f));
+                        // Save to localStorage for Preview Profile
+                        try {
+                          const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                          stored[editingMoreKey] = opt;
+                          localStorage.setItem('pulse_user', JSON.stringify(stored));
+                        } catch (e) { console.error('Error saving lifestyle field:', e); }
                         setEditingMoreKey(null);
                         setEditMoreValue("");
                       }}

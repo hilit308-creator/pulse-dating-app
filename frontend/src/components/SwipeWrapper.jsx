@@ -176,6 +176,7 @@ const SwipeWrapper = ({ children, onSwipeLeft, onSwipeRight, onOffsetChange }) =
         position: 'relative',
         width: '100%',
         cursor: isSwiping ? 'grabbing' : 'default',
+        backgroundColor: '#fff',
       }}
     >
       {children}

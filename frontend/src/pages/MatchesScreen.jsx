@@ -3,8 +3,9 @@
 // NOT designed to: create excitement, drive novelty, push decisions
 // Must feel: calm, predictable, organized, trustworthy
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { TAB_SCROLL_EVENT } from '../components/TabNavigation';
 import {
   Box,
   Typography,
@@ -951,6 +952,26 @@ export default function MatchesScreen() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   
+  // Ref for page start to scroll to
+  const pageTopRef = useRef(null);
+
+  // Scroll to top on mount (when navigating to Matches)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
+  // Listen for tab scroll event - scroll to page start (top of page)
+  useEffect(() => {
+    const handleTabScroll = (e) => {
+      if (e.detail?.tab === 'matches') {
+        // Scroll to absolute top of page
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    window.addEventListener(TAB_SCROLL_EVENT, handleTabScroll);
+    return () => window.removeEventListener(TAB_SCROLL_EVENT, handleTabScroll);
+  }, []);
+  
   // Global store for liked profiles (YOU LIKE tab) and mutual matches (MUTUAL MATCHES tab)
   const { likedProfiles, removeLikedProfile, mutualMatches, removeMutualMatch, addMutualMatch, _hasHydrated } = useHomeDeckStore();
   
@@ -1392,6 +1413,7 @@ export default function MatchesScreen() {
 
   return (
     <Box
+      ref={pageTopRef}
       sx={{
         minHeight: '100vh',
         backgroundColor: '#fafbfc',

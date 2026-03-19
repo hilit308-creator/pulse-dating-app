@@ -235,22 +235,34 @@ const InterestsScreen = () => {
                           opacity: isDisabled ? 0.5 : 1,
                           ...(isSelected
                             ? {
-                                backgroundColor: '#6C5CE7',
-                                color: 'white',
+                                backgroundColor: '#6C5CE7 !important',
+                                color: 'white !important',
                                 '& .MuiChip-icon': {
-                                  color: 'white',
+                                  color: 'white !important',
                                 },
                                 '&:hover': {
-                                  backgroundColor: '#5b4cdb',
+                                  backgroundColor: '#5b4cdb !important',
+                                },
+                                '&:focus': {
+                                  backgroundColor: '#6C5CE7 !important',
+                                },
+                                '&:active': {
+                                  backgroundColor: '#5b4cdb !important',
                                 },
                               }
                             : {
-                                backgroundColor: '#f8fafc',
-                                color: '#64748b',
+                                backgroundColor: '#f8fafc !important',
+                                color: '#64748b !important',
                                 border: '1px solid #e2e8f0',
                                 '&:hover': {
-                                  backgroundColor: 'rgba(108,92,231,0.1)',
+                                  backgroundColor: 'rgba(108,92,231,0.1) !important',
                                   borderColor: '#6C5CE7',
+                                },
+                                '&:focus': {
+                                  backgroundColor: '#f8fafc !important',
+                                },
+                                '&:active': {
+                                  backgroundColor: '#f1f5f9 !important',
                                 },
                               }),
                         }}

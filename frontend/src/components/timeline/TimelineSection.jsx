@@ -14,6 +14,7 @@ const TimelineSection = ({
   spacing = 'normal', // 'normal' | 'compact' | 'large'
   background = 'transparent',
   noPadding = false,
+  centered = true, // Whether to center the content
 }) => {
   const spacingMap = {
     compact: { py: 2 },
@@ -33,7 +34,7 @@ const TimelineSection = ({
         alignItems: 'center',
       }}
     >
-      <Box sx={{ width: '100%', maxWidth: '85%' }}>
+      <Box sx={{ width: '100%', maxWidth: '85%', textAlign: centered ? 'center' : 'left' }}>
       {title && (
         <Typography
           sx={{
