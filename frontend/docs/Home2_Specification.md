@@ -245,6 +245,13 @@ Border Radius: 16px
   likesYou: boolean,
   isMatch: boolean,
   
+  // Prompts - תשובות לשאלות אישיות
+  prompts: [{
+    prompt: string,          // השאלה/נושא (e.g., "A fun fact about me…")
+    answer: string           // התשובה של המשתמש
+  }],
+  introLine: string,         // התשובה של ה-prompt הראשון (מוצג אחרי תמונה 1)
+  
   // Lifestyle
   height: number,
   drinking: string,
@@ -257,6 +264,7 @@ Border Radius: 16px
   politics: string,
   languages: string[],
   causes: string[],
+  qualities: string[],       // תכונות שהמשתמש מעריך
   spotifyPlaylists: [{name, artist, image}]
 }
 ```
@@ -297,7 +305,86 @@ Border Radius: 16px
 
 ---
 
-## 🚀 Future Improvements - שיפורים עתידיים
+## � Prompts - שאלות ותשובות אישיות
+
+### מיקום ה-Prompts בכרטיס הפרופיל (ProfileTimeline)
+
+| מיקום | Prompt | תצוגה |
+|-------|--------|-------|
+| אחרי תמונה 1 | **Prompt 1** (Main Intro) | נושא (אפור קטן) + תשובה (איטליק) |
+| אחרי תמונה 2 | **Prompt 2** | נושא + תשובה |
+| אחרי תמונה 3 | **Prompt 3** | נושא + תשובה |
+| אחרי תמונה 4 | **Prompt 4** | נושא + תשובה |
+| אחרי תמונה 5 | **Prompt 5** | נושא + תשובה |
+| אחרי תמונה 6 | **Prompt 6** | נושא + תשובה |
+
+### נושאי Prompts זמינים
+
+```javascript
+const promptsWithSuggestions = {
+  "A fun fact about me…": [
+    "I can name any song within 3 seconds 🎧",
+    "I've visited 20 countries and counting 🌍",
+    "I make the best homemade pasta you'll ever taste 🍝",
+    "I once ran a marathon on a dare 🏃‍♀️",
+  ],
+  "Friends describe me as…": [
+    "The one who always has a plan (and a backup plan) 📋",
+    "The friend who remembers every birthday 🎂",
+    "Spontaneous but somehow always on time ⏰",
+    "A good listener with terrible dance moves 💃",
+  ],
+  "Currently obsessed with…": [
+    "Training for the TLV marathon 🏃‍♀️",
+    "Finding the city's best coffee spots ☕",
+    "Learning to play guitar (my neighbors love me) 🎸",
+    "Perfecting my sourdough recipe 🍞",
+  ],
+  // ... more topics
+};
+```
+
+### עיצוב Prompt בכרטיס
+
+```jsx
+<Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
+  {/* נושא */}
+  <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
+    {prompt.prompt}
+  </Typography>
+  {/* תשובה */}
+  <Typography sx={{ fontSize: 18, color: '#374151', fontWeight: 400, fontStyle: 'italic' }}>
+    "{prompt.answer}"
+  </Typography>
+</Box>
+```
+
+### ניהול Prompts בהגדרות פרופיל
+
+| פעולה | תיאור |
+|-------|-------|
+| **הוספה** | לחיצה על "Add prompt" → בחירת נושא → כתיבת תשובה או בחירת הצעה → "Save to Profile" |
+| **מחיקה** | לחיצה על X ליד ה-prompt |
+| **סידור מחדש** | חצים למעלה/למטה להחלפת מיקום |
+| **מגבלה** | מקסימום prompts = מספר התמונות שהועלו |
+
+### שמירה ב-localStorage
+
+```javascript
+// נשמר ב-pulse_user
+{
+  prompts: [
+    { prompt: "A fun fact about me…", answer: "I once ran a marathon on a dare 🏃‍♀️" },
+    { prompt: "Friends describe me as…", answer: "The one who always has a plan 📋" },
+    // ...
+  ],
+  introLine: "I once ran a marathon on a dare 🏃‍♀️" // תשובת ה-prompt הראשון
+}
+```
+
+---
+
+## �🚀 Future Improvements - שיפורים עתידיים
 
 - [ ] Super Like functionality
 - [ ] Boost feature

@@ -53,6 +53,11 @@ export const baseUsers = [
     politics: "Moderate",
     languages: ["English", "Hebrew"],
     causes: ["Environment", "Education"],
+    prompts: [
+      { prompt: "A fun fact about me…", answer: "I can name any song within 3 seconds 🎧" },
+      { prompt: "Friends describe me as…", answer: "The one who always has a plan (and a backup plan) 📋" },
+      { prompt: "Currently obsessed with…", answer: "Finding the city's best coffee spots ☕" },
+    ],
     spotifyConnected: true,
     spotifyPlaylists: [
       { name: "Chill Vibes", artist: "Various Artists", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop" },
@@ -120,6 +125,10 @@ export const baseUsers = [
     politics: "Liberal",
     languages: ["Hebrew", "English", "French"],
     causes: ["Animal rights"],
+    prompts: [
+      { prompt: "A fun fact about me…", answer: "I've read over 200 books in the last 3 years 📚" },
+      { prompt: "My ideal Sunday looks like…", answer: "Hiking in the morning, cooking a new recipe in the evening 🥾" },
+    ],
     spotifyPlaylists: [
       { name: "Indie Folk", artist: "Various Artists", image: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=200&h=200&fit=crop" },
       { name: "Study Focus", artist: "Lo-Fi Beats", image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop" },
@@ -176,6 +185,11 @@ export const baseUsers = [
     politics: "Progressive",
     languages: ["Hebrew", "English"],
     causes: ["Arts", "LGBTQ+"],
+    prompts: [
+      { prompt: "Friends describe me as…", answer: "Spontaneous but somehow always on time ⏰" },
+      { prompt: "A fun fact about me…", answer: "I've photographed over 50 weddings 📸" },
+      { prompt: "Currently obsessed with…", answer: "Learning to play guitar (my neighbors love me) 🎸" },
+    ],
     spotifyPlaylists: [
       { name: "Creative Flow", artist: "Ambient", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=200&h=200&fit=crop" },
       { name: "Pilates Beats", artist: "Electronic", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop" },
@@ -241,6 +255,10 @@ export const baseUsers = [
     politics: "Moderate",
     languages: ["Hebrew", "English", "Spanish"],
     causes: ["Tech for good", "Health"],
+    prompts: [
+      { prompt: "Currently obsessed with…", answer: "Training for the TLV marathon 🏃‍♀️" },
+      { prompt: "A fun fact about me…", answer: "I've visited 20 countries and counting 🌍" },
+    ],
     spotifyPlaylists: [
       { name: "Running Hits", artist: "Pop Mix", image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=200&h=200&fit=crop" },
       { name: "Tech Podcasts", artist: "Various", image: "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=200&h=200&fit=crop" },
@@ -280,6 +298,11 @@ export const baseUsers = [
     politics: "Liberal",
     languages: ["Hebrew", "English", "Italian"],
     causes: ["Arts", "Environment"],
+    prompts: [
+      { prompt: "A fun fact about me…", answer: "I make the best homemade pasta you'll ever taste 🍝" },
+      { prompt: "Friends describe me as…", answer: "The friend who remembers every birthday 🎂" },
+      { prompt: "My ideal Sunday looks like…", answer: "Golden hour photoshoot, then wine with friends 🍷" },
+    ],
     spotifyPlaylists: [
       { name: "Sunset Vibes", artist: "Chill Mix", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop" },
       { name: "Road Trip", artist: "Indie Folk", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop" },
@@ -318,6 +341,10 @@ export const baseUsers = [
     politics: "Liberal",
     languages: ["Hebrew", "English"],
     causes: ["Environment", "Wellness"],
+    prompts: [
+      { prompt: "A fun fact about me…", answer: "I can hold a headstand for 5 minutes 🧘‍♀️" },
+      { prompt: "My ideal Sunday looks like…", answer: "Morning yoga, farmers market, cooking with friends 🥗" },
+    ],
     spotifyPlaylists: [
       { name: "Meditation", artist: "Ambient Sounds", image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=200&h=200&fit=crop" },
       { name: "Morning Yoga", artist: "Relaxing Mix", image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=200&h=200&fit=crop" },

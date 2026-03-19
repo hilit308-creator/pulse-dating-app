@@ -108,6 +108,9 @@ const transformToUserCardModel = (person) => ({
   userRhythm: null,
   weeklyRhythm: null,
   weeklyTimeline: null,
+  // Prompts (displayed after each photo)
+  prompts: person.prompts || [],
+  introLine: person.introLine || (person.prompts?.[0]?.answer) || null,
   _original: person,
 });
 

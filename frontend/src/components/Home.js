@@ -123,6 +123,9 @@ const transformToUserCardModel = (user) => ({
   userRhythm: user.userRhythm,
   weeklyRhythm: user.weeklyRhythm,
   weeklyTimeline: user.weeklyTimeline,
+  // Prompts (displayed after each photo)
+  prompts: user.prompts || [],
+  introLine: user.introLine || (user.prompts?.[0]?.answer) || null,
   // Keep original data for expanded profile
   _original: user,
 });

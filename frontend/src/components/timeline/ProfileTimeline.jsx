@@ -34,6 +34,9 @@ import WeeklyRhythmStrip from './WeeklyRhythmStrip';
 import PlaylistSection from './PlaylistSection';
 
 const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo, isPreview = false }) => {
+  // Get prompts array (ensure it's always an array)
+  const prompts = user?.prompts || [];
+  
   // Extract photos array
   const photos = useMemo(() => {
     if (!user) return [];
@@ -92,8 +95,17 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo, isPr
         }}
       />
 
-      {/* ===== 2. SHORT INTRO LINE ===== */}
-      <IntroLineSection user={user} />
+      {/* ===== 2. SHORT INTRO LINE (first prompt with topic) ===== */}
+      {prompts[0] && (
+        <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
+            {prompts[0].prompt}
+          </Typography>
+          <Typography sx={{ fontSize: 18, color: '#374151', fontWeight: 400, fontStyle: 'italic' }}>
+            "{prompts[0].answer}"
+          </Typography>
+        </Box>
+      )}
 
       {/* ===== 2.5. QUALITIES I VALUE (after intro line, before photo 2) ===== */}
       {user.qualities?.length > 0 && (
@@ -127,13 +139,13 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo, isPr
       )}
 
       {/* ===== PROMPT 2 (after photo 2, shows topic + answer) ===== */}
-      {user.prompts?.[1] && (
+      {prompts[1] && (
         <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
-            {user.prompts[1].prompt}
+            {prompts[1].prompt}
           </Typography>
           <Typography sx={{ fontSize: 16, color: '#374151', fontWeight: 500, fontStyle: 'italic' }}>
-            "{user.prompts[1].answer}"
+            "{prompts[1].answer}"
           </Typography>
         </Box>
       )}
@@ -165,13 +177,13 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo, isPr
       )}
 
       {/* ===== PROMPT 3 (after photo 3, shows topic + answer) ===== */}
-      {user.prompts?.[2] && (
+      {prompts[2] && (
         <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
-            {user.prompts[2].prompt}
+            {prompts[2].prompt}
           </Typography>
           <Typography sx={{ fontSize: 16, color: '#374151', fontWeight: 500, fontStyle: 'italic' }}>
-            "{user.prompts[2].answer}"
+            "{prompts[2].answer}"
           </Typography>
         </Box>
       )}
@@ -211,13 +223,13 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo, isPr
       )}
 
       {/* ===== PROMPT 4 (after photo 4, shows topic + answer) ===== */}
-      {user.prompts?.[3] && (
+      {prompts[3] && (
         <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
-            {user.prompts[3].prompt}
+            {prompts[3].prompt}
           </Typography>
           <Typography sx={{ fontSize: 16, color: '#374151', fontWeight: 500, fontStyle: 'italic' }}>
-            "{user.prompts[3].answer}"
+            "{prompts[3].answer}"
           </Typography>
         </Box>
       )}
@@ -234,13 +246,13 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo, isPr
       )}
 
       {/* ===== PROMPT 5 (after photo 5, shows topic + answer) ===== */}
-      {user.prompts?.[4] && (
+      {prompts[4] && (
         <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
-            {user.prompts[4].prompt}
+            {prompts[4].prompt}
           </Typography>
           <Typography sx={{ fontSize: 16, color: '#374151', fontWeight: 500, fontStyle: 'italic' }}>
-            "{user.prompts[4].answer}"
+            "{prompts[4].answer}"
           </Typography>
         </Box>
       )}
@@ -257,13 +269,13 @@ const ProfileTimeline = ({ user, onLike, onPass, onUndo, canUndo, hideUndo, isPr
       )}
 
       {/* ===== PROMPT 6 (after photo 6, shows topic + answer) ===== */}
-      {user.prompts?.[5] && (
+      {prompts[5] && (
         <Box sx={{ py: 3, px: 3, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, mb: 0.5 }}>
-            {user.prompts[5].prompt}
+            {prompts[5].prompt}
           </Typography>
           <Typography sx={{ fontSize: 16, color: '#374151', fontWeight: 500, fontStyle: 'italic' }}>
-            "{user.prompts[5].answer}"
+            "{prompts[5].answer}"
           </Typography>
         </Box>
       )}

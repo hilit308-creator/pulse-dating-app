@@ -64,6 +64,7 @@ import {
   HelpCircle,
   HeartHandshake,
   ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -2056,40 +2057,67 @@ export default function ProfileSettings({ onBack }) {
                       MAIN INTRO
                     </Typography>
                   )}
-                  {/* Make main button - only show if not already main */}
-                  {i > 0 && (
-                    <IconButton
-                      size="small"
-                      title="Make this the main intro"
-                      onClick={() => {
-                        // Move this prompt to first position
-                        const newPrompts = [...selectedPrompts];
-                        const [moved] = newPrompts.splice(i, 1);
-                        newPrompts.unshift(moved);
-                        setSelectedPrompts(newPrompts);
-                        // Update localStorage
-                        try {
-                          const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
-                          stored.prompts = newPrompts;
-                          stored.introLine = moved.answer;
-                          localStorage.setItem('pulse_user', JSON.stringify(stored));
-                        } catch (e) { console.error('Error updating main prompt:', e); }
-                        markDirty();
-                      }}
-                      sx={{
-                        position: 'absolute',
-                        top: 4,
-                        right: 32,
-                        width: 24,
-                        height: 24,
-                        bgcolor: 'rgba(108, 92, 231, 0.8)',
-                        color: '#fff',
-                        '&:hover': { bgcolor: 'rgba(108, 92, 231, 0.95)' },
-                      }}
-                    >
-                      <Star size={12} />
-                    </IconButton>
-                  )}
+                  {/* Reorder buttons - move up/down */}
+                  <Box sx={{ position: 'absolute', top: 4, right: 36, display: 'flex', gap: 0.3 }}>
+                    {/* Move up button */}
+                    {i > 0 && (
+                      <IconButton
+                        size="small"
+                        title="Move up"
+                        onClick={() => {
+                          const newPrompts = [...selectedPrompts];
+                          [newPrompts[i - 1], newPrompts[i]] = [newPrompts[i], newPrompts[i - 1]];
+                          setSelectedPrompts(newPrompts);
+                          // Update localStorage
+                          try {
+                            const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                            stored.prompts = newPrompts;
+                            stored.introLine = newPrompts[0]?.answer;
+                            localStorage.setItem('pulse_user', JSON.stringify(stored));
+                          } catch (e) { console.error('Error reordering prompts:', e); }
+                          markDirty();
+                        }}
+                        sx={{
+                          width: 22,
+                          height: 22,
+                          bgcolor: 'rgba(108, 92, 231, 0.8)',
+                          color: '#fff',
+                          '&:hover': { bgcolor: 'rgba(108, 92, 231, 0.95)' },
+                        }}
+                      >
+                        <ChevronUp size={14} />
+                      </IconButton>
+                    )}
+                    {/* Move down button */}
+                    {i < selectedPrompts.length - 1 && (
+                      <IconButton
+                        size="small"
+                        title="Move down"
+                        onClick={() => {
+                          const newPrompts = [...selectedPrompts];
+                          [newPrompts[i], newPrompts[i + 1]] = [newPrompts[i + 1], newPrompts[i]];
+                          setSelectedPrompts(newPrompts);
+                          // Update localStorage
+                          try {
+                            const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
+                            stored.prompts = newPrompts;
+                            stored.introLine = newPrompts[0]?.answer;
+                            localStorage.setItem('pulse_user', JSON.stringify(stored));
+                          } catch (e) { console.error('Error reordering prompts:', e); }
+                          markDirty();
+                        }}
+                        sx={{
+                          width: 22,
+                          height: 22,
+                          bgcolor: 'rgba(108, 92, 231, 0.8)',
+                          color: '#fff',
+                          '&:hover': { bgcolor: 'rgba(108, 92, 231, 0.95)' },
+                        }}
+                      >
+                        <ChevronDown size={14} />
+                      </IconButton>
+                    )}
+                  </Box>
                   <IconButton
                     size="small"
                     onClick={() => {
@@ -2328,7 +2356,7 @@ export default function ProfileSettings({ onBack }) {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setPromptDialog(false)}>Done</Button>
+            <Button onClick={() => setPromptDialog(false)}>Close</Button>
           </DialogActions>
         </Dialog>
 
@@ -3248,8 +3276,8 @@ export default function ProfileSettings({ onBack }) {
                 spotifyConnected: freshData?.spotifyConnected || user?.spotifyConnected,
                 spotifyArtists: freshData?.spotifyArtists || user?.spotifyArtists,
                 pets: freshData?.pets || user?.pets,
-                // Prompts for display after photos
-                prompts: freshData?.prompts || selectedPrompts,
+                // Prompts for display after photos - always use current state
+                prompts: selectedPrompts.length > 0 ? selectedPrompts : (freshData?.prompts || []),
               };
             })()}
             // Disable all interactive actions for preview mode
