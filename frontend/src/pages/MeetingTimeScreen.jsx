@@ -1172,49 +1172,82 @@ export default function MeetingTimeScreen() {
   // Get display contacts (max 3) + Add button
   const displayContacts = meetingContacts.slice(0, 3);
 
+  // ============================================
+  // MEETING TIME SCREEN - SPACING SPECIFICATION
+  // ============================================
+  // Container: fixed position between top bar (56px) and bottom nav (56px)
+  // Content is vertically centered within the available space
+  // 
+  // LAYOUT CONSTANTS:
+  // - Top bar height: 56px
+  // - Bottom nav height: 56px  
+  // - Horizontal padding: 16px (px: 2)
+  // - Content max width: 400px
+  // - Gap between components: 8px (gap: 1)
+  //
+  // COMPONENT HEIGHTS (approximate):
+  // - Meeting card: ~80px
+  // - WhatsApp section: ~140px
+  // - Support button: ~56px
+  // - Action buttons row: ~48px
+  // - Demo button: ~32px
+  // Total content: ~364px (fits in most screens without scrolling)
+  // ============================================
+
   return (
     <Box 
       data-testid="meeting-time-screen"
       sx={{ 
         position: 'fixed',
-        top: 56,
+        top: 56,  // Top bar height
         left: 0,
         right: 0,
-        bottom: 56,
+        bottom: 56,  // Bottom nav height
         overflow: 'hidden',
+        overflowY: 'hidden',
+        overflowX: 'hidden',
         bgcolor: '#F8F9FA',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-start',
+        justifyContent: 'center',  // Vertically center content
         alignItems: 'center',
-        px: 2,
-        py: 2,
+        px: 2,  // 16px horizontal padding
+        '&::-webkit-scrollbar': { display: 'none' },
+        msOverflowStyle: 'none',
+        scrollbarWidth: 'none',
       }}>
-      {/* Main Content */}
-      <Box sx={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+      {/* Main Content - Fixed width, centered */}
+      <Box sx={{ 
+        width: '100%', 
+        maxWidth: 400,  // Max content width
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        gap: 1,  // 8px gap between all components
+      }}>
         
         {/* Motivational Message Card */}
         <Box sx={{ 
           width: '100%', 
-          p: 2, 
+          p: 1.5, 
           background: 'linear-gradient(135deg, #F3F0FF 0%, #E9E4FF 100%)',
-          borderRadius: 3, 
+          borderRadius: 2.5, 
           border: '2px solid #C4B5FD',
           textAlign: 'center',
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.75 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
             <Box sx={{ 
-              width: 36, height: 36, borderRadius: '50%', 
+              width: 32, height: 32, borderRadius: '50%', 
               background: 'linear-gradient(135deg, #6C5CE7 0%, #8B7CF7 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Users size={18} color="#fff" />
+              <Users size={16} color="#fff" />
             </Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#4C1D95', fontSize: '1rem' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#4C1D95', fontSize: '0.95rem' }}>
               Meeting with {meetingWith?.name || 'Someone'} ✓
             </Typography>
           </Box>
-          <Typography variant="body2" sx={{ color: '#6B21A8', lineHeight: 1.5, display: 'block' }}>
+          <Typography variant="body2" sx={{ color: '#6B21A8', lineHeight: 1.4, display: 'block', fontSize: '0.85rem' }}>
             💜 We're here so you can feel safe. Enjoy the moment!
           </Typography>
         </Box>
@@ -1222,13 +1255,13 @@ export default function MeetingTimeScreen() {
         {/* Quick Actions - WhatsApp Share Contacts */}
         <Box sx={{ width: '100%' }}>
           <Typography variant="overline" sx={{ 
-            color: '#6B7280', fontWeight: 800, letterSpacing: 1.5, fontSize: '0.7rem', 
-            display: 'block', textAlign: 'center', mb: 1.5,
+            color: '#6B7280', fontWeight: 800, letterSpacing: 1.5, fontSize: '0.65rem', 
+            display: 'block', textAlign: 'center', mb: 1,
           }}>
             SHARE LOCATION VIA WHATSAPP
           </Typography>
           
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
             {/* Contact buttons */}
             {displayContacts.map((contact) => (
               <Box
@@ -1319,35 +1352,35 @@ export default function MeetingTimeScreen() {
         <Box 
           onClick={handleSupportChat} 
           sx={{ 
-            width: '100%', p: 1.5, borderRadius: 2, 
+            width: '100%', p: 1, borderRadius: 2, 
             background: 'linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%)',
             border: '1px solid #C4B5FD', 
             display: 'flex', alignItems: 'center', 
-            gap: 1.5, cursor: 'pointer', 
+            gap: 1, cursor: 'pointer', 
             transition: 'all 0.2s ease',
             '&:hover': { boxShadow: '0 4px 12px rgba(108, 92, 231, 0.15)' },
           }}
         >
           <Box sx={{ 
-            width: 40, height: 40, borderRadius: '50%', 
+            width: 36, height: 36, borderRadius: '50%', 
             background: 'linear-gradient(135deg, #6C5CE7 0%, #8B7CF7 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Heart size={20} color="#fff" />
+            <Heart size={18} color="#fff" />
           </Box>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 700, color: '#4C1D95', fontSize: '0.9rem' }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#4C1D95', fontSize: '0.85rem' }}>
               Need support? 💬
             </Typography>
-            <Typography variant="caption" sx={{ color: '#7C3AED', display: 'block' }}>
+            <Typography variant="caption" sx={{ color: '#7C3AED', display: 'block', fontSize: '0.7rem' }}>
               Chat with our digital assistant for support and advice
             </Typography>
           </Box>
-          <MessageSquare size={20} color="#6C5CE7" />
+          <MessageSquare size={18} color="#6C5CE7" />
         </Box>
 
         {/* End Meeting + SOS Row */}
-        <Box sx={{ display: 'flex', gap: 1.5, width: '100%' }}>
+        <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
           {/* Show SOS status when active, otherwise show End Meeting + SOS buttons */}
           {sosState && sosState !== 'none' ? (
             <>
@@ -1427,9 +1460,11 @@ export default function MeetingTimeScreen() {
           variant="text"
           onClick={() => setShowSOSDemo(true)}
           sx={{
-            mt: -0.5, textTransform: 'none', fontSize: '0.7rem',
-            color: '#9CA3AF', fontWeight: 500, py: 0.5,
-            '&:hover': { bgcolor: 'transparent', color: '#6B7280' },
+            mt: 0.5, textTransform: 'none', fontSize: '0.7rem',
+            color: '#6B7280', fontWeight: 600, py: 0.5, px: 1.5,
+            bgcolor: 'rgba(107, 114, 128, 0.08)',
+            borderRadius: '16px',
+            '&:hover': { bgcolor: 'rgba(107, 114, 128, 0.15)', color: '#4B5563' },
           }}
         >
           🧪 Test SOS Demo

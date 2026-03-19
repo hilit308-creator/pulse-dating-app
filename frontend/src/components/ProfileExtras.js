@@ -157,11 +157,29 @@ export default function ProfileExtras() {
     }
   };
 
-  const handleSpotifyConnect = () => {
+  const handleSpotifyConnect = async () => {
     if (!user?.id) {
       setSpotifyError('Please log in to connect Spotify');
       return;
     }
+    
+    // First check if Spotify is configured on the backend
+    try {
+      const response = await fetch(`${API_URL}/api/spotify/status`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('pulse_access_token')}` },
+      });
+      const data = await response.json();
+      
+      // If we get config_error, Spotify is not configured on the backend
+      if (data.error === 'config_error') {
+        setSpotifyError('Spotify integration is not available yet. Coming soon!');
+        return;
+      }
+    } catch (err) {
+      // If the check fails, still try to connect (might work)
+      console.log('[Spotify] Status check failed, attempting connect anyway');
+    }
+    
     // Get current path for return_to (profile settings page)
     const currentPath = window.location.pathname;
     // Redirect to backend Spotify auth endpoint with return_to

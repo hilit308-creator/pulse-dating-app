@@ -881,20 +881,14 @@ export default function ProfileSettings({ onBack }) {
   const handleAddPrompt = () => {
     if (selectedPrompt && promptAnswer.trim()) {
       const newPrompt = { prompt: selectedPrompt, answer: promptAnswer.trim() };
-      setSelectedPrompts((prev) => [...prev, newPrompt]);
       
-      // Save the intro line (first prompt answer) to localStorage for Profile Preview
-      try {
-        const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
-        // Use the first prompt as the intro line
-        if (!stored.introLine) {
-          stored.introLine = promptAnswer.trim();
-        }
-        // Also save all prompts
-        const existingPrompts = stored.prompts || [];
-        stored.prompts = [...existingPrompts, newPrompt];
-        localStorage.setItem('pulse_user', JSON.stringify(stored));
-      } catch (e) { console.error('Error saving prompt:', e); }
+      setSelectedPrompts((prev) => {
+        const updatedPrompts = [...prev, newPrompt];
+        // Save prompts immediately to localStorage using saveAndRefreshUserData
+        const introLine = updatedPrompts[0]?.answer || null;
+        saveAndRefreshUserData({ prompts: updatedPrompts, introLine });
+        return updatedPrompts;
+      });
       
       setSelectedPrompt(null);
       setPromptAnswer("");
@@ -1085,32 +1079,31 @@ export default function ProfileSettings({ onBack }) {
           {/* Preview Profile Button */}
           <Button
             fullWidth
-            variant="outlined"
+            variant="text"
             onClick={() => setShowPreview(true)}
             startIcon={<Eye size={18} />}
             sx={{
               mt: 1.5,
               py: 1,
-              borderRadius: '12px',
               textTransform: 'none',
               fontWeight: 600,
               fontSize: '0.9rem',
-              borderColor: 'rgba(255,255,255,0.3)',
-              color: '#fff',
-              backgroundColor: 'rgba(255,255,255,0.1)',
+              color: '#6C5CE7 !important',
+              backgroundColor: 'transparent !important',
               '&:hover': {
-                borderColor: 'rgba(255,255,255,0.5)',
-                backgroundColor: 'rgba(255,255,255,0.15)',
-              },
-              '&:focus': {
-                borderColor: 'rgba(255,255,255,0.5)',
-                backgroundColor: 'rgba(255,255,255,0.15)',
-                color: '#fff',
+                backgroundColor: 'transparent !important',
+                color: '#6C5CE7 !important',
+                '& .MuiButton-startIcon': {
+                  color: '#a855f7',
+                  transform: 'scale(1.1)',
+                },
               },
               '&:active': {
-                borderColor: 'rgba(255,255,255,0.5)',
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                color: '#fff',
+                color: '#6C5CE7 !important',
+                backgroundColor: 'transparent !important',
+              },
+              '& .MuiButton-startIcon': {
+                transition: 'all 0.2s ease',
               },
             }}
           >
@@ -1886,13 +1879,14 @@ export default function ProfileSettings({ onBack }) {
                               borderRadius: 999,
                               fontWeight: 500,
                               fontSize: 12,
-                              bgcolor: isSelected ? brand.primary : '#fff',
+                              bgcolor: isSelected ? brand.primary : '#f1f5f9',
                               color: isSelected ? '#fff' : '#475569',
                               border: `1px solid ${isSelected ? brand.primary : '#e2e8f0'}`,
                               opacity: isDisabled ? 0.5 : 1,
                               cursor: isDisabled ? 'not-allowed' : 'pointer',
                               '&:hover': {
-                                bgcolor: isSelected ? brand.primary : '#f1f5f9',
+                                bgcolor: isSelected ? alpha(brand.primary, 0.85) : '#e2e8f0',
+                                border: `1px solid ${isSelected ? brand.primary : '#cbd5e1'}`,
                               },
                             }}
                           />
@@ -1932,10 +1926,13 @@ export default function ProfileSettings({ onBack }) {
                   onDelete={() => { setSelectedCauses(prev => prev.filter(c => c !== cause)); markDirty(); }}
                   sx={{
                     borderRadius: 999,
-                    bgcolor: "#fff",
+                    bgcolor: alpha(brand.primary, 0.08),
                     border: `1px solid ${alpha(brand.primary, 0.22)}`,
                     fontWeight: 500,
                     fontSize: 13,
+                    '&:hover': {
+                      bgcolor: alpha(brand.primary, 0.15),
+                    },
                   }}
                 />
               ))}
@@ -1949,7 +1946,10 @@ export default function ProfileSettings({ onBack }) {
                 borderRadius: 999,
                 textTransform: "none",
                 fontWeight: 500,
-                bgcolor: "#fff",
+                bgcolor: "#f8fafc",
+                '&:hover': {
+                  bgcolor: '#f1f5f9',
+                },
               }}
             >
               Add causes / communities
@@ -1981,9 +1981,12 @@ export default function ProfileSettings({ onBack }) {
                   onDelete={() => { setSelectedQualities(prev => prev.filter(quality => quality !== q)); markDirty(); }}
                   sx={{
                     borderRadius: 999,
-                    bgcolor: "#fff",
+                    bgcolor: alpha(brand.primary, 0.08),
                     fontWeight: 500,
                     fontSize: 13,
+                    '&:hover': {
+                      bgcolor: alpha(brand.primary, 0.15),
+                    },
                   }}
                 />
               ))}
@@ -1997,8 +2000,11 @@ export default function ProfileSettings({ onBack }) {
                 borderRadius: 999,
                 textTransform: "none",
                 fontWeight: 500,
-                bgcolor: "#fff",
+                bgcolor: "#f8fafc",
                 pr: 1,
+                '&:hover': {
+                  bgcolor: '#f1f5f9',
+                },
               }}
               endIcon={<span style={{ fontSize: 20 }}>›</span>}
             >
@@ -2068,13 +2074,8 @@ export default function ProfileSettings({ onBack }) {
                           const newPrompts = [...selectedPrompts];
                           [newPrompts[i - 1], newPrompts[i]] = [newPrompts[i], newPrompts[i - 1]];
                           setSelectedPrompts(newPrompts);
-                          // Update localStorage
-                          try {
-                            const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
-                            stored.prompts = newPrompts;
-                            stored.introLine = newPrompts[0]?.answer;
-                            localStorage.setItem('pulse_user', JSON.stringify(stored));
-                          } catch (e) { console.error('Error reordering prompts:', e); }
+                          // Save to localStorage using saveAndRefreshUserData
+                          saveAndRefreshUserData({ prompts: newPrompts, introLine: newPrompts[0]?.answer });
                           markDirty();
                         }}
                         sx={{
@@ -2097,13 +2098,8 @@ export default function ProfileSettings({ onBack }) {
                           const newPrompts = [...selectedPrompts];
                           [newPrompts[i], newPrompts[i + 1]] = [newPrompts[i + 1], newPrompts[i]];
                           setSelectedPrompts(newPrompts);
-                          // Update localStorage
-                          try {
-                            const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
-                            stored.prompts = newPrompts;
-                            stored.introLine = newPrompts[0]?.answer;
-                            localStorage.setItem('pulse_user', JSON.stringify(stored));
-                          } catch (e) { console.error('Error reordering prompts:', e); }
+                          // Save to localStorage using saveAndRefreshUserData
+                          saveAndRefreshUserData({ prompts: newPrompts, introLine: newPrompts[0]?.answer });
                           markDirty();
                         }}
                         sx={{
@@ -2123,16 +2119,8 @@ export default function ProfileSettings({ onBack }) {
                     onClick={() => {
                       const newPrompts = selectedPrompts.filter((_, idx) => idx !== i);
                       setSelectedPrompts(newPrompts);
-                      // Update localStorage
-                      try {
-                        const stored = JSON.parse(localStorage.getItem('pulse_user') || '{}');
-                        stored.prompts = newPrompts;
-                        // Update introLine if we deleted the first prompt
-                        if (i === 0) {
-                          stored.introLine = newPrompts[0]?.answer || null;
-                        }
-                        localStorage.setItem('pulse_user', JSON.stringify(stored));
-                      } catch (e) { console.error('Error deleting prompt:', e); }
+                      // Save to localStorage using saveAndRefreshUserData
+                      saveAndRefreshUserData({ prompts: newPrompts, introLine: newPrompts[0]?.answer || null });
                       markDirty();
                     }}
                     sx={{
@@ -2167,7 +2155,10 @@ export default function ProfileSettings({ onBack }) {
                 borderRadius: 999,
                 textTransform: "none",
                 fontWeight: 500,
-                bgcolor: "#fff",
+                bgcolor: "#f8fafc",
+                '&:hover': {
+                  bgcolor: '#f1f5f9',
+                },
               }}
               startIcon={<Plus />}
             >
@@ -2310,12 +2301,12 @@ export default function ProfileSettings({ onBack }) {
                         p: 1.5,
                         borderRadius: '12px',
                         border: promptAnswer === suggestion ? '2px solid #6C5CE7' : '1px solid #e2e8f0',
-                        bgcolor: promptAnswer === suggestion ? 'rgba(108,92,231,0.08)' : '#fff',
+                        bgcolor: promptAnswer === suggestion ? 'rgba(108,92,231,0.08)' : '#f8fafc',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
                         '&:hover': {
                           borderColor: '#6C5CE7',
-                          bgcolor: 'rgba(108,92,231,0.05)',
+                          bgcolor: 'rgba(108,92,231,0.08)',
                         },
                       }}
                     >
@@ -2410,11 +2401,12 @@ export default function ProfileSettings({ onBack }) {
                         p: 1.5,
                         borderRadius: '12px',
                         border: `2px solid ${isSelected ? '#f43f5e' : 'rgba(0,0,0,0.08)'}`,
-                        backgroundColor: isSelected ? 'rgba(244,63,94,0.05)' : '#fff',
+                        backgroundColor: isSelected ? 'rgba(244,63,94,0.05)' : '#f8fafc',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
                         '&:hover': {
                           borderColor: isSelected ? '#f43f5e' : 'rgba(244,63,94,0.3)',
+                          backgroundColor: isSelected ? 'rgba(244,63,94,0.08)' : '#f1f5f9',
                         },
                       }}
                     >
@@ -3049,9 +3041,9 @@ export default function ProfileSettings({ onBack }) {
                       borderWidth: 2,
                       borderColor: '#10B981',
                       color: '#10B981',
-                      backgroundColor: '#fff',
+                      backgroundColor: '#ECFDF5',
                       '&:hover': { 
-                        backgroundColor: '#ECFDF5',
+                        backgroundColor: '#D1FAE5',
                         borderColor: '#10B981',
                         borderWidth: 2,
                       },
@@ -3088,9 +3080,9 @@ export default function ProfileSettings({ onBack }) {
                       borderWidth: 2,
                       borderColor: '#9CA3AF',
                       color: '#6B7280',
-                      backgroundColor: '#fff',
+                      backgroundColor: '#F3F4F6',
                       '&:hover': { 
-                        backgroundColor: '#F9FAFB',
+                        backgroundColor: '#E5E7EB',
                         borderColor: '#6B7280',
                         borderWidth: 2,
                       },

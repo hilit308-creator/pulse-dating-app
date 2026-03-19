@@ -6,6 +6,17 @@ body {
   padding: 0;
 }
 
+/* Hide scrollbar ONLY for MeetingTimeScreen */
+[data-testid="meeting-time-screen"] {
+  overflow: hidden !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+[data-testid="meeting-time-screen"]::-webkit-scrollbar {
+  display: none !important;
+}
+
 /* Override browser selection highlight - make it subtle/transparent */
 ::selection {
   background: rgba(108, 92, 231, 0.15);
