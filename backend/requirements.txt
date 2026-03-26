@@ -14,5 +14,4 @@ psycopg[binary]==3.2.4
 stripe==11.1.0
 requests==2.32.3
 gunicorn==21.2.0
-gevent==24.2.1
-gevent-websocket==0.10.1
+
