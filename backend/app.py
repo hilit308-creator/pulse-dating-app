@@ -57,18 +57,6 @@ FRONTEND_ORIGINS = [
 ]
 CORS(app, origins=FRONTEND_ORIGINS, supports_credentials=True)
 
-# Manual CORS headers for all responses
-@app.after_request
-def after_request(response):
-    origin = request.headers.get('Origin', '')
-    if origin in FRONTEND_ORIGINS:
-        response.headers['Access-Control-Allow-Origin'] = origin
-    else:
-        response.headers['Access-Control-Allow-Origin'] = FRONTEND_ORIGINS[0]
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-    response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    return response
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 database_url = os.getenv('DATABASE_URL')
